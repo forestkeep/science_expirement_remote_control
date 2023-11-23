@@ -1,2 +1,2 @@
 # remote_control
-remote_control for science experiment
+Программа для автоматизации научных экспериментов.
