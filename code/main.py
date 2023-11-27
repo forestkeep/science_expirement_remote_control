@@ -1,22 +1,11 @@
-import serial
-import time
-import pymodbus
-import datetime
+
 import sys
-from enum import Enum
-from PyQt5 import QtCore, QtGui, QtWidgets
 from main_window import Ui_MainWindow
-from maisheng import maisheng_ui_window
-from maisheng import maisheng_class
-# from SVPS34 import Ui_SVPS34_control
-# from SVPS34 import SVPS32_class
-from relay import Relay_Ui_MainWindow
-from relay import relay_class
-from installationofdevices import installation_Ui_Dialog
-from selectdevice import Ui_Selectdevice
-from PyQt5.QtWidgets import QApplication
-from PyQt5 import QtCore, QtGui, QtWidgets
-import sys
+from maisheng_window import maisheng_ui_window
+from relay import Relay_Ui_MainWindow, relay_class
+from installation_check_devices import installation_Ui_Dialog
+from selectdevice_window import Ui_Selectdevice
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QMessageBox
 import info_window_dialog
 from test3 import Ui_SVPS34_control
@@ -113,7 +102,7 @@ class Mywindow(QtWidgets.QMainWindow):
                 self.dict_active_local_devices_window[name] = maisheng_ui_window(
                 )
                 # создаем в двух ращзных словарях значения по ключу
-                self.dict_active_local_devices[name] = maisheng_class()
+                #self.dict_active_local_devices[name] = maisheng_class()
             if name == "Polarity Relay":
                 self.dict_active_local_devices_window[name] = Relay_Ui_MainWindow(
                 )

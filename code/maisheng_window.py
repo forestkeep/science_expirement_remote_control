@@ -9,11 +9,9 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-class maisheng_class():
-    def __init__(self) -> None:
-        pass
 
-class maisheng_ui_window(object):
+
+class maisheng_ui_window(QtWidgets.QMainWindow):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(794, 611)
@@ -44,7 +42,8 @@ class maisheng_ui_window(object):
         self.verticalLayoutWidget_3 = QtWidgets.QWidget(self.frame)
         self.verticalLayoutWidget_3.setGeometry(QtCore.QRect(20, 20, 126, 141))
         self.verticalLayoutWidget_3.setObjectName("verticalLayoutWidget_3")
-        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_3)
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout(
+            self.verticalLayoutWidget_3)
         self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.scan_button = QtWidgets.QPushButton(self.verticalLayoutWidget_3)
@@ -57,7 +56,8 @@ class maisheng_ui_window(object):
         self.comportslist_2 = QtWidgets.QComboBox(self.verticalLayoutWidget_3)
         self.comportslist_2.setObjectName("comportslist_2")
         self.verticalLayout_3.addWidget(self.comportslist_2)
-        self.connect_button = QtWidgets.QPushButton(self.verticalLayoutWidget_3)
+        self.connect_button = QtWidgets.QPushButton(
+            self.verticalLayoutWidget_3)
         self.connect_button.setMouseTracking(False)
         self.connect_button.setObjectName("connect_button")
         self.verticalLayout_3.addWidget(self.connect_button)
@@ -70,7 +70,8 @@ class maisheng_ui_window(object):
         self.verticalLayoutWidget_2 = QtWidgets.QWidget(self.frame_2)
         self.verticalLayoutWidget_2.setGeometry(QtCore.QRect(90, 10, 111, 201))
         self.verticalLayoutWidget_2.setObjectName("verticalLayoutWidget_2")
-        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_2)
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(
+            self.verticalLayoutWidget_2)
         self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.selectmode = QtWidgets.QComboBox(self.verticalLayoutWidget_2)
@@ -89,9 +90,11 @@ class maisheng_ui_window(object):
         self.selecttrigger.setObjectName("selecttrigger")
         self.verticalLayout_2.addWidget(self.selecttrigger)
         self.verticalLayoutWidget_4 = QtWidgets.QWidget(self.frame_2)
-        self.verticalLayoutWidget_4.setGeometry(QtCore.QRect(330, 10, 111, 101))
+        self.verticalLayoutWidget_4.setGeometry(
+            QtCore.QRect(330, 10, 111, 101))
         self.verticalLayoutWidget_4.setObjectName("verticalLayoutWidget_4")
-        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_4)
+        self.verticalLayout_4 = QtWidgets.QVBoxLayout(
+            self.verticalLayoutWidget_4)
         self.verticalLayout_4.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.selectstart_5 = QtWidgets.QLineEdit(self.verticalLayoutWidget_4)
@@ -137,9 +140,11 @@ class maisheng_ui_window(object):
         self.label_6.setObjectName("label_6")
         self.verticalLayout.addWidget(self.label_6)
         self.verticalLayoutWidget_5 = QtWidgets.QWidget(self.frame_2)
-        self.verticalLayoutWidget_5.setGeometry(QtCore.QRect(210, 10, 111, 101))
+        self.verticalLayoutWidget_5.setGeometry(
+            QtCore.QRect(210, 10, 111, 101))
         self.verticalLayoutWidget_5.setObjectName("verticalLayoutWidget_5")
-        self.verticalLayout_5 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_5)
+        self.verticalLayout_5 = QtWidgets.QVBoxLayout(
+            self.verticalLayoutWidget_5)
         self.verticalLayout_5.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.label_8 = QtWidgets.QLabel(self.verticalLayoutWidget_5)

@@ -1,5 +1,7 @@
+from maisheng_power_class import maisheng_power_class
 
 
+dict_device_class = {"Maisheng": maisheng_power_class}#сюда добавляются классы всех устройств в системе вместе с ключами
 
 
 class device:
