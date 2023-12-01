@@ -13,9 +13,10 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 class Ui_Dialog(QtWidgets.QDialog):
     signal_to_main_window = QtCore.pyqtSignal(bool)
-    def setupUi(self, Dialog, mother_window):
-        self.signal_to_main_window.connect(mother_window.message_from_info_dialog)
 
+    def setupUi(self, Dialog, mother_window):
+        self.signal_to_main_window.connect(
+            mother_window.message_from_info_dialog)
 
         Dialog.setObjectName("Ахтунг!")
         Dialog.resize(210, 161)
@@ -24,7 +25,8 @@ class Ui_Dialog(QtWidgets.QDialog):
         self.buttonBox.setGeometry(QtCore.QRect(20, 120, 161, 32))
         self.buttonBox.setStyleSheet("background-color: rgb(255, 170, 0);")
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStandardButtons(
+            QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.labelinfo = QtWidgets.QLabel(Dialog)
         self.labelinfo.setGeometry(QtCore.QRect(20, 0, 171, 101))
@@ -32,22 +34,27 @@ class Ui_Dialog(QtWidgets.QDialog):
         font.setPointSize(12)
         self.labelinfo.setFont(font)
         self.labelinfo.setStyleSheet("\n"
-"")
+                                     "")
         self.labelinfo.setWordWrap(True)
         self.labelinfo.setObjectName("labelinfo")
         self.retranslateUi(Dialog)
-        self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
-        self.buttonBox.rejected.connect(Dialog.reject) # type: ignore
+        self.buttonBox.accepted.connect(Dialog.accept)  # type: ignore
+        self.buttonBox.rejected.connect(Dialog.reject)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
-        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(self.send_signal_ok)
-        self.buttonBox.button(QtWidgets.QDialogButtonBox.Cancel).clicked.connect(self.send_signal_cancel)
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(
+            self.send_signal_ok)
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Cancel).clicked.connect(
+            self.send_signal_cancel)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.labelinfo.setText(_translate("D", "Установка уже создана. Закрыть текущую установку и создать новую?"))
+        self.labelinfo.setText(_translate(
+            "D", "Установка уже создана. Закрыть текущую установку и создать новую?"))
+
     def send_signal_ok(self):
-            self.signal_to_main_window.emit(True)
+        self.signal_to_main_window.emit(True)
+
     def send_signal_cancel(self):
-            self.signal_to_main_window.emit(False)
+        self.signal_to_main_window.emit(False)

@@ -10,8 +10,13 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_Set_power_supply(QtWidgets.QDialog):
-    def setupUi(self, Set_power_supply):
+    signal_to_main_window = QtCore.pyqtSignal(list)
+
+    def setupUi(self, Set_power_supply, mother_class):
+        self.signal_to_main_window.connect(
+            mother_class.message_from_setting_window)
         Set_power_supply.setObjectName("Set_power_supply")
         Set_power_supply.resize(302, 384)
         Set_power_supply.setSizeGripEnabled(False)
@@ -19,12 +24,14 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.buttonBox = QtWidgets.QDialogButtonBox(Set_power_supply)
         self.buttonBox.setGeometry(QtCore.QRect(80, 340, 191, 32))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStandardButtons(
+            QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.horizontalLayoutWidget = QtWidgets.QWidget(Set_power_supply)
         self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 180, 261, 41))
         self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget)
+        self.horizontalLayout = QtWidgets.QHBoxLayout(
+            self.horizontalLayoutWidget)
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.label_3 = QtWidgets.QLabel(self.horizontalLayoutWidget)
@@ -35,28 +42,34 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.triger_enter.setObjectName("triger_enter")
         self.horizontalLayout.addWidget(self.triger_enter)
         self.horizontalLayoutWidget_2 = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget_2.setGeometry(QtCore.QRect(10, 60, 261, 31))
+        self.horizontalLayoutWidget_2.setGeometry(
+            QtCore.QRect(10, 60, 261, 31))
         self.horizontalLayoutWidget_2.setObjectName("horizontalLayoutWidget_2")
-        self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget_2)
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout(
+            self.horizontalLayoutWidget_2)
         self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
         self.label_4 = QtWidgets.QLabel(self.horizontalLayoutWidget_2)
         self.label_4.setObjectName("label_4")
         self.horizontalLayout_2.addWidget(self.label_4)
-        self.type_step_enter = QtWidgets.QComboBox(self.horizontalLayoutWidget_2)
+        self.type_step_enter = QtWidgets.QComboBox(
+            self.horizontalLayoutWidget_2)
         self.type_step_enter.setCurrentText("")
         self.type_step_enter.setObjectName("type_step_enter")
         self.horizontalLayout_2.addWidget(self.type_step_enter)
         self.horizontalLayoutWidget_3 = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget_3.setGeometry(QtCore.QRect(10, 10, 261, 41))
+        self.horizontalLayoutWidget_3.setGeometry(
+            QtCore.QRect(10, 10, 261, 41))
         self.horizontalLayoutWidget_3.setObjectName("horizontalLayoutWidget_3")
-        self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget_3)
+        self.horizontalLayout_3 = QtWidgets.QHBoxLayout(
+            self.horizontalLayoutWidget_3)
         self.horizontalLayout_3.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.label_5 = QtWidgets.QLabel(self.horizontalLayoutWidget_3)
         self.label_5.setObjectName("label_5")
         self.horizontalLayout_3.addWidget(self.label_5)
-        self.type_work_enter = QtWidgets.QComboBox(self.horizontalLayoutWidget_3)
+        self.type_work_enter = QtWidgets.QComboBox(
+            self.horizontalLayoutWidget_3)
         self.type_work_enter.setCurrentText("")
         self.type_work_enter.setObjectName("type_work_enter")
         self.horizontalLayout_3.addWidget(self.type_work_enter)
@@ -107,9 +120,11 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.label_9.setObjectName("label_9")
         self.verticalLayout.addWidget(self.label_9)
         self.horizontalLayoutWidget_4 = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget_4.setGeometry(QtCore.QRect(10, 260, 261, 41))
+        self.horizontalLayoutWidget_4.setGeometry(
+            QtCore.QRect(10, 260, 261, 41))
         self.horizontalLayoutWidget_4.setObjectName("horizontalLayoutWidget_4")
-        self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget_4)
+        self.horizontalLayout_4 = QtWidgets.QHBoxLayout(
+            self.horizontalLayoutWidget_4)
         self.horizontalLayout_4.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         self.label_10 = QtWidgets.QLabel(self.horizontalLayoutWidget_4)
@@ -119,9 +134,11 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.comportslist.setObjectName("comportslist")
         self.horizontalLayout_4.addWidget(self.comportslist)
         self.horizontalLayoutWidget_5 = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget_5.setGeometry(QtCore.QRect(10, 300, 261, 41))
+        self.horizontalLayoutWidget_5.setGeometry(
+            QtCore.QRect(10, 300, 261, 41))
         self.horizontalLayoutWidget_5.setObjectName("horizontalLayoutWidget_5")
-        self.horizontalLayout_5 = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget_5)
+        self.horizontalLayout_5 = QtWidgets.QHBoxLayout(
+            self.horizontalLayoutWidget_5)
         self.horizontalLayout_5.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
         self.label_11 = QtWidgets.QLabel(self.horizontalLayoutWidget_5)
@@ -131,9 +148,11 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.boudrate.setObjectName("boudrate")
         self.horizontalLayout_5.addWidget(self.boudrate)
         self.horizontalLayoutWidget_6 = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget_6.setGeometry(QtCore.QRect(10, 220, 261, 41))
+        self.horizontalLayoutWidget_6.setGeometry(
+            QtCore.QRect(10, 220, 261, 41))
         self.horizontalLayoutWidget_6.setObjectName("horizontalLayoutWidget_6")
-        self.horizontalLayout_6 = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget_6)
+        self.horizontalLayout_6 = QtWidgets.QHBoxLayout(
+            self.horizontalLayoutWidget_6)
         self.horizontalLayout_6.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
         self.label_sourse = QtWidgets.QLabel(self.horizontalLayoutWidget_6)
@@ -143,15 +162,20 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.sourse_enter.setCurrentText("")
         self.sourse_enter.setObjectName("sourse_enter")
         self.horizontalLayout_6.addWidget(self.sourse_enter)
+        self.buttonBox.button(
+            QtWidgets.QDialogButtonBox.Ok).clicked.connect(self.send_signal)
 
         self.retranslateUi(Set_power_supply)
-        self.buttonBox.accepted.connect(Set_power_supply.accept) # type: ignore
-        self.buttonBox.rejected.connect(Set_power_supply.reject) # type: ignore
+        self.buttonBox.accepted.connect(
+            Set_power_supply.accept)  # type: ignore
+        self.buttonBox.rejected.connect(
+            Set_power_supply.reject)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Set_power_supply)
 
     def retranslateUi(self, Set_power_supply):
         _translate = QtCore.QCoreApplication.translate
-        Set_power_supply.setWindowTitle(_translate("Set_power_supply", "Dialog"))
+        Set_power_supply.setWindowTitle(
+            _translate("Set_power_supply", "Dialog"))
         self.label_3.setText(_translate("Set_power_supply", "Триггер"))
         self.label_4.setText(_translate("Set_power_supply", "Тип шага"))
         self.label_5.setText(_translate("Set_power_supply", "Режим работы"))
@@ -163,4 +187,29 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.label_9.setText(_translate("Set_power_supply", "V"))
         self.label_10.setText(_translate("Set_power_supply", "COM"))
         self.label_11.setText(_translate("Set_power_supply", "Baudrate"))
-        self.label_sourse.setText(_translate("Set_power_supply", "Источник сигнала"))
+        self.label_sourse.setText(_translate(
+            "Set_power_supply", "Время(с)"))
+
+    def send_signal(self):
+        pass
+        '''
+        self.dict_buf_parameters = {}
+        self.dict_buf_parameters["trigger"] = 
+        self.dict_buf_parameters["step_time"] = 
+        self.dict_buf_parameters["type_of_work"] = 
+        self.dict_buf_parameters["type_step"] = 
+        self.dict_buf_parameters["sourse"] = 
+        self.dict_buf_parameters["high_voltage_limit"] = 
+        self.dict_buf_parameters["high_current_limit"] = 
+        self.dict_buf_parameters["step_current"] = 
+        self.dict_buf_parameters["step_voltage"] = 
+        self.dict_buf_parameters["baydrate"] = 
+        self.dict_buf_parameters["COM"] = 
+        
+
+
+
+        device_tupple = ["gfgf"]
+        # проверяем состояние всех чек бокс и передаем список приборов в главное окно
+        self.signal_to_main_window.emit(device_tupple)
+        '''

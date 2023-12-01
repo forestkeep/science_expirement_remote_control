@@ -13,8 +13,10 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 class installation_Ui_Dialog(QtWidgets.QDialog):
     signal_to_main_window = QtCore.pyqtSignal(list)
+
     def setupUi(self, Dialog, mother_window):
-        self.signal_to_main_window.connect(mother_window.message_from_new_installation)
+        self.signal_to_main_window.connect(
+            mother_window.message_from_new_installation)
         Dialog.setObjectName("Dialog")
         Dialog.resize(330, 243)
         self.widget = QtWidgets.QWidget(Dialog)
@@ -72,20 +74,23 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
         self.verticalLayout.addWidget(self.checkBox_5)
         self.buttonBox = QtWidgets.QDialogButtonBox(self.splitter)
         self.buttonBox.setOrientation(QtCore.Qt.Vertical)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStandardButtons(
+            QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.verticalLayout_2.addWidget(self.splitter)
-        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(self.send_signal)
+        self.buttonBox.button(
+            QtWidgets.QDialogButtonBox.Ok).clicked.connect(self.send_signal)
 
         self.retranslateUi(Dialog)
-        self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
-        self.buttonBox.rejected.connect(Dialog.reject) # type: ignore
+        self.buttonBox.accepted.connect(Dialog.accept)  # type: ignore
+        self.buttonBox.rejected.connect(Dialog.reject)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Создание установки"))
-        self.label.setText(_translate("Dialog", "Выберите приборы для создания установки"))
+        self.label.setText(_translate(
+            "Dialog", "Выберите приборы для создания установки"))
         self.checkBox.setText(_translate("Dialog", "Maisheng"))
         self.checkBox_2.setText(_translate("Dialog", "SVPS34"))
         self.checkBox_3.setText(_translate("Dialog", "Polarity Relay"))
@@ -93,16 +98,17 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
         self.checkBox_5.setText(_translate("Dialog", "АКИП"))
 
     def send_signal(self):
-            device_tupple = []
-            if self.checkBox.isChecked():
-                 device_tupple.append("Maisheng")
-            if self.checkBox_2.isChecked():
-                 device_tupple.append("SVPS34")
-            if self.checkBox_3.isChecked():
-                 device_tupple.append("Polarity Relay")
-            if self.checkBox_4.isChecked():
-                 device_tupple.append("Lock in")
-            if self.checkBox_5.isChecked():
-                 device_tupple.append("АКИП")
-            
-            self.signal_to_main_window.emit(device_tupple)#проверяем состояние всех чек бокс и передаем список приборов в главное окно
+        device_tupple = []
+        if self.checkBox.isChecked():
+            device_tupple.append("Maisheng")
+        if self.checkBox_2.isChecked():
+            device_tupple.append("SVPS34")
+        if self.checkBox_3.isChecked():
+            device_tupple.append("Polarity Relay")
+        if self.checkBox_4.isChecked():
+            device_tupple.append("Lock in")
+        if self.checkBox_5.isChecked():
+            device_tupple.append("АКИП")
+
+        # проверяем состояние всех чек бокс и передаем список приборов в главное окно
+        self.signal_to_main_window.emit(device_tupple)

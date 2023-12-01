@@ -13,15 +13,16 @@ class installation_class():
     def reconstruct_installation(self, current_installation_list):
         print(current_installation_list)
 
-        for key in current_installation_list:#создаем классы переданных приборов
-            self.dict_active_device_class[key] = self.dict_device_class[key]()#создаем классы переданных приборов
+        for key in current_installation_list:  # создаем классы переданных приборов
+            # создаем классы переданных приборов
+            self.dict_active_device_class[key] = self.dict_device_class[key]()
 
         self.current_installation_list = current_installation_list
 
-
         self.installation_window = Ui_Installation()
         self.installation_window.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-        self.installation_window.setupUi(self.installation_window, current_installation_list)
+        self.installation_window.setupUi(
+            self.installation_window, current_installation_list)
         if len(current_installation_list) > 0:
             self.installation_window.change_device_button[current_installation_list[0]].clicked.connect(
                 lambda: self.testable(current_installation_list[0]))
@@ -49,6 +50,7 @@ class installation_class():
 
     def testable(self, device):
         print("кнопка нажата, устройство -" + str(device))
+        # окно настройки
         self.dict_active_device_class[device].show_setting_window()
 
     def show_window_installation(self):
