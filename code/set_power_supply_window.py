@@ -9,14 +9,12 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+import PyQt5.sip
 
 
 class Ui_Set_power_supply(QtWidgets.QDialog):
-    signal_to_main_window = QtCore.pyqtSignal(list)
 
-    def setupUi(self, Set_power_supply, mother_class):
-        self.signal_to_main_window.connect(
-            mother_class.message_from_setting_window)
+    def setupUi(self, Set_power_supply):
         Set_power_supply.setObjectName("Set_power_supply")
         Set_power_supply.resize(302, 384)
         Set_power_supply.setSizeGripEnabled(False)
@@ -162,8 +160,6 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.sourse_enter.setCurrentText("")
         self.sourse_enter.setObjectName("sourse_enter")
         self.horizontalLayout_6.addWidget(self.sourse_enter)
-        self.buttonBox.button(
-            QtWidgets.QDialogButtonBox.Ok).clicked.connect(self.send_signal)
 
         self.retranslateUi(Set_power_supply)
         self.buttonBox.accepted.connect(
@@ -171,6 +167,9 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.buttonBox.rejected.connect(
             Set_power_supply.reject)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Set_power_supply)
+
+    def closeEvent(self, event):  # эта функция вызывается при закрытии окна
+        print("окно настройки блока закрыто крестиком")
 
     def retranslateUi(self, Set_power_supply):
         _translate = QtCore.QCoreApplication.translate
@@ -189,27 +188,3 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.label_11.setText(_translate("Set_power_supply", "Baudrate"))
         self.label_sourse.setText(_translate(
             "Set_power_supply", "Время(с)"))
-
-    def send_signal(self):
-        pass
-        '''
-        self.dict_buf_parameters = {}
-        self.dict_buf_parameters["trigger"] = 
-        self.dict_buf_parameters["step_time"] = 
-        self.dict_buf_parameters["type_of_work"] = 
-        self.dict_buf_parameters["type_step"] = 
-        self.dict_buf_parameters["sourse"] = 
-        self.dict_buf_parameters["high_voltage_limit"] = 
-        self.dict_buf_parameters["high_current_limit"] = 
-        self.dict_buf_parameters["step_current"] = 
-        self.dict_buf_parameters["step_voltage"] = 
-        self.dict_buf_parameters["baydrate"] = 
-        self.dict_buf_parameters["COM"] = 
-        
-
-
-
-        device_tupple = ["gfgf"]
-        # проверяем состояние всех чек бокс и передаем список приборов в главное окно
-        self.signal_to_main_window.emit(device_tupple)
-        '''
