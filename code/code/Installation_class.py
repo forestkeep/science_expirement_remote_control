@@ -21,13 +21,16 @@ class installation_class():
     def reconstruct_installation(self, current_installation_list):
         # print(current_installation_list)
         proven_device = []
+        number_device = 1
         for key in current_installation_list:  # создаем классы переданных приборов
             try:
-                self.dict_active_device_class[key] = self.dict_device_class[key](
-                    current_installation_list, self, name=key)
+                self.dict_active_device_class[key+str(number_device)] = self.dict_device_class[key](
+                    current_installation_list, self, name=(key+str(number_device)))
                 # словарь,показывающий статус готовности приборов, запуск установки будет произведен только если все девайсы имееют статус true
-                self.dict_status_active_device_class[key] = False
-                proven_device.append(key)
+                self.dict_status_active_device_class[key +
+                                                     str(number_device)] = False
+                proven_device.append(key+str(number_device))
+                number_device = number_device+1
             except:
                 print("под прибор " + key + " не удалось найти класс")
 
@@ -241,7 +244,7 @@ class installation_class():
 
 
 if __name__ == "__main__":
-    lst1 = ["Maisheng", "ms"]
+    lst1 = ["Maisheng", "Maisheng"]
     lst2 = ["Lock in"]
     lst = ["Maisheng", "Lock in", "fdfdfdf", "самый крутой прибор на свете"]
     app = QtWidgets.QApplication(sys.argv)

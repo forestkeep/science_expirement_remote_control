@@ -125,9 +125,9 @@ class maisheng_power_class():
 
             self.setting_window.step_enter.currentTextChanged.connect(
                 lambda: self.is_correct_parameters())
-            self.setting_window.max_enter.currentTextChanged.connect(
+            self.setting_window.stop_enter.currentTextChanged.connect(
                 lambda: self.is_correct_parameters())
-            self.setting_window.min_enter.currentTextChanged.connect(
+            self.setting_window.start_enter.currentTextChanged.connect(
                 lambda: self.is_correct_parameters())
 
             self.setting_window.comportslist.highlighted.connect(
@@ -165,9 +165,9 @@ class maisheng_power_class():
                 self.dict_buf_parameters["type_of_work"])
             self.setting_window.type_step_enter.setCurrentText(
                 self.dict_buf_parameters["type_step"])
-            self.setting_window.min_enter.setCurrentText(
+            self.setting_window.start_enter.setCurrentText(
                 self.dict_buf_parameters["low_limit"])
-            self.setting_window.max_enter.setCurrentText(
+            self.setting_window.stop_enter.setCurrentText(
                 self.dict_buf_parameters["high_limit"])
             self.setting_window.step_enter.setCurrentText(
                 self.dict_buf_parameters["step"])
@@ -239,23 +239,23 @@ class maisheng_power_class():
                 max = self.max_power
                 min = 0
 
-            enter_minimum = 0
-            enter_maximum = 0
+            low_value = 0
+            high_value = 0
             enter_step = 0
-            self.is_max_correct = True
-            self.is_min_correct = True
+            self.is_stop_correct = True
+            self.is_start_correct = True
             self.is_step_correct = True
     # проверка число или не число
             try:
-                enter_minimum = float(
-                    self.setting_window.min_enter.currentText())
+                low_value = float(
+                    self.setting_window.start_enter.currentText())
             except:
-                self.is_min_correct = False
+                self.is_start_correct = False
             try:
-                enter_maximum = float(
-                    self.setting_window.max_enter.currentText())
+                high_value = float(
+                    self.setting_window.stop_enter.currentText())
             except:
-                self.is_max_correct = False
+                self.is_stop_correct = False
             try:
                 enter_step = float(
                     self.setting_window.step_enter.currentText())
@@ -263,28 +263,28 @@ class maisheng_power_class():
                 self.is_step_correct = False
     # ---------------------------
     # минимум и максимум больше нуля
-            if self.is_max_correct:
-                if enter_maximum < 0 or enter_maximum > max or enter_maximum < enter_minimum:
-                    self.is_max_correct = False
-            if self.is_min_correct:
-                if enter_minimum < 0 or enter_minimum < min or enter_maximum < enter_minimum:
-                    self.is_min_correct = False
+            if self.is_stop_correct:
+                if high_value < 0 or high_value > max or high_value < min:
+                    self.is_stop_correct = False
+            if self.is_start_correct:
+                if low_value < 0 or low_value < min or low_value > max:
+                    self.is_start_correct = False
             if self.is_step_correct:
-                if self.is_min_correct and self.is_max_correct:
-                    if enter_step > enter_maximum - enter_minimum:
+                if self.is_start_correct and self.is_stop_correct:
+                    if enter_step > abs(high_value - low_value):
                         self.is_step_correct = False
 
-            if self.is_max_correct:
-                self.setting_window.max_enter.setStyleSheet(
+            if self.is_stop_correct:
+                self.setting_window.stop_enter.setStyleSheet(
                     "background-color: rgb(255, 255, 255);")
             else:
-                self.setting_window.max_enter.setStyleSheet(
+                self.setting_window.stop_enter.setStyleSheet(
                     "background-color: rgb(255, 180, 180);")
-            if self.is_min_correct:
-                self.setting_window.min_enter.setStyleSheet(
+            if self.is_start_correct:
+                self.setting_window.start_enter.setStyleSheet(
                     "background-color: rgb(255, 255, 255);")
             else:
-                self.setting_window.min_enter.setStyleSheet(
+                self.setting_window.start_enter.setStyleSheet(
                     "background-color: rgb(255, 180, 180);")
             if self.is_step_correct:
                 if self.setting_window.type_step_enter.currentText() == "Адаптивный шаг":
@@ -363,9 +363,9 @@ class maisheng_power_class():
             )
             self.dict_buf_parameters["trigger"] = self.setting_window.triger_enter.currentText(
             )
-            self.dict_buf_parameters["high_limit"] = self.setting_window.max_enter.currentText(
+            self.dict_buf_parameters["high_limit"] = self.setting_window.stop_enter.currentText(
             )
-            self.dict_buf_parameters["low_limit"] = self.setting_window.min_enter.currentText(
+            self.dict_buf_parameters["low_limit"] = self.setting_window.start_enter.currentText(
             )
             self.dict_buf_parameters["step"] = self.setting_window.step_enter.currentText(
             )
@@ -385,9 +385,9 @@ class maisheng_power_class():
         self.i_am_set = False
 
         self.is_parameters_correct = True
-        if not self.is_max_correct:
+        if not self.is_stop_correct:
             self.is_parameters_correct = False
-        if not self.is_min_correct:
+        if not self.is_start_correct:
             self.is_parameters_correct = False
         if self.dict_buf_parameters["type_step"] == "Заданный шаг":
             if not self.is_step_correct:
@@ -396,8 +396,8 @@ class maisheng_power_class():
             self.is_parameters_correct = False
         self.timer_for_scan_com_port.stop()
         try:
-            float(self.setting_window.max_enter.currentText())
-            float(self.setting_window.min_enter.currentText())
+            float(self.setting_window.stop_enter.currentText())
+            float(self.setting_window.start_enter.currentText())
             float(self.setting_window.step_enter.currentText())
             float(self.setting_window.boudrate.currentText())
         except:
@@ -438,6 +438,9 @@ class maisheng_power_class():
                 if self.dict_buf_parameters["type_step"] == "Заданный шаг":
                     pass
 
+            print("напряжение", self.steps_voltage)
+            print("ток", self.steps_current)
+
         else:
             pass
 
@@ -451,8 +454,11 @@ class maisheng_power_class():
     def fill_arrays(self, start_value, stop_value, step, constant_value):
         steps_1 = []
         steps_2 = []
+        if start_value > stop_value:
+            step = step*(-1)
+
         current_value = start_value
-        while current_value < stop_value:
+        while abs(step) < abs(stop_value-current_value):
             steps_1.append(constant_value)
             steps_2.append(current_value)
             current_value = current_value + step
