@@ -1,10 +1,11 @@
 from pymodbus.client import ModbusSerialClient
 from pymodbus.utilities import computeCRC
-from set_power_supply_window import Ui_Set_power_supply
+from interface.set_power_supply_window import Ui_Set_power_supply
 from PyQt5 import QtCore, QtWidgets
 import PyQt5.sip
 import serial.tools.list_ports
 from PyQt5.QtCore import QTimer, QDateTime
+import copy
 # Создание клиента Modbus RTU
 
 # Отправлено главным компьютером: 01 10 00 40 00 02 04 00 00 (4E 20) (C3 E7) (При
@@ -18,6 +19,8 @@ from PyQt5.QtCore import QTimer, QDateTime
 class maisheng_power_class():
     def __init__(self, signal_list, installation_class, name) -> None:
         print("класс источника питания создан")
+        # показывает тип подключения устройства, нужно для анализа, какие устройства могут быть подключены к одному ком порту
+        self.type_connection = "modbus"
         # переменная хранит все возможные источники сигналов , сделать функцию, формирующую этот список в зависимости от структуры установки
         self.sourses = signal_list
         self.installation_class = installation_class
@@ -47,13 +50,25 @@ class maisheng_power_class():
                                     "baudrate": "9600",
                                     "COM": None
                                     }  # потенциальные параметры прибора, вводятся когда выбираются значения в настройках, применяются только после подтверждения пользователем и прохождении проверок
-        self.dict_settable_parameters = self.dict_buf_parameters  # текущие паарметры прибора
+        self.dict_settable_parameters = {}  # текущие паарметры прибора
         # client.connect()
         self.is_window_created = False
         # разрешает исполнение кода в функциях, срабатывающих по сигналам
         self.key_to_signal_func = False
 
+        self.i_am_set = False
+
+    def get_type_connection(self) -> str:
+        return self.type_connection
+
+    def get_COM(self):
+        return self.dict_settable_parameters["COM"]
+
+    def get_baud(self):
+        return self.dict_settable_parameters["baudrate"]
+
     def show_setting_window(self):
+
         if self.is_window_created:
             self.setting_window.show()
         else:
@@ -117,7 +132,7 @@ class maisheng_power_class():
 
             self.setting_window.comportslist.highlighted.connect(
                 lambda: self.scan_com_ports())
-
+            '''
             self.setting_window.type_work_enter.currentIndexChanged.connect(
                 lambda: self.add_parameters_from_window())
             self.setting_window.type_step_enter.currentIndexChanged.connect(
@@ -138,7 +153,7 @@ class maisheng_power_class():
                 lambda: self.add_parameters_from_window())
             self.setting_window.sourse_enter.currentTextChanged.connect(
                 lambda: self.add_parameters_from_window())
-
+            '''
             self.setting_window.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(
                 self.send_signal_ok)
             # ======================================================
@@ -180,7 +195,8 @@ class maisheng_power_class():
             self.key_to_signal_func = True  # разрешаем выполенение функций
             self.change_units()
             self.is_correct_parameters()
-            self.add_parameters_from_window()
+            # self.add_parameters_from_window()
+            self.lock_double_open = False
 
             # self.action_when_select_step()
             # ==============================================================
@@ -337,7 +353,9 @@ class maisheng_power_class():
                 self.setting_window.label_sourse.setText("Источник сигнала")
             # self.add_parameters_from_window()
 
+    # вызывается при закрытии окна настроек
     def add_parameters_from_window(self):
+
         if self.key_to_signal_func:
             self.dict_buf_parameters["type_of_work"] = self.setting_window.type_work_enter.currentText(
             )
@@ -358,7 +376,14 @@ class maisheng_power_class():
             )
 
     def send_signal_ok(self):  # действие при подтверждении настроек, передать парамтры классу инсталляции, проверить и окрасить в цвет окошко, вписать паарметры
-        print(self.dict_buf_parameters)
+
+        self.add_parameters_from_window()
+        # те же самые настройки, ничего не делаем
+        if self.dict_buf_parameters == self.dict_settable_parameters and not self.i_am_set:
+            return
+        self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
+        self.i_am_set = False
+
         self.is_parameters_correct = True
         if not self.is_max_correct:
             self.is_parameters_correct = False
@@ -370,18 +395,32 @@ class maisheng_power_class():
         if self.dict_buf_parameters["COM"] == 'Нет подключенных портов':
             self.is_parameters_correct = False
         self.timer_for_scan_com_port.stop()
+        try:
+            float(self.setting_window.max_enter.currentText())
+            float(self.setting_window.min_enter.currentText())
+            float(self.setting_window.step_enter.currentText())
+            float(self.setting_window.boudrate.currentText())
+        except:
+            self.is_parameters_correct = False
 
         if self.is_parameters_correct:
             pass
         else:
             pass
+
         self.installation_class.message_from_device_settings(
-            self.name, self.is_parameters_correct, self.dict_buf_parameters)
+            self.name, self.is_parameters_correct, self.dict_settable_parameters)
 
     # фцункция подтверждения корректности параметров от контроллера установкию. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств
+
     def confirm_parameters(self, answer, client):
+        print(str(self.name) + " получил подтверждение настроек, рассчитываем шаги")
         if answer == True:
+
+            self.i_am_set = True
             self.set_client(client)
+            self.client.write_registers(address=int(
+                "0040", 16), count=2, slave=1, values=[0, 120])
 
             self.steps_voltage.clear()
             self.steps_current.clear()
@@ -398,8 +437,16 @@ class maisheng_power_class():
             elif self.dict_buf_parameters["type_of_work"] == "Стабилизация мощности":
                 if self.dict_buf_parameters["type_step"] == "Заданный шаг":
                     pass
+
         else:
             pass
+
+    def check_connect(self) -> bool:
+        # TODO проверка соединения с прибором(запрос - ответ)
+        # проверка соединения
+        self.installation_class.add_text_to_log(
+            self.name + " - соединение установлено")
+        return True
 
     def fill_arrays(self, start_value, stop_value, step, constant_value):
         steps_1 = []

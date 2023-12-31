@@ -125,12 +125,12 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.label_17 = QtWidgets.QLabel(self.verticalLayoutWidget_3)
         self.label_17.setObjectName("label_17")
         self.verticalLayout_8.addWidget(self.label_17)
-        self.min_enter_7 = QtWidgets.QComboBox(self.verticalLayoutWidget_3)
-        self.min_enter_7.setEditable(False)
-        self.min_enter_7.setObjectName("min_enter_7")
-        self.min_enter_7.addItem("")
-        self.min_enter_7.addItem("")
-        self.verticalLayout_8.addWidget(self.min_enter_7)
+        self.SYNK_enter = QtWidgets.QComboBox(self.verticalLayoutWidget_3)
+        self.SYNK_enter.setEditable(False)
+        self.SYNK_enter.setObjectName("min_enter_7")
+        self.SYNK_enter.addItem("")
+        self.SYNK_enter.addItem("")
+        self.verticalLayout_8.addWidget(self.SYNK_enter)
         self.horizontalLayout_10.addLayout(self.verticalLayout_8)
         self.verticalLayout_3.addLayout(self.horizontalLayout_10)
         self.verticalLayoutWidget_4 = QtWidgets.QWidget(Set_power_supply)
@@ -210,13 +210,14 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.input_type_enter.addItem("")
         self.input_type_enter.addItem("")
         self.horizontalLayout_9.addWidget(self.input_type_enter)
-        self.step_enter_3 = QtWidgets.QComboBox(self.verticalLayoutWidget_5)
-        self.step_enter_3.setStyleSheet("")
-        self.step_enter_3.setEditable(False)
-        self.step_enter_3.setObjectName("step_enter_3")
-        self.step_enter_3.addItem("")
-        self.step_enter_3.addItem("")
-        self.horizontalLayout_9.addWidget(self.step_enter_3)
+        self.connect_ch_enter = QtWidgets.QComboBox(
+            self.verticalLayoutWidget_5)
+        self.connect_ch_enter.setStyleSheet("")
+        self.connect_ch_enter.setEditable(False)
+        self.connect_ch_enter.setObjectName("step_enter_3")
+        self.connect_ch_enter.addItem("")
+        self.connect_ch_enter.addItem("")
+        self.horizontalLayout_9.addWidget(self.connect_ch_enter)
         self.verticalLayout_5.addLayout(self.horizontalLayout_9)
         self.verticalLayoutWidget_6 = QtWidgets.QWidget(Set_power_supply)
         self.verticalLayoutWidget_6.setGeometry(QtCore.QRect(200, 130, 91, 80))
@@ -256,12 +257,12 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.verticalLayout_9.addWidget(self.label_19)
         self.horizontalLayout_13 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_13.setObjectName("horizontalLayout_13")
-        self.min_enter_5 = QtWidgets.QComboBox(self.verticalLayoutWidget_9)
-        self.min_enter_5.setEditable(False)
-        self.min_enter_5.setObjectName("min_enter_5")
-        self.min_enter_5.addItem("")
-        self.min_enter_5.addItem("")
-        self.horizontalLayout_13.addWidget(self.min_enter_5)
+        self.filters_enter = QtWidgets.QComboBox(self.verticalLayoutWidget_9)
+        self.filters_enter.setEditable(False)
+        self.filters_enter.setObjectName("min_enter_5")
+        self.filters_enter.addItem("")
+        self.filters_enter.addItem("")
+        self.horizontalLayout_13.addWidget(self.filters_enter)
         self.verticalLayout_9.addLayout(self.horizontalLayout_13)
         self.verticalLayoutWidget_10 = QtWidgets.QWidget(Set_power_supply)
         self.verticalLayoutWidget_10.setGeometry(
@@ -377,8 +378,8 @@ class Ui_Set_sr830(QtWidgets.QDialog):
             _translate("Set_power_supply", "Dialog"))
         self.label_12.setText(_translate(
             "Set_power_supply", "Параметры генератора"))
-        self.label_5.setText(_translate("Set_power_supply", "Частота"))
-        self.label_4.setText(_translate("Set_power_supply", "Амплитуда"))
+        self.label_5.setText(_translate("Set_power_supply", "Частота(Гц)"))
+        self.label_4.setText(_translate("Set_power_supply", "Амплитуда(В)"))
         self.label.setText(_translate(
             "Set_power_supply", "Временная константа"))
         self.time_const_enter_number.setCurrentText(
@@ -417,9 +418,9 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.Filt_slope_enter_level.setItemText(
             3, _translate("Set_power_supply", "24 dB"))
         self.label_17.setText(_translate("Set_power_supply", "SYNK < 200 Hz"))
-        self.min_enter_7.setCurrentText(_translate("Set_power_supply", "On"))
-        self.min_enter_7.setItemText(0, _translate("Set_power_supply", "On"))
-        self.min_enter_7.setItemText(1, _translate("Set_power_supply", "Off"))
+        self.SYNK_enter.setCurrentText(_translate("Set_power_supply", "On"))
+        self.SYNK_enter.setItemText(0, _translate("Set_power_supply", "On"))
+        self.SYNK_enter.setItemText(1, _translate("Set_power_supply", "Off"))
         self.label_13.setText(_translate(
             "Set_power_supply", "Чувствительность"))
         self.sensitivity_enter_number.setCurrentText(
@@ -465,11 +466,11 @@ class Ui_Set_sr830(QtWidgets.QDialog):
             0, _translate("Set_power_supply", "AC"))
         self.input_type_enter.setItemText(
             1, _translate("Set_power_supply", "DC"))
-        self.step_enter_3.setCurrentText(
+        self.connect_ch_enter.setCurrentText(
             _translate("Set_power_supply", "float"))
-        self.step_enter_3.setItemText(
+        self.connect_ch_enter.setItemText(
             0, _translate("Set_power_supply", "float"))
-        self.step_enter_3.setItemText(
+        self.connect_ch_enter.setItemText(
             1, _translate("Set_power_supply", "ground"))
         self.label_18.setText(_translate("Set_power_supply", "Reserve"))
         self.reserve_enter.setCurrentText(
@@ -481,9 +482,11 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.reserve_enter.setItemText(
             2, _translate("Set_power_supply", "low noise"))
         self.label_19.setText(_translate("Set_power_supply", "Filters"))
-        self.min_enter_5.setCurrentText(_translate("Set_power_supply", "line"))
-        self.min_enter_5.setItemText(0, _translate("Set_power_supply", "line"))
-        self.min_enter_5.setItemText(
+        self.filters_enter.setCurrentText(
+            _translate("Set_power_supply", "line"))
+        self.filters_enter.setItemText(
+            0, _translate("Set_power_supply", "line"))
+        self.filters_enter.setItemText(
             1, _translate("Set_power_supply", "2 X line"))
         self.label_15.setText(_translate(
             "Set_power_supply", "Считывание параметров"))

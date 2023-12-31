@@ -1,17 +1,15 @@
-
 import sys
-from main_window import Ui_MainWindow
-from maisheng_window import maisheng_ui_window
-from relay import Relay_Ui_MainWindow, relay_class
+from interface.main_window import Ui_MainWindow
+from interface.maisheng_window import maisheng_ui_window
+from interface.relay_window import Relay_Ui_MainWindow, relay_class
 from installation_check_devices import installation_Ui_Dialog
-from selectdevice_window import Ui_Selectdevice
+from interface.selectdevice_window import Ui_Selectdevice
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QMessageBox
-import info_window_dialog
+import interface.info_window_dialog 
 from test3 import Ui_SVPS34_control
 from Installation_class import installation_class
 # pyuic5 name.ui -o name.py - запускаем из папки с файлом ui в cmd
-
 
 class Mywindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -70,7 +68,7 @@ class Mywindow(QtWidgets.QMainWindow):
 
     def info_window(self, text):
         self.dialog = QtWidgets.QDialog()
-        self.dialog_info = info_window_dialog.Ui_Dialog()
+        self.dialog_info = interface.info_window_dialog.Ui_Dialog()
         self.dialog_info.setupUi(self.dialog, self)
         self.dialog.show()
 
@@ -126,7 +124,6 @@ class Mywindow(QtWidgets.QMainWindow):
 					'''
             if name == "other...":
                 pass
-
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

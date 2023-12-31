@@ -168,7 +168,7 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
             Set_power_supply.reject)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Set_power_supply)
 
-    def closeEvent(self, event):  # эта функция вызывается при закрытии окна
+    def closeEvent(self, event):  # эта функция вызывается при закрытии окна крестиком
         print("окно настройки блока закрыто крестиком")
 
     def retranslateUi(self, Set_power_supply):
