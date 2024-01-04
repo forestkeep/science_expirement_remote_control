@@ -1,0 +1,4 @@
+Запущена установка 
+Список приборов: ['Maisheng1', 'Lock in2']
+Настройки Maisheng1: trigger - Таймерsourse/time - 10type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 5low_limit - 0step - 5baudrate - 9600COM - COM13
+Настройки Lock in2: trigger - Таймерsourse/time - 5time_const - 1000.0filter_slope - 6SYNK_200_Hz - Onsensitivity - 500.0reserve - high reserveinput_channel - A/AC/floatfilters - linefrequency - 400amplitude - 1baudrate - 9600COM - COM14

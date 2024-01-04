@@ -7,16 +7,24 @@ from pymodbus.client import ModbusSerialClient
 from pymodbus.utilities import computeCRC
 import serial.tools.list_ports
 from datetime import datetime
+import time
+from Classes import device_response_to_step
+import threading
 
 
 class installation_class():
     def __init__(self) -> None:
-        print("класс установки создан")
+
         self.dict_device_class = {
             "Maisheng": maisheng_power_class, "Lock in": sr830_class, "ms": maisheng_power_class}
         self.dict_active_device_class = {}
         self.dict_status_active_device_class = {}
         self.clients = []  # здесь хранятся классы клиентов для всех устройств, они создаются и передаются каждому устройству в установке
+        # ключ, который разрешает старт эксперимента
+        self.key_to_start_installation = False
+        # поток в котором идет экспер мент, запускается после настройки приборов и нажатия кнопки старт
+        self.experiment_thread = None
+        self.stop_experiment = False  # глобальная переменная для остановки потока
 
     def reconstruct_installation(self, current_installation_list):
         # print(current_installation_list)
@@ -77,8 +85,13 @@ class installation_class():
             try:
                 client.close()
             except:
-                print("не удалось закрыть")
-        self.dict_active_device_class[device].show_setting_window()
+                print(
+                    "не удалось закрыть клиент связи, скорее всего, этого не требовалось")
+
+        if not self.is_experiment_running():
+            self.dict_active_device_class[device].show_setting_window()
+        else:
+            print("запущен эксперимент, запрещено менять параметры приборов")
 
     def show_window_installation(self):
         self.installation_window.show()
@@ -101,6 +114,8 @@ class installation_class():
             self.dict_status_active_device_class[name_device] = True
             self.show_parameters_of_device_on_label(
                 name_device, list_parameters)
+            print(
+                "-------------------------------------------------------------------------")
         else:
             self.installation_window.verticalLayoutWidget[name_device].setStyleSheet(
                 "background-color: rgb(255, 140, 140);")
@@ -108,29 +123,62 @@ class installation_class():
             self.installation_window.label[name_device].setText("Не настроено")
 
         if self.analyse_com_ports():
+            # если оказались в этой точке, значит приборы настроены корректно и нет проблем с конфликтами ком портов, если подключение не будет установлено, то ключ снова будет сброшен
+            self.key_to_start_installation = True
+
             self.create_clients()
-            # --------------------------удалить
-            # self.experiment_start()
-            # --------------------------
-            for device, client in zip(self.dict_active_device_class.values(), self.clients):
-                print("клиент создан и передан", client)
-                device.confirm_parameters(True, client)
-            # красим кнопку старта в зеленый, можно начинать эксперимент
+            self.set_clients_for_device()
+            self.confirm_devices_parameters()
+        else:
+            self.key_to_start_installation = False
+
+        if self.key_to_start_installation == True:
             self.installation_window.start_button.setStyleSheet(
                 "background-color: rgb(127, 255, 127);")
         else:
-            # красим кнопку в красный, не можем запускать эксперимент
             self.installation_window.start_button.setStyleSheet(
                 "background-color: rgb(255, 127, 127);")
 
+    # подтверждаем параметры приборам и передаем им настроенные и созданные клиенты для подключения
+    def confirm_devices_parameters(self):
+        for device in self.dict_active_device_class.values():
+            device.confirm_parameters()
+
+    def set_clients_for_device(self):  # передать созданные клиенты приборам
+        for device, client in zip(self.dict_active_device_class.values(), self.clients):
+            device.set_client(client)
+
+    def message_from_device_status_connect(self, answer, name_device):
+        if answer == True:
+            self.add_text_to_log(
+                name_device + " - соединение установлено")
+        else:
+            self.add_text_to_log(
+                name_device + " - соединение не установлено, проверьте подлючение", status="err")
+            self.installation_window.verticalLayoutWidget[name_device].setStyleSheet(
+                "background-color: rgb(180, 180, 180);")
+            self.installation_window.start_button.setStyleSheet(
+                "background-color: rgb(255, 127, 127);")
+            # статус прибора ставим в не настроенный
+            self.dict_status_active_device_class[name_device] = False
+            self.key_to_start_installation = False  # старт экспериепнта запрещаем
+
+    def is_experiment_running(self) -> bool:
+        if self.experiment_thread == None:
+            return False
+        else:
+            if self.experiment_thread.is_alive():
+                return True
+            else:
+                return False
+
     def experiment_start(self):
-        if self.is_all_device_settable():
-            status = True
-            for device in self.dict_active_device_class.keys():
-                if not self.dict_active_device_class[device].check_connect():
-                    status = False
-                    self.add_text_to_log(
-                        str(device) + "не смог установить соединение", status="err")
+        if self.is_all_device_settable() and self.key_to_start_installation and not self.is_experiment_running():
+            self.installation_window.start_button.setStyleSheet(
+                "background-color: rgb(255, 255, 127);")
+
+            status = True  # последние проверки перед стартом
+
             if status:
                 # создаем текстовый файл
                 name_file = ""
@@ -140,10 +188,59 @@ class installation_class():
                 self.buf_file = f"{name_file + currentdatetime}.txt"
                 with open(self.buf_file, "w") as file:
                     file.write("Запущена установка \n\r")
-                    # TODO Записать настройски приборов в файл и список самих приборов
+                    file.write("Список приборов: " +
+                               str(self.current_installation_list) + "\r\n")
+                    for device_class, device_name in zip(self.dict_active_device_class.values(), self.current_installation_list):
+                        file.write("Настройки " + str(device_name) + ": \r")
+                        settings = device_class.get_settings()
+                        for set, key in zip(settings.values(), settings.keys()):
+                            file.write(str(key) + " - " + str(set) + "\r")
+                        file.write("\n")
                 print("старт эксперимента")
+                self.add_text_to_log("Создан " + self.buf_file)
+                self.add_text_to_log("Эксперимент начат")
+
+                self.experiment_thread = threading.Thread(
+                    target=self.exp_th, daemon=True)
+                self.stop_experiment = False
+                self.experiment_thread.start()
+
             else:
-                pass  # TODO что делать в случае, если не смогли установить соединение
+                pass  # TODO что делать в случае, если что-то не то
+
+    def exp_th(self):
+        # пока работаем только по таймерам!!!!!!!!!!!!!!-----------------------------
+        time_pause = []
+        time_start = []
+
+        for device in self.dict_active_device_class.values():
+            try:
+                time_start.append(time.time())
+                time_pause.append(float(device.get_trigger_value()))
+            except:
+                print("Ошибка, необходимо установить таймер!!")
+
+        while not self.stop_experiment:
+            self.stop_experiment = False
+            try:
+                if time.time() - time_start[0] >= time_pause[0]:
+                    ans = self.dict_active_device_class[self.current_installation_list[0]].do_step(
+                    )
+                    time_start[0] = time.time()
+                if time.time() - time_start[1] >= time_pause[1]:
+                    ans = self.dict_active_device_class[self.current_installation_list[1]].do_step(
+                    )
+                    time_start[1] = time.time()
+            except:
+                self.stop_experiment = True
+        print("эксперимент завершен")
+        self.add_text_to_log("Эксперимент завершен")
+
+        # ------------------подготовка к повторному началу эксперимента---------------------
+        self.confirm_devices_parameters()
+        self.installation_window.start_button.setStyleSheet(
+            "background-color: rgb(127, 255, 127);")
+        # --------------------------------------------------------------------------------
 
     def add_text_to_log(self, text, status=None):
         if status == "err":
@@ -215,7 +312,7 @@ class installation_class():
                     self.clients.append(dict_modbus_clients[list_COMs[i]])
                 else:  # иначе создаем новый клиент и добавляем в список клиентов и список модбас клиентов
                     dict_modbus_clients[list_COMs[i]] = ModbusSerialClient(
-                        method='rtu', port=list_COMs[i], baudrate=int(list_baud[i]), stopbits=1, bytesize=8, parity='E')
+                        method='rtu', port=list_COMs[i], baudrate=int(list_baud[i]), stopbits=1, bytesize=8, parity='E', timeout=0.3, retries=1, retry_on_empty=True)
                     self.clients.append(dict_modbus_clients[list_COMs[i]])
             if list_type_connection[i] != "modbus" and list_type_connection[i] != "serial":
                 print("нет такого типа подключения")
@@ -234,6 +331,7 @@ class installation_class():
         for i in self.current_installation_list:
             if self.dict_status_active_device_class[i] == False:
                 status = False
+                break
         return status
 
     # функция записывает параметры во временный текстовый файл в ходе эксперимента, если что-то прервется, то данные не будут потеряны, после окончания эксперимента файл вычитывается и перегоняется в нужные форматы
@@ -249,7 +347,7 @@ if __name__ == "__main__":
     lst = ["Maisheng", "Lock in", "fdfdfdf", "самый крутой прибор на свете"]
     app = QtWidgets.QApplication(sys.argv)
     a = installation_class()
-    a.reconstruct_installation(lst1)
+    a.reconstruct_installation(lst)
     a.show_window_installation()
     sys.exit(app.exec_())
 

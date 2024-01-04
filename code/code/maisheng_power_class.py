@@ -6,6 +6,7 @@ import PyQt5.sip
 import serial.tools.list_ports
 from PyQt5.QtCore import QTimer, QDateTime
 import copy
+from Classes import device_response_to_step
 # Создание клиента Modbus RTU
 
 # Отправлено главным компьютером: 01 10 00 40 00 02 04 00 00 (4E 20) (C3 E7) (При
@@ -18,6 +19,9 @@ import copy
 # удаленная настройка выходного напряжения 0,01 В
 class maisheng_power_class():
     def __init__(self, signal_list, installation_class, name) -> None:
+
+        self.test = True
+
         print("класс источника питания создан")
         # показывает тип подключения устройства, нужно для анализа, какие устройства могут быть подключены к одному ком порту
         self.type_connection = "modbus"
@@ -395,6 +399,7 @@ class maisheng_power_class():
         if self.dict_buf_parameters["COM"] == 'Нет подключенных портов':
             self.is_parameters_correct = False
         self.timer_for_scan_com_port.stop()
+
         try:
             float(self.setting_window.stop_enter.currentText())
             float(self.setting_window.start_enter.currentText())
@@ -413,14 +418,23 @@ class maisheng_power_class():
 
     # фцункция подтверждения корректности параметров от контроллера установкию. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств
 
-    def confirm_parameters(self, answer, client):
+    def confirm_parameters(self):
         print(str(self.name) + " получил подтверждение настроек, рассчитываем шаги")
-        if answer == True:
-
+        if True:
+            self.step_index = 0
             self.i_am_set = True
+
+            '''
             self.set_client(client)
-            self.client.write_registers(address=int(
-                "0040", 16), count=2, slave=1, values=[0, 120])
+            if self.check_connect():
+                self.installation_class.message_from_device_status_connect(
+                    True, self.name)
+            else:
+                self.installation_class.message_from_device_status_connect(
+                            False, self.name)
+            '''
+            # self.client.write_registers(address=int(
+            # "0040", 16), count=2, slave=1, values=[0, 120])
 
             self.steps_voltage.clear()
             self.steps_current.clear()
@@ -437,19 +451,28 @@ class maisheng_power_class():
             elif self.dict_buf_parameters["type_of_work"] == "Стабилизация мощности":
                 if self.dict_buf_parameters["type_step"] == "Заданный шаг":
                     pass
-
-            print("напряжение", self.steps_voltage)
-            print("ток", self.steps_current)
-
         else:
             pass
 
     def check_connect(self) -> bool:
         # TODO проверка соединения с прибором(запрос - ответ)
         # проверка соединения
-        self.installation_class.add_text_to_log(
-            self.name + " - соединение установлено")
+
+        if self.test == True:
+            self.test = False
+            # return False
+        else:
+            self.test = True
+            # return True
+
         return True
+
+    # настройка прибора перед началом эксперимента, переопределяется при каждлом старте эксперимента
+    def setup_before_experiment(self) -> bool:
+        pass
+
+    def get_settings(self):
+        return self.dict_settable_parameters
 
     def fill_arrays(self, start_value, stop_value, step, constant_value):
         steps_1 = []
@@ -474,11 +497,29 @@ class maisheng_power_class():
     def set_client(self, client):
         self.client = client
 
-    def set_voltage(self, voltage):
+    def do_step(self):
+        parameters = []
+        self.set_voltage(self.steps_voltage[self.step_index])
+        self.set_current(self.steps_current[self.step_index])
+        if self.step_index == 0:  # начало эксперимерта
+            self.output_switching_on()
+        if self.step_index < len(self.steps_voltage):
+            self.step_index = self.step_index + 1
+        else:
+            return device_response_to_step.End_list_of_steps, parameters
+        print("сделан шаг", self.name)
+        return device_response_to_step.Step_done, parameters
+
+    def get_trigger_value(self):
+        return self.dict_settable_parameters["sourse/time"]
+
+    def set_voltage(self, voltage):  # в сотых долях вольта 20000 - 200В
+        voltage = int(voltage)
         return self.client.write_registers(address=int("0040", 16), count=2, slave=1, values=[0, voltage])
 # удаленная настройка выходного тока 0,01А
 
-    def set_current(self, current):
+    def set_current(self, current):  # в миллиамперах
+        current = int(current)
         return self.client.write_registers(address=int("0041", 16), count=2, slave=1, values=[0, current])
 
     def output_switching_on(self):
@@ -531,12 +572,12 @@ class maisheng_power_class():
 if __name__ == "__main__":
     # Создание клиента Modbus RTU
     client = ModbusSerialClient(
-        method='rtu', port='COM3', baudrate=9600, stopbits=1, bytesize=8, parity='E')
+        method='rtu', port='COM13', baudrate=9600, stopbits=1, bytesize=8, parity='E')
 
-    power_supply = maisheng_power_class()
+    power_supply = maisheng_power_class([], "tr", "rere")
     power_supply.set_client(client)
 
-    # set_voltage(client,20000)
+    power_supply.set_voltage(200)
     '''
     for i in range(0,20000,1000):
         set_voltage(client,i)

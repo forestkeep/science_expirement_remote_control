@@ -1,8 +1,17 @@
-from maisheng_power_class import maisheng_power_class
 
+from enum import Enum
 
 # сюда добавляются классы всех устройств в системе вместе с ключами
-dict_device_class = {"Maisheng": maisheng_power_class}
+'''
+dict_device_class = {"Maisheng": maisheng_power_class,
+                     "Lock in": sr830_class, "ms": maisheng_power_class}
+'''
+
+
+class device_response_to_step(Enum):
+    End_list_of_steps = 0
+    Step_done = 1
+    Step_fail = 3
 
 
 class device:

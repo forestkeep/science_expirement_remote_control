@@ -7,6 +7,7 @@ import serial
 from pymeasure.instruments.srs import SR830
 from pymeasure.adapters import SerialAdapter
 import copy
+from Classes import device_response_to_step
 
 
 class sr830_class():
@@ -363,6 +364,15 @@ class sr830_class():
     def set_client(self, client):
         self.client = client
 
+    def do_step(self):
+        parameters = []
+
+        print("сделан шаг", self.name)
+        return device_response_to_step.Step_done, parameters
+
+    def get_trigger_value(self):
+        return self.dict_settable_parameters["sourse/time"]
+
     def send_signal_ok(self):  # действие при подтверждении настроек, передать парамтры классу инсталляции, проверить и окрасить в цвет окошко, вписать паарметры
         self.add_parameters_from_window()
         # те же самые настройки и я не настроен, ничего не делаем
@@ -384,14 +394,24 @@ class sr830_class():
             self.name, self.is_parameters_correct, self.dict_settable_parameters)
 
     # фцункция подтверждения корректности параметров от контроллера установкию. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств
-    def confirm_parameters(self, answer, client):
+    def confirm_parameters(self):
         print(str(self.name) +
-              " получил подтверждение настроек, рассчитываем шаги и проверяем соединение")
-        if answer == True:
+              " получил подтверждение настроек, рассчитываем шаги")
+        if True:
+
+            self.step_index = 0
             self.i_am_set = True
-            self.device = SR830(SerialAdapter(client))
-            self.device.auto_gain()
+            self.device = SR830(SerialAdapter(self.client))
+            '''
+
+            if self.check_connect():
+                self.installation_class.message_from_device_status_connect(
+                    True, self.name)
+            else:
+                self.installation_class.message_from_device_status_connect(
+                    False, self.name)
             pass
+            '''
 
         else:
             pass
@@ -399,9 +419,14 @@ class sr830_class():
     def check_connect(self) -> bool:
         # TODO проверка соединения с прибором(запрос - ответ)
         # проверка соединения
-        self.installation_class.add_text_to_log(
-            self.name + " - соединение установлено")
         return True
+
+    # настройка прибора перед началом эксперимента, переопределяется при каждлом старте эксперимента
+    def setup_before_experiment(self) -> bool:
+        pass
+
+    def get_settings(self):
+        return self.dict_settable_parameters
 
 
 if __name__ == "__main__":
