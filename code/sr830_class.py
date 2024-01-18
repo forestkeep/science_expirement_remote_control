@@ -8,16 +8,18 @@ from pymeasure.instruments.srs import SR830
 from pymeasure.adapters import SerialAdapter
 import copy
 from Classes import device_response_to_step
+from commandsSR830 import commandsSR830
+import time
 
 
 class sr830_class():
-    def __init__(self, signal_list, installation_class, name) -> None:
+    def __init__(self, name, installation_class) -> None:
         print("класс синхронного детектора создан")
         self.device = None  # класс прибора будет создан при подтверждении параметров,
         # показывает тип подключения устройства, нужно для анализа, какие устройства могут быть подключены к одному ком порту
         self.type_connection = "serial"
         # переменная хранит все возможные источники сигналов , сделать функцию, формирующую этот список в зависимости от структуры установки
-        self.sourses = signal_list
+        self.sourses = []
         self.installation_class = installation_class
         # переменная хранит список доступных ком-портов
         self.active_ports = []
@@ -25,16 +27,19 @@ class sr830_class():
         self.name = name
 
         self.client = 0
+
         self.dict_buf_parameters = {"trigger": "Таймер",
                                     "sourse/time": str(10),  # секунды
                                     "time_const": "1000",  # секунды
                                     "filter_slope": "6",  # dB
                                     "SYNK_200_Hz": "off",
-                                    "sensitivity": "500",  # вольты
+                                    "sensitivity": "1",  # вольты
                                     "reserve": "high reserve",
-                                    "input_channel": "A" + "/" + "AC" + "/" + "ground",
+                                    "input_channel": "A",
+                                    "input_type": "AC",
+                                    "input_connect": "ground",
                                     "filters": "line",
-                                    "frequency": "10000",  # Гц
+                                    "frequency": "400",  # Гц
                                     "amplitude": "1",  # Вольты
                                     "baudrate": "9600",
                                     "COM": None,
@@ -55,8 +60,8 @@ class sr830_class():
         self.time_const_enter_decimal_factor = "ks"
         self.Filt_slope_enter_level = "6 dB"
         self.SYNK_enter = "On"
-        self.sensitivity_enter_number = "5"
-        self.sensitivity_enter_factor = "X100"
+        self.sensitivity_enter_number = "1"
+        self.sensitivity_enter_factor = "X1"
         self.sensitivity_enter_decimal_factor = "V"
         self.input_channels_enter = "A"
         self.input_type_enter = "AC"
@@ -67,11 +72,17 @@ class sr830_class():
 
         self.i_am_set = False
 
+        # сюда при подтверждении параметров будет записан класс команд с клиентом
+        self.command = None
+
     def get_type_connection(self) -> str:
         return self.type_connection
 
     def get_COM(self):
         return self.dict_buf_parameters["COM"]
+
+    def get_name(self) -> str:
+        return str(self.name)
 
     def get_baud(self):
         return self.dict_settable_parameters["baudrate"]
@@ -115,6 +126,37 @@ class sr830_class():
             self.setting_window.frequency_enter.setStyleSheet(
                 "background-color: rgb(255, 255, 255);")
 
+            self.setting_window.SYNK_enter.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.filters_enter.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.reserve_enter.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.connect_ch_enter.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.Filt_slope_enter_level.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.input_type_enter.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.sensitivity_enter_decimal_factor.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.sensitivity_enter_factor.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.sensitivity_enter_number.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.time_const_enter_decimal_factor.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.time_const_enter_number.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.time_const_enter_factor.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.input_channels_enter.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.comportslist.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.boudrate.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+
             self.setting_window.frequency_enter.setEditable(True)
             self.setting_window.frequency_enter.addItems(
                 ["400"])
@@ -123,59 +165,25 @@ class sr830_class():
                 ["1"])
 
             # =======================прием сигналов от окна==================
+            # TODO: сделать ограничение на ввод данных чувствительности
+            self.setting_window.sensitivity_enter_number.currentIndexChanged.connect(
+                lambda: self._is_correct_parameters())
+            self.setting_window.sensitivity_enter_factor.currentIndexChanged.connect(
+                lambda: self._is_correct_parameters())
+            self.setting_window.sensitivity_enter_decimal_factor.currentIndexChanged.connect(
+                lambda: self._is_correct_parameters())
+            self.setting_window.amplitude_enter.currentIndexChanged.connect(
+                lambda: self._is_correct_parameters())
+            self.setting_window.frequency_enter.currentIndexChanged.connect(
+                lambda: self._is_correct_parameters())
 
             self.setting_window.triger_enter.currentIndexChanged.connect(
                 lambda: self.action_when_select_trigger())
-            '''
-            self.setting_window.comportslist.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.comportslist.currentTextChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.boudrate.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.sourse_enter.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.sourse_enter.currentTextChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.sensitivity_enter_number.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.sensitivity_enter_factor.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.sensitivity_enter_decimal_factor.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-
-            self.setting_window.time_const_enter_number.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.time_const_enter_decimal_factor.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.time_const_enter_factor.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            
-            self.setting_window.Filt_slope_enter_level.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.SYNK_enter.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.reserve_enter.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.filters_enter.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            
-            self.setting_window.input_channels_enter.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.input_type_enter.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
-            self.setting_window.connect_ch_enter.currentIndexChanged.connect(
-                lambda: self.add_parameters_from_window())
 
             self.setting_window.amplitude_enter.currentTextChanged.connect(
-                lambda: self.add_parameters_from_window())
+                lambda: self._is_correct_parameters())
             self.setting_window.frequency_enter.currentTextChanged.connect(
-                lambda: self.add_parameters_from_window())
-            '''
-            self.setting_window.amplitude_enter.currentTextChanged.connect(
-                lambda: self.is_correct_parameters())
-            self.setting_window.frequency_enter.currentTextChanged.connect(
-                lambda: self.is_correct_parameters())
+                lambda: self._is_correct_parameters())
 
             self.setting_window.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(
                 self.send_signal_ok)
@@ -261,9 +269,77 @@ class sr830_class():
         self.active_ports = local_list_com_ports
         self.timer_for_scan_com_port.start(1500)
 
-    def is_correct_parameters(self):
-        # TODO: проверка параметров
-        pass
+    def _is_correct_parameters(self) -> bool:  # менять для каждого прибора
+        if self.key_to_signal_func:
+            print("проверить параметры")
+            is_number_correct = True
+            is_fact_correct = True
+            is_dec_fact_correct = True
+
+            is_ampl_correct = True
+            is_freq_correct = True
+            if self.setting_window.sensitivity_enter_decimal_factor.currentText() == "V/uA":
+
+                if self.setting_window.sensitivity_enter_factor.currentText() != "X1":
+                    is_fact_correct = False
+                if self.setting_window.sensitivity_enter_number.currentText() != "1":
+                    is_number_correct = False
+            elif self.setting_window.sensitivity_enter_decimal_factor.currentText() == "nV/fA":
+                if self.setting_window.sensitivity_enter_number.currentText() == "1":
+                    is_number_correct = False
+#число илии нет
+            try:
+                float(self.setting_window.amplitude_enter.currentText())
+            except:
+                is_ampl_correct = False
+            try:
+                float(self.setting_window.frequency_enter.currentText())
+            except:
+                is_freq_correct = False
+
+
+            if is_ampl_correct:
+                if float(self.setting_window.amplitude_enter.currentText()) > 10 or float(self.setting_window.amplitude_enter.currentText()) < 0.01:
+                    is_ampl_correct = False
+            if is_freq_correct:
+                if float(self.setting_window.frequency_enter.currentText()) > 102000 or float(self.setting_window.frequency_enter.currentText()) < 0.01:
+                    is_freq_correct = False
+
+
+            self.setting_window.sensitivity_enter_number.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.sensitivity_enter_factor.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.sensitivity_enter_decimal_factor.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            
+            self.setting_window.amplitude_enter.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.frequency_enter.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+
+            if not is_number_correct:
+                self.setting_window.sensitivity_enter_number.setStyleSheet(
+                    "background-color: rgb(255, 180, 180);")
+            if not is_fact_correct:
+                self.setting_window.sensitivity_enter_factor.setStyleSheet(
+                    "background-color: rgb(255, 180, 180);")
+            if not is_dec_fact_correct:
+                self.setting_window.sensitivity_enter_decimal_factor.setStyleSheet(
+                    "background-color: rgb(255, 180, 180);")
+                
+            if not is_freq_correct:
+                self.setting_window.frequency_enter.setStyleSheet(
+                "background-color: rgb(255, 180, 180);")
+            if not is_ampl_correct:
+                self.setting_window.amplitude_enter.setStyleSheet(
+                "background-color: rgb(255, 180, 180);")
+
+
+            if is_number_correct and is_fact_correct and is_dec_fact_correct and is_ampl_correct and is_freq_correct:
+                return True
+            else:
+                return False
 
     def change_units(self):
         pass
@@ -300,7 +376,7 @@ class sr830_class():
     def calculate_sensitivity(self) -> str:
         sensitivity_enter_factor = {"X1": 1, "X10": 10, "X100": 100}
         sensitivity_enter_decimal_factor = {
-            "V": 1, "mV": 0.001, "uV": 0.000001, "nV": 0.000000001}
+            "V/uA": 1, "mV/nA": 0.001, "uV/pA": 0.000001, "nV/fA": 0.000000001}  # в вольтах подсчет
         factor = sensitivity_enter_factor[self.setting_window.sensitivity_enter_factor.currentText(
         )]
         decimal_factor = sensitivity_enter_decimal_factor[self.setting_window.sensitivity_enter_decimal_factor.currentText(
@@ -339,9 +415,6 @@ class sr830_class():
         frequency = self.setting_window.frequency_enter.currentText()
         amplitude = self.setting_window.amplitude_enter.currentText()
 
-        input_channel = self.setting_window.input_channels_enter.currentText(
-        ) + "/" + self.setting_window.input_type_enter.currentText() + "/" + self.setting_window.connect_ch_enter.currentText()
-
         if self.key_to_signal_func:
             self.dict_buf_parameters["time_const"] = time_const
             self.dict_buf_parameters["filter_slope"] = filter_slope
@@ -350,7 +423,14 @@ class sr830_class():
             self.dict_buf_parameters["reserve"] = reserve
             self.dict_buf_parameters["frequency"] = frequency
             self.dict_buf_parameters["amplitude"] = amplitude
-            self.dict_buf_parameters["input_channel"] = input_channel
+
+            self.dict_buf_parameters["input_channel"] = self.setting_window.input_channels_enter.currentText(
+            )
+            self.dict_buf_parameters["input_type"] = self.setting_window.input_type_enter.currentText(
+            )
+            self.dict_buf_parameters["input_connect"] = self.setting_window.connect_ch_enter.currentText(
+            )
+
             self.dict_buf_parameters["filters"] = self.setting_window.filters_enter.currentText(
             )
             self.dict_buf_parameters["trigger"] = self.setting_window.triger_enter.currentText(
@@ -365,10 +445,10 @@ class sr830_class():
         self.client = client
 
     def do_step(self):
-        parameters = []
+        parameters = ["test","test"]
 
         print("сделан шаг", self.name)
-        return device_response_to_step.Step_done, parameters
+        return device_response_to_step.Step_done, parameters, 1
 
     def get_trigger_value(self):
         return self.dict_settable_parameters["sourse/time"]
@@ -386,6 +466,9 @@ class sr830_class():
             self.is_parameters_correct = False
         self.timer_for_scan_com_port.stop()
 
+        if not self._is_correct_parameters():
+            self.is_parameters_correct = False
+
         if self.is_parameters_correct:
             pass
         else:
@@ -401,6 +484,7 @@ class sr830_class():
 
             self.step_index = 0
             self.i_am_set = True
+            self.command = commandsSR830(self.client)
             self.device = SR830(SerialAdapter(self.client))
             '''
 
@@ -415,18 +499,79 @@ class sr830_class():
 
         else:
             pass
+    # настройка прибора перед началом эксперимента, переопределяется при каждлом старте эксперимента
+
+    def setup_before_experiment(self) -> bool:  # менять для каждого прибора
+        print("настройка прибора " + str(self.name) + " перед экспериментом..")
+        self.command._set_filter_slope(
+            slope=self.dict_settable_parameters["filter_slope"])
+        time.sleep(2)
+        self.command._set_input_conf(
+            conf=self.dict_settable_parameters["input_channel"])
+        time.sleep(2)
+        self.command._set_input_type_conf(
+            type_conf=self.dict_settable_parameters["input_type"])
+        time.sleep(2)
+        self.command._set_input_type_connect(
+            input_ground=self.dict_settable_parameters["input_connect"])
+        time.sleep(2)
+        self.command._set_line_filters(
+            type=self.dict_settable_parameters["filters"])
+        time.sleep(2)
+        self.command._set_reserve(
+            reserve=self.dict_settable_parameters["reserve"])
+        time.sleep(2)
+        self.command._set_time_const(
+            time_constant=self.dict_settable_parameters["time_const"])
+        time.sleep(2)
+        self.command._set_sens(
+            sens=self.dict_settable_parameters["sensitivity"])
+
+        time.sleep(2)
+        self.command._set_frequency(
+            freq=self.dict_settable_parameters["frequency"])
+
+        '''
+        self.dict_buf_parameters = {"trigger": "Таймер",
+                                    "sourse/time": str(10),  # секунды
+                                    "time_const": "1000",  # секунды
+                                    "filter_slope": "6",  # dB
+                                    "SYNK_200_Hz": "off",
+                                    "sensitivity": "1",  # вольты
+                                    "reserve": "high reserve",
+                                    "input_channel": "A" + "/" + "AC" + "/" + "ground",
+                                    "input_type": "AC",
+                                    "input_connect": "ground",
+                                    "filters": "line",
+                                    "frequency": "10000",  # Гц
+                                    "amplitude": "1",  # Вольты
+                                    "baudrate": "9600",
+                                    "COM": None,
+                                    }
+        '''
+
+        return True
 
     def check_connect(self) -> bool:
         # TODO проверка соединения с прибором(запрос - ответ)
         # проверка соединения
         return True
 
-    # настройка прибора перед началом эксперимента, переопределяется при каждлом старте эксперимента
-    def setup_before_experiment(self) -> bool:
-        pass
+    def get_steps_number(self):
+        # количеств шагов для измеительных устройств, подумать
+        return 1
 
     def get_settings(self):
         return self.dict_settable_parameters
+
+    def get_time(self) -> float:
+        if self.dict_settable_parameters["trigger"] == "Таймер":
+            try:
+                return len(self.steps_voltage) * float(self.dict_settable_parameters["sourse/time"])
+            except:
+                return 0
+        else:
+            return 0
 
 
 if __name__ == "__main__":

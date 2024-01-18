@@ -262,6 +262,8 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.filters_enter.setObjectName("min_enter_5")
         self.filters_enter.addItem("")
         self.filters_enter.addItem("")
+        self.filters_enter.addItem("")
+        self.filters_enter.addItem("")
         self.horizontalLayout_13.addWidget(self.filters_enter)
         self.verticalLayout_9.addLayout(self.horizontalLayout_13)
         self.verticalLayoutWidget_10 = QtWidgets.QWidget(Set_power_supply)
@@ -424,31 +426,31 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.label_13.setText(_translate(
             "Set_power_supply", "Чувствительность"))
         self.sensitivity_enter_number.setCurrentText(
-            _translate("Set_power_supply", "5"))
+            _translate("Set_power_supply", "1"))
         self.sensitivity_enter_number.setItemText(
-            0, _translate("Set_power_supply", "5"))
+            0, _translate("Set_power_supply", "1"))
         self.sensitivity_enter_number.setItemText(
             1, _translate("Set_power_supply", "2"))
         self.sensitivity_enter_number.setItemText(
-            2, _translate("Set_power_supply", "1"))
+            2, _translate("Set_power_supply", "5"))
         self.sensitivity_enter_factor.setCurrentText(
-            _translate("Set_power_supply", "X100"))
+            _translate("Set_power_supply", "X1"))
         self.sensitivity_enter_factor.setItemText(
-            0, _translate("Set_power_supply", "X100"))
+            0, _translate("Set_power_supply", "X1"))
         self.sensitivity_enter_factor.setItemText(
             1, _translate("Set_power_supply", "X10"))
         self.sensitivity_enter_factor.setItemText(
-            2, _translate("Set_power_supply", "X1"))
+            2, _translate("Set_power_supply", "X100"))
         self.sensitivity_enter_decimal_factor.setCurrentText(
-            _translate("Set_power_supply", "V"))
+            _translate("Set_power_supply", "V/uA"))
         self.sensitivity_enter_decimal_factor.setItemText(
-            0, _translate("Set_power_supply", "V"))
+            0, _translate("Set_power_supply", "V/uA"))
         self.sensitivity_enter_decimal_factor.setItemText(
-            1, _translate("Set_power_supply", "mV"))
+            1, _translate("Set_power_supply", "mV/nA"))
         self.sensitivity_enter_decimal_factor.setItemText(
-            2, _translate("Set_power_supply", "uV"))
+            2, _translate("Set_power_supply", "uV/pA"))
         self.sensitivity_enter_decimal_factor.setItemText(
-            3, _translate("Set_power_supply", "nV"))
+            3, _translate("Set_power_supply", "nV/fA"))
         self.label_14.setText(_translate("Set_power_supply", "Вход сигнала"))
         self.input_channels_enter.setCurrentText(
             _translate("Set_power_supply", "A"))
@@ -487,7 +489,11 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.filters_enter.setItemText(
             0, _translate("Set_power_supply", "line"))
         self.filters_enter.setItemText(
-            1, _translate("Set_power_supply", "2 X line"))
+            1, _translate("Set_power_supply", "2X line"))
+        self.filters_enter.setItemText(
+            2, _translate("Set_power_supply", "both"))
+        self.filters_enter.setItemText(
+            3, _translate("Set_power_supply", "out"))
         self.label_15.setText(_translate(
             "Set_power_supply", "Считывание параметров"))
         self.label_sourse.setText(_translate(

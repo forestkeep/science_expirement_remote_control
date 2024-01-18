@@ -16,7 +16,10 @@ class Ui_Installation(QtWidgets.QMainWindow):
     def setupUi(self, Installation, list_of_device):
         Installation.setObjectName("Installation")
         self.list_of_device = list_of_device
-        Installation.resize(len(self.list_of_device)*160+10+270, 510)
+        self.N = len(list_of_device)
+        if self.N < 3:
+            self.N = 3
+        Installation.resize(self.N*160+10+270, 510)
         self.centralwidget = QtWidgets.QWidget(Installation)
         self.centralwidget.setObjectName("centralwidget")
         # --------------------------
@@ -32,7 +35,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
             self.verticalLayoutWidget[device] = (
                 QtWidgets.QWidget(self.centralwidget))
             self.verticalLayoutWidget[device].setGeometry(
-                QtCore.QRect(10+160*i, 0, 150, 320))
+                QtCore.QRect(25+(int((150*self.N)/len(self.list_of_device)))*i, 0, int((150*self.N)/len(self.list_of_device))-10, 320))
             self.verticalLayoutWidget[device].setObjectName(
                 "verticalLayoutWidget" + str(i))
             self.verticalLayoutWidget[device].setStyleSheet(
@@ -77,11 +80,11 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
         self.pbar = QtWidgets.QProgressBar(self.centralwidget)
         self.pbar.setGeometry(QtCore.QRect(
-            10, 440, 15+160*len(self.list_of_device), 20))
+            10, 440, 15+160*self.N, 20))
         self.pbar.setValue(0)
         self.start_button = QtWidgets.QPushButton(self.centralwidget)
         self.start_button.setGeometry(QtCore.QRect(
-            30+160*len(self.list_of_device), 340, 221, 81))
+            30+160*self.N, 340, 221, 81))
         font = QtGui.QFont()
         font.setPointSize(24)
         self.start_button.setFont(font)
@@ -89,15 +92,15 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.start_button.setStyleSheet("background-color: rgb(85, 255, 127);")
         self.pause_button = QtWidgets.QPushButton(self.centralwidget)
         self.pause_button.setGeometry(QtCore.QRect(
-            30+160*len(self.list_of_device), 440, 101, 23))
+            30+160*self.N, 440, 101, 23))
         self.pause_button.setObjectName("pause_button")
         self.cancel_button = QtWidgets.QPushButton(self.centralwidget)
         self.cancel_button.setGeometry(QtCore.QRect(
-            150+160*len(self.list_of_device), 440, 101, 23))
+            150+160*self.N, 440, 101, 23))
         self.cancel_button.setObjectName("cancel_button")
         self.gridLayoutWidget = QtWidgets.QWidget(self.centralwidget)
         self.gridLayoutWidget.setGeometry(QtCore.QRect(
-            20+160*len(self.list_of_device), 0, 231, 321))
+            20+160*self.N, 0, 231, 321))
         self.gridLayoutWidget.setObjectName("gridLayoutWidget")
         self.gridLayout = QtWidgets.QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
@@ -111,12 +114,12 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.gridLayout.addWidget(self.schematic_installation, 1, 0, 1, 1)
 
         # self.log = QtWidgets.QLineEdit(self.centralwidget)
-        # self.log.setGeometry(QtCore.QRect(10, 320, 10+160*len(self.list_of_device), 110))
+        # self.log.setGeometry(QtCore.QRect(10, 320, 10+160*self.N, 110))
         # self.log.setObjectName("log_text")
 
         self.log = QtWidgets.QTextEdit(self.centralwidget)
         self.log.setGeometry(QtCore.QRect(
-            10, 320, 10+160*len(self.list_of_device), 110))
+            10, 320, 10+160*self.N, 110))
         self.log.setObjectName("log_text")
         self.log.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.log.setReadOnly(True)

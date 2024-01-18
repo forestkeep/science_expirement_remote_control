@@ -25,8 +25,9 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.buttonBox.setStandardButtons(
             QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
+
         self.horizontalLayoutWidget = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 180, 261, 41))
+        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 195, 261, 41))
         self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
         self.horizontalLayout = QtWidgets.QHBoxLayout(
             self.horizontalLayoutWidget)
@@ -39,6 +40,26 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.triger_enter.setCurrentText("")
         self.triger_enter.setObjectName("triger_enter")
         self.horizontalLayout.addWidget(self.triger_enter)
+
+        self.horizontalLayoutWidget33 = QtWidgets.QWidget(Set_power_supply)
+        self.horizontalLayoutWidget33.setGeometry(
+            QtCore.QRect(10, 170, 261, 41))
+        self.horizontalLayoutWidget33.setObjectName("horizontalLayoutWidget33")
+        self.horizontalLayout33 = QtWidgets.QHBoxLayout(
+            self.horizontalLayoutWidget33)
+        self.horizontalLayout33.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout33.setObjectName("horizontalLayout33")
+        self.second_value_limit_label = QtWidgets.QLabel(
+            self.horizontalLayoutWidget33)
+        self.second_value_limit_label.setObjectName("second_value_limit_label")
+        self.horizontalLayout33.addWidget(self.second_value_limit_label)
+        self.second_limit_enter = QtWidgets.QComboBox(
+            self.horizontalLayoutWidget33)
+        self.second_limit_enter.setCurrentText("")
+        self.second_limit_enter.setObjectName("second_limit_enter")
+        self.second_limit_enter.setEditable(True)
+        self.horizontalLayout33.addWidget(self.second_limit_enter)
+
         self.horizontalLayoutWidget_2 = QtWidgets.QWidget(Set_power_supply)
         self.horizontalLayoutWidget_2.setGeometry(
             QtCore.QRect(10, 60, 261, 31))
@@ -176,6 +197,9 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         Set_power_supply.setWindowTitle(
             _translate("Set_power_supply", "Dialog"))
         self.label_3.setText(_translate("Set_power_supply", "Триггер"))
+        self.second_value_limit_label.setText(
+            _translate("Set_power_supply", "V/A не больше"))
+        # self.label_333.setText(_translate("Set_power_supply", "A"))
         self.label_4.setText(_translate("Set_power_supply", "Тип шага"))
         self.label_5.setText(_translate("Set_power_supply", "Режим работы"))
         self.label_6.setText(_translate("Set_power_supply", "Шаг"))
