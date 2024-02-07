@@ -1,28 +1,0 @@
-Запущена установка 
-Список приборов: ['Maisheng1', 'Lock in2']
-Настройки Maisheng1: trigger - Таймерsourse/time - 5baudrate - 9600COM - COM8type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 12low_limit - 1step - 1second_value - 5
-Настройки Lock in2: trigger - Таймерsourse/time - 5time_const - 0.03filter_slope - 18SYNK_200_Hz - Offsensitivity - 0.01reserve - normalinput_channel - Ainput_type - ACinput_connect - floatfilters - linefrequency - 400amplitude - 1baudrate - 9600COM - COM9
-19-54-24 Maisheng1	['voltage_set=1.0']	['voltage_rel=1.03']	['current_set=5.0']	['current_rel=0.27']	
-19-54-24 test	test	
-19-54-31 Maisheng1	['voltage_set=2.0']	['voltage_rel=2.02']	['current_set=5.0']	['current_rel=0.55']	
-19-54-31 test	test	
-19-54-39 Maisheng1	['voltage_set=3.0']	['voltage_rel=3.01']	['current_set=5.0']	['current_rel=0.81']	
-19-54-39 test	test	
-19-54-47 Maisheng1	['voltage_set=4.0']	['voltage_rel=4.0']	['current_set=5.0']	['current_rel=1.06']	
-19-54-47 test	test	
-19-54-54 Maisheng1	['voltage_set=5.0']	['voltage_rel=5.03']	['current_set=5.0']	['current_rel=1.34']	
-19-54-54 test	test	
-19-55-02 Maisheng1	['voltage_set=6.0']	['voltage_rel=6.04']	['current_set=5.0']	['current_rel=1.62']	
-19-55-02 test	test	
-19-55-09 Maisheng1	['voltage_set=7.0']	['voltage_rel=6.86']	['current_set=5.0']	['current_rel=1.9']	
-19-55-09 test	test	
-19-55-17 Maisheng1	['voltage_set=8.0']	['voltage_rel=7.81']	['current_set=5.0']	['current_rel=2.18']	
-19-55-17 test	test	
-19-55-25 Maisheng1	['voltage_set=9.0']	['voltage_rel=8.78']	['current_set=5.0']	['current_rel=2.45']	
-19-55-25 test	test	
-19-55-32 Maisheng1	['voltage_set=10.0']	['voltage_rel=9.77']	['current_set=5.0']	['current_rel=2.73']	
-19-55-32 test	test	
-19-55-40 Maisheng1	['voltage_set=11.0']	['voltage_rel=10.79']	['current_set=5.0']	['current_rel=2.99']	
-19-55-40 test	test	
-19-55-48 Maisheng1	['voltage_set=12.0']	['voltage_rel=11.81']	['current_set=5.0']	['current_rel=3.27']	
-19-55-48 test	test	

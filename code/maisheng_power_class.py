@@ -20,14 +20,15 @@ import time
 # Ответ конечного устройства: 01 10 00 40 00 02 40 1C
 
 # удаленная настройка выходного напряжения 0,01 В
+
+
 class maisheng_power_class(installation_device):
     def __init__(self, name, installation_class) -> None:
-        
+
         super().__init__(name, "modbus", installation_class)
 
         self.test = True
         print("класс источника питания создан")
-
 
         # заполняется в случае корректных параметров(подтверждения от контроллера установки)
         self.steps_current = []
@@ -47,9 +48,7 @@ class maisheng_power_class(installation_device):
         self.dict_buf_parameters["step"] = "5"
         self.dict_buf_parameters["second_value"] = str(self.max_current)
 
-        self.dict_settable_parameters = {}  # текущие паарметры прибора
-
-    def show_setting_window(self): #менять для каждого прибора
+    def show_setting_window(self):  # менять для каждого прибора
 
         if self.is_window_created:
             pass
@@ -67,7 +66,7 @@ class maisheng_power_class(installation_device):
             self.setting_window.triger_enter.setEnabled(True)
 
             self.setting_window.type_step_enter.addItems(
-                ["Заданный шаг", "Адаптивный шаг"])
+                ["Заданный шаг"])  # "Адаптивный шаг"
             # +++++++++++++++++выбор ком порта+++++++++++++
             self._scan_com_ports()
             # ++++++++++++++++++++++++++++++++++++++++++
@@ -83,9 +82,9 @@ class maisheng_power_class(installation_device):
             self.setting_window.triger_enter.setStyleSheet(
                 "background-color: rgb(255, 255, 255);")
             self.setting_window.boudrate.setStyleSheet(
-                    "background-color: rgb(255, 255, 255)")
+                "background-color: rgb(255, 255, 255)")
             self.setting_window.comportslist.setStyleSheet(
-                    "background-color: rgb(255, 255, 255)")
+                "background-color: rgb(255, 255, 255)")
             # =======================прием сигналов от окна==================
             self.setting_window.type_work_enter.currentIndexChanged.connect(
                 lambda: self._change_units())
@@ -145,7 +144,7 @@ class maisheng_power_class(installation_device):
             if self.dict_buf_parameters["type_of_work"] == "Стабилизация напряжения":
                 self.setting_window.second_value_limit_label.setText(
                     "Ток не выше (А)")
-                
+
             elif self.dict_buf_parameters["type_of_work"] == "Стабилизация тока":
                 self.setting_window.second_value_limit_label.setText(
                     "Напряжение не выше (V)")
@@ -153,27 +152,13 @@ class maisheng_power_class(installation_device):
                 self.setting_window.second_value_limit_label.setText(
                     "---")
                 self.setting_window.second_limit_enter.setEnabled(False)
-            if self.setting_window.triger_enter.currentText() == "Таймер":
-                self.setting_window.sourse_enter.clear()
-                self.setting_window.sourse_enter.setEditable(True)
-                self.setting_window.sourse_enter.addItems(
-                    ["5", "10", "30", "60", "120"])
-                self.setting_window.sourse_enter.setCurrentText(
-                    self.dict_buf_parameters["sourse/time"])
-                self.setting_window.label_sourse.setText("Время(с)")
-            else:
-                self.setting_window.sourse_enter.clear()
-                self.setting_window.sourse_enter.setEditable(False)
-                self.setting_window.sourse_enter.addItems(["1", "2", "3", "4"])
-                self.setting_window.sourse_enter.setCurrentText(
-                    self.dict_buf_parameters["sourse/time"])
-                self.setting_window.label_sourse.setText("Источник сигнала")
+
             self.key_to_signal_func = True  # разрешаем выполенение функций
+            self._action_when_select_trigger()
             self._change_units()
             self._is_correct_parameters()
-            self.lock_double_open = False
 
-    def _is_correct_parameters(self):#менять для каждого прибора
+    def _is_correct_parameters(self):  # менять для каждого прибора
         if self.key_to_signal_func:
             print("проверить параметры")
             if self.setting_window.type_work_enter.currentText() == "Стабилизация напряжения":
@@ -269,7 +254,7 @@ class maisheng_power_class(installation_device):
                         "background-color: rgb(255, 180, 180);")
                 else:
                     self.setting_window.second_limit_enter.setStyleSheet(
-                    "background-color: rgb(255, 255, 255);")
+                        "background-color: rgb(255, 255, 255);")
 
     def _change_units(self):
         if self.key_to_signal_func:
@@ -311,10 +296,8 @@ class maisheng_power_class(installation_device):
                 # self.setting_window.triger_enter.clear()
                 self.setting_window.triger_enter.addItems(
                     ["Таймер"])
-    # если выбран таймер, то необходимо запретить выбирать источник сигнала
 
-    # вызывается при закрытии окна настроек
-    def add_parameters_from_window(self):#менять для каждого прибора
+    def add_parameters_from_window(self):  # менять для каждого прибора
 
         if self.key_to_signal_func:
             self.dict_buf_parameters["type_of_work"] = self.setting_window.type_work_enter.currentText(
@@ -337,7 +320,7 @@ class maisheng_power_class(installation_device):
             self.dict_buf_parameters["second_value"] = self.setting_window.second_limit_enter.currentText(
             )
 
-#менять для каждого прибора
+# менять для каждого прибора
     def send_signal_ok(self):  # действие при подтверждении настроек, передать парамтры классу инсталляции, проверить и окрасить в цвет окошко, вписать паарметры
 
         self.add_parameters_from_window()
@@ -379,7 +362,7 @@ class maisheng_power_class(installation_device):
             self.name, self.is_parameters_correct, self.dict_settable_parameters)
 
     # фцункция подтверждения корректности параметров от контроллера установкию. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств
-    def confirm_parameters(self):#менять для каждого прибора
+    def confirm_parameters(self):  # менять для каждого прибора
         print(str(self.name) + " получил подтверждение настроек, рассчитываем шаги")
         if True:
             self.step_index = 0
@@ -390,26 +373,29 @@ class maisheng_power_class(installation_device):
 
             self.steps_voltage.clear()
             self.steps_current.clear()
-            if self.dict_buf_parameters["type_of_work"] == "Стабилизация напряжения":
-                if self.dict_buf_parameters["type_step"] == "Заданный шаг":
-                    self.steps_current, self.steps_voltage = self._fill_arrays(float(self.dict_buf_parameters['low_limit']), float(
-                        self.dict_buf_parameters['high_limit']), float(self.dict_buf_parameters['step']), float(self.dict_buf_parameters["second_value"]))
+            if self.dict_settable_parameters["type_of_work"] == "Стабилизация напряжения":
+                if self.dict_settable_parameters["type_step"] == "Заданный шаг":
+                    self.steps_current, self.steps_voltage = self._fill_arrays(float(self.dict_settable_parameters['low_limit']), float(
+                        self.dict_settable_parameters['high_limit']), float(self.dict_settable_parameters['step']), float(self.dict_settable_parameters["second_value"]))
 
-            elif self.dict_buf_parameters["type_of_work"] == "Стабилизация тока":
-                if self.dict_buf_parameters["type_step"] == "Заданный шаг":
-                    self.steps_voltage, self.steps_current = self._fill_arrays(float(self.dict_buf_parameters['low_limit']), float(
-                        self.dict_buf_parameters['high_limit']), float(self.dict_buf_parameters['step']), float(self.dict_buf_parameters["second_value"]))
+            elif self.dict_settable_parameters["type_of_work"] == "Стабилизация тока":
+                if self.dict_settable_parameters["type_step"] == "Заданный шаг":
+                    self.steps_voltage, self.steps_current = self._fill_arrays(float(self.dict_settable_parameters['low_limit']), float(
+                        self.dict_settable_parameters['high_limit']), float(self.dict_settable_parameters['step']), float(self.dict_settable_parameters["second_value"]))
 
-            elif self.dict_buf_parameters["type_of_work"] == "Стабилизация мощности":
-                if self.dict_buf_parameters["type_step"] == "Заданный шаг":
+            elif self.dict_settable_parameters["type_of_work"] == "Стабилизация мощности":
+                if self.dict_settable_parameters["type_step"] == "Заданный шаг":
                     pass
         else:
             pass
-        print(str(self.name) + " рассчитал шаги")
-        print("напряжение",self.steps_voltage)
-        print("ток",self.steps_current)
 
-    def check_connect(self) -> bool: #менять для каждого прибора
+        self.dict_settable_parameters["num steps"] = len(self.steps_voltage)
+        # print(str(self.name) + " рассчитал шаги")
+        # print("напряжение", self.steps_voltage)
+        # print("ток", self.steps_current)
+
+    def check_connect(self) -> bool:  # менять для каждого прибора
+        '''проверяет подключение прибора, если прибор отвечает возвращает True, иначе False'''
         # TODO проверка соединения с прибором(запрос - ответ)
         # проверка соединения
 
@@ -422,51 +408,50 @@ class maisheng_power_class(installation_device):
 
         return True
 
-    # настройка прибора перед началом эксперимента, переопределяется при каждлом старте эксперимента
-    def setup_before_experiment(self) -> bool: #менять для каждого прибора
+    # действия перед стартом эксперимента, включить, настроить, подготовить и т.д.
+    def action_before_experiment(self) -> bool:  # менять для каждого прибора
+        '''ставит минимально возможные значения тока и напряжения, включает выход прибора'''
         print("настройка прибора " + str(self.name) + " перед экспериментом..")
-        pass
-        return True
-
-    def _fill_arrays(self, start_value, stop_value, step, constant_value):
-        steps_1 = []
-        steps_2 = []
-        if start_value > stop_value:
-            step = step*(-1)
-
-        current_value = start_value
-        steps_1.append(constant_value)
-        steps_2.append(current_value)
-        while abs(step) < abs(stop_value-current_value):
-            current_value = current_value + step
-            steps_1.append(constant_value)
-            steps_2.append(current_value)
-            #print(current_value)
-            if current_value == stop_value:
-                steps_1.append(constant_value)
-                steps_2.append(current_value)
-                break
+        is_correct = True
+        if self._set_voltage(self.min_step_V*100) == False:
+            is_correct = False
+        if self._set_current(self.min_step_A*100) == False:
+            is_correct = False
+        if is_correct:
+            self._output_switching_on()
+            return True
         else:
-            steps_1.append(constant_value)
-            steps_2.append(stop_value)
-        return steps_1, steps_2
+            return False
 
-    def do_step(self):#менять для каждого прибора
+    def action_end_experiment(self) -> bool:
+        '''плавное выключение прибора'''
+        # TODO: плавное выключение
+        self._output_switching_off()
+        return
+
+    def on_next_step(self) -> bool:  # переопределена для источника питания
+        '''активирует следующие значение тока, напряжения прибора, если текущие значения максимальны, то возвращает ложь'''
+        is_correct = True
+
+        if self.step_index < len(self.steps_voltage)-1:
+            self.step_index = self.step_index + 1
+
+            if self._set_voltage(self.steps_voltage[self.step_index]*100) == False:
+                is_correct = False
+            if self._set_current(self.steps_current[self.step_index]*100) == False:
+                is_correct = False
+            return True
+        else:
+            is_correct = False  # след шага нет
+
+        return is_correct
+
+    def do_meas(self):
+        '''прочитать текущие и настроенные значения'''
+
         start_time = time.time()
         parameters = [self.name]
         is_correct = True
-        stop_flag = False
-        print("напряжение: ", self.steps_voltage[self.step_index])
-        if self._set_voltage(self.steps_voltage[self.step_index]*100) == False:
-            is_correct = False
-        if self._set_current(self.steps_current[self.step_index]*100) == False:
-            is_correct = False
-
-        if self.step_index == 0:  # начало эксперимерта
-            self._output_switching_on()
-
-        time.sleep(2)#необходимо подождать устттановки параметров
-
 
         voltage = self._get_setting_voltage()
         if voltage is not False:
@@ -496,29 +481,55 @@ class maisheng_power_class(installation_device):
         else:
             is_correct = False
 
-        if self.step_index < len(self.steps_voltage)-1:
-            self.step_index = self.step_index + 1
-        else:
-            self._output_switching_off()
-            stop_flag = True
-
-        # -------------
-        #is_correct = True
-        #parameters.append(544545)
-        #parameters.append(999999999)
-        # ---------------
+        # -----------------------------
+            is_correct = True
+            parameters.append(
+                ["voltage_set=" + str(self.steps_voltage[self.step_index])])
+            parameters.append(["voltage_rel=" + str(847)])
+            parameters.append(
+                ["current_set=" + str(self.steps_current[self.step_index])])
+        # -----------------------------
 
         if is_correct:
             print("сделан шаг", self.name)
-            if stop_flag:
-                self.client.close()
-                return device_response_to_step.End_list_of_steps, parameters, time.time() - start_time
-            return device_response_to_step.Step_done, parameters, time.time() - start_time
+            ans = device_response_to_step.Step_done
         else:
             print("Ошибка шага", self.name)
-            return device_response_to_step.Step_fail, parameters, time.time() - start_time
+            val = ["voltage_set=" + "fail"]
+            parameters.append(val)
+            val = ["voltage_rel=" + "fail"]
+            parameters.append(val)
+            val = ["current_set=" + "fail"]
+            parameters.append(val)
+            val = ["current_rel=" + "fail"]
+            parameters.append(val)
 
-# --------------------------
+            ans = device_response_to_step.Step_fail
+
+        return ans, parameters, time.time() - start_time
+
+    def _fill_arrays(self, start_value, stop_value, step, constant_value):
+        steps_1 = []
+        steps_2 = []
+        if start_value > stop_value:
+            step = step*(-1)
+
+        current_value = start_value
+        steps_1.append(constant_value)
+        steps_2.append(current_value)
+        while abs(step) < abs(stop_value-current_value):
+            current_value = current_value + step
+            steps_1.append(constant_value)
+            steps_2.append(current_value)
+            # print(current_value)
+            if current_value == stop_value:
+                steps_1.append(constant_value)
+                steps_2.append(current_value)
+                break
+        else:
+            steps_1.append(constant_value)
+            steps_2.append(stop_value)
+        return steps_1, steps_2
 
     def _set_voltage(self, voltage) -> bool:  # в сотых долях вольта 20000 - 200В
         response = self._write_reg(address=int(
@@ -667,8 +678,6 @@ class maisheng_power_class(installation_device):
         return response
 
 
-
-                
 if __name__ == "__main__":
     # Создание клиента Modbus RTU
     client = ModbusSerialClient(

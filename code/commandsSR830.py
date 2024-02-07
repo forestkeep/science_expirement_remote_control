@@ -6,32 +6,37 @@ import time
 class commandsSR830():
     def __init__(self, client) -> None:
 
-        self.GET_ID = b'*IDN?\r\n'
+        self.COMM_ID = '*IDN'
 
-        self.GET_TIME_CONSTANT = b'OFLT?\r\n'
+        self.COMM_TIME_CONSTANT = 'OFLT'
 
-        self.SET_GARMONIC = b'HARM1\r\n'
-        self.SET_FREQUENCY = b'FREQ{}\r\n'
-        self.STR_SET_FREQUENCY = "FREQ{}\r\n"
+        self.COMM_GARMONIC = 'HARM'
+        self.COMM_FREQUENCY = 'FREQ'
 
-        self.SET_INT_FREQUENCY_SOURCE = b'FMOD1\r\n'
+        self.PHASE = 'PHAS'
+
+        self.SET_INT_FREQUENCY_SOURCE = 'FMOD'
 
         self.STR_SET_SIN_OUT = "SLVL{}\r\n"
 
-        self.SET_AUTO_GAIN = b'AGAN\r\n'
-        self.SET_AUTO_APHS = b'APHS\r\n'
+        self.COMM_AUTO_GAIN = 'AGAN'
+        self.COMM_AUTO_APHS = 'APHS'
 
-        self.GET_DISPLAY_1 = b'OUTR? 1\r\n'  # запрос значения с дисп. 1
-        self.GET_DISPLAY_2 = b'OUTR? 2\r\n'  # запрос значения с дисп. 2
+        self.COMM_DISPLAY = 'OUTR'  # запрос значения с дисплея
 
-        self.GET_SERIAL_PULL_STATUS_BYTE = b'*STB?\r\n'
-
-        self.ENABLE_SYNK_FILT_200 = b'SYNK1\r\n'
-        self.DISABLE_SYNK_FILT_200 = b'SYNK0\r\n'
+        self.COMM_SERIAL_PULL_STATUS_BYTE = '*STB?\r\n'
 
         self.client = client
-    def get_parameter(self, command, timeout):
-        self.client.write(bytes(command, "ascii")  + b'?\r\n')
+# Одно измерение включает в себя на лок-ине: автоматическая симуляция нажатия кнопок блока AUTO phase, затем, после фиксации, gain. Далее идет проверка меняется ли сигнал в течение некоторого времени (задается в до начала измерений в отдельном текстовом окне) (по умолчанию 10 секунд). Если сигнал не изменился более чем на 1%, (тоже было бы неплохо вводить это значение в отдельном текстовом окне до начала измерений) то записать в строку в текстовом файле
+
+    def get_parameter(self, command, timeout, param=False):
+        if param == False:
+            self.client.write(bytes(command, "ascii") + b'?\r\n')
+        else:
+            param = str(param)
+            self.client.write(bytes(command, "ascii") +
+                              b'? ' + bytes(param, "ascii") + b'\r\n')
+
         start_time = time.time()
         while time.time() - start_time < timeout:
             line = self.client.readline().decode().strip()
@@ -39,11 +44,38 @@ class commandsSR830():
                 print("Received:", line)
                 return line
         return False
-        
-        
+# SLVL (?) {x} 5-4 Установите (запросите) амплитуду синусоидального выходного сигнала на x Vrms. 0.004 £ x £5.000.
 
-    # настройка веменной константы
+    def _set_amplitude(self, ampl):
+        if ampl < 0.004 or ampl > 5:
+            return False
+        print(bytes("SLVL", "ascii") + bytes(str(ampl), "ascii") + b'\r\n')
+        self.client.write(bytes("SLVL", "ascii") +
+                          bytes(str(ampl), "ascii") + b'\r\n')
+        return True
+
+# FREQ (?) {f} 5-4 Установка (запрос) опорной частоты на f Гц. Устанавливается только в режиме внутренней ссылки.
+    def _set_frequency(self, freq):
+        if freq > 102000 or freq < 2:
+            return False
+        print(bytes("FREQ", "ascii") + bytes(str(freq), "ascii") + b'\r\n')
+        self.client.write(bytes("FREQ", "ascii") +
+                          bytes(str(freq), "ascii") + b'\r\n')
+        return True
+
+
+# FMOD (?) {i} 5-4 Установка (запрос) источника опорного сигнала на внешний (0) или внутренний (1).
+
+
+    def _set_sourse_base_signal(self, sourse="in"):
+        dict_filter_slope = {0: "out",
+                             1: "in"
+                             }
+        return self._set_something(dict_filter_slope, 'FMOD', sourse)
+
+
 # OFLT (?) {i} 5-6 Установка (запрос) постоянной времени от 10 мкс (0) до 30 кс (19).
+
     def _set_time_const(self, time_constant):
         dict_time_code = {0: 10/1000000,
                           1: 30/1000000,
@@ -158,10 +190,6 @@ class commandsSR830():
                      }
         return self._set_something(dict_line, 'ILIN', type)
 
-    # FREQ (?) {f} 5-4 Установка (запрос) опорной частоты на f Гц. Устанавливается только в режиме внутренней ссылки.
-    def _set_frequency(self, freq):
-        print(print(bytes("FREQ", "ascii") + bytes(str(freq), "ascii") + b'\r\n'))
-
     def _set_something(self, dict_some, command, value):
         code = False
         for val, key in zip(dict_some.values(), dict_some.keys()):
@@ -174,9 +202,6 @@ class commandsSR830():
                               bytes(str(code), "ascii") + b'\r\n')
             return True
         return False
-
-    def _get_phase(self):
-        b'PHAS?\r\n'
 
     def _set_phase(self, x):
         if x < -360 or x > 730:

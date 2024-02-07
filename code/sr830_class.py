@@ -7,47 +7,30 @@ import serial
 from pymeasure.instruments.srs import SR830
 from pymeasure.adapters import SerialAdapter
 import copy
-from Classes import device_response_to_step
 from commandsSR830 import commandsSR830
 import time
+from Classes import device_response_to_step, installation_device
 
 
-class sr830_class():
+class sr830_class(installation_device):
     def __init__(self, name, installation_class) -> None:
+        super().__init__(name, "serial", installation_class)
         print("класс синхронного детектора создан")
         self.device = None  # класс прибора будет создан при подтверждении параметров,
-        # показывает тип подключения устройства, нужно для анализа, какие устройства могут быть подключены к одному ком порту
-        self.type_connection = "serial"
         # переменная хранит все возможные источники сигналов , сделать функцию, формирующую этот список в зависимости от структуры установки
-        self.sourses = []
-        self.installation_class = installation_class
-        # переменная хранит список доступных ком-портов
-        self.active_ports = []
         self.counter = 0
-        self.name = name
-
-        self.client = 0
-
-        self.dict_buf_parameters = {"trigger": "Таймер",
-                                    "sourse/time": str(10),  # секунды
-                                    "time_const": "1000",  # секунды
-                                    "filter_slope": "6",  # dB
-                                    "SYNK_200_Hz": "off",
-                                    "sensitivity": "1",  # вольты
-                                    "reserve": "high reserve",
-                                    "input_channel": "A",
-                                    "input_type": "AC",
-                                    "input_connect": "ground",
-                                    "filters": "line",
-                                    "frequency": "400",  # Гц
-                                    "amplitude": "1",  # Вольты
-                                    "baudrate": "9600",
-                                    "COM": None,
-                                    }  # потенциальные параметры прибора, вводятся когда выбираются значения в настройках, применяются только после подтверждения пользователем и прохождении проверок
-        self.dict_settable_parameters = {}  # текущие паарметры прибора
-        self.is_window_created = False
-        # разрешает исполнение кода в функциях, срабатывающих по сигналам
-        self.key_to_signal_func = False
+        self.dict_buf_parameters["time_const"] = "1000",  # секунды
+        self.dict_buf_parameters["filter_slope"] = "6",  # dB
+        self.dict_buf_parameters["SYNK_200_Hz"] = "off",
+        self.dict_buf_parameters["sensitivity"] = "1",  # вольты
+        self.dict_buf_parameters["reserve"] = "high reserve"
+        self.dict_buf_parameters["input_channel"] = "A"
+        self.dict_buf_parameters["input_type"] = "AC"
+        self.dict_buf_parameters["input_connect"] = "ground"
+        self.dict_buf_parameters["filters"] = "line"
+        self.dict_buf_parameters["frequency"] = "400"
+        self.dict_buf_parameters["amplitude"] = "1"
+        self.dict_buf_parameters["num steps"] = "1"
 
         # переменные для сохранения параметров окна-----------------------------
         self.frequency_enter = "400"
@@ -70,22 +53,8 @@ class sr830_class():
         self.filters_enter = "line"
         self.triger_enter = "Таймер"
 
-        self.i_am_set = False
-
         # сюда при подтверждении параметров будет записан класс команд с клиентом
         self.command = None
-
-    def get_type_connection(self) -> str:
-        return self.type_connection
-
-    def get_COM(self):
-        return self.dict_buf_parameters["COM"]
-
-    def get_name(self) -> str:
-        return str(self.name)
-
-    def get_baud(self):
-        return self.dict_settable_parameters["baudrate"]
 
     def show_setting_window(self):
         if self.is_window_created:
@@ -93,7 +62,7 @@ class sr830_class():
         else:
             self.timer_for_scan_com_port = QTimer()
             self.timer_for_scan_com_port.timeout.connect(
-                lambda: self.scan_com_ports())
+                lambda: self._scan_com_ports())
             # при новом запуске окна настроек необходимо обнулять активный порт для продолжения сканирования
             self.active_ports = []
 
@@ -103,7 +72,7 @@ class sr830_class():
             self.setting_window.setupUi(self.setting_window)
 
             # +++++++++++++++++выбор ком порта+++++++++++++
-            self.scan_com_ports()
+            self._scan_com_ports()
             # ++++++++++++++++++++++++++++++++++++++++++
 
             self.setting_window.boudrate.addItems(
@@ -156,6 +125,8 @@ class sr830_class():
                 "background-color: rgb(255, 255, 255);")
             self.setting_window.boudrate.setStyleSheet(
                 "background-color: rgb(255, 255, 255);")
+            self.setting_window.num_meas_enter.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
 
             self.setting_window.frequency_enter.setEditable(True)
             self.setting_window.frequency_enter.addItems(
@@ -164,8 +135,11 @@ class sr830_class():
             self.setting_window.amplitude_enter.addItems(
                 ["1"])
 
+            self.setting_window.num_meas_enter.setEditable(True)
+            self.setting_window.num_meas_enter.addItems(
+                ["3"])
+
             # =======================прием сигналов от окна==================
-            # TODO: сделать ограничение на ввод данных чувствительности
             self.setting_window.sensitivity_enter_number.currentIndexChanged.connect(
                 lambda: self._is_correct_parameters())
             self.setting_window.sensitivity_enter_factor.currentIndexChanged.connect(
@@ -178,11 +152,14 @@ class sr830_class():
                 lambda: self._is_correct_parameters())
 
             self.setting_window.triger_enter.currentIndexChanged.connect(
-                lambda: self.action_when_select_trigger())
+                lambda: self._action_when_select_trigger())
 
             self.setting_window.amplitude_enter.currentTextChanged.connect(
                 lambda: self._is_correct_parameters())
             self.setting_window.frequency_enter.currentTextChanged.connect(
+                lambda: self._is_correct_parameters())
+
+            self.setting_window.num_meas_enter.currentTextChanged.connect(
                 lambda: self._is_correct_parameters())
 
             self.setting_window.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(
@@ -225,6 +202,15 @@ class sr830_class():
             self.setting_window.filters_enter.setCurrentText(
                 self.filters_enter)
             self.setting_window.triger_enter.setCurrentText(self.triger_enter)
+            self.setting_window.num_meas_enter.addItems(
+                ["558", "10", "30", "60", "Пока активны другие приборы"])
+            self.setting_window.num_meas_enter.setCurrentText(
+                str(self.number_steps))
+
+            self.setting_window.sourse_enter.setCurrentText(
+                self.dict_buf_parameters["sourse/time"])
+
+            '''
 
             if self.setting_window.triger_enter.currentText() == "Таймер":
                 self.setting_window.sourse_enter.clear()
@@ -237,47 +223,27 @@ class sr830_class():
             else:
                 self.setting_window.sourse_enter.clear()
                 self.setting_window.sourse_enter.setEditable(False)
+                self.signal_list = self.installation_class.get_signal_list(
+                    self.name)
+                self.setting_window.sourse_enter.addItems(self.signal_list)
                 self.setting_window.sourse_enter.addItems(["1", "2", "3", "4"])
                 self.setting_window.sourse_enter.setCurrentText(
                     self.sourse_enter)
                 self.setting_window.label_sourse.setText("Источник сигнала")
+            '''
             self.key_to_signal_func = True  # разрешаем выполенение функций
-
-    def scan_com_ports(self):
-        self.counter += 1
-        self.timer_for_scan_com_port.stop()
-        ports = serial.tools.list_ports.comports()
-        local_list_com_ports = []
-        for port in ports:
-            try:
-                # Попытаемся открыть порт
-                ser = serial.Serial(port.device)
-                # Если порт успешно открыт, добавляем его в список активных портов
-                local_list_com_ports.append(port.device)
-                # Закрываем порт
-                ser.close()
-            except (OSError, serial.SerialException):
-                pass
-        if local_list_com_ports == []:
-            local_list_com_ports.append("Нет подключенных портов")
-
-        if local_list_com_ports == self.active_ports:
-            pass
-        else:
-            self.setting_window.comportslist.clear()
-            self.setting_window.comportslist.addItems(local_list_com_ports)
-        self.active_ports = local_list_com_ports
-        self.timer_for_scan_com_port.start(1500)
+            self._action_when_select_trigger()
 
     def _is_correct_parameters(self) -> bool:  # менять для каждого прибора
         if self.key_to_signal_func:
-            print("проверить параметры")
+            # print("проверить параметры")
             is_number_correct = True
             is_fact_correct = True
             is_dec_fact_correct = True
 
             is_ampl_correct = True
             is_freq_correct = True
+            is_num_steps_correct = True
             if self.setting_window.sensitivity_enter_decimal_factor.currentText() == "V/uA":
 
                 if self.setting_window.sensitivity_enter_factor.currentText() != "X1":
@@ -287,7 +253,7 @@ class sr830_class():
             elif self.setting_window.sensitivity_enter_decimal_factor.currentText() == "nV/fA":
                 if self.setting_window.sensitivity_enter_number.currentText() == "1":
                     is_number_correct = False
-#число илии нет
+# число илии нет
             try:
                 float(self.setting_window.amplitude_enter.currentText())
             except:
@@ -297,14 +263,20 @@ class sr830_class():
             except:
                 is_freq_correct = False
 
-
             if is_ampl_correct:
                 if float(self.setting_window.amplitude_enter.currentText()) > 10 or float(self.setting_window.amplitude_enter.currentText()) < 0.01:
                     is_ampl_correct = False
             if is_freq_correct:
                 if float(self.setting_window.frequency_enter.currentText()) > 102000 or float(self.setting_window.frequency_enter.currentText()) < 0.01:
                     is_freq_correct = False
-
+            # ----------------------------------------
+            try:
+                int(self.setting_window.num_meas_enter.currentText())
+            except:
+                if self.setting_window.num_meas_enter.currentText() == "Пока активны другие приборы":
+                    pass
+                else:
+                    is_num_steps_correct = False
 
             self.setting_window.sensitivity_enter_number.setStyleSheet(
                 "background-color: rgb(255, 255, 255);")
@@ -312,10 +284,12 @@ class sr830_class():
                 "background-color: rgb(255, 255, 255);")
             self.setting_window.sensitivity_enter_decimal_factor.setStyleSheet(
                 "background-color: rgb(255, 255, 255);")
-            
+
             self.setting_window.amplitude_enter.setStyleSheet(
                 "background-color: rgb(255, 255, 255);")
             self.setting_window.frequency_enter.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.num_meas_enter.setStyleSheet(
                 "background-color: rgb(255, 255, 255);")
 
             if not is_number_correct:
@@ -327,41 +301,25 @@ class sr830_class():
             if not is_dec_fact_correct:
                 self.setting_window.sensitivity_enter_decimal_factor.setStyleSheet(
                     "background-color: rgb(255, 180, 180);")
-                
+
             if not is_freq_correct:
                 self.setting_window.frequency_enter.setStyleSheet(
-                "background-color: rgb(255, 180, 180);")
+                    "background-color: rgb(255, 180, 180);")
             if not is_ampl_correct:
                 self.setting_window.amplitude_enter.setStyleSheet(
-                "background-color: rgb(255, 180, 180);")
+                    "background-color: rgb(255, 180, 180);")
 
+            if not is_num_steps_correct:
+                self.setting_window.num_meas_enter.setStyleSheet(
+                    "background-color: rgb(255, 180, 180);")
 
-            if is_number_correct and is_fact_correct and is_dec_fact_correct and is_ampl_correct and is_freq_correct:
+            if is_number_correct and is_fact_correct and is_dec_fact_correct and is_ampl_correct and is_freq_correct and is_num_steps_correct:
                 return True
             else:
                 return False
 
     def change_units(self):
         pass
-
-    def action_when_select_trigger(self):
-        if self.key_to_signal_func:
-            if self.setting_window.triger_enter.currentText() == "Таймер":
-                self.setting_window.sourse_enter.clear()
-                self.setting_window.sourse_enter.setEditable(True)
-                self.setting_window.sourse_enter.addItems(
-                    ["5", "10", "30", "60", "120"])
-                self.setting_window.label_sourse.setText("Время(с)")
-            else:
-                buf = self.setting_window.sourse_enter.currentText()
-                self.setting_window.sourse_enter.clear()
-                self.setting_window.sourse_enter.setEditable(False)
-                self.setting_window.sourse_enter.addItems(self.sourses)
-
-                if buf in self.sourses:
-                    self.setting_window.sourse_enter.setCurrentText(buf)
-                self.setting_window.label_sourse.setText("Источник сигнала")
-            # self.add_parameters_from_window()
 
     def calculate_time_const(self) -> str:
         time_const_enter_factor = {"X1": 1, "X10": 10, "X100": 100}
@@ -404,6 +362,15 @@ class sr830_class():
         self.boudrate = self.setting_window.boudrate.currentText()
         self.comportslist = self.setting_window.comportslist.currentText()
 
+        try:
+            self.number_steps = int(
+                self.setting_window.num_meas_enter.currentText())
+        except:
+            if self.setting_window.num_meas_enter.currentText() == "":
+                self.number_steps = self.setting_window.num_meas_enter.currentText()
+            else:
+                self.number_steps = "Пока активны другие приборы"
+
         time_const = self.calculate_time_const()
         sensitivity = self.calculate_sensitivity()
         dict_filter_slope = {"6 dB": 6, "12 dB": 12, "18 dB": 18, "24 dB": 24}
@@ -421,8 +388,9 @@ class sr830_class():
             self.dict_buf_parameters["SYNK_200_Hz"] = SYNK_200_Hz
             self.dict_buf_parameters["sensitivity"] = sensitivity
             self.dict_buf_parameters["reserve"] = reserve
-            self.dict_buf_parameters["frequency"] = frequency
-            self.dict_buf_parameters["amplitude"] = amplitude
+            self.dict_buf_parameters["frequency"] = float(frequency)
+            self.dict_buf_parameters["amplitude"] = float(amplitude)
+            self.dict_buf_parameters["num steps"] = self.number_steps
 
             self.dict_buf_parameters["input_channel"] = self.setting_window.input_channels_enter.currentText(
             )
@@ -440,18 +408,6 @@ class sr830_class():
             )
             self.dict_buf_parameters["COM"] = self.setting_window.comportslist.currentText(
             )
-
-    def set_client(self, client):
-        self.client = client
-
-    def do_step(self):
-        parameters = ["test","test"]
-
-        print("сделан шаг", self.name)
-        return device_response_to_step.Step_done, parameters, 1
-
-    def get_trigger_value(self):
-        return self.dict_settable_parameters["sourse/time"]
 
     def send_signal_ok(self):  # действие при подтверждении настроек, передать парамтры классу инсталляции, проверить и окрасить в цвет окошко, вписать паарметры
         self.add_parameters_from_window()
@@ -501,77 +457,126 @@ class sr830_class():
             pass
     # настройка прибора перед началом эксперимента, переопределяется при каждлом старте эксперимента
 
-    def setup_before_experiment(self) -> bool:  # менять для каждого прибора
+    def action_before_experiment(self) -> bool:  # менять для каждого прибора
+
         print("настройка прибора " + str(self.name) + " перед экспериментом..")
-        self.command._set_filter_slope(
-            slope=self.dict_settable_parameters["filter_slope"])
-        time.sleep(2)
-        self.command._set_input_conf(
-            conf=self.dict_settable_parameters["input_channel"])
-        time.sleep(2)
-        self.command._set_input_type_conf(
-            type_conf=self.dict_settable_parameters["input_type"])
-        time.sleep(2)
-        self.command._set_input_type_connect(
-            input_ground=self.dict_settable_parameters["input_connect"])
-        time.sleep(2)
-        self.command._set_line_filters(
-            type=self.dict_settable_parameters["filters"])
-        time.sleep(2)
-        self.command._set_reserve(
-            reserve=self.dict_settable_parameters["reserve"])
-        time.sleep(2)
-        self.command._set_time_const(
-            time_constant=self.dict_settable_parameters["time_const"])
-        time.sleep(2)
-        self.command._set_sens(
-            sens=self.dict_settable_parameters["sensitivity"])
+        pause = 0.1
+        status = True
+        if not self.command._set_filter_slope(
+                slope=self.dict_settable_parameters["filter_slope"]):
+            status = False
 
-        time.sleep(2)
-        self.command._set_frequency(
-            freq=self.dict_settable_parameters["frequency"])
+        time.sleep(pause)
+        if not self.command._set_input_conf(
+                conf=self.dict_settable_parameters["input_channel"]):
+            status = False
 
-        '''
-        self.dict_buf_parameters = {"trigger": "Таймер",
-                                    "sourse/time": str(10),  # секунды
-                                    "time_const": "1000",  # секунды
-                                    "filter_slope": "6",  # dB
-                                    "SYNK_200_Hz": "off",
-                                    "sensitivity": "1",  # вольты
-                                    "reserve": "high reserve",
-                                    "input_channel": "A" + "/" + "AC" + "/" + "ground",
-                                    "input_type": "AC",
-                                    "input_connect": "ground",
-                                    "filters": "line",
-                                    "frequency": "10000",  # Гц
-                                    "amplitude": "1",  # Вольты
-                                    "baudrate": "9600",
-                                    "COM": None,
-                                    }
-        '''
+        time.sleep(pause)
+        if not self.command._set_input_type_conf(
+                type_conf=self.dict_settable_parameters["input_type"]):
+            status = False
 
+        time.sleep(pause)
+        if not self.command._set_input_type_connect(
+                input_ground=self.dict_settable_parameters["input_connect"]):
+            status = False
+
+        time.sleep(pause)
+        if not self.command._set_line_filters(
+                type=self.dict_settable_parameters["filters"]):
+            status = False
+
+        time.sleep(pause)
+        if not self.command._set_reserve(
+                reserve=self.dict_settable_parameters["reserve"]):
+            status = False
+
+        time.sleep(pause)
+        if not self.command._set_time_const(
+                time_constant=self.dict_settable_parameters["time_const"]):
+            status = False
+
+        time.sleep(pause)
+        if not self.command._set_sens(
+                sens=self.dict_settable_parameters["sensitivity"]):
+            status = False
+
+        time.sleep(pause)
+        if not self.command._set_frequency(
+                freq=self.dict_settable_parameters["frequency"]):
+            status = False
+
+        time.sleep(pause)
+        if not self.command._set_amplitude(
+                ampl=self.dict_settable_parameters["amplitude"]):
+            status = False
+        return status
+
+    def action_end_experiment(self) -> bool:
+        '''плавное выключение прибора'''
         return True
+
+    def do_meas(self):
+        '''прочитать текущие и настроенные значения'''
+        print("делаем измерение", self.name)
+
+        start_time = time.time()
+        parameters = [self.name]
+        is_correct = True
+
+        disp1 = self.command.get_parameter(
+            command=self.command.COMM_DISPLAY, timeout=1, param=1)
+        if not disp1:
+            is_correct = False
+        else:
+            val = ["disp1=" + str(disp1)]
+            parameters.append(val)
+
+        disp2 = self.command.get_parameter(
+            self.command.COMM_DISPLAY, timeout=1, param=2)
+        if not disp2:
+            is_correct = False
+        else:
+            val = ["disp2=" + str(disp2)]
+            parameters.append(val)
+
+        phase = self.command.get_parameter(
+            self.command.PHASE, timeout=1)
+        if not phase:
+            is_correct = False
+        else:
+            val = ["phase=" + str(phase)]
+            parameters.append(val)
+
+        # -----------------------------
+        is_correct = True
+        parameters.append(["disp1=" + str(254)])
+        parameters.append(["disp2=" + str(847)])
+        parameters.append(["phase=" + str(777)])
+        # -----------------------------
+
+        if is_correct:
+            print("сделан шаг", self.name)
+            ans = device_response_to_step.Step_done
+        else:
+            print("Ошибка шага", self.name)
+            val = ["disp1=" + "fail"]
+            parameters.append(val)
+            val = ["disp2=" + "fail"]
+            parameters.append(val)
+            val = ["phase=" + "fail"]
+            parameters.append(val)
+
+            ans = device_response_to_step.Step_fail
+
+        return ans, parameters, time.time() - start_time
 
     def check_connect(self) -> bool:
-        # TODO проверка соединения с прибором(запрос - ответ)
-        # проверка соединения
-        return True
-
-    def get_steps_number(self):
-        # количеств шагов для измеительных устройств, подумать
-        return 1
-
-    def get_settings(self):
-        return self.dict_settable_parameters
-
-    def get_time(self) -> float:
-        if self.dict_settable_parameters["trigger"] == "Таймер":
-            try:
-                return len(self.steps_voltage) * float(self.dict_settable_parameters["sourse/time"])
-            except:
-                return 0
-        else:
-            return 0
+        line = self.command.get_parameter(self.command.COMM_ID, timeout=1)
+        if line is not False:
+            print(line)
+            return True
+        return False
 
 
 if __name__ == "__main__":

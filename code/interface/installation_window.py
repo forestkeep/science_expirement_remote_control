@@ -98,24 +98,120 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.cancel_button.setGeometry(QtCore.QRect(
             150+160*self.N, 440, 101, 23))
         self.cancel_button.setObjectName("cancel_button")
+
+        '''
         self.gridLayoutWidget = QtWidgets.QWidget(self.centralwidget)
         self.gridLayoutWidget.setGeometry(QtCore.QRect(
-            20+160*self.N, 0, 231, 321))
+            20+160*self.N, 0, 231, 200))
         self.gridLayoutWidget.setObjectName("gridLayoutWidget")
+
         self.gridLayout = QtWidgets.QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
         self.gridLayout.setObjectName("gridLayout")
-        self.label_schematic = QtWidgets.QLabel(self.gridLayoutWidget)
-        self.label_schematic.setObjectName("label_schematic")
-        self.gridLayout.addWidget(self.label_schematic, 0, 0, 1, 1)
-        self.schematic_installation = QtWidgets.QGraphicsView(
+
+        self.save_repeat_set_button = QtWidgets.QPushButton(
             self.gridLayoutWidget)
-        self.schematic_installation.setObjectName("schematic_installation")
-        self.gridLayout.addWidget(self.schematic_installation, 1, 0, 1, 1)
+        self.save_repeat_set_button.setObjectName("general_settings")
+        self.gridLayout.addWidget(self.save_repeat_set_button, 0, 0, 1, 1)
+
+        self.save_repeat_set_button1 = QtWidgets.QPushButton(
+            self.gridLayoutWidget)
+        self.save_repeat_set_button1.setObjectName("general_settings")
+        self.gridLayout.addWidget(self.save_repeat_set_button1, 1, 0, 1, 1)
+
+        self.save_repeat_set_button2 = QtWidgets.QPushButton(
+            self.gridLayoutWidget)
+        self.save_repeat_set_button2.setObjectName("general_settings")
+        self.gridLayout.addWidget(self.save_repeat_set_button2, 0, 1, 1, 1)
+
+        # self.schematic_installation = QtWidgets.QGraphicsView(
+        #    self.gridLayoutWidget)
+        # self.schematic_installation.setObjectName("schematic_installation")
+        # self.gridLayout.addWidget(self.schematic_installation, 1, 0, 1, 1)
 
         # self.log = QtWidgets.QLineEdit(self.centralwidget)
         # self.log.setGeometry(QtCore.QRect(10, 320, 10+160*self.N, 110))
         # self.log.setObjectName("log_text")
+        '''
+        # =====================================================================
+        self.verticalLayoutWidget_2 = QtWidgets.QWidget(Installation)
+        self.verticalLayoutWidget_2.setGeometry(
+            QtCore.QRect(10+160*self.N, 30, 261, 100))
+        self.verticalLayoutWidget_2.setObjectName("verticalLayoutWidget_2")
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(
+            self.verticalLayoutWidget_2)
+        self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.verticalLayout = QtWidgets.QVBoxLayout()
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label_19 = QtWidgets.QLabel(self.verticalLayoutWidget_2)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.label_19.setFont(font)
+        self.label_19.setObjectName("label_19")
+        self.verticalLayout.addWidget(self.label_19)
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.way_save_text = QtWidgets.QLineEdit(self.verticalLayoutWidget_2)
+        self.way_save_text.setObjectName("way_save_text")
+        self.horizontalLayout.addWidget(self.way_save_text)
+        self.way_save_button = QtWidgets.QPushButton(
+            self.verticalLayoutWidget_2)
+        self.way_save_button.setObjectName("way_save_button")
+        self.horizontalLayout.addWidget(self.way_save_button)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
+        self.label_21 = QtWidgets.QLabel(self.verticalLayoutWidget_2)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.label_21.setFont(font)
+        self.label_21.setObjectName("label_21")
+        self.horizontalLayout_3.addWidget(self.label_21)
+        self.repeat_measurement_enter = QtWidgets.QComboBox(
+            self.verticalLayoutWidget_2)
+        self.repeat_measurement_enter.setEditable(False)
+        self.repeat_measurement_enter.setObjectName("repeat_measurement_enter")
+        self.repeat_measurement_enter.addItem("")
+        self.repeat_measurement_enter.addItem("")
+        self.repeat_measurement_enter.addItem("")
+        self.repeat_measurement_enter.addItem("")
+        self.repeat_measurement_enter.addItem("")
+        self.repeat_measurement_enter.addItem("")
+        self.repeat_measurement_enter.addItem("")
+        self.repeat_measurement_enter.addItem("")
+        self.repeat_measurement_enter.addItem("")
+        self.repeat_measurement_enter.addItem("")
+
+        self.horizontalLayout_3.addWidget(self.repeat_measurement_enter)
+        self.verticalLayout.addLayout(self.horizontalLayout_3)
+        self.verticalLayout_2.addLayout(self.verticalLayout)
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.label_20 = QtWidgets.QLabel(self.verticalLayoutWidget_2)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.label_20.setFont(font)
+        self.label_20.setObjectName("label_20")
+        self.horizontalLayout_2.addWidget(self.label_20)
+        self.repeat_exp_enter = QtWidgets.QComboBox(
+            self.verticalLayoutWidget_2)
+        self.repeat_exp_enter.setEditable(False)
+        self.repeat_exp_enter.setObjectName("repeat_exp_enter")
+        self.repeat_exp_enter.addItem("")
+        self.repeat_exp_enter.addItem("")
+        self.repeat_exp_enter.addItem("")
+        self.repeat_exp_enter.addItem("")
+        self.repeat_exp_enter.addItem("")
+        self.repeat_exp_enter.addItem("")
+        self.repeat_exp_enter.addItem("")
+        self.repeat_exp_enter.addItem("")
+        self.repeat_exp_enter.addItem("")
+        self.repeat_exp_enter.addItem("")
+        self.horizontalLayout_2.addWidget(self.repeat_exp_enter)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_2)
+
+        # ================================================================
 
         self.log = QtWidgets.QTextEdit(self.centralwidget)
         self.log.setGeometry(QtCore.QRect(
@@ -170,8 +266,16 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.start_button.setText(_translate("Installation", "Запуск"))
         self.pause_button.setText(_translate("Installation", "Пауза"))
         self.cancel_button.setText(_translate("Installation", "Отмена"))
-        self.label_schematic.setText(
-            _translate("Installation", "Схема установки"))
+        '''
+        self.save_repeat_set_button.setText(
+            _translate("Installation", "Общие настройки установки"))
+        self.save_repeat_set_button1.setText(
+            _translate("Installation", "Общие настройки установки"))
+        self.save_repeat_set_button2.setText(
+            _translate("Installation", "Общие настройки установки"))
+        '''
+        # self.label_schematic.setText(_translate("Installation", "Схема установки"))
+
         self.menu.setTitle(_translate("Installation", "Меню"))
         self.save_installation_button.setText(
             _translate("Installation", "Сохранить установку"))
@@ -179,3 +283,46 @@ class Ui_Installation(QtWidgets.QMainWindow):
             _translate("Installation", "Открыть установку"))
         self.add_device_button.setText(
             _translate("Installation", "Добавить прибор"))
+
+
+# =========================================================================================
+        self.label_19.setText(_translate(
+            "settings_save", "Как сохранить результаты?"))
+        self.way_save_button.setText(_translate("settings_save", "Путь"))
+        self.label_21.setText(_translate(
+            "settings_save", "Кол-во измерений в точке"))
+        self.repeat_measurement_enter.setCurrentText(
+            _translate("settings_save", "1"))
+        self.repeat_measurement_enter.setItemText(
+            0, _translate("settings_save", "1"))
+        self.repeat_measurement_enter.setItemText(
+            1, _translate("settings_save", "2"))
+        self.repeat_measurement_enter.setItemText(
+            2, _translate("settings_save", "3"))
+        self.repeat_measurement_enter.setItemText(
+            3, _translate("settings_save", "4"))
+        self.repeat_measurement_enter.setItemText(
+            4, _translate("settings_save", "5"))
+        self.repeat_measurement_enter.setItemText(
+            5, _translate("settings_save", "6"))
+        self.repeat_measurement_enter.setItemText(
+            6, _translate("settings_save", "7"))
+        self.repeat_measurement_enter.setItemText(
+            7, _translate("settings_save", "8"))
+        self.repeat_measurement_enter.setItemText(
+            8, _translate("settings_save", "9"))
+        self.repeat_measurement_enter.setItemText(
+            9, _translate("settings_save", "10"))
+        self.label_20.setText(_translate(
+            "settings_save", "Кол-во повторов эксперимента"))
+        self.repeat_exp_enter.setCurrentText(_translate("settings_save", "1"))
+        self.repeat_exp_enter.setItemText(0, _translate("settings_save", "1"))
+        self.repeat_exp_enter.setItemText(1, _translate("settings_save", "2"))
+        self.repeat_exp_enter.setItemText(2, _translate("settings_save", "3"))
+        self.repeat_exp_enter.setItemText(3, _translate("settings_save", "4"))
+        self.repeat_exp_enter.setItemText(4, _translate("settings_save", "5"))
+        self.repeat_exp_enter.setItemText(5, _translate("settings_save", "6"))
+        self.repeat_exp_enter.setItemText(6, _translate("settings_save", "7"))
+        self.repeat_exp_enter.setItemText(7, _translate("settings_save", "8"))
+        self.repeat_exp_enter.setItemText(8, _translate("settings_save", "9"))
+        self.repeat_exp_enter.setItemText(9, _translate("settings_save", "10"))

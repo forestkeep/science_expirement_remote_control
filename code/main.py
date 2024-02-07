@@ -6,14 +6,15 @@ from installation_check_devices import installation_Ui_Dialog
 from interface.selectdevice_window import Ui_Selectdevice
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QMessageBox
-import interface.info_window_dialog 
+import interface.info_window_dialog
 from test3 import Ui_SVPS34_control
 from Installation_class import installation_class
 # pyuic5 name.ui -o name.py - запускаем из папки с файлом ui в cmd
 
+
 class Mywindow(QtWidgets.QMainWindow):
     def __init__(self):
-        super().__init__()  # благодаря этой херне доступны методы родителя
+        super().__init__()
         self.ui = Ui_MainWindow()  # создаем экземпляр класс ui_main_window
         self.ui.setupUi(self)  # вызываем метод из созданного класс
         self.dict_active_local_devices = {}
@@ -124,6 +125,7 @@ class Mywindow(QtWidgets.QMainWindow):
 					'''
             if name == "other...":
                 pass
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

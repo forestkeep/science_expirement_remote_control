@@ -266,9 +266,10 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.filters_enter.addItem("")
         self.horizontalLayout_13.addWidget(self.filters_enter)
         self.verticalLayout_9.addLayout(self.horizontalLayout_13)
+
         self.verticalLayoutWidget_10 = QtWidgets.QWidget(Set_power_supply)
         self.verticalLayoutWidget_10.setGeometry(
-            QtCore.QRect(10, 430, 281, 80))
+            QtCore.QRect(10, 430, 281, 95))
         self.verticalLayoutWidget_10.setObjectName("verticalLayoutWidget_10")
         self.verticalLayout_10 = QtWidgets.QVBoxLayout(
             self.verticalLayoutWidget_10)
@@ -282,9 +283,11 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.verticalLayout_10.addWidget(self.label_15)
         self.gridLayout = QtWidgets.QGridLayout()
         self.gridLayout.setObjectName("gridLayout")
+
         self.label_sourse = QtWidgets.QLabel(self.verticalLayoutWidget_10)
         self.label_sourse.setObjectName("label_sourse_2")
         self.gridLayout.addWidget(self.label_sourse, 1, 0, 1, 1)
+
         self.label_triger = QtWidgets.QLabel(self.verticalLayoutWidget_10)
         self.label_triger.setObjectName("label_sourse")
         self.gridLayout.addWidget(self.label_triger, 0, 0, 1, 1)
@@ -292,12 +295,23 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.triger_enter.setObjectName("triger_enter")
         self.triger_enter.addItem("")
         self.gridLayout.addWidget(self.triger_enter, 0, 1, 1, 1)
+
         self.sourse_enter = QtWidgets.QComboBox(self.verticalLayoutWidget_10)
         self.sourse_enter.setCurrentText("")
         self.sourse_enter.setObjectName("sourse_enter")
-
         self.gridLayout.addWidget(self.sourse_enter, 1, 1, 1, 1)
+
+        self.num_meas_enter = QtWidgets.QComboBox(self.verticalLayoutWidget_10)
+        self.num_meas_enter.setCurrentText("")
+        self.num_meas_enter.setObjectName("sourse_enter1")
+        self.gridLayout.addWidget(self.num_meas_enter, 2, 1, 1, 1)
+
+        self.label_num_meas = QtWidgets.QLabel(self.verticalLayoutWidget_10)
+        self.label_num_meas.setObjectName("label_num_meas")
+        self.gridLayout.addWidget(self.label_num_meas, 2, 0, 1, 1)
+
         self.verticalLayout_10.addLayout(self.gridLayout)
+
         self.verticalLayoutWidget_11 = QtWidgets.QWidget(Set_power_supply)
         self.verticalLayoutWidget_11.setGeometry(
             QtCore.QRect(10, 530, 281, 80))
@@ -332,7 +346,7 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.horizontalLayout_4.addWidget(self.comportslist)
         self.verticalLayout_11.addLayout(self.horizontalLayout_4)
         self.line = QtWidgets.QFrame(Set_power_supply)
-        self.line.setGeometry(QtCore.QRect(10, 510, 281, 20))
+        self.line.setGeometry(QtCore.QRect(10, 525, 281, 20))
         self.line.setFrameShape(QtWidgets.QFrame.HLine)
         self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line.setObjectName("line")
@@ -506,5 +520,7 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.label_2.setText(_translate(
             "Set_power_supply", "Настройки подключения"))
         self.label_11.setText(_translate("Set_power_supply", "Baudrate"))
+        self.label_num_meas.setText(_translate(
+            "Set_power_supply", "Кол-во измерений"))
         self.boudrate.setItemText(0, _translate("Set_power_supply", "9600"))
         self.label_10.setText(_translate("Set_power_supply", "COM"))

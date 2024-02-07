@@ -27,7 +27,7 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.buttonBox.setObjectName("buttonBox")
 
         self.horizontalLayoutWidget = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 195, 261, 41))
+        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 215, 261, 41))
         self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
         self.horizontalLayout = QtWidgets.QHBoxLayout(
             self.horizontalLayoutWidget)
@@ -138,9 +138,10 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.label_9 = QtWidgets.QLabel(self.verticalLayoutWidget)
         self.label_9.setObjectName("label_9")
         self.verticalLayout.addWidget(self.label_9)
+
         self.horizontalLayoutWidget_4 = QtWidgets.QWidget(Set_power_supply)
         self.horizontalLayoutWidget_4.setGeometry(
-            QtCore.QRect(10, 260, 261, 41))
+            QtCore.QRect(10, 275, 261, 41))
         self.horizontalLayoutWidget_4.setObjectName("horizontalLayoutWidget_4")
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout(
             self.horizontalLayoutWidget_4)
@@ -152,6 +153,7 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.comportslist = QtWidgets.QComboBox(self.horizontalLayoutWidget_4)
         self.comportslist.setObjectName("comportslist")
         self.horizontalLayout_4.addWidget(self.comportslist)
+
         self.horizontalLayoutWidget_5 = QtWidgets.QWidget(Set_power_supply)
         self.horizontalLayoutWidget_5.setGeometry(
             QtCore.QRect(10, 300, 261, 41))
@@ -166,9 +168,10 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.boudrate = QtWidgets.QComboBox(self.horizontalLayoutWidget_5)
         self.boudrate.setObjectName("boudrate")
         self.horizontalLayout_5.addWidget(self.boudrate)
+
         self.horizontalLayoutWidget_6 = QtWidgets.QWidget(Set_power_supply)
         self.horizontalLayoutWidget_6.setGeometry(
-            QtCore.QRect(10, 220, 261, 41))
+            QtCore.QRect(10, 240, 261, 41))
         self.horizontalLayoutWidget_6.setObjectName("horizontalLayoutWidget_6")
         self.horizontalLayout_6 = QtWidgets.QHBoxLayout(
             self.horizontalLayoutWidget_6)

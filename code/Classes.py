@@ -10,12 +10,6 @@ import copy
 from pymodbus import exceptions
 import time
 
-# сюда добавляются классы всех устройств в системе вместе с ключами
-'''
-dict_device_class = {"Maisheng": maisheng_power_class,
-                     "Lock in": sr830_class, "ms": maisheng_power_class}
-'''
-
 
 class device_response_to_step(Enum):
     End_list_of_steps = 0
@@ -23,28 +17,43 @@ class device_response_to_step(Enum):
     Step_fail = 3
 
 
-class device:
-    """device parameters"""
+class control_in_experiment():
+    def __init__(self) -> None:
+        self.priority = 1
+        self.am_i_should_do_step = False
+        self.am_i_active_in_experiment = False
+        self.previous_step_time = False
+        self.pause_time = False
+        self.number_meas = 0
 
-    def __init__(self, model, type_of_connection, protocol) -> None:
-        self.model = model
-        self.type_of_connection = type_of_connection
-        self.protocol = protocol
+    def set_priority(self, priority) -> bool:
+        self.priority = priority
+        return True
 
-    def get_model(self) -> str:
-        return self.model
+    def get_priority(self) -> int:
+        return self.priority
+
+    def increment_priority(self):
+        if self.priority > 1:
+            self.priority = self.priority - 1
+        else:
+            self.priority = 1
+
+    def get_status_step(self):
+        """возвращает ответ на вопрос, "должен ли я сделать шаг?" """
+        return self.am_i_should_do_step
+
+    def set_status_step(self, status):
+        '''сообщаем прибору статус шага, должен проводить измерение или нет'''
+        self.am_i_should_do_step = status
+        return True
 
 
-class powersupply(device):
-    def __init__(self, model, type_of_connection, protocol, number_of_channel):
-        super().__init__(model, type_of_connection, protocol)
-        self.number_of_channel = number_of_channel
-
-
-class installation_device:
+class installation_device(control_in_experiment):
     """"base class for devices which used in installation"""
 
     def __init__(self, name, type_connection, installation_class) -> None:
+        super().__init__()
         self.timer_for_scan_com_port = QTimer()
         self.timer_for_scan_com_port.timeout.connect(
             lambda: self._scan_com_ports())
@@ -57,9 +66,17 @@ class installation_device:
         self.name = name
         self.setting_window = None
 
+        # показывает количество шагов, сюда же сохраняется параметр из окна считывания настроек. В случае источников питания это поле просто не используется. Количество шагов вычисляется по массиву токов или напряжений
+        self.number_steps = "3"
+
+        # переменные флаги для определения первого измерения в шаге или последнего
+        self.is_first_meas = True
+        self.is_end_meas = False
+
         self.client = None
         self.dict_buf_parameters = {"trigger": "Таймер",
                                     "sourse/time": str(10),  # секунды
+                                    "num steps": 0,
                                     "baudrate": "9600",
                                     "COM": None
                                     }  # потенциальные параметры прибора, вводятся когда выбираются значения в настройках, применяются только после подтверждения пользователем и прохождении проверок
@@ -71,14 +88,16 @@ class installation_device:
         self.key_to_signal_func = False
         self.i_am_set = False
 
-    def set_signal_list(self, lst):
-        self.signal_list = lst
+    def on_next_step(self):  # функция сообщает прибору, что нужно перейти на следующий шаг, например, выставить новые значения тока и напряжения в случае источника питания
+        '''активирует следующий шаг прибора'''
+        self.step_index = self.step_index + 1
 
     def get_name(self) -> str:
         return str(self.name)
 
     def _scan_com_ports(self):  # универсальная функция каждого прибора
-        print("hop!")
+        '''проверяет наличие ком портов в системе'''
+        # print("hop!")
         self.timer_for_scan_com_port.stop()
         ports = serial.tools.list_ports.comports()
         local_list_com_ports = []
@@ -118,34 +137,56 @@ class installation_device:
         return self.type_connection
 
     def get_COM(self):  # универсальная
-        return self.dict_settable_parameters["COM"]
+        try:
+            answer = self.dict_settable_parameters["COM"]
+        except:
+            answer = False
+        return answer
 
     def get_baud(self):  # универсальная
-        return self.dict_settable_parameters["baudrate"]
+        try:
+            answer = self.dict_settable_parameters["baudrate"]
+        except:
+            answer = False
+        return answer
 
     def get_trigger_value(self):  # унивесалььно
-        return self.dict_settable_parameters["sourse/time"]
+        '''возвращает источник сигнала'''
+        trigger = self.get_trigger()
+        if trigger == "Таймер":
+            answer = float(self.dict_settable_parameters["sourse/time"])
+        elif trigger == "Внешний сигнал":
+            answer = self.dict_settable_parameters["sourse/time"]
+        else:
+            answer = False
+        return answer
+
+    def get_trigger(self):
+        '''возвращает тип триггера, таймер или внешний сигнал'''
+        try:
+            answer = self.dict_settable_parameters["trigger"]
+        except:
+            answer = False
+        return answer
 
     def set_client(self, client):  # универсальная
         self.client = client
 
-    def get_steps_number(self) -> float:  # унииверсаль
-        if self.dict_settable_parameters["trigger"] == "Таймер":
-            try:
-                # 5 секунд время на то, чтобы сделать шаг
-                return len(self.steps_voltage) * (float(self.dict_settable_parameters["sourse/time"]) + 5)
-            except:
-                return 0
-        else:
-            return 0
+    def get_steps_number(self):  # унииверсаль
+        '''возвращает число шагов прибора, если число не ограничено, то возвращает False'''
+        try:
+            answer = int(self.dict_settable_parameters["num steps"])
+        except:
+            answer = False
+        return answer
 
     def get_settings(self):  # универсальная
         return self.dict_settable_parameters
+    # универсальная функция для каждого прибора
 
-    # универальная функция для каждого прибора
     def _action_when_select_trigger(self):
         if self.key_to_signal_func:
-            print("выбор триггера")
+            # print("выбор триггера")
             if self.setting_window.triger_enter.currentText() == "Таймер":
                 self.setting_window.sourse_enter.clear()
                 self.setting_window.sourse_enter.setEditable(True)
@@ -153,18 +194,15 @@ class installation_device:
                     ["5", "10", "30", "60", "120"])
                 self.setting_window.label_sourse.setText("Время(с)")
             else:
-                buf = self.setting_window.sourse_enter.currentText()
+                # buf = self.setting_window.sourse_enter.currentText()
+                buf = self.dict_buf_parameters["sourse/time"]
                 self.setting_window.sourse_enter.clear()
                 self.setting_window.sourse_enter.setEditable(False)
-                print(self.signal_list)
+                # предоставьте список сигналов, я прибор под именем self.name
+                self.signal_list = self.installation_class.get_signal_list(
+                    self.name)
                 self.setting_window.sourse_enter.addItems(self.signal_list)
                 if buf in self.signal_list:
                     self.setting_window.sourse_enter.setCurrentText(buf)
                 self.setting_window.label_sourse.setText("Источник сигнала")
             # self.add_parameters_from_window()
-
-
-if __name__ == "__main__":
-    lst = powersupply("maisheng", "COM", "modbus", 1)
-
-    print(lst.get_model())
