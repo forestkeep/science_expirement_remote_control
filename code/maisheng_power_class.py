@@ -27,7 +27,6 @@ class maisheng_power_class(installation_device):
 
         super().__init__(name, "modbus", installation_class)
 
-        self.test = True
         print("класс источника питания создан")
 
         # заполняется в случае корректных параметров(подтверждения от контроллера установки)
@@ -177,8 +176,8 @@ class maisheng_power_class(installation_device):
             high_value = 0
             enter_step = 0
             second_limit = 0
-            self.is_stop_correct = True
-            self.is_start_correct = True
+            self.is_stop_value_correct = True
+            self.is_start_value_correct = True
             self.is_step_correct = True
             self.is_second_value_correct = True
     # проверка число или не число
@@ -186,12 +185,12 @@ class maisheng_power_class(installation_device):
                 low_value = float(
                     self.setting_window.start_enter.currentText())
             except:
-                self.is_start_correct = False
+                self.is_start_value_correct = False
             try:
                 high_value = float(
                     self.setting_window.stop_enter.currentText())
             except:
-                self.is_stop_correct = False
+                self.is_stop_value_correct = False
             try:
                 enter_step = float(
                     self.setting_window.step_enter.currentText())
@@ -204,27 +203,27 @@ class maisheng_power_class(installation_device):
                 self.is_second_value_correct = False
     # ---------------------------
     # минимум и максимум не выходят за границы
-            if self.is_stop_correct:
+            if self.is_stop_value_correct:
                 if high_value < min or high_value > max:
-                    self.is_stop_correct = False
-            if self.is_start_correct:
+                    self.is_stop_value_correct = False
+            if self.is_start_value_correct:
                 if low_value < min or low_value > max:
-                    self.is_start_correct = False
+                    self.is_start_value_correct = False
             if self.is_step_correct:
-                if self.is_start_correct and self.is_stop_correct:
+                if self.is_start_value_correct and self.is_stop_value_correct:
                     if enter_step > abs(high_value - low_value):
                         self.is_step_correct = False
             if self.is_second_value_correct and self.setting_window.type_work_enter.currentText() != "Стабилизация мощности":
                 if second_limit > max_second_limit or second_limit < 0.01:
                     self.is_second_value_correct = False
 
-            if self.is_stop_correct:
+            if self.is_stop_value_correct:
                 self.setting_window.stop_enter.setStyleSheet(
                     "background-color: rgb(255, 255, 255);")
             else:
                 self.setting_window.stop_enter.setStyleSheet(
                     "background-color: rgb(255, 180, 180);")
-            if self.is_start_correct:
+            if self.is_start_value_correct:
                 self.setting_window.start_enter.setStyleSheet(
                     "background-color: rgb(255, 255, 255);")
             else:
@@ -331,9 +330,9 @@ class maisheng_power_class(installation_device):
         self.i_am_set = False
 
         self.is_parameters_correct = True
-        if not self.is_stop_correct:
+        if not self.is_stop_value_correct:
             self.is_parameters_correct = False
-        if not self.is_start_correct:
+        if not self.is_start_value_correct:
             self.is_parameters_correct = False
         if not self.is_second_value_correct:
             self.is_parameters_correct = False
@@ -365,7 +364,7 @@ class maisheng_power_class(installation_device):
     def confirm_parameters(self):  # менять для каждого прибора
         print(str(self.name) + " получил подтверждение настроек, рассчитываем шаги")
         if True:
-            self.step_index = 0
+            self.step_index = -1
             self.i_am_set = True
 
             # self.client.write_registers(address=int(
@@ -398,14 +397,6 @@ class maisheng_power_class(installation_device):
         '''проверяет подключение прибора, если прибор отвечает возвращает True, иначе False'''
         # TODO проверка соединения с прибором(запрос - ответ)
         # проверка соединения
-
-        if self.test == True:
-            self.test = False
-            # return False
-        else:
-            self.test = True
-            # return True
-
         return True
 
     # действия перед стартом эксперимента, включить, настроить, подготовить и т.д.

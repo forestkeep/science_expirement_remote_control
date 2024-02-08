@@ -25,13 +25,23 @@ class type_save_file(Enum):
 
 class installation_class():
     def __init__(self) -> None:
+        # флаг выставляется при нажатии кнопки пауза во время эксперимента
+        self.down_brightness = False
+        self.bright = 50
+        self.pause_flag = False
+        self.is_experiment_endless = False
         self.pbar_percent = 0
         self.way_to_save_file = False
         self.type_file_for_result = type_save_file.txt
 
+        self.timer_for_pause_exp = QTimer()
+        self.timer_for_pause_exp.timeout.connect(
+            lambda: self.pause_actions())
+
         self.timer_for_update_pbar = QTimer()
         self.timer_for_update_pbar.timeout.connect(
             lambda: self.update_pbar())
+
         self.dict_device_class = {
             "Maisheng": maisheng_power_class, "Lock in": sr830_class}
         self.dict_active_device_class = {}
@@ -101,7 +111,7 @@ class installation_class():
 			self.installation_window.change_device_button[current_installation_list[0]].clicked.connect(lambda : self.testable(i))
 		'''
         self.installation_window.start_button.clicked.connect(
-            lambda: self.experiment_start())
+            lambda: self.push_button_start())
         self.installation_window.start_button.setStyleSheet(
             "background-color: rgb(255, 127, 127);")
         self.installation_window.pause_button.clicked.connect(
@@ -112,7 +122,37 @@ class installation_class():
         print("реконструирован класс установки")
 
     def pause_exp(self):
-        pass
+        if self.is_experiment_running():
+            if self.pause_flag:
+                self.pause_flag = False
+                self.installation_window.pause_button.setText("Пауза")
+                self.timer_for_pause_exp.stop()
+                self.installation_window.pause_button.setStyleSheet(
+                    "background-color: rgb(220, 220, 220);")
+            else:
+                self.installation_window.pause_button.setText("Возобновить")
+                self.pause_flag = True
+                self.timer_for_pause_exp.start(50)
+
+    def pause_actions(self):
+        '''функция срабатывает по таймеру во время паузы эксперимента'''
+
+        step = 15
+        if self.down_brightness:
+            self.bright -= step
+            if self.bright < 30:
+                self.bright = 0
+                self.down_brightness = False
+        else:
+            self.bright += step
+            if self.bright > 255:
+                self.bright = 255
+                self.down_brightness = True
+
+        style = "background-color: rgb(50" + "," + str(self.bright) + ",50);"
+
+        self.installation_window.pause_button.setStyleSheet(
+            style)
 
     def stoped_experiment(self):
         self.stop_experiment = True
@@ -159,14 +199,16 @@ class installation_class():
             self.installation_window.label[name_device].setText("Не настроено")
 
         # ---------------------------
-        self.analyse_signals()
-        self.separate_by_trigger()
+        self.analyse_endless_exp()
+        # self.separate_by_trigger()
         print("подписчики", name_device, " - ",
               self.get_subscribers([name_device], name_device))
         # ---------------------------
         if self.is_all_device_settable():
 
-            if self.analyse_com_ports() or True:
+            self.set_priorities()
+
+            if self.analyse_com_ports():
                 # если оказались в этой точке, значит приборы настроены корректно и нет проблем с конфликтами ком портов, если подключение не будет установлено, то ключ снова будет сброшен
                 self.key_to_start_installation = True
 
@@ -224,7 +266,7 @@ class installation_class():
 
         return buf_list
 
-    def experiment_start(self):
+    def push_button_start(self):
         # TODO проверка на тип устойств в установке, + добавить количествво шагов для измерений
         if self.is_all_device_settable() and self.key_to_start_installation and not self.is_experiment_running():
             self.installation_window.start_button.setStyleSheet(
@@ -233,6 +275,7 @@ class installation_class():
             status = True  # последние проверки перед стартом
 
             if status:
+                self.stop_experiment = False
                 # создаем текстовый файл
                 name_file = ""
                 for i in self.current_installation_list:
@@ -261,10 +304,8 @@ class installation_class():
 
                 self.experiment_thread = threading.Thread(
                     target=self.exp_th, daemon=True)
-                self.stop_experiment = False
                 self.experiment_thread.start()
-                self.timer_for_update_pbar.start(3000)
-
+                self.timer_for_update_pbar.start(1000)
             else:
                 pass  # TODO что делать в случае, если что-то не то
 
@@ -280,7 +321,7 @@ class installation_class():
 
         self.installation_window.pbar.setValue(int(self.pbar_percent))
         if self.is_experiment_running():
-            self.timer_for_update_pbar.start(3000)
+            self.timer_for_update_pbar.start(1000)
         else:
             self.timer_for_update_pbar.stop()
 
@@ -308,7 +349,7 @@ class installation_class():
                 pass
                 # print("прибор ", name, " не настроен")
 
-    def analyse_signals(self):
+    def analyse_endless_exp(self):
         '''определяет зацикливания по сигналам и выдает предупреждение о бесконечном эксперименте'''
         first_array = copy.deepcopy(self.current_installation_list)
         name = []
@@ -318,6 +359,9 @@ class installation_class():
         i = 0
         sourse_lines = []
         array = name
+        cycle_device = []
+
+        experiment_endless = False
 
         # потенциально "проблемные приборы, которые могут работать бесконечно"
         mark_device_number = []
@@ -329,9 +373,12 @@ class installation_class():
                     print("бесконечный эксперимент", mark_device_number)
                     message = "приборы "
                     for n in mark_device_number:
+                        cycle_device.append(n.get_name())
                         message = message + n.get_name() + " "
+                    message = message + "будут работать бесконечно"
                     self.add_text_to_log(
-                        message + "будут работать бесконечно", status="err")
+                        message, status="err")
+                    experiment_endless = True
                     break  # два прибора, у которых тригер таймер, и условие остановки неактивные другие приборы будут работать бесконечно, предупреждаем об этом
 
         while i < len(array):  # формируем линии источников
@@ -356,32 +403,30 @@ class installation_class():
                 buf_dev.append(name)
                 for sourses in sourse_lines:
                     if name == sourses[i]:
+                        cycle_device.clear()
+                        experiment_endless = True
                         print("зацикливание по ветке", name, buf_dev)
                         message = "зацикливание по ветке "
                         for n in buf_dev:
+                            cycle_device.append(n.get_name())
                             message = message + n + " "
+                        message += "эксперимент будет продолжаться бесконечно"
                         self.add_text_to_log(
-                            message + "эксперимент будет продолжаться бесконечно", status="err")
+                            message, status="err")
                         for h in buf_dev:
                             dev_in_cycle.append(h)
+
                         break
                     buf_dev.append(sourses[i])
                 buf_dev = []
-        self.set_priority()
+        return experiment_endless, cycle_device
 
-    def set_priority(self):
-        # создается два массива, с таймерами и с другими источниками
-        self.separate_by_trigger()
-        i = 1
+    def set_priorities(self):
 
-        for device in self.timer_signals_list:  # задаем приоритеты приборам, работающим по таймеру
-            self.name_to_class(device).set_priority(i)
-            i += 1
-
-        i = 1
-        for device in self.other_signals_list:  # задаем приоритеты приборам, работающим по сигналам не от таймера
-            self.name_to_class(device).set_priority(i)
-            i += 1
+        priority = 1
+        for device in self.dict_active_device_class.values():
+            device.set_priority(priority)
+            priority += 1
 
         # проводим анализ на предмет зацикливания, если оно обнаружено, то необходимо установить флаг готовности одного прибора из цикла, чтобы цикл начался.
         names = copy.deepcopy(self.current_installation_list)
@@ -402,35 +447,61 @@ class installation_class():
             i += 1
             array = sourse
             sourse_lines.append(array)
-            # print("линия источников", i, array)
+            print("линия источников", i, array)
 
         dev_in_cycle = []
         buf_dev = []
-        for name, i in zip(names, range(len(sourse_lines))):
+        for device, i in zip(self.dict_active_device_class.values(), range(len(sourse_lines))):
+            name = device.get_name()
             if name not in dev_in_cycle:
                 buf_dev.append(name)
                 for sourses in sourse_lines:
                     if name == sourses[i]:
-                        # print("зацикливание по ветке", name, buf_dev)
+                        print("зацикливание по ветке", name, buf_dev)
                         # При старте эксперимента этот прибор ответит, что должен делать шаг
-                        self.name_to_class(name).set_status_step(True)
+                        device.set_status_step(True)
+                        print(device)
                         for h in buf_dev:
                             dev_in_cycle.append(h)
                         break
                     buf_dev.append(sourses[i])
                 buf_dev = []
         print("имя \t", "триг\t", "исттриг\t", "приор\t", "статус")
-        for name in self.current_installation_list:
-            print(name, "\t", self.name_to_class(name).get_trigger(), "\t", self.name_to_class(name).get_trigger_value(
-            ), "\t", self.name_to_class(name).get_priority(), "\t", self.name_to_class(name).get_status_step())
+        for device in self.dict_active_device_class.values():
+            name = device.get_name()
+            print(name, "\t", device.get_trigger(), "\t", device.get_trigger_value(
+            ), "\t", device.get_priority(), "\t", device.get_status_step())
 
-    def calculate_exp_time(self) -> str:
-        '''оценивает продолжительность эксперимента, возвращает результат в секундах'''
+    def calculate_exp_time(self):
+        '''оценивает продолжительность эксперимента, возвращает результат в секундах, если эксперимент бесконечно долго длится, то вернется ответ True. В случае ошибки при расчете количества секунд вернется False'''
+        # проверить, есть ли бесконечный эксперимент, если да, то расчет не имеет смысла, и анализ в процессе выполнения тоже
+        # во время эксперимента после каждого измерения пересчитывается максимальное время каждого прибора и выбирается максимум, от этого максимума рассчитывается оставшийся процент времени
+
+        self.is_experiment_endless, [] = self.analyse_endless_exp()
+        if self.is_experiment_endless == True:
+            return True  # вернем правду в случае бесконечного эксперимента
+
         max_exp_time = 0
         for device in self.dict_active_device_class.values():
-            buf_time = device.get_steps_number()
-            if buf_time > max_exp_time:
-                max_exp_time = buf_time
+            buf_time = False
+            trig = device.get_trigger()
+            if trig == "Таймер":
+                steps = device.get_steps_number()
+                if steps is not False:
+                    buf_time = steps*device.get_trigger_value()
+                else:
+                    continue
+
+            elif trig == "Внешний сигнал":
+                # TODO: рассчитать время в случае срабатывания цепочек приборов. Найти корень цепочки и смотреть на его параметры, значение таймера и количество повторов, затем рассчитать длительность срабатывания цепочки и сравнить со значением таймера, вернуть наибольшее
+                continue
+            else:
+                continue
+
+            if buf_time is not False:
+
+                if buf_time > max_exp_time:
+                    max_exp_time = buf_time
         return max_exp_time
 
     def get_subscribers(self, signals, trig) -> tuple:
@@ -475,8 +546,9 @@ class installation_class():
             self.add_text_to_log(dev.get_name() + " настроен")
 
         error = not status  # флаг ошибки, будет поднят при ошибке во время эксперимента
-        error = False
-        if error is False:
+        # error = False
+
+        if error is False and self.stop_experiment == False:
             max_exp_time = self.calculate_exp_time()
 
             start_exp_time = time.time()
@@ -486,18 +558,17 @@ class installation_class():
             min_priority = len(self.current_installation_list)
             priority = 1
             for device in self.dict_active_device_class.values():
-                device.am_i_should_do_step = False
-                device.set_priority(priority)
                 device.am_i_active_in_experiment = True
                 device.number_meas = 0
                 device.previous_step_time = time.time()
                 device.pause_time = device.get_trigger_value()
                 priority += 1
 
-            self.stop_experiment = False
         # -------------------------------
         for device in self.dict_active_device_class.values():
-            pass
+            print(device)
+            print(device.__dict__.items())
+            print("---------------------------")
             # print(device.priority)
             # print(device.pause_time)
 
@@ -506,97 +577,104 @@ class installation_class():
         target_execute = False
         sr = time.time()
         while not self.stop_experiment and error == False:
-            # ----------------------------
-            if time.time() - sr > 2:
-                sr = time.time()
-                print("активных приборов - ", number_active_device)
-            # -----------------------------------
 
-            self.pbar_percent = (
-                ((time.time() - start_exp_time)/max_exp_time))*100
+            if self.pause_flag:
+                pass
+                # TODO: пауза эксперимента. остановка таймеров
+            else:
+                # ----------------------------
+                if time.time() - sr > 2:
+                    sr = time.time()
+                    print("активных приборов - ", number_active_device)
+                # -----------------------------------
 
-            number_active_device = 0
-            number_device_which_act_while = 0
-            for device in self.dict_active_device_class.values():
-                if device.get_steps_number() == False:
-                    number_device_which_act_while += 1
+                self.pbar_percent = (
+                    ((time.time() - start_exp_time)/max_exp_time))*100
 
-                if device.am_i_active_in_experiment:
-                    number_active_device += 1
-                    if device.get_trigger() == "Таймер":
-                        if time.time() - device.previous_step_time >= device.pause_time:
-                            device.previous_step_time = time.time()
-                            device.set_status_step(True)
+                number_active_device = 0
+                number_device_which_act_while = 0
+                for device in self.dict_active_device_class.values():
+                    if device.get_steps_number() == False:
+                        number_device_which_act_while += 1
 
-            if number_active_device == 0:
-                '''остановка эксперимента, нет активных приборов'''
-                self.stop_experiment = True
-                print("не осталось активных приборов, эксперимент остановлен")
-            if number_device_which_act_while == number_active_device and number_active_device == 1:
-                '''если активный прибор один и он работает, пока работают другие, то стоп'''
-                self.stop_experiment = True
+                    if device.am_i_active_in_experiment:
+                        number_active_device += 1
+                        if device.get_trigger() == "Таймер":
+                            if time.time() - device.previous_step_time >= device.pause_time:
+                                device.previous_step_time = time.time()
+                                device.set_status_step(True)
 
-            target_execute = False
-            target_priority = min_priority+1
-            for device in self.dict_active_device_class.values():
-                if device.get_status_step() == True:
-                    print(device.get_name(), "приоритет", device.get_priority())
-                    if device.get_priority() < target_priority:
-                        target_execute = device
-                        target_priority = device.get_priority()
+                if number_active_device == 0:
+                    '''остановка эксперимента, нет активных приборов'''
+                    self.stop_experiment = True
+                    print("не осталось активных приборов, эксперимент остановлен")
+                if number_device_which_act_while == number_active_device and number_active_device == 1:
+                    '''если активный прибор один и он работает, пока работают другие, то стоп'''
+                    self.stop_experiment = True
 
-            if target_execute is not False:
-                target_execute.set_status_step(False)
-                if target_execute.on_next_step() is not False:
-                    target_execute.number_meas += 1
-                    print("кол-во измерений", target_execute.get_name(),
-                          target_execute.number_meas)
-                    repeat_counter = 0
-                    while repeat_counter < self.repeat_meas:
-                        repeat_counter += 1
-                        ans, param, step_time = target_execute.do_meas()
+                target_execute = False
+                target_priority = min_priority+1
+                for device in self.dict_active_device_class.values():
+                    if device.get_status_step() == True:
+                        print(device.get_name(), "приоритет",
+                              device.get_priority())
+                        if device.get_priority() < target_priority:
+                            target_execute = device
+                            target_priority = device.get_priority()
 
-                        self.write_data_to_buf_file("", addTime=True)
-                        for param in param:
-                            self.write_data_to_buf_file(
-                                message=str(param) + "\t")
-                        self.write_data_to_buf_file(message="\n")
+                if target_execute is not False:
+                    target_execute.set_status_step(False)
+                    if target_execute.on_next_step() is not False:
+                        target_execute.number_meas += 1
+                        print("кол-во измерений", target_execute.get_name(),
+                              target_execute.number_meas)
+                        repeat_counter = 0
+                        while repeat_counter < self.repeat_meas:
+                            repeat_counter += 1
+                            ans, param, step_time = target_execute.do_meas()
 
-                        if ans == device_response_to_step.Step_done:
-                            pass
-                        if ans == device_response_to_step.Step_fail:
-                            target_execute.am_i_active_in_experiment = False
-                            break
+                            self.write_data_to_buf_file("", addTime=True)
+                            for param in param:
+                                self.write_data_to_buf_file(
+                                    message=str(param) + "\t")
+                            self.write_data_to_buf_file(message="\n")
 
-                else:
-                    target_execute.am_i_active_in_experiment = False
+                            if ans == device_response_to_step.Step_done:
+                                pass
+                            if ans == device_response_to_step.Step_fail:
+                                target_execute.am_i_active_in_experiment = False
+                                break
 
-                if target_execute.get_steps_number() is not False:
-                    if target_execute.number_meas >= target_execute.get_steps_number():
+                    else:
                         target_execute.am_i_active_in_experiment = False
 
-                subscribers = self.get_subscribers(
-                    [target_execute.get_name()], target_execute.get_name())
-                print(target_execute.get_name(), "подписчики", subscribers)
+                    if target_execute.get_steps_number() is not False:
+                        if target_execute.number_meas >= target_execute.get_steps_number():
+                            target_execute.am_i_active_in_experiment = False
 
-                if target_execute.am_i_active_in_experiment == False:
-                    '''останавливаем всех подписчиков'''
-                    for subscriber in subscribers:
-                        self.name_to_class(
-                            subscriber).am_i_active_in_experiment = False
+                    subscribers = self.get_subscribers(
+                        [target_execute.get_name()], target_execute.get_name())
+                    print(target_execute.get_name(), "подписчики", subscribers)
 
-                else:
-                    for subscriber in subscribers:
-                        '''передаем сигнал всем подписчикам'''
-                        self.name_to_class(subscriber).set_status_step(True)
+                    if target_execute.am_i_active_in_experiment == False:
+                        '''останавливаем всех подписчиков'''
+                        for subscriber in subscribers:
+                            self.name_to_class(
+                                subscriber).am_i_active_in_experiment = False
 
-                for device in self.dict_active_device_class.values():
-                    if target_execute == device:
-                        continue
                     else:
-                        if device.get_priority() > target_execute.get_priority():
-                            device.increment_priority()
-                target_execute.set_priority(min_priority)
+                        for subscriber in subscribers:
+                            '''передаем сигнал всем подписчикам'''
+                            self.name_to_class(
+                                subscriber).set_status_step(True)
+
+                    for device in self.dict_active_device_class.values():
+                        if target_execute == device:
+                            continue
+                        else:
+                            if device.get_priority() > target_execute.get_priority():
+                                device.increment_priority()
+                    target_execute.set_priority(min_priority)
 
    # -----------------------------------------------------------
 
@@ -604,11 +682,20 @@ class installation_class():
             self.add_text_to_log("Эксперимент прерван из-за ошибки", "err")
         else:
             self.add_text_to_log("Эксперимент завершен")
-
-        self.save_results()
+        try:
+            self.save_results()
+        except:
+            print("не удалось сохранить результаты")
 
         self.pbar_percent = 0  # сбрасываем прогресс бар
         # ------------------подготовка к повторному началу эксперимента---------------------
+        self.is_experiment_endless = False
+        self.stop_experiment = False
+        for device in self.dict_active_device_class.values():
+            device.am_i_active_in_experiment = True
+
+        # -----------------------------------------------------------------------
+
         if self.analyse_com_ports():
 
             # если оказались в этой точке, значит приборы настроены корректно и нет проблем с конфликтами ком портов, если подключение не будет установлено, то ключ снова будет сброшен

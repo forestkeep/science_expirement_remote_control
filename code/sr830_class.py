@@ -438,7 +438,7 @@ class sr830_class(installation_device):
               " получил подтверждение настроек, рассчитываем шаги")
         if True:
 
-            self.step_index = 0
+            self.step_index = -1
             self.i_am_set = True
             self.command = commandsSR830(self.client)
             self.device = SR830(SerialAdapter(self.client))

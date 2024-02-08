@@ -69,10 +69,6 @@ class installation_device(control_in_experiment):
         # показывает количество шагов, сюда же сохраняется параметр из окна считывания настроек. В случае источников питания это поле просто не используется. Количество шагов вычисляется по массиву токов или напряжений
         self.number_steps = "3"
 
-        # переменные флаги для определения первого измерения в шаге или последнего
-        self.is_first_meas = True
-        self.is_end_meas = False
-
         self.client = None
         self.dict_buf_parameters = {"trigger": "Таймер",
                                     "sourse/time": str(10),  # секунды
@@ -90,7 +86,12 @@ class installation_device(control_in_experiment):
 
     def on_next_step(self):  # функция сообщает прибору, что нужно перейти на следующий шаг, например, выставить новые значения тока и напряжения в случае источника питания
         '''активирует следующий шаг прибора'''
-        self.step_index = self.step_index + 1
+        is_correct = True
+        if self.step_index < self.number_steps-1:
+            self.step_index = self.step_index + 1
+        else:
+            is_correct = False  # след шага нет
+        return is_correct
 
     def get_name(self) -> str:
         return str(self.name)
@@ -151,7 +152,7 @@ class installation_device(control_in_experiment):
         return answer
 
     def get_trigger_value(self):  # унивесалььно
-        '''возвращает источник сигнала'''
+        '''возвращает источник сигнала или время в секундах, если в качестве триггера выбран таймер'''
         trigger = self.get_trigger()
         if trigger == "Таймер":
             answer = float(self.dict_settable_parameters["sourse/time"])
