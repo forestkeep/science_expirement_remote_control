@@ -16,6 +16,11 @@ from interface.save_repeat_set_window import save_repeat_set_window
 import save_in_file
 from enum import Enum
 
+# серый 147, 149, 153
+# желтый 209, 207, 100
+# зеленый 212, 250, 147
+# красный 247, 142, 106
+
 
 class type_save_file(Enum):
     txt = 1
@@ -113,11 +118,13 @@ class installation_class():
         self.installation_window.start_button.clicked.connect(
             lambda: self.push_button_start())
         self.installation_window.start_button.setStyleSheet(
-            "background-color: rgb(255, 127, 127);")
+            "background-color: rgb(147, 149, 153);")
+        self.installation_window.start_button.setText("Старт")
         self.installation_window.pause_button.clicked.connect(
             lambda: self.pause_exp())
-        self.installation_window.cancel_button.clicked.connect(
-            lambda: self.stoped_experiment())
+
+        # self.installation_window.cancel_button.clicked.connect(
+        #    lambda: self.stoped_experiment())
 
         print("реконструирован класс установки")
 
@@ -128,7 +135,8 @@ class installation_class():
                 self.installation_window.pause_button.setText("Пауза")
                 self.timer_for_pause_exp.stop()
                 self.installation_window.pause_button.setStyleSheet(
-                    "background-color: rgb(220, 220, 220);")
+                    "background-color: rgb(147, 149, 153);")
+
             else:
                 self.installation_window.pause_button.setText("Возобновить")
                 self.pause_flag = True
@@ -149,7 +157,10 @@ class installation_class():
                 self.bright = 255
                 self.down_brightness = True
 
-        style = "background-color: rgb(50" + "," + str(self.bright) + ",50);"
+        style = "background-color: rgb(" + str(self.bright) + \
+            "," + "255" + "," + str(self.bright) + ");"
+
+        # style = "background-color: rgb(50" + "," + str(self.bright) + ",50);"
 
         self.installation_window.pause_button.setStyleSheet(
             style)
@@ -188,13 +199,13 @@ class installation_class():
         # print("Настройки прибора " + str(name_device) +" переданы классу установка, статус - ", status_parameters)
         if status_parameters == True:
             self.installation_window.verticalLayoutWidget[name_device].setStyleSheet(
-                "background-color: rgb(180, 220, 180);")
+                "background-color: rgb(212, 250, 147);")
             self.dict_status_active_device_class[name_device] = True
             self.show_parameters_of_device_on_label(
                 name_device, list_parameters)
         else:
             self.installation_window.verticalLayoutWidget[name_device].setStyleSheet(
-                "background-color: rgb(255, 140, 140);")
+                "background-color: rgb(247, 142, 106);")
             self.dict_status_active_device_class[name_device] = False
             self.installation_window.label[name_device].setText("Не настроено")
 
@@ -220,10 +231,12 @@ class installation_class():
 
         if self.key_to_start_installation == True:
             self.installation_window.start_button.setStyleSheet(
-                "background-color: rgb(127, 255, 127);")
+                "background-color: rgb(212, 250, 147);")
+            self.installation_window.start_button.setText("Старт")
         else:
             self.installation_window.start_button.setStyleSheet(
-                "background-color: rgb(255, 127, 127);")
+                "background-color: rgb(247, 142, 106);")
+            self.installation_window.start_button.setText("Старт")
 
     # подтверждаем параметры приборам и передаем им настроенные и созданные клиенты для подключения
     def confirm_devices_parameters(self):
@@ -242,9 +255,10 @@ class installation_class():
             self.add_text_to_log(
                 name_device + " - соединение не установлено, проверьте подлючение", status="err")
             self.installation_window.verticalLayoutWidget[name_device].setStyleSheet(
-                "background-color: rgb(180, 180, 180);")
+                "background-color: rgb(147, 149, 153);")
             self.installation_window.start_button.setStyleSheet(
-                "background-color: rgb(255, 127, 127);")
+                "background-color: rgb(247, 142, 106);")
+            self.installation_window.start_button.setText("Старт")
             # статус прибора ставим в не настроенный
             self.dict_status_active_device_class[name_device] = False
             self.key_to_start_installation = False  # старт экспериепнта запрещаем
@@ -267,47 +281,60 @@ class installation_class():
         return buf_list
 
     def push_button_start(self):
-        # TODO проверка на тип устойств в установке, + добавить количествво шагов для измерений
-        if self.is_all_device_settable() and self.key_to_start_installation and not self.is_experiment_running():
+
+        if self.is_experiment_running():
+            self.stoped_experiment()
+            self.pause_flag = True
+            self.pause_exp()
+        else:
+
+            self.stop_experiment = True
             self.installation_window.start_button.setStyleSheet(
-                "background-color: rgb(255, 255, 127);")
+                "background-color: rgb(147, 149, 153);")
+            self.installation_window.start_button.setText("Остановка...")
+            # TODO проверка на тип устойств в установке, + добавить количествво шагов для измерений
+            if self.is_all_device_settable() and self.key_to_start_installation and not self.is_experiment_running():
+                self.installation_window.start_button.setStyleSheet(
+                    "background-color: rgb(209, 207, 100);")
+                self.installation_window.start_button.setText("Стоп")
 
-            status = True  # последние проверки перед стартом
+                status = True  # последние проверки перед стартом
 
-            if status:
-                self.stop_experiment = False
-                # создаем текстовый файл
-                name_file = ""
-                for i in self.current_installation_list:
-                    name_file = name_file + str(i) + "_"
-                currentdatetime = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-                self.buf_file = f"{name_file + currentdatetime}.txt"
-                self.write_data_to_buf_file(message="Запущена установка \n\r")
-                self.write_data_to_buf_file(message="Список приборов: " +
-                                            str(self.current_installation_list) + "\r\n")
-                for device_class, device_name in zip(self.dict_active_device_class.values(), self.current_installation_list):
+                if status:
+                    self.stop_experiment = False
+                    # создаем текстовый файл
+                    name_file = ""
+                    for i in self.current_installation_list:
+                        name_file = name_file + str(i) + "_"
+                    currentdatetime = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+                    self.buf_file = f"{name_file + currentdatetime}.txt"
                     self.write_data_to_buf_file(
-                        message="Настройки " + str(device_name) + ": \r")
-                    settings = device_class.get_settings()
-                    for set, key in zip(settings.values(), settings.keys()):
+                        message="Запущена установка \n\r")
+                    self.write_data_to_buf_file(message="Список приборов: " +
+                                                str(self.current_installation_list) + "\r\n")
+                    for device_class, device_name in zip(self.dict_active_device_class.values(), self.current_installation_list):
                         self.write_data_to_buf_file(
-                            message=str(key) + " - " + str(set) + "\r")
-                    self.write_data_to_buf_file(message="\n")
+                            message="Настройки " + str(device_name) + ": \r")
+                        settings = device_class.get_settings()
+                        for set, key in zip(settings.values(), settings.keys()):
+                            self.write_data_to_buf_file(
+                                message=str(key) + " - " + str(set) + "\r")
+                        self.write_data_to_buf_file(message="\n")
 
-                # print("старт эксперимента")
-                self.repeat_experiment = int(
-                    self.installation_window.repeat_exp_enter.currentText())
-                self.repeat_meas = int(
-                    self.installation_window.repeat_measurement_enter.currentText())
-                self.add_text_to_log("Создан файл " + self.buf_file)
-                self.add_text_to_log("Эксперимент начат")
+                    # print("старт эксперимента")
+                    self.repeat_experiment = int(
+                        self.installation_window.repeat_exp_enter.currentText())
+                    self.repeat_meas = int(
+                        self.installation_window.repeat_measurement_enter.currentText())
+                    self.add_text_to_log("Создан файл " + self.buf_file)
+                    self.add_text_to_log("Эксперимент начат")
 
-                self.experiment_thread = threading.Thread(
-                    target=self.exp_th, daemon=True)
-                self.experiment_thread.start()
-                self.timer_for_update_pbar.start(1000)
-            else:
-                pass  # TODO что делать в случае, если что-то не то
+                    self.experiment_thread = threading.Thread(
+                        target=self.exp_th, daemon=True)
+                    self.experiment_thread.start()
+                    self.timer_for_update_pbar.start(1000)
+                else:
+                    pass  # TODO что делать в случае, если что-то не то
 
     def write_data_to_buf_file(self, message, addTime=False):
         if addTime:
@@ -691,6 +718,7 @@ class installation_class():
         # ------------------подготовка к повторному началу эксперимента---------------------
         self.is_experiment_endless = False
         self.stop_experiment = False
+        self.installation_window.start_button.setText("Старт")
         for device in self.dict_active_device_class.values():
             device.am_i_active_in_experiment = True
 
@@ -709,10 +737,10 @@ class installation_class():
 
         if self.key_to_start_installation == True:
             self.installation_window.start_button.setStyleSheet(
-                "background-color: rgb(127, 255, 127);")
+                "background-color: rgb(212, 250, 147);")
         else:
             self.installation_window.start_button.setStyleSheet(
-                "background-color: rgb(255, 127, 127);")
+                "background-color: rgb(247, 142, 106);")
 
         # self.confirm_devices_parameters()
         # self.installation_window.start_button.setStyleSheet(
@@ -756,15 +784,16 @@ class installation_class():
                 list_COMs.append(com)
                 list_baud.append(baud)
                 self.installation_window.verticalLayoutWidget[self.current_installation_list[i]].setStyleSheet(
-                    "background-color: rgb(180, 255, 180);")  # красим расцветку в зеленый, analyse_com_ports вызывается после подтверждения, что все девайсы настроены
+                    "background-color: rgb(212, 250, 147);")  # красим расцветку в зеленый, analyse_com_ports вызывается после подтверждения, что все девайсы настроены
                 try:
+
                     # print(com, baud)
                     buf_client = serial.Serial(com, int(baud))
                     buf_client.close()
                     buf_client = None
                 except:
                     self.installation_window.verticalLayoutWidget[self.current_installation_list[i]].setStyleSheet(
-                        "background-color: rgb(180, 180, 127);")
+                        "background-color: rgb(147, 149, 153);")
                     print("ошибка открытия порта " + str(com))
                     if com not in fail_ports_list:
                         self.add_text_to_log(
@@ -779,10 +808,11 @@ class installation_class():
                         continue
                     if list_type_connection[i] == "serial":
                         if list_COMs[i] == list_COMs[j]:
+
                             self.installation_window.verticalLayoutWidget[self.current_installation_list[j]].setStyleSheet(
-                                "background-color: rgb(180, 180, 127);")
+                                "background-color: rgb(147, 149, 153);")
                             self.installation_window.verticalLayoutWidget[self.current_installation_list[i]].setStyleSheet(
-                                "background-color: rgb(180, 180, 127);")
+                                "background-color: rgb(147, 149, 153);")
                             self.add_text_to_log(str(self.current_installation_list[i]) + " и " + str(
                                 self.current_installation_list[j]) + " не могут иметь один COM порт", status="war")
                             status = False  # ошибка типы подключения сериал могут бть только в единственном экземпяре
@@ -790,9 +820,9 @@ class installation_class():
                         if list_COMs[i] == list_COMs[j]:
                             if list_baud[i] != list_baud[j]:
                                 self.installation_window.verticalLayoutWidget[self.current_installation_list[j]].setStyleSheet(
-                                    "background-color: rgb(180, 180, 127);")
+                                    "background-color: rgb(147, 149, 153);")
                                 self.installation_window.verticalLayoutWidget[self.current_installation_list[i]].setStyleSheet(
-                                    "background-color: rgb(180, 180, 127);")
+                                    "background-color: rgb(147, 149, 153);")
                                 self.add_text_to_log(str(self.current_installation_list[i]) + " и " + str(
                                     self.current_installation_list[j]) + " не могут иметь разную скорость подключения", status="war")
                                 status = False  # если модбас порты совпадают, то должны совпадать и скорости

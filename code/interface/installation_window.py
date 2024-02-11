@@ -92,12 +92,13 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.start_button.setStyleSheet("background-color: rgb(85, 255, 127);")
         self.pause_button = QtWidgets.QPushButton(self.centralwidget)
         self.pause_button.setGeometry(QtCore.QRect(
-            30+160*self.N, 440, 101, 23))
-        self.pause_button.setObjectName("pause_button")
-        self.cancel_button = QtWidgets.QPushButton(self.centralwidget)
-        self.cancel_button.setGeometry(QtCore.QRect(
             150+160*self.N, 440, 101, 23))
-        self.cancel_button.setObjectName("cancel_button")
+        self.pause_button.setObjectName("pause_button")
+
+        # self.cancel_button = QtWidgets.QPushButton(self.centralwidget)
+        # self.cancel_button.setGeometry(QtCore.QRect(
+        #    150+160*self.N, 440, 101, 23))
+        # self.cancel_button.setObjectName("cancel_button")
 
         '''
         self.gridLayoutWidget = QtWidgets.QWidget(self.centralwidget)
@@ -251,7 +252,8 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
     def retranslateUi(self, Installation):
         _translate = QtCore.QCoreApplication.translate
-        Installation.setWindowTitle(_translate("Installation", "MainWindow"))
+        Installation.setWindowTitle(_translate(
+            "Installation", "Experiment control"))
         i = 0
         for device in self.list_of_device:
             self.name_device[device].setText(
@@ -265,7 +267,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
             i += 1
         self.start_button.setText(_translate("Installation", "Запуск"))
         self.pause_button.setText(_translate("Installation", "Пауза"))
-        self.cancel_button.setText(_translate("Installation", "Отмена"))
+        # self.cancel_button.setText(_translate("Installation", "Отмена"))
         '''
         self.save_repeat_set_button.setText(
             _translate("Installation", "Общие настройки установки"))
