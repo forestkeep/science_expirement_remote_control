@@ -3,6 +3,7 @@ import sys
 import copy
 from PyQt5 import QtCore, QtGui, QtWidgets
 from maisheng_power_class import maisheng_power_class
+from relay_class import relay_pr1_class
 from sr830_class import sr830_class
 from pymodbus.client import ModbusSerialClient
 from pymodbus.utilities import computeCRC
@@ -15,7 +16,7 @@ from PyQt5.QtCore import QTimer
 from interface.save_repeat_set_window import save_repeat_set_window
 import save_in_file
 from enum import Enum
-
+from Classes import is_debug
 # серый 147, 149, 153
 # желтый 209, 207, 100
 # зеленый 212, 250, 147
@@ -30,7 +31,8 @@ class type_save_file(Enum):
 
 class installation_class():
     def __init__(self) -> None:
-        # флаг выставляется при нажатии кнопки пауза во время эксперимента
+        self.way_to_save_installation_file = None
+
         self.down_brightness = False
         self.bright = 50
         self.pause_flag = False
@@ -48,7 +50,7 @@ class installation_class():
             lambda: self.update_pbar())
 
         self.dict_device_class = {
-            "Maisheng": maisheng_power_class, "Lock in": sr830_class}
+            "Maisheng ": maisheng_power_class, "SR830 ": sr830_class, "PR1 ": relay_pr1_class}
         self.dict_active_device_class = {}
         self.dict_status_active_device_class = {}
         self.clients = []  # здесь хранятся классы клиентов для всех устройств, они создаются и передаются каждому устройству в установке
@@ -62,7 +64,7 @@ class installation_class():
         self.repeat_meas = 1
         self.way_to_save_fail = None
 
-    def reconstruct_installation(self, current_installation_list):
+    def reconstruct_installation(self, current_installation_list, **kwargs):
         # print(current_installation_list)
         proven_device = []
         number_device = 1
@@ -73,11 +75,12 @@ class installation_class():
                 self.dict_active_device_class[key + str(number_device)] = self.dict_device_class[key](
                     name=(key+str(number_device)), installation_class=self)
 
-                print(self.dict_active_device_class[key + str(number_device)])
+                print(
+                    self.dict_active_device_class[key + str(number_device)])
                 # словарь,показывающий статус готовности приборов, запуск установки будет произведен только если все девайсы имееют статус true
                 self.dict_status_active_device_class[key +
                                                      str(number_device)] = False
-                proven_device.append(key+str(number_device))
+                proven_device.append(key + str(number_device))
                 number_device = number_device+1
             except:
                 print("под прибор |" + key + "| не удалось создать класс")
@@ -89,6 +92,7 @@ class installation_class():
         self.installation_window.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
         self.installation_window.setupUi(
             self.installation_window, current_installation_list)
+
         if len(current_installation_list) > 0:
             self.installation_window.change_device_button[current_installation_list[0]].clicked.connect(
                 lambda: self.testable(current_installation_list[0]))
@@ -111,10 +115,6 @@ class installation_class():
         self.installation_window.way_save_button.clicked.connect(
             lambda: self.set_way_save())
 
-        '''
-		for i in range(len(current_installation_list)):
-			self.installation_window.change_device_button[current_installation_list[0]].clicked.connect(lambda : self.testable(i))
-		'''
         self.installation_window.start_button.clicked.connect(
             lambda: self.push_button_start())
         self.installation_window.start_button.setStyleSheet(
@@ -122,11 +122,17 @@ class installation_class():
         self.installation_window.start_button.setText("Старт")
         self.installation_window.pause_button.clicked.connect(
             lambda: self.pause_exp())
+        self.installation_window.pause_button.setStyleSheet(
+            "background-color: rgb(147, 149, 153);")
 
-        # self.installation_window.cancel_button.clicked.connect(
-        #    lambda: self.stoped_experiment())
+        self.installation_window.save_installation_button.triggered.connect(
+            lambda: self.push_button_save_installation())
+        self.installation_window.save_installation_button_as.triggered.connect(
+            lambda: self.push_button_save_installation_as())
+        self.installation_window.open_installation_button.triggered.connect(
+            lambda: self.push_button_open_installation())
 
-        print("реконструирован класс установки")
+        # print("реконструирован класс установки")
 
     def pause_exp(self):
         if self.is_experiment_running():
@@ -135,7 +141,7 @@ class installation_class():
                 self.installation_window.pause_button.setText("Пауза")
                 self.timer_for_pause_exp.stop()
                 self.installation_window.pause_button.setStyleSheet(
-                    "background-color: rgb(147, 149, 153);")
+                    "background-color: rgb(212, 250, 147);")
 
             else:
                 self.installation_window.pause_button.setText("Возобновить")
@@ -147,7 +153,7 @@ class installation_class():
 
         step = 15
         if self.down_brightness:
-            self.bright -= step
+            self.bright = self.bright - step
             if self.bright < 30:
                 self.bright = 0
                 self.down_brightness = False
@@ -196,7 +202,8 @@ class installation_class():
             print("объект был удален и посему закрытия не получилось, оно итак закрыто")
 
     def message_from_device_settings(self, name_device, status_parameters, list_parameters):
-        # print("Настройки прибора " + str(name_device) +" переданы классу установка, статус - ", status_parameters)
+        print("Настройки прибора " + str(name_device) +
+              " переданы классу установка, статус - ", status_parameters)
         if status_parameters == True:
             self.installation_window.verticalLayoutWidget[name_device].setStyleSheet(
                 "background-color: rgb(212, 250, 147);")
@@ -205,16 +212,19 @@ class installation_class():
                 name_device, list_parameters)
         else:
             self.installation_window.verticalLayoutWidget[name_device].setStyleSheet(
-                "background-color: rgb(247, 142, 106);")
+                "background-color: rgb(194, 191, 190);")
             self.dict_status_active_device_class[name_device] = False
             self.installation_window.label[name_device].setText("Не настроено")
 
-        # ---------------------------
-        self.analyse_endless_exp()
-        # self.separate_by_trigger()
-        print("подписчики", name_device, " - ",
-              self.get_subscribers([name_device], name_device))
-        # ---------------------------
+            # ---------------------------
+        if is_debug:
+
+            self.analyse_endless_exp()
+            # self.separate_by_trigger()
+            print("подписчики", name_device, " - ",
+                  self.get_subscribers([name_device], name_device))
+            # ---------------------------
+        self.key_to_start_installation = False
         if self.is_all_device_settable():
 
             self.set_priorities()
@@ -222,12 +232,10 @@ class installation_class():
             if self.analyse_com_ports():
                 # если оказались в этой точке, значит приборы настроены корректно и нет проблем с конфликтами ком портов, если подключение не будет установлено, то ключ снова будет сброшен
                 self.key_to_start_installation = True
-
                 self.create_clients()
                 self.set_clients_for_device()
                 self.confirm_devices_parameters()
-            else:
-                self.key_to_start_installation = False
+                self.analyse_endless_exp()
 
         if self.key_to_start_installation == True:
             self.installation_window.start_button.setStyleSheet(
@@ -235,7 +243,7 @@ class installation_class():
             self.installation_window.start_button.setText("Старт")
         else:
             self.installation_window.start_button.setStyleSheet(
-                "background-color: rgb(247, 142, 106);")
+                "background-color: rgb(194, 191, 190);")
             self.installation_window.start_button.setText("Старт")
 
     # подтверждаем параметры приборам и передаем им настроенные и созданные клиенты для подключения
@@ -257,7 +265,7 @@ class installation_class():
             self.installation_window.verticalLayoutWidget[name_device].setStyleSheet(
                 "background-color: rgb(147, 149, 153);")
             self.installation_window.start_button.setStyleSheet(
-                "background-color: rgb(247, 142, 106);")
+                "background-color: rgb(194, 191, 190);")
             self.installation_window.start_button.setText("Старт")
             # статус прибора ставим в не настроенный
             self.dict_status_active_device_class[name_device] = False
@@ -286,14 +294,15 @@ class installation_class():
             self.stoped_experiment()
             self.pause_flag = True
             self.pause_exp()
-        else:
-
-            self.stop_experiment = True
-            self.installation_window.start_button.setStyleSheet(
+            self.installation_window.pause_button.setStyleSheet(
                 "background-color: rgb(147, 149, 153);")
             self.installation_window.start_button.setText("Остановка...")
-            # TODO проверка на тип устойств в установке, + добавить количествво шагов для измерений
+        else:
             if self.is_all_device_settable() and self.key_to_start_installation and not self.is_experiment_running():
+                self.stop_experiment = True
+                self.installation_window.pause_button.setStyleSheet(
+                    "background-color: rgb(212, 250, 147);")
+
                 self.installation_window.start_button.setStyleSheet(
                     "background-color: rgb(209, 207, 100);")
                 self.installation_window.start_button.setText("Стоп")
@@ -393,7 +402,7 @@ class installation_class():
         # потенциально "проблемные приборы, которые могут работать бесконечно"
         mark_device_number = []
         for device in self.dict_active_device_class.values():
-            print(device.get_trigger(), device.get_steps_number())
+            # print(device.get_trigger(), device.get_steps_number())
             if device.get_trigger() == "Таймер" and device.get_steps_number() == False:
                 mark_device_number.append(device)
                 if len(mark_device_number) >= 2:
@@ -474,7 +483,7 @@ class installation_class():
             i += 1
             array = sourse
             sourse_lines.append(array)
-            print("линия источников", i, array)
+            # print("линия источников", i, array)
 
         dev_in_cycle = []
         buf_dev = []
@@ -484,20 +493,19 @@ class installation_class():
                 buf_dev.append(name)
                 for sourses in sourse_lines:
                     if name == sourses[i]:
-                        print("зацикливание по ветке", name, buf_dev)
+                        # print("зацикливание по ветке", name, buf_dev)
                         # При старте эксперимента этот прибор ответит, что должен делать шаг
                         device.set_status_step(True)
-                        print(device)
+                        # print(device)
                         for h in buf_dev:
                             dev_in_cycle.append(h)
                         break
                     buf_dev.append(sourses[i])
                 buf_dev = []
-        print("имя \t", "триг\t", "исттриг\t", "приор\t", "статус")
+        # print("имя \t", "триг\t", "исттриг\t", "приор\t", "статус")
         for device in self.dict_active_device_class.values():
             name = device.get_name()
-            print(name, "\t", device.get_trigger(), "\t", device.get_trigger_value(
-            ), "\t", device.get_priority(), "\t", device.get_status_step())
+            # print(name, "\t", device.get_trigger(), "\t", device.get_trigger_value(), "\t", device.get_priority(), "\t", device.get_status_step())
 
     def calculate_exp_time(self):
         '''оценивает продолжительность эксперимента, возвращает результат в секундах, если эксперимент бесконечно долго длится, то вернется ответ True. В случае ошибки при расчете количества секунд вернется False'''
@@ -515,7 +523,8 @@ class installation_class():
             if trig == "Таймер":
                 steps = device.get_steps_number()
                 if steps is not False:
-                    buf_time = steps*device.get_trigger_value()
+                    buf_time = steps * \
+                        (device.get_trigger_value() + device.base_duration_step)
                 else:
                     continue
 
@@ -529,6 +538,8 @@ class installation_class():
 
                 if buf_time > max_exp_time:
                     max_exp_time = buf_time
+            else:
+                max_exp_time = False
         return max_exp_time
 
     def get_subscribers(self, signals, trig) -> tuple:
@@ -566,17 +577,29 @@ class installation_class():
 
                 print("ошибка при настройке " +
                       dev.get_name() + " перед экспериментом")
-                # -----------РАСКОММЕНТИРОВАТЬ ПОСЛЕ ОТЛАДКИ---------------
-                # status = False
-                # break
+
+                if not is_debug:
+                    status = False
+                    break
+
                 # --------------------------------------------------------
+
             self.add_text_to_log(dev.get_name() + " настроен")
 
         error = not status  # флаг ошибки, будет поднят при ошибке во время эксперимента
         # error = False
+        print(status, "статус")
 
         if error is False and self.stop_experiment == False:
             max_exp_time = self.calculate_exp_time()
+            if max_exp_time == True:
+                # эксперимент бесконечен
+                pass
+            elif max_exp_time == False:
+                max_exp_time = 100000
+                # не определено время
+
+            print("общее время эксперимента", max_exp_time)
 
             start_exp_time = time.time()
             self.installation_window.pbar.setMinimum(0)
@@ -704,6 +727,11 @@ class installation_class():
                     target_execute.set_priority(min_priority)
 
    # -----------------------------------------------------------
+        for dev in self.dict_active_device_class.values():
+            ans = dev.action_end_experiment()
+            if ans == False:
+                print("ошибка при действии " +
+                      dev.get_name() + " после эксперимента")
 
         if error:
             self.add_text_to_log("Эксперимент прерван из-за ошибки", "err")
@@ -719,6 +747,10 @@ class installation_class():
         self.is_experiment_endless = False
         self.stop_experiment = False
         self.installation_window.start_button.setText("Старт")
+        self.pause_flag = True
+        self.pause_exp()
+        self.installation_window.pause_button.setStyleSheet(
+            "background-color: rgb(147, 149, 153);")
         for device in self.dict_active_device_class.values():
             device.am_i_active_in_experiment = True
 
@@ -740,7 +772,7 @@ class installation_class():
                 "background-color: rgb(212, 250, 147);")
         else:
             self.installation_window.start_button.setStyleSheet(
-                "background-color: rgb(247, 142, 106);")
+                "background-color: rgb(194, 191, 190);")
 
         # self.confirm_devices_parameters()
         # self.installation_window.start_button.setStyleSheet(
@@ -757,6 +789,8 @@ class installation_class():
 
         self.installation_window.log.append(
             (str(datetime.now().strftime("%H:%M:%S")) + " : " + str(text)))
+        self.installation_window.log.ensureCursorVisible()
+# setValue(self.display.verticalScrollBar().maximum())
 
     def analyse_com_ports(self) -> bool:
         ''' анализ конфликтов ком портов и проверка их наличия'''
@@ -877,7 +911,7 @@ class installation_class():
         pass
 
     def save_results(self):
-        if self.type_file_for_result != False:  # если выбран путь для сохранения результатов
+        if self.way_to_save_file != False:  # если выбран путь для сохранения результатов
             print("путь сохранения результата", self.way_to_save_file)
             if self.type_file_for_result == type_save_file.origin:
                 # TODO: сохранить результат в ориджин
@@ -910,7 +944,6 @@ class installation_class():
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         fileName, ans = QtWidgets.QFileDialog.getSaveFileName(self.installation_window,
                                                               "Save File", "", "Text Files(*.txt);; Книга Excel (*.xlsx);;Origin (*.opju)", options=options)
-
         if fileName:
             if ans == "Origin (*.opju)":
                 self.type_file_for_result = type_save_file.origin
@@ -931,18 +964,45 @@ class installation_class():
         else:
             self.type_file_for_result = False
 
+    def push_button_save_installation(self):
+        print("нажата кнопка сохранения установки")
+        if self.way_to_save_installation_file == None:
+            self.push_button_save_installation_as()
+
+    def push_button_save_installation_as(self):
+        print("нажата кнопка сохранения установки с выбором пути")
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        fileName, ans = QtWidgets.QFileDialog.getSaveFileName(self.installation_window,
+                                                              "Save File", "", "Text Files(*.txt)", options=options)
+        if ans == "Text Files(*.txt)":
+            self.way_to_save_installation_file = fileName
+
+    def push_button_open_installation(self):
+        print("нажата кнопка открыть установку")
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        fileName, ans = QtWidgets.QFileDialog.getOpenFileName(
+            self.installation_window)
+        if fileName is not None:
+            try:
+                pass  # попробовать отккыть установку
+            except:
+                print("не удалось открыть установку")
+
 
 if __name__ == "__main__":
 
-    lst1 = ["Lock in"]
-    lst4 = ["Maisheng"]
-    lst2 = ["Lock in", "Lock in",
-            "Lock in", "Lock in",
-            "Lock in"]
-    lst = ["Maisheng", "Lock in"]
+    lst1 = ["SR830 "]
+    lst4 = ["Maisheng "]
+    lst2 = ["PR1 ", "SR830 ",
+            "SR830 ", "SR830 ",
+            "SR830 "]
+    lst = ["Maisheng ", "SR830 ", "PR1 "]
+    lst4 = ["PR1 "]
     app = QtWidgets.QApplication(sys.argv)
     a = installation_class()
-    a.reconstruct_installation(lst)
+    a.reconstruct_installation(lst4)
     a.show_window_installation()
     sys.exit(app.exec_())
 

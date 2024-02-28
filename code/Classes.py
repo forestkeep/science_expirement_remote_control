@@ -10,6 +10,8 @@ import copy
 from pymodbus import exceptions
 import time
 
+is_debug = False
+
 
 class device_response_to_step(Enum):
     End_list_of_steps = 0
@@ -54,6 +56,7 @@ class installation_device(control_in_experiment):
 
     def __init__(self, name, type_connection, installation_class) -> None:
         super().__init__()
+        self.base_duration_step = 3  # базовое время, необходимое, чтобы сделать одно измерение прибором, может переопределяться в классе каждого прибора, участвует в расчете длительности эксперимента
         self.timer_for_scan_com_port = QTimer()
         self.timer_for_scan_com_port.timeout.connect(
             lambda: self._scan_com_ports())
@@ -87,6 +90,8 @@ class installation_device(control_in_experiment):
     def on_next_step(self):  # функция сообщает прибору, что нужно перейти на следующий шаг, например, выставить новые значения тока и напряжения в случае источника питания
         '''активирует следующий шаг прибора'''
         is_correct = True
+        if self.number_steps == "Пока активны другие приборы":
+            return is_correct
         if self.step_index < self.number_steps-1:
             self.step_index = self.step_index + 1
         else:
@@ -96,9 +101,9 @@ class installation_device(control_in_experiment):
     def get_name(self) -> str:
         return str(self.name)
 
-    def _scan_com_ports(self):  # универсальная функция каждого прибора
+    def _scan_com_ports(self):
         '''проверяет наличие ком портов в системе'''
-        # print("hop!")
+        #print("hop!")
         self.timer_for_scan_com_port.stop()
         ports = serial.tools.list_ports.comports()
         local_list_com_ports = []
@@ -134,28 +139,32 @@ class installation_device(control_in_experiment):
         if not stop:
             self.timer_for_scan_com_port.start(1500)
 
-    def get_type_connection(self) -> str:  # универсальная
+    def get_type_connection(self) -> str:
         return self.type_connection
 
-    def get_COM(self):  # универсальная
+    def get_COM(self):
         try:
             answer = self.dict_settable_parameters["COM"]
         except:
             answer = False
         return answer
 
-    def get_baud(self):  # универсальная
+    def get_baud(self):
         try:
             answer = self.dict_settable_parameters["baudrate"]
         except:
             answer = False
         return answer
 
-    def get_trigger_value(self):  # унивесалььно
-        '''возвращает источник сигнала или время в секундах, если в качестве триггера выбран таймер'''
+    def get_trigger_value(self):
+        '''возвращает источник сигнала или время в секундах, если в качестве триггера выбран таймер, в случае ошибки возвращает False'''
         trigger = self.get_trigger()
+
         if trigger == "Таймер":
-            answer = float(self.dict_settable_parameters["sourse/time"])
+            try:
+                answer = int(self.dict_settable_parameters["sourse/time"])
+            except:
+                answer = False
         elif trigger == "Внешний сигнал":
             answer = self.dict_settable_parameters["sourse/time"]
         else:
@@ -170,10 +179,10 @@ class installation_device(control_in_experiment):
             answer = False
         return answer
 
-    def set_client(self, client):  # универсальная
+    def set_client(self, client):
         self.client = client
 
-    def get_steps_number(self):  # унииверсаль
+    def get_steps_number(self):
         '''возвращает число шагов прибора, если число не ограничено, то возвращает False'''
         try:
             answer = int(self.dict_settable_parameters["num steps"])
@@ -181,18 +190,20 @@ class installation_device(control_in_experiment):
             answer = False
         return answer
 
-    def get_settings(self):  # универсальная
+    def get_settings(self):
         return self.dict_settable_parameters
-    # универсальная функция для каждого прибора
 
     def _action_when_select_trigger(self):
         if self.key_to_signal_func:
             # print("выбор триггера")
             if self.setting_window.triger_enter.currentText() == "Таймер":
+                buf = self.dict_buf_parameters["sourse/time"]
+                # print(type(buf))
                 self.setting_window.sourse_enter.clear()
                 self.setting_window.sourse_enter.setEditable(True)
                 self.setting_window.sourse_enter.addItems(
-                    ["5", "10", "30", "60", "120"])
+                    ["5", "10", "30", "60", "120", buf])
+                self.setting_window.sourse_enter.setCurrentText(buf)
                 self.setting_window.label_sourse.setText("Время(с)")
             else:
                 # buf = self.setting_window.sourse_enter.currentText()

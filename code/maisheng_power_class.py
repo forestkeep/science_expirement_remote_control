@@ -9,7 +9,7 @@ import copy
 from Classes import device_response_to_step, installation_device
 from pymodbus import exceptions
 import time
-
+from Classes import is_debug
 # 3Регулируемый блок питания MAISHENG WSD-20H15 (200В, 15А)
 # Создание клиента Modbus RTU
 
@@ -42,9 +42,9 @@ class maisheng_power_class(installation_device):
         self.min_step_W = 1
         self.dict_buf_parameters["type_of_work"] = "Стабилизация напряжения"
         self.dict_buf_parameters["type_step"] = "Заданный шаг"
-        self.dict_buf_parameters["high_limit"] = str(30)
+        self.dict_buf_parameters["high_limit"] = str(10)
         self.dict_buf_parameters["low_limit"] = str(self.min_step_V)
-        self.dict_buf_parameters["step"] = "5"
+        self.dict_buf_parameters["step"] = "2"
         self.dict_buf_parameters["second_value"] = str(self.max_current)
 
     def show_setting_window(self):  # менять для каждого прибора
@@ -107,6 +107,8 @@ class maisheng_power_class(installation_device):
             self.setting_window.start_enter.currentTextChanged.connect(
                 lambda: self._is_correct_parameters())
             self.setting_window.second_limit_enter.currentTextChanged.connect(
+                lambda: self._is_correct_parameters())
+            self.setting_window.sourse_enter.currentTextChanged.connect(
                 lambda: self._is_correct_parameters())
 
             self.setting_window.comportslist.highlighted.connect(
@@ -180,7 +182,15 @@ class maisheng_power_class(installation_device):
             self.is_start_value_correct = True
             self.is_step_correct = True
             self.is_second_value_correct = True
+            self.is_time_correct = True
     # проверка число или не число
+
+            if self.setting_window.triger_enter.currentText() == "Таймер":
+                try:
+                    int(self.setting_window.sourse_enter.currentText())
+                except:
+                    self.is_time_correct = False
+
             try:
                 low_value = float(
                     self.setting_window.start_enter.currentText())
@@ -217,6 +227,13 @@ class maisheng_power_class(installation_device):
                 if second_limit > max_second_limit or second_limit < 0.01:
                     self.is_second_value_correct = False
 
+            if self.is_time_correct:
+                self.setting_window.sourse_enter.setStyleSheet(
+                    "background-color: rgb(255, 255, 255);")
+            else:
+                self.setting_window.sourse_enter.setStyleSheet(
+                    "background-color: rgb(255, 180, 180);")
+
             if self.is_stop_value_correct:
                 self.setting_window.stop_enter.setStyleSheet(
                     "background-color: rgb(255, 255, 255);")
@@ -247,7 +264,6 @@ class maisheng_power_class(installation_device):
                 self.setting_window.second_limit_enter.setStyleSheet(
                     "background-color: rgb(255, 255, 255);")
             else:
-
                 if self.setting_window.type_work_enter.currentText() != "Стабилизация мощности":
                     self.setting_window.second_limit_enter.setStyleSheet(
                         "background-color: rgb(255, 180, 180);")
@@ -319,7 +335,6 @@ class maisheng_power_class(installation_device):
             self.dict_buf_parameters["second_value"] = self.setting_window.second_limit_enter.currentText(
             )
 
-# менять для каждого прибора
     def send_signal_ok(self):  # действие при подтверждении настроек, передать парамтры классу инсталляции, проверить и окрасить в цвет окошко, вписать паарметры
 
         self.add_parameters_from_window()
@@ -335,6 +350,8 @@ class maisheng_power_class(installation_device):
         if not self.is_start_value_correct:
             self.is_parameters_correct = False
         if not self.is_second_value_correct:
+            self.is_parameters_correct = False
+        if not self.is_time_correct:
             self.is_parameters_correct = False
         if self.dict_buf_parameters["type_step"] == "Заданный шаг":
             if not self.is_step_correct:
@@ -473,6 +490,7 @@ class maisheng_power_class(installation_device):
             is_correct = False
 
         # -----------------------------
+        if is_debug:
             is_correct = True
             parameters.append(
                 ["voltage_set=" + str(self.steps_voltage[self.step_index])])

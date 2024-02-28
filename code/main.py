@@ -102,7 +102,7 @@ class Mywindow(QtWidgets.QMainWindow):
                 )
                 # создаем в двух ращзных словарях значения по ключу
                 # self.dict_active_local_devices[name] = maisheng_class()
-            if name == "Polarity Relay":
+            if name == "PR1":
                 self.dict_active_local_devices_window[name] = Relay_Ui_MainWindow(
                 )
                 self.dict_active_local_devices[name] = relay_class()

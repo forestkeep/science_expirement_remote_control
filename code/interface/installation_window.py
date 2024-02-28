@@ -39,7 +39,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
             self.verticalLayoutWidget[device].setObjectName(
                 "verticalLayoutWidget" + str(i))
             self.verticalLayoutWidget[device].setStyleSheet(
-                "background-color: rgb(255, 180, 180);")
+                "background-color: rgb(194, 191, 190);")
             self.verticalLayout[device] = (
                 QtWidgets.QVBoxLayout(self.verticalLayoutWidget[device]))
             self.verticalLayout[device].setContentsMargins(5, 0, 0, 0)
@@ -89,7 +89,6 @@ class Ui_Installation(QtWidgets.QMainWindow):
         font.setPointSize(24)
         self.start_button.setFont(font)
         self.start_button.setObjectName("start_button")
-        self.start_button.setStyleSheet("background-color: rgb(85, 255, 127);")
         self.pause_button = QtWidgets.QPushButton(self.centralwidget)
         self.pause_button.setGeometry(QtCore.QRect(
             150+160*self.N, 440, 101, 23))
@@ -231,6 +230,9 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.statusbar = QtWidgets.QStatusBar(Installation)
         self.statusbar.setObjectName("statusbar")
         Installation.setStatusBar(self.statusbar)
+        self.save_installation_button_as = QtWidgets.QAction(Installation)
+        self.save_installation_button_as.setObjectName(
+            "save_installation_button_as")
         self.save_installation_button = QtWidgets.QAction(Installation)
         self.save_installation_button.setObjectName("save_installation_button")
         self.open_installation_button = QtWidgets.QAction(Installation)
@@ -238,6 +240,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.add_device_button = QtWidgets.QAction(Installation)
         self.add_device_button.setObjectName("add_device_button")
         self.menu.addAction(self.save_installation_button)
+        self.menu.addAction(self.save_installation_button_as)
         self.menu.addAction(self.open_installation_button)
         self.menu.addSeparator()
         self.menu.addAction(self.add_device_button)
@@ -281,6 +284,8 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.menu.setTitle(_translate("Installation", "Меню"))
         self.save_installation_button.setText(
             _translate("Installation", "Сохранить установку"))
+        self.save_installation_button_as.setText(
+            _translate("Installation", "Сохранить установку как..."))
         self.open_installation_button.setText(
             _translate("Installation", "Открыть установку"))
         self.add_device_button.setText(

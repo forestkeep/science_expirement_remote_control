@@ -36,6 +36,11 @@ class commandsSR830():
             param = str(param)
             self.client.write(bytes(command, "ascii") +
                               b'? ' + bytes(param, "ascii") + b'\r\n')
+        if param != False:
+            print("чтение параметров", bytes(command, "ascii") +
+                  b'? ' + bytes(param, "ascii") + b'\r\n')
+        else:
+            print(bytes(command, "ascii") + b'?\r\n')
 
         start_time = time.time()
         while time.time() - start_time < timeout:
@@ -66,7 +71,6 @@ class commandsSR830():
 
 # FMOD (?) {i} 5-4 Установка (запрос) источника опорного сигнала на внешний (0) или внутренний (1).
 
-
     def _set_sourse_base_signal(self, sourse="in"):
         dict_filter_slope = {0: "out",
                              1: "in"
@@ -75,6 +79,7 @@ class commandsSR830():
 
 
 # OFLT (?) {i} 5-6 Установка (запрос) постоянной времени от 10 мкс (0) до 30 кс (19).
+
 
     def _set_time_const(self, time_constant):
         dict_time_code = {0: 10/1000000,
@@ -219,8 +224,9 @@ class commandsSR830():
 
 if __name__ == "__main__":
     sr = commandsSR830(125)
+    print(100 * 0.000001)
 
-    sr._set_time_const(30000)
+    sr._set_sens(10/1000000)
 
 
 '''

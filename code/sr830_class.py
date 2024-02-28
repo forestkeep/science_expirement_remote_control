@@ -10,6 +10,7 @@ import copy
 from commandsSR830 import commandsSR830
 import time
 from Classes import device_response_to_step, installation_device
+from Classes import is_debug
 
 
 class sr830_class(installation_device):
@@ -161,6 +162,8 @@ class sr830_class(installation_device):
 
             self.setting_window.num_meas_enter.currentTextChanged.connect(
                 lambda: self._is_correct_parameters())
+            self.setting_window.sourse_enter.currentTextChanged.connect(
+                lambda: self._is_correct_parameters())
 
             self.setting_window.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(
                 self.send_signal_ok)
@@ -175,7 +178,9 @@ class sr830_class(installation_device):
                 self.amplitude_enter)
             self.setting_window.sourse_enter.setCurrentText(self.sourse_enter)
             self.setting_window.boudrate.setCurrentText(self.boudrate)
-            self.setting_window.comportslist.setCurrentText(self.comportslist)
+            if self.comportslist is not None:
+                self.setting_window.comportslist.setCurrentText(
+                    self.comportslist)
             self.setting_window.time_const_enter_number.setCurrentText(
                 self.time_const_enter_number)
             self.setting_window.time_const_enter_factor.setCurrentText(
@@ -202,8 +207,10 @@ class sr830_class(installation_device):
             self.setting_window.filters_enter.setCurrentText(
                 self.filters_enter)
             self.setting_window.triger_enter.setCurrentText(self.triger_enter)
-            self.setting_window.num_meas_enter.addItems(
-                ["558", "10", "30", "60", "Пока активны другие приборы"])
+            num_meas_list = ["5","10","20","50"]
+            if self.installation_class.get_signal_list(self.name) != []:#если в списке сигналов пусто, то и других активных приборов нет, текущий прибор в установке один
+                num_meas_list.append("Пока активны другие приборы")
+            self.setting_window.num_meas_enter.addItems(num_meas_list)
             self.setting_window.num_meas_enter.setCurrentText(
                 str(self.number_steps))
 
@@ -244,6 +251,7 @@ class sr830_class(installation_device):
             is_ampl_correct = True
             is_freq_correct = True
             is_num_steps_correct = True
+            is_time_correct = True
             if self.setting_window.sensitivity_enter_decimal_factor.currentText() == "V/uA":
 
                 if self.setting_window.sensitivity_enter_factor.currentText() != "X1":
@@ -273,10 +281,16 @@ class sr830_class(installation_device):
             try:
                 int(self.setting_window.num_meas_enter.currentText())
             except:
-                if self.setting_window.num_meas_enter.currentText() == "Пока активны другие приборы":
+                if self.setting_window.num_meas_enter.currentText() == "Пока активны другие приборы" and self.installation_class.get_signal_list(self.name) != []:
                     pass
                 else:
                     is_num_steps_correct = False
+
+            if self.setting_window.triger_enter.currentText() == "Таймер":
+                try:
+                    int(self.setting_window.sourse_enter.currentText())
+                except:
+                    is_time_correct = False
 
             self.setting_window.sensitivity_enter_number.setStyleSheet(
                 "background-color: rgb(255, 255, 255);")
@@ -290,6 +304,8 @@ class sr830_class(installation_device):
             self.setting_window.frequency_enter.setStyleSheet(
                 "background-color: rgb(255, 255, 255);")
             self.setting_window.num_meas_enter.setStyleSheet(
+                "background-color: rgb(255, 255, 255);")
+            self.setting_window.sourse_enter.setStyleSheet(
                 "background-color: rgb(255, 255, 255);")
 
             if not is_number_correct:
@@ -313,7 +329,11 @@ class sr830_class(installation_device):
                 self.setting_window.num_meas_enter.setStyleSheet(
                     "background-color: rgb(255, 180, 180);")
 
-            if is_number_correct and is_fact_correct and is_dec_fact_correct and is_ampl_correct and is_freq_correct and is_num_steps_correct:
+            if not is_time_correct:
+                self.setting_window.sourse_enter.setStyleSheet(
+                    "background-color: rgb(255, 180, 180);")
+
+            if is_number_correct and is_fact_correct and is_dec_fact_correct and is_ampl_correct and is_freq_correct and is_num_steps_correct and is_time_correct:
                 return True
             else:
                 return False
@@ -339,7 +359,8 @@ class sr830_class(installation_device):
         )]
         decimal_factor = sensitivity_enter_decimal_factor[self.setting_window.sensitivity_enter_decimal_factor.currentText(
         )]
-        return float(self.setting_window.sensitivity_enter_number.currentText()) * factor * decimal_factor
+
+        return round((float(self.setting_window.sensitivity_enter_number.currentText()) * factor * decimal_factor)*1000000000)/1000000000
 
     def add_parameters_from_window(self):
         self.frequency_enter = self.setting_window.frequency_enter.currentText()
@@ -549,10 +570,11 @@ class sr830_class(installation_device):
             parameters.append(val)
 
         # -----------------------------
-        is_correct = True
-        parameters.append(["disp1=" + str(254)])
-        parameters.append(["disp2=" + str(847)])
-        parameters.append(["phase=" + str(777)])
+        if is_debug:
+            is_correct = True
+            parameters.append(["disp1=" + str(254)])
+            parameters.append(["disp2=" + str(847)])
+            parameters.append(["phase=" + str(777)])
         # -----------------------------
 
         if is_correct:
