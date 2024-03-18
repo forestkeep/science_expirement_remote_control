@@ -95,5 +95,5 @@ class Ui_MainWindow(object):
         self.action_4.setText(_translate("MainWindow", "один"))
         self.actionMaisheng.setText(_translate("MainWindow", "Maisheng"))
         self.actionSVPS34.setText(_translate("MainWindow", "SVPS34"))
-        self.actionLock_in.setText(_translate("MainWindow", "Lock in"))
+        self.actionLock_in.setText(_translate("MainWindow", "SR830"))
         self.action_9.setText(_translate("MainWindow", "АКИП"))

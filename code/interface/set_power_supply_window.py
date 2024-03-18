@@ -53,12 +53,28 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
             self.horizontalLayoutWidget33)
         self.second_value_limit_label.setObjectName("second_value_limit_label")
         self.horizontalLayout33.addWidget(self.second_value_limit_label)
+
         self.second_limit_enter = QtWidgets.QComboBox(
             self.horizontalLayoutWidget33)
         self.second_limit_enter.setCurrentText("")
         self.second_limit_enter.setObjectName("second_limit_enter")
         self.second_limit_enter.setEditable(True)
         self.horizontalLayout33.addWidget(self.second_limit_enter)
+
+        self.horizontalLayoutWidget333 = QtWidgets.QWidget(Set_power_supply)
+        self.horizontalLayoutWidget333.setGeometry(
+            QtCore.QRect(145, 190, 261, 41))
+        self.horizontalLayoutWidget333.setObjectName(
+            "horizontalLayoutWidget333")
+        self.horizontalLayout333 = QtWidgets.QHBoxLayout(
+            self.horizontalLayoutWidget333)
+        self.horizontalLayout333.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout333.setObjectName("horizontalLayout33")
+        self.radioButton = QtWidgets.QRadioButton(
+            self.horizontalLayoutWidget333)
+        self.radioButton.setObjectName("radioButton")
+        self.horizontalLayout333.addWidget(self.radioButton)
+        
 
         self.horizontalLayoutWidget_2 = QtWidgets.QWidget(Set_power_supply)
         self.horizontalLayoutWidget_2.setGeometry(
@@ -202,6 +218,8 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.label_3.setText(_translate("Set_power_supply", "Триггер"))
         self.second_value_limit_label.setText(
             _translate("Set_power_supply", "V/A не больше"))
+        self.radioButton.setText(_translate(
+            "Set_power_supply", "Пройти туда-обратно?"))
         # self.label_333.setText(_translate("Set_power_supply", "A"))
         self.label_4.setText(_translate("Set_power_supply", "Тип шага"))
         self.label_5.setText(_translate("Set_power_supply", "Режим работы"))

@@ -97,12 +97,12 @@ class Mywindow(QtWidgets.QMainWindow):
             msg.exec_()
             print("прибор уже создан бл!")
         else:
-            if name == "Maisheng":
+            if name == "Maisheng_":
                 self.dict_active_local_devices_window[name] = maisheng_ui_window(
                 )
                 # создаем в двух ращзных словарях значения по ключу
                 # self.dict_active_local_devices[name] = maisheng_class()
-            if name == "PR1":
+            if name == "PR_":
                 self.dict_active_local_devices_window[name] = Relay_Ui_MainWindow(
                 )
                 self.dict_active_local_devices[name] = relay_class()
@@ -111,7 +111,7 @@ class Mywindow(QtWidgets.QMainWindow):
                 )
                 # self.dict_active_local_devices[name] = SVPS32_class()
 
-            if name == "Lock in":
+            if name == "SR830_":
                 pass
             '''
 					self.dict_active_local_devices_window[i] = 

@@ -74,6 +74,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
             self.change_device_button[device] = (QtWidgets.QPushButton(device))
             self.change_device_button[device].setObjectName(
                 "change_device_button_" + str(i+1))
+            self.change_device_button[device].setStyleSheet("background-color: rgb(180, 255, 170);")
             self.verticalLayout[device].addWidget(
                 self.change_device_button[device])
             i += 1

@@ -1,0 +1,29 @@
+Запущена установка 
+Список приборов: ['Maisheng_1', 'SR830_2']
+Настройки Maisheng_1: trigger - Таймерsourse/time - 10num steps - 13baudrate - 9600COM - COM4type_of_work - Стабилизация токаtype_step - Заданный шагhigh_limit - 3low_limit - 0.1step - 0.5second_value - 45repeat_reverse - True
+Настройки SR830_2: trigger - Внешний сигналsourse/time - Maisheng_1num steps - Пока активны другие приборыbaudrate - 9600COM - COM10time_const - 0.01filter_slope - 18SYNK_200_Hz - Onsensitivity - 0.0001reserve - low noiseinput_channel - Ainput_type - ACinput_connect - floatfilters - outfrequency - 800.0amplitude - 1.0
+21-41-41 Maisheng_1	['voltage_set=45.0']	['voltage_rel=7.03']	['current_set=0.1']	['current_rel=0.08']	
+21-43-26 SR830_2	['disp1=fail']	['disp2=fail']	['phase=fail']	
+21-43-28 Maisheng_1	['voltage_set=45.0']	['voltage_rel=1.15']	['current_set=0.6']	['current_rel=0.69']	
+21-43-52 SR830_2	['disp1=1.69725e-005']	['disp2=-0.070313']	['phase=-160.78']	
+21-43-53 Maisheng_1	['voltage_set=45.0']	['voltage_rel=18.44']	['current_set=1.1']	['current_rel=1.0']	
+21-44-07 SR830_2	['disp1=1.77064e-005']	['disp2=-0.335939']	['phase=-161.55']	
+21-44-09 Maisheng_1	['voltage_set=45.0']	['voltage_rel=4.95']	['current_set=1.6']	['current_rel=1.49']	
+21-44-22 SR830_2	['disp1=1.78964e-005']	['disp2=0.257814']	['phase=-161.7']	
+21-44-24 Maisheng_1	['voltage_set=45.0']	['voltage_rel=39.63']	['current_set=2.1']	['current_rel=2.0']	
+21-44-37 SR830_2	['disp1=1.79597e-005']	['disp2=-0.101563']	['phase=-161.93']	
+21-44-39 Maisheng_1	['voltage_set=45.0']	['voltage_rel=43.78']	['current_set=2.6']	['current_rel=2.49']	
+21-44-53 SR830_2	['disp1=1.77735e-005']	['disp2=-0.406252']	['phase=-161.86']	
+21-44-54 Maisheng_1	['voltage_set=45.0']	['voltage_rel=34.37']	['current_set=3.0']	['current_rel=2.91']	
+21-45-08 SR830_2	['disp1=1.80268e-005']	['disp2=0.0390627']	['phase=-162.33']	
+21-45-10 Maisheng_1	['voltage_set=45.0']	['voltage_rel=28.66']	['current_set=2.6']	['current_rel=2.69']	
+21-45-23 SR830_2	['disp1=1.79039e-005']	['disp2=0.226563']	['phase=-162.24']	
+21-45-25 Maisheng_1	['voltage_set=45.0']	['voltage_rel=25.44']	['current_set=2.1']	['current_rel=2.21']	
+21-45-39 SR830_2	['disp1=1.78517e-005']	['disp2=-0.468752']	['phase=-161.52']	
+21-45-40 Maisheng_1	['voltage_set=45.0']	['voltage_rel=18.19']	['current_set=1.6']	['current_rel=1.72']	
+21-45-54 SR830_2	['disp1=1.7699e-005']	['disp2=-0.539066']	['phase=-161.82']	
+21-45-56 Maisheng_1	['voltage_set=45.0']	['voltage_rel=22.72']	['current_set=1.1']	['current_rel=1.22']	
+21-46-09 SR830_2	['disp1=1.7699e-005']	['disp2=0.515629']	['phase=-161.83']	
+21-46-11 Maisheng_1	['voltage_set=45.0']	['voltage_rel=14.71']	['current_set=0.6']	['current_rel=0.62']	
+21-46-25 SR830_2	['disp1=1.73525e-005']	['disp2=0.242188']	['phase=-160.9']	
+21-46-26 Maisheng_1	['voltage_set=45.0']	['voltage_rel=0.0']	['current_set=0.1']	['current_rel=0.14']	

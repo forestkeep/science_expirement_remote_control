@@ -56,6 +56,7 @@ class installation_device(control_in_experiment):
 
     def __init__(self, name, type_connection, installation_class) -> None:
         super().__init__()
+        self.is_test = False #флаг переводит прибор в режим теста, выдаются сырые данные от функций передачи и приема
         self.base_duration_step = 3  # базовое время, необходимое, чтобы сделать одно измерение прибором, может переопределяться в классе каждого прибора, участвует в расчете длительности эксперимента
         self.timer_for_scan_com_port = QTimer()
         self.timer_for_scan_com_port.timeout.connect(
@@ -126,6 +127,7 @@ class installation_device(control_in_experiment):
         else:
             try:
                 self.setting_window.comportslist.clear()
+                print("порты очищены")
                 self.setting_window.comportslist.addItems(local_list_com_ports)
             except:
                 stop = True
@@ -218,3 +220,7 @@ class installation_device(control_in_experiment):
                     self.setting_window.sourse_enter.setCurrentText(buf)
                 self.setting_window.label_sourse.setText("Источник сигнала")
             # self.add_parameters_from_window()
+    def set_test_mode(self):
+        self.is_test = True
+    def reset_test_mode(self):
+        self.is_test = False

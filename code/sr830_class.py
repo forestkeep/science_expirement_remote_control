@@ -178,9 +178,11 @@ class sr830_class(installation_device):
                 self.amplitude_enter)
             self.setting_window.sourse_enter.setCurrentText(self.sourse_enter)
             self.setting_window.boudrate.setCurrentText(self.boudrate)
+            '''
             if self.comportslist is not None:
                 self.setting_window.comportslist.setCurrentText(
                     self.comportslist)
+            '''
             self.setting_window.time_const_enter_number.setCurrentText(
                 self.time_const_enter_number)
             self.setting_window.time_const_enter_factor.setCurrentText(
@@ -486,51 +488,52 @@ class sr830_class(installation_device):
         if not self.command._set_filter_slope(
                 slope=self.dict_settable_parameters["filter_slope"]):
             status = False
-
+        print((status))
         time.sleep(pause)
         if not self.command._set_input_conf(
                 conf=self.dict_settable_parameters["input_channel"]):
             status = False
-
+        print((status))
         time.sleep(pause)
         if not self.command._set_input_type_conf(
                 type_conf=self.dict_settable_parameters["input_type"]):
             status = False
-
+        print((status))
         time.sleep(pause)
         if not self.command._set_input_type_connect(
                 input_ground=self.dict_settable_parameters["input_connect"]):
             status = False
-
+        print((status))
         time.sleep(pause)
         if not self.command._set_line_filters(
                 type=self.dict_settable_parameters["filters"]):
             status = False
-
+        print((status))
         time.sleep(pause)
         if not self.command._set_reserve(
                 reserve=self.dict_settable_parameters["reserve"]):
             status = False
-
+        print((status))
         time.sleep(pause)
         if not self.command._set_time_const(
                 time_constant=self.dict_settable_parameters["time_const"]):
             status = False
-
+        print((status))
         time.sleep(pause)
         if not self.command._set_sens(
                 sens=self.dict_settable_parameters["sensitivity"]):
             status = False
-
+        print((status))
         time.sleep(pause)
         if not self.command._set_frequency(
                 freq=self.dict_settable_parameters["frequency"]):
             status = False
-
+        print((status))
         time.sleep(pause)
         if not self.command._set_amplitude(
                 ampl=self.dict_settable_parameters["amplitude"]):
             status = False
+        print((status))
         return status
 
     def action_end_experiment(self) -> bool:
@@ -545,36 +548,82 @@ class sr830_class(installation_device):
         parameters = [self.name]
         is_correct = True
 
-        disp1 = self.command.get_parameter(
-            command=self.command.COMM_DISPLAY, timeout=1, param=1)
-        if not disp1:
-            is_correct = False
-        else:
-            val = ["disp1=" + str(disp1)]
-            parameters.append(val)
+        is_stop_analyze = False
+        count = 0
+        result_analyze = False
+        while not is_stop_analyze:
+            self.command.push_autophase()
+            buf_display_value = []
+            for i in range(10):
+                disp2 = self.command.get_parameter(self.command.COMM_DISPLAY, timeout=1, param=2)
+                print(disp2)
+                if not disp2:
+                    continue
+                else:
+                    buf_display_value.append(float(disp2))
+                    #val = ["disp2=" + str(disp2)]
+                    #parameters.append(val)
+                #time.sleep(0.05)
+            if len(buf_display_value) > 3:
+                if max(buf_display_value) < 2 and min(buf_display_value) > -2:#выход за границы
+                    if len(buf_display_value) >= 5:
+                        for i in range(len(buf_display_value)-2):#анализ монотонности
+                            if buf_display_value[i] >= buf_display_value[i+1] and buf_display_value[i+1] <= buf_display_value[i+2]:
+                                is_stop_analyze = True
+                                result_analyze = True
+                                break
+                            if buf_display_value[i] <= buf_display_value[i+1] and buf_display_value[i+1] >= buf_display_value[i+2]:
+                                is_stop_analyze = True
+                                result_analyze = True
+                                break
 
-        disp2 = self.command.get_parameter(
-            self.command.COMM_DISPLAY, timeout=1, param=2)
-        if not disp2:
-            is_correct = False
-        else:
-            val = ["disp2=" + str(disp2)]
-            parameters.append(val)
+            count+=1
+            print("счетчик повторов нажатий кнопки автофаза",count)
+            if count >= 10:
+                is_stop_analyze = True
 
-        phase = self.command.get_parameter(
-            self.command.PHASE, timeout=1)
-        if not phase:
-            is_correct = False
+
+        if result_analyze == True:
+            print("удалось устаканить фазу, измеряем...")
+            disp1 = self.command.get_parameter(
+                command=self.command.COMM_DISPLAY, timeout=1, param=1)
+            if not disp1:
+                is_correct = False
+            else:
+                val = ["disp1=" + str(disp1)]
+                parameters.append(val)
+
+            disp2 = self.command.get_parameter(
+                self.command.COMM_DISPLAY, timeout=1, param=2)
+            if not disp2:
+                is_correct = False
+            else:
+                val = ["disp2=" + str(disp2)]
+                parameters.append(val)
+
+            phase = self.command.get_parameter(
+                self.command.PHASE, timeout=1)
+            if not phase:
+                is_correct = False
+            else:
+                val = ["phase=" + str(phase)]
+                parameters.append(val)
         else:
-            val = ["phase=" + str(phase)]
+            print("Не получилось обнулить фазу, ставим прочерки", self.name)
+            val = ["disp1=" + "fail"]
+            parameters.append(val)
+            val = ["disp2=" + "fail"]
+            parameters.append(val)
+            val = ["phase=" + "fail"]
             parameters.append(val)
 
         # -----------------------------
         if is_debug:
-            is_correct = True
-            parameters.append(["disp1=" + str(254)])
-            parameters.append(["disp2=" + str(847)])
-            parameters.append(["phase=" + str(777)])
+            if is_correct == False:
+                is_correct = True
+                parameters.append(["disp1=" + str(254)])
+                parameters.append(["disp2=" + str(847)])
+                parameters.append(["phase=" + str(777)])
         # -----------------------------
 
         if is_correct:

@@ -14,23 +14,34 @@ from Classes import device_response_to_step
 import threading
 from PyQt5.QtCore import QTimer
 from interface.save_repeat_set_window import save_repeat_set_window
-import save_in_file
 from enum import Enum
 from Classes import is_debug
+from write_exp_data import process_and_export, type_save_file
+
 # серый 147, 149, 153
 # желтый 209, 207, 100
 # зеленый 212, 250, 147
 # красный 247, 142, 106
 
 
-class type_save_file(Enum):
-    txt = 1
-    excel = 2
-    origin = 3
+class exp_th_connection():
+    def __init__(self) -> None:
+        self.flag_show_message = False
+        self.message = ""
+        self.message_status = message_status.info
+        self.is_message_show = False
+
+
+class message_status(Enum):
+    info = 1
+    warning = 2
+    critical = 3
 
 
 class installation_class():
     def __init__(self) -> None:
+        self.exp_th_connect = exp_th_connection()
+
         self.way_to_save_installation_file = None
 
         self.down_brightness = False
@@ -45,12 +56,12 @@ class installation_class():
         self.timer_for_pause_exp.timeout.connect(
             lambda: self.pause_actions())
 
-        self.timer_for_update_pbar = QTimer()
-        self.timer_for_update_pbar.timeout.connect(
-            lambda: self.update_pbar())
+        self.timer_for_connection_main_exp_thread = QTimer()
+        self.timer_for_connection_main_exp_thread.timeout.connect(
+            lambda: self.connection_two_thread())
 
         self.dict_device_class = {
-            "Maisheng ": maisheng_power_class, "SR830 ": sr830_class, "PR1 ": relay_pr1_class}
+            "Maisheng": maisheng_power_class, "SR830": sr830_class, "PR": relay_pr1_class}
         self.dict_active_device_class = {}
         self.dict_status_active_device_class = {}
         self.clients = []  # здесь хранятся классы клиентов для всех устройств, они создаются и передаются каждому устройству в установке
@@ -74,13 +85,12 @@ class installation_class():
                 # current_installation_list, self, name=(key+str(number_device)))
                 self.dict_active_device_class[key + str(number_device)] = self.dict_device_class[key](
                     name=(key+str(number_device)), installation_class=self)
-
                 print(
                     self.dict_active_device_class[key + str(number_device)])
                 # словарь,показывающий статус готовности приборов, запуск установки будет произведен только если все девайсы имееют статус true
                 self.dict_status_active_device_class[key +
                                                      str(number_device)] = False
-                proven_device.append(key + str(number_device))
+                proven_device.append(key + "_" + str(number_device))
                 number_device = number_device+1
             except:
                 print("под прибор |" + key + "| не удалось создать класс")
@@ -191,7 +201,30 @@ class installation_class():
 
     def show_window_installation(self):
         self.installation_window.show()
-        # sys.exit(self.app.exec_())
+
+    def show_information_window(self, message):
+        msg = QtWidgets.QMessageBox()
+        msg.setWindowTitle("Info")
+        msg.setText(message)
+        # { NoIcon, Question, Information, Warning, Critical }
+        msg.setIcon(QtWidgets.QMessageBox.Information)
+        msg.exec_()
+
+    def show_warning_window(self, message):
+        msg = QtWidgets.QMessageBox()
+        msg.setWindowTitle("Warning")
+        msg.setText(message)
+        # { NoIcon, Question, Information, Warning, Critical }
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.exec_()
+
+    def show_critical_window(self, message):
+        msg = QtWidgets.QMessageBox()
+        msg.setWindowTitle("Error")
+        msg.setText(message)
+        # { NoIcon, Question, Information, Warning, Critical }
+        msg.setIcon(QtWidgets.QMessageBox.Critical)
+        msg.exec_()
 
     def close_window_installation(self):
         print("закрыть окно установки")
@@ -341,7 +374,7 @@ class installation_class():
                     self.experiment_thread = threading.Thread(
                         target=self.exp_th, daemon=True)
                     self.experiment_thread.start()
-                    self.timer_for_update_pbar.start(1000)
+                    self.timer_for_connection_main_exp_thread.start(1000)
                 else:
                     pass  # TODO что делать в случае, если что-то не то
 
@@ -353,13 +386,29 @@ class installation_class():
             file.write(message)
             file.close()
 
+    def connection_two_thread(self):
+        '''функция сдля связи основного потока и потока эксперимента, поток эксперимента выставляет значения/флаги/сообщения, а основной поток их обрабатывает'''
+        if self.is_experiment_running():
+            self.timer_for_connection_main_exp_thread.start(1000)
+            self.update_pbar()
+            self.show_th_window()
+        else:
+            self.timer_for_connection_main_exp_thread.stop()
+
+    def show_th_window(self):
+        if self.exp_th_connect.flag_show_message == True:
+            self.exp_th_connect.flag_show_message = False
+            if self.exp_th_connect.message_status == message_status.info:
+                self.show_information_window(self.exp_th_connect.message)
+            elif self.exp_th_connect.message_status == message_status.warning:
+                self.show_warning_window(self.exp_th_connect.message)
+            elif self.exp_th_connect.message_status == message_status.critical:
+                self.show_critical_window(self.exp_th_connect.message)
+            self.exp_th_connect.is_message_show = True
+
     def update_pbar(self) -> None:
 
         self.installation_window.pbar.setValue(int(self.pbar_percent))
-        if self.is_experiment_running():
-            self.timer_for_update_pbar.start(1000)
-        else:
-            self.timer_for_update_pbar.stop()
 
     def name_to_class(self, name):
         for dev in self.dict_active_device_class.keys():
@@ -615,10 +664,10 @@ class installation_class():
                 priority += 1
 
         # -------------------------------
-        for device in self.dict_active_device_class.values():
-            print(device)
-            print(device.__dict__.items())
-            print("---------------------------")
+        #for device in self.dict_active_device_class.values():
+            #print(device)
+            # print(device.__dict__.items())
+            #print("---------------------------")
             # print(device.priority)
             # print(device.pause_time)
 
@@ -666,8 +715,7 @@ class installation_class():
                 target_priority = min_priority+1
                 for device in self.dict_active_device_class.values():
                     if device.get_status_step() == True:
-                        print(device.get_name(), "приоритет",
-                              device.get_priority())
+                        #print(device.get_name(), "приоритет",device.get_priority())
                         if device.get_priority() < target_priority:
                             target_execute = device
                             target_priority = device.get_priority()
@@ -693,6 +741,7 @@ class installation_class():
                                 pass
                             if ans == device_response_to_step.Step_fail:
                                 target_execute.am_i_active_in_experiment = False
+                                error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
                                 break
 
                     else:
@@ -732,17 +781,35 @@ class installation_class():
             if ans == False:
                 print("ошибка при действии " +
                       dev.get_name() + " после эксперимента")
+        self.pbar_percent = 0  # сбрасываем прогресс бар
 
         if error:
             self.add_text_to_log("Эксперимент прерван из-за ошибки", "err")
+            # вывод окна с сообщением в другом потоке
+            self.exp_th_connect.is_message_show = False
+            self.exp_th_connect.message = "Эксперимент прерван из-за ошибки. Знаем, бесят такие расплывчатые формулировки, прям ЪУЪ!!!. Мы пока не успели допилить анализ ошибок, простите"
+            self.exp_th_connect.message_status = message_status.critical
+            self.exp_th_connect.flag_show_message = True
+
+            # self.show_critical_window("эксперимент прерван из-за ошибки")
+            # TODO: из-за какой ошибки прерван эксперимент, вывести в сообщение
         else:
             self.add_text_to_log("Эксперимент завершен")
+            # self.show_information_window("Эксперимент завершен")
+            self.exp_th_connect.is_message_show = False
+            self.exp_th_connect.message = "Эксперимент завершен"
+            self.exp_th_connect.message_status = message_status.info
+            self.exp_th_connect.flag_show_message = True
+
+        # ждем, пока ббудет показано сообщение в основном потоке
+        while self.exp_th_connect.is_message_show == False:
+            pass
+
         try:
             self.save_results()
         except:
             print("не удалось сохранить результаты")
 
-        self.pbar_percent = 0  # сбрасываем прогресс бар
         # ------------------подготовка к повторному началу эксперимента---------------------
         self.is_experiment_endless = False
         self.stop_experiment = False
@@ -862,8 +929,8 @@ class installation_class():
                                 status = False  # если модбас порты совпадают, то должны совпадать и скорости
         return status
 
-    # функция создает клиенты для приборов с учетом того, что несколько приборов могут быть подключены к одному порту.
     def create_clients(self) -> None:
+        """функция создает клиенты для приборов с учетом того, что несколько приборов могут быть подключены к одному порту."""
         list_type_connection = []
         list_COMs = []
         list_baud = []
@@ -913,29 +980,25 @@ class installation_class():
     def save_results(self):
         if self.way_to_save_file != False:  # если выбран путь для сохранения результатов
             print("путь сохранения результата", self.way_to_save_file)
+
             if self.type_file_for_result == type_save_file.origin:
-                # TODO: сохранить результат в ориджин
                 print("выбран текстовый тип origin для сохранения результата")
-                pass
+
             elif self.type_file_for_result == type_save_file.excel:
-                # TODO: сохранить результат в эксель
                 print("выбран тип файла excel для сохранения результата")
-                pass
             elif self.type_file_for_result == type_save_file.txt:
-                # TODO: сохранить результат в текстовый
                 print("выбран текстовый тип файла для сохранения результата")
-                pass
             else:
-                # TODO: сохранить результат в текстовый
                 print(
                     "тип файла для сохранения результата не определен, сохраняем в txt")
-            # self.buf_file - переменная хранит путь к файлу с данными эксперимента, парсим его
 
-            with open(self.buf_file, "r") as file:
-                input_strings = file.readlines()
-                result = save_in_file.process_input_strings(input_strings)
-                save_in_file.print_instruments_data(result)
+            process_and_export(
+                self.buf_file, self.way_to_save_file, self.type_file_for_result)
+            # process_and_export(fr"C:\Users\User\YandexDisk\hobby\remoteControl\remote_control\code\Maisheng 1_SR830 2_2024-02-27 18-58-02.txt",
+            #                   self.way_to_save_file, self.type_file_for_result)
+            # self.buf_file - переменная хранит путь к файлу с данными эксперимента, парсим его
         else:
+            print("не определен тип файла для сохранения")
             # TODO: попросить пользователя ваыбрать путь для сохранения данных. блокирующая функция
             '''попросить пользователя выбрать путь для сохранения'''
 
@@ -946,14 +1009,17 @@ class installation_class():
                                                               "Save File", "", "Text Files(*.txt);; Книга Excel (*.xlsx);;Origin (*.opju)", options=options)
         if fileName:
             if ans == "Origin (*.opju)":
+                fileName = fileName + ".opju"
                 self.type_file_for_result = type_save_file.origin
                 print("origin added")
                 pass
             elif ans == "Книга Excel (*.xlsx)":
+                fileName = fileName + ".xlsx"
                 self.type_file_for_result = type_save_file.excel
                 print("excel added")
                 pass
             else:
+                fileName = fileName + ".txt"
                 self.type_file_for_result = type_save_file.txt
                 print("txt added")
                 pass
@@ -968,6 +1034,9 @@ class installation_class():
         print("нажата кнопка сохранения установки")
         if self.way_to_save_installation_file == None:
             self.push_button_save_installation_as()
+        else:
+            self.write_data_to_save_installation_file(self.way_to_save_installation_file)
+        
 
     def push_button_save_installation_as(self):
         print("нажата кнопка сохранения установки с выбором пути")
@@ -976,7 +1045,10 @@ class installation_class():
         fileName, ans = QtWidgets.QFileDialog.getSaveFileName(self.installation_window,
                                                               "Save File", "", "Text Files(*.txt)", options=options)
         if ans == "Text Files(*.txt)":
-            self.way_to_save_installation_file = fileName
+            self.way_to_save_installation_file = fileName + ".txt"
+            print(fileName)
+            self.push_button_save_installation()
+
 
     def push_button_open_installation(self):
         print("нажата кнопка открыть установку")
@@ -989,20 +1061,28 @@ class installation_class():
                 pass  # попробовать отккыть установку
             except:
                 print("не удалось открыть установку")
+    def write_data_to_save_installation_file(self, way):
+            with open(way, 'w') as file:
+                file.write(str(len(self.current_installation_list)))
+                for dev in self.current_installation_list:
+                    file.write(":")
+                    file.write(dev[0:len(dev)-2:1])
+
+    
 
 
 if __name__ == "__main__":
 
-    lst1 = ["SR830 "]
-    lst4 = ["Maisheng "]
-    lst2 = ["PR1 ", "SR830 ",
-            "SR830 ", "SR830 ",
-            "SR830 "]
-    lst = ["Maisheng ", "SR830 ", "PR1 "]
-    lst4 = ["PR1 "]
+    lst1 = ["SR830"]
+    lst4 = ["Maisheng"]
+    lst2 = ["PR", "SR830",
+            "SR830", "SR830",
+            "SR830"]
+    lst = ["Maisheng","PR"]
+    lst4 = ["PR"]
     app = QtWidgets.QApplication(sys.argv)
     a = installation_class()
-    a.reconstruct_installation(lst4)
+    a.reconstruct_installation(lst)
     a.show_window_installation()
     sys.exit(app.exec_())
 

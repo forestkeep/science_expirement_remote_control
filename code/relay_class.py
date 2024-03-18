@@ -11,7 +11,7 @@ from commandsSR830 import commandsSR830
 import time
 from Classes import device_response_to_step, installation_device
 from Classes import is_debug
-from relay_set_window import Ui_Set_relay
+from interface.relay_set_window import Ui_Set_relay
 from pymodbus.client import ModbusSerialClient
 from pymodbus.utilities import computeCRC
 from pymodbus.exceptions import ModbusIOException, NoSuchSlaveException, NotImplementedException, ParameterException, ModbusException, MessageRegisterException
@@ -24,6 +24,17 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import sys
+import enum
+
+
+class out_state(enum.Enum):
+    on = 1
+    off = 2
+
+
+class current_polarity(enum.Enum):
+    pol_1 = 1
+    pol_2 = 2
 
 
 class relay_pr1_class(installation_device):
@@ -42,6 +53,9 @@ class relay_pr1_class(installation_device):
         self.boudrate = "9600"
         self.comportslist = None
         self.triger_enter = "Таймер"
+        # --------------------------------------------------
+        self.polarity = current_polarity.pol_1
+        self.state_output = out_state.off
 
         # сюда при подтверждении параметров будет записан класс команд с клиентом
         self.command = None
@@ -112,10 +126,11 @@ class relay_pr1_class(installation_device):
 
             self.setting_window.sourse_enter.setCurrentText(self.sourse_enter)
             self.setting_window.boudrate.setCurrentText(self.boudrate)
+            '''
             if self.comportslist is not None:
                 self.setting_window.comportslist.setCurrentText(
                     self.comportslist)
-
+            '''
             self.setting_window.triger_enter.setCurrentText(self.triger_enter)
 
             num_meas_list = ["5", "10", "20", "50"]
@@ -181,9 +196,6 @@ class relay_pr1_class(installation_device):
             else:
                 return False
 
-    def change_units(self):
-        pass
-
     def add_parameters_from_window(self):
 
         if self.setting_window.radioButton.isChecked():
@@ -243,6 +255,7 @@ class relay_pr1_class(installation_device):
 
     # фцункция подтверждения корректности параметров от контроллера установкию. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств
 
+
     def confirm_parameters(self):
         print(str(self.name) +
               " получил подтверждение настроек, рассчитываем шаги")
@@ -258,54 +271,75 @@ class relay_pr1_class(installation_device):
 
         print("настройка прибора " + str(self.name) + " перед экспериментом..")
         status = True
-        if not self.command._set_filter_slope(
-                slope=self.dict_settable_parameters["filter_slope"]):
-            status = False
+        if not self._set_polarity_1():
+            return False
+        else:
+            self.polarity = current_polarity.pol_1
+        if not self._output_switching_on():
+            return False
+        else:
+            self.state_output = out_state.on
 
         return status
 
     def action_end_experiment(self) -> bool:
         '''выключение прибора'''
-        return True
+        print("выключение прибора " + str(self.name) + " после эксперимента")
+        status = True
+        if not self._set_polarity_1():
+            return False
+        else:
+            self.polarity = current_polarity.pol_1
+        if not self._output_switching_off():
+            return False
+        else:
+            self.state_output = out_state.off
+
+        return status
 
     def do_meas(self):
-        '''прочитать текущие и настроенные значения'''
-        print("делаем измерение", self.name)
+        print("делаем действие", self.name)
 
         start_time = time.time()
         parameters = [self.name]
         is_correct = True
 
-        disp1 = self.command.get_parameter(
-            command=self.command.COMM_DISPLAY, timeout=1, param=1)
-        if not disp1:
-            is_correct = False
+        if self.dict_settable_parameters["mode"] == "Смена полярности":
+            if self.polarity == current_polarity.pol_1:
+                if not self._set_polarity_2():
+                    is_correct = False
+                    val = ["Полярность=" + "fail"]
+                else:
+                    self.polarity = current_polarity.pol_2
+                    val = ["Полярность=" + str(2)]
+            else:
+                if not self._set_polarity_1():
+                    is_correct = False
+                    val = ["Полярность=" + "fail"]
+                else:
+                    val = ["Полярность=" + str(1)]
+                    self.polarity = current_polarity.pol_1
         else:
-            val = ["disp1=" + str(disp1)]
-            parameters.append(val)
+            if self.state_output == out_state.on:
+                if not self._output_switching_off():
+                    is_correct = False
+                    val = ["Выход=" + "fail"]
+                else:
+                    self.state_output = out_state.off
+                    val = ["Выход=" + "Выкл"]
+            else:
+                if not self._output_switching_on():
+                    is_correct = False
+                    val = ["Выход=" + "fail"]
+                else:
+                    val = ["Выход=" + "Вкл"]
+                    self.state_output = out_state.on
+        parameters.append(val)
 
-        disp2 = self.command.get_parameter(
-            self.command.COMM_DISPLAY, timeout=1, param=2)
-        if not disp2:
-            is_correct = False
-        else:
-            val = ["disp2=" + str(disp2)]
-            parameters.append(val)
-
-        phase = self.command.get_parameter(
-            self.command.PHASE, timeout=1)
-        if not phase:
-            is_correct = False
-        else:
-            val = ["phase=" + str(phase)]
-            parameters.append(val)
 
         # -----------------------------
         if is_debug:
             is_correct = True
-            parameters.append(["disp1=" + str(254)])
-            parameters.append(["disp2=" + str(847)])
-            parameters.append(["phase=" + str(777)])
         # -----------------------------
 
         if is_correct:
@@ -313,13 +347,6 @@ class relay_pr1_class(installation_device):
             ans = device_response_to_step.Step_done
         else:
             print("Ошибка шага", self.name)
-            val = ["disp1=" + "fail"]
-            parameters.append(val)
-            val = ["disp2=" + "fail"]
-            parameters.append(val)
-            val = ["phase=" + "fail"]
-            parameters.append(val)
-
             ans = device_response_to_step.Step_fail
 
         return ans, parameters, time.time() - start_time
@@ -327,11 +354,11 @@ class relay_pr1_class(installation_device):
     def check_connect(self) -> bool:
         return True
 
-    def _set_polarity_1(self, voltage) -> bool:
+    def _set_polarity_1(self) -> bool:
         response = self._write_reg(address=0x03E8, value=0x0008, slave=0x0A)
         return response
 
-    def _set_polarity_2(self, current) -> bool:
+    def _set_polarity_2(self) -> bool:
         response = self._write_reg(address=0x03E8, value=0x0108, slave=0x0A)
         return response
 
@@ -347,10 +374,10 @@ class relay_pr1_class(installation_device):
         response = self._write_reg(address=0x03E8, value=0x0308, slave=0x0A)
         return response
 
-    def _write_reg(self, address, slave, values) -> bool:
+    def _write_reg(self, address, slave, value) -> bool:
         try:
             ans = self.client.write_register(
-                address=address, slave=slave, values=values)
+                address=address, slave=slave, value=value)
             if isinstance(ans, ExceptionResponse):
                 print("ошибка записи в регистр реле", ans)
                 return False

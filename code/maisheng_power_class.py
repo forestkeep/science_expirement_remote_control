@@ -46,6 +46,7 @@ class maisheng_power_class(installation_device):
         self.dict_buf_parameters["low_limit"] = str(self.min_step_V)
         self.dict_buf_parameters["step"] = "2"
         self.dict_buf_parameters["second_value"] = str(self.max_current)
+        self.dict_buf_parameters["repeat_reverse"] = False
 
     def show_setting_window(self):  # менять для каждого прибора
 
@@ -89,6 +90,7 @@ class maisheng_power_class(installation_device):
                 lambda: self._change_units())
             self.setting_window.type_work_enter.currentIndexChanged.connect(
                 lambda: self._is_correct_parameters())
+            
 
             self.setting_window.type_step_enter.currentIndexChanged.connect(
                 lambda: self._action_when_select_step())
@@ -96,6 +98,7 @@ class maisheng_power_class(installation_device):
                 lambda: self._is_correct_parameters())
             self.setting_window.type_step_enter.currentIndexChanged.connect(
                 lambda: self._action_when_select_trigger())
+            self.setting_window.type_step_enter.setToolTip("Доступен фиксированный шаг. Адаптивный находится в разработке.")
 
             self.setting_window.triger_enter.currentIndexChanged.connect(
                 lambda: self._action_when_select_trigger())
@@ -141,6 +144,13 @@ class maisheng_power_class(installation_device):
             self.setting_window.second_limit_enter.setCurrentText(
                 self.dict_buf_parameters["second_value"])
             self.setting_window.second_limit_enter.setEnabled(True)
+
+            if self.dict_buf_parameters["repeat_reverse"] == False:
+                self.setting_window.radioButton.setChecked(False)
+            else:
+                self.setting_window.radioButton.setChecked(True)
+            
+            self.setting_window.radioButton.setToolTip("При активации этого пункта источник питания пройдет по шагам от стартого значения до конечного и обратно.")
 
             if self.dict_buf_parameters["type_of_work"] == "Стабилизация напряжения":
                 self.setting_window.second_value_limit_label.setText(
@@ -334,6 +344,10 @@ class maisheng_power_class(installation_device):
             )
             self.dict_buf_parameters["second_value"] = self.setting_window.second_limit_enter.currentText(
             )
+            if self.setting_window.radioButton.isChecked():
+                self.dict_buf_parameters["repeat_reverse"] = True
+            else:
+                self.dict_buf_parameters["repeat_reverse"] = False
 
     def send_signal_ok(self):  # действие при подтверждении настроек, передать парамтры классу инсталляции, проверить и окрасить в цвет окошко, вписать паарметры
 
@@ -402,6 +416,21 @@ class maisheng_power_class(installation_device):
             elif self.dict_settable_parameters["type_of_work"] == "Стабилизация мощности":
                 if self.dict_settable_parameters["type_step"] == "Заданный шаг":
                     pass
+
+            if self.dict_buf_parameters["repeat_reverse"] == True:
+                buf_current = copy.deepcopy(self.steps_current)
+                buf_voltage = copy.deepcopy(self.steps_voltage)
+                buf_current = buf_current[::-1]  # разворот списка
+                buf_voltage = buf_voltage[::-1]
+                buf_current = buf_current[1:len(buf_current)]
+                buf_voltage = buf_voltage[1:len(buf_voltage)]
+
+                for cur, vol in zip(buf_current, buf_voltage):
+                    self.steps_current.append(cur)
+                    self.steps_voltage.append(vol)
+            #print("напряжение",self.steps_voltage)
+            #print("ток",self.steps_current)
+
         else:
             pass
 
@@ -425,6 +454,9 @@ class maisheng_power_class(installation_device):
             is_correct = False
         if self._set_current(self.min_step_A*100) == False:
             is_correct = False
+        # self._output_switching_on()
+        # return True
+        #print(is_correct, "статус при включении")
         if is_correct:
             self._output_switching_on()
             return True
@@ -433,7 +465,25 @@ class maisheng_power_class(installation_device):
 
     def action_end_experiment(self) -> bool:
         '''плавное выключение прибора'''
-        # TODO: плавное выключение
+
+        print("Плавное выключение источника питания")
+        count = 3
+        is_voltage_read = False
+        while count > 0:
+            voltage = self._get_setting_voltage()
+            if voltage == False:
+                count -= 1
+            else:
+                is_voltage_read = True
+                count = 0
+        if is_voltage_read:
+            step = 5
+            while voltage > step:
+                voltage -= step
+                print("напряжение = ", voltage)
+                self._set_voltage(voltage*100)
+                time.sleep(5)
+
         self._output_switching_off()
         return
 
@@ -446,9 +496,13 @@ class maisheng_power_class(installation_device):
 
             if self._set_voltage(self.steps_voltage[self.step_index]*100) == False:
                 is_correct = False
+
             if self._set_current(self.steps_current[self.step_index]*100) == False:
                 is_correct = False
-            return True
+
+            if is_correct:
+                """ожидание установки значений"""
+                time.sleep(1)
         else:
             is_correct = False  # след шага нет
 
@@ -456,7 +510,6 @@ class maisheng_power_class(installation_device):
 
     def do_meas(self):
         '''прочитать текущие и настроенные значения'''
-
         start_time = time.time()
         parameters = [self.name]
         is_correct = True
@@ -560,8 +613,8 @@ class maisheng_power_class(installation_device):
             "0042", 16), count=2, slave=1, values=[0, 0])
         return response
 
-    # удаленная настройка выходной частоты в Гц
     def _set_frequency(self, frequency) -> bool:
+        """удаленная настройка выходной частоты в Гц"""
         high = 0
         if frequency > 65535:
             high = 1
@@ -578,51 +631,69 @@ class maisheng_power_class(installation_device):
         return response
 
     def _write_reg(self, address, count, slave, values) -> bool:
-        try:
-            ans = self.client.write_registers(
-                address=address, count=count, slave=slave, values=values)
-            if ans.isError():
-                print("ошибка ответа устройства при установке значения", ans)
+        if self.is_test == True:
+            return self.client.write_registers(
+                    address=address, count=count, slave=slave, values=values)
+        else:
+            try:
+                ans = self.client.write_registers(
+                    address=address, count=count, slave=slave, values=values)
+                if ans.isError():
+                    print("ошибка ответа устройства при установке значения", ans)
+                    return False
+                else:
+                    pass
+                    #print(ans.registers)
+            except:
+                print("Ошибка модбас модуля или клиента")
                 return False
-            else:
-                print(ans.registers)
-        except:
-            print("Ошибка модбас модуля или клиента")
-            return False
-        return True
+            return True
 # ----------------------------------------------------------------
 
+    def set_test_mode(self):
+        '''переводит прибор в режим теста, выдаются сырые данные от функций передачи и приема'''
+        self.is_test = True
+
+    def reset_test_mode(self):
+        self.is_test = False
+
     def _read_current_parameters(self, address, count, slave):
-        try:
-            ans = self.client.read_input_registers(
-                address=address, count=count, slave=slave)
-            if ans.isError():
-                print("ошибка ответа устройства при чтении текущего", ans)
+        if self.is_test == True:
+            return self.client.read_input_registers(address=address, count=count, slave=slave)
+        else:
+            try:
+                ans = self.client.read_input_registers(
+                    address=address, count=count, slave=slave)
+
+                if ans.isError():
+                    print("ошибка ответа устройства при чтении текущего", ans)
+                    return False
+                else:
+                    #print(ans.registers)
+                    return ans.registers
+            except:
+                print("Ошибка модбас модуля или клиента")
                 return False
-            else:
-                print(ans.registers)
-                return ans.registers
-        except:
-            print("Ошибка модбас модуля или клиента")
-            return False
 
     def _get_current_voltage(self):
         response = self._read_current_parameters(
             address=int("0000", 16), count=1, slave=1)
-        if response != False:
-            pass
-            response = response[0]/100
+        if self.is_test == True:
+            return response
 
-            # TODO читаем параметры и кладем их в респонсе
+        if response != False:
+            response = response[0]/100
         return response
 
     def _get_current_current(self):
         response = self._read_current_parameters(
             address=int("0001", 16), count=1, slave=1)
+        if self.is_test == True:
+            return response
+
         if response != False:
             pass
             response = response[0]/100
-            # TODO читаем параметры и кладем их в респонсе
         return response
 
     def _get_current_frequency(self):
@@ -633,14 +704,18 @@ class maisheng_power_class(installation_device):
 # ----------------------------------------------------------------
 
     def _read_setting_parameters(self, address, count, slave):
+        if self.is_test == True:
+            return self.client.read_holding_registers(
+                address=address, count=count, slave=slave)
         try:
             ans = self.client.read_holding_registers(
                 address=address, count=count, slave=slave)
+
             if ans.isError():
                 print("ошибка ответа устройства при чтении установленного", ans)
                 return False
             else:
-                print(ans.registers)
+                #print(ans.registers)
                 return ans.registers
         except:
             print("Ошибка модбас модуля или клиента")
@@ -649,9 +724,11 @@ class maisheng_power_class(installation_device):
     def _get_setting_voltage(self):
         response = self._read_setting_parameters(
             address=int("0040", 16), count=2, slave=1)
+        if self.is_test == True:
+            return response
+
         if response != False:
             response = response[1]/100
-            # TODO читаем параметры и кладем их в респонсе
         return response
 
     def _get_setting_current(self):
@@ -690,22 +767,46 @@ class maisheng_power_class(installation_device):
 if __name__ == "__main__":
     # Создание клиента Modbus RTU
     client = ModbusSerialClient(
-        method='rtu', port='COM13', baudrate=9600, stopbits=1, bytesize=8, parity='E')
+        method='rtu', port='COM3', baudrate=9600, stopbits=1, bytesize=8, parity='E')
 
-    power_supply = maisheng_power_class([], "tr", "rere")
+    power_supply = maisheng_power_class("wsd", "rere")
     power_supply.set_client(client)
+    power_supply.set_test_mode()
+    while True:
+        print("введи значение напряжения, разделитель точка")
+        voltage = input()
+        flag = True
+        try:
+            voltage = float(voltage)
+        except:
+            print("ошибка, нужно ввести число")
+            flag = False
 
-    power_supply._set_voltage(200)
+        if flag:
+            ans = power_supply._set_voltage(voltage*100)
+            print("ответ модуля:", ans)
+            time.sleep(2)
+            print("читаем установленное значение напряжения...")
+            ans = power_supply._get_setting_voltage()
+            print("ответ модуля на чтение установленного напряжения:", ans)
+            time.sleep(2)
+            print("читаем текущее значение напряжения...")
+            ans = power_supply._get_current_voltage()
+            print("ответ модуля на чтение текущего напряжения(с дисплея):", ans)
+
+            client.close()
+
+    # power_supply._set_current(1500)
     '''
     for i in range(0,20000,1000):
         set_voltage(client,i)
         time.sleep(5)
     '''
-    power_supply._output_switching_off()
-    power_supply._set_current(1500)
-    i = power_supply._get_setting_voltage()
+    # power_supply._output_switching_off()
+    # power_supply._set_current(1500)
+    # i = power_supply._get_setting_voltage()
 
-    print(i.registers)
+    # print(i.registers)
 
     '''
     print("установка напряжения ответ", set_voltage(client,10000))

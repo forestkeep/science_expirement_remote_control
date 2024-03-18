@@ -27,7 +27,14 @@ class commandsSR830():
         self.COMM_SERIAL_PULL_STATUS_BYTE = '*STB?\r\n'
 
         self.client = client
-# Одно измерение включает в себя на лок-ине: автоматическая симуляция нажатия кнопок блока AUTO phase, затем, после фиксации, gain. Далее идет проверка меняется ли сигнал в течение некоторого времени (задается в до начала измерений в отдельном текстовом окне) (по умолчанию 10 секунд). Если сигнал не изменился более чем на 1%, (тоже было бы неплохо вводить это значение в отдельном текстовом окне до начала измерений) то записать в строку в текстовом файле
+        
+    def push_autogain(self):
+        print(bytes(self.COMM_AUTO_GAIN, "ascii") + b'\r\n')
+        self.client.write(bytes(self.COMM_AUTO_GAIN, "ascii") + b'\r\n')
+
+    def push_autophase(self):
+        print(bytes(self.COMM_AUTO_APHS, "ascii") + b'\r\n')
+        self.client.write(bytes(self.COMM_AUTO_APHS, "ascii") + b'\r\n')
 
     def get_parameter(self, command, timeout, param=False):
         if param == False:
@@ -225,9 +232,7 @@ class commandsSR830():
 if __name__ == "__main__":
     sr = commandsSR830(125)
     print(100 * 0.000001)
-
     sr._set_sens(10/1000000)
-
 
 '''
 		device = SR830(SerialAdapter("COM10"))

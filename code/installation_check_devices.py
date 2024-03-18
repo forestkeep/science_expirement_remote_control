@@ -94,7 +94,7 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
         self.checkBox.setText(_translate("Dialog", "Maisheng"))
         self.checkBox_2.setText(_translate("Dialog", "SVPS34"))
         self.checkBox_3.setText(_translate("Dialog", "Polarity Relay"))
-        self.checkBox_4.setText(_translate("Dialog", "Lock in"))
+        self.checkBox_4.setText(_translate("Dialog", "SR830"))
         self.checkBox_5.setText(_translate("Dialog", "АКИП"))
 
     def send_signal(self):
@@ -104,9 +104,9 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
         if self.checkBox_2.isChecked():
             device_tupple.append("SVPS34")
         if self.checkBox_3.isChecked():
-            device_tupple.append("Polarity Relay")
+            device_tupple.append("PR")
         if self.checkBox_4.isChecked():
-            device_tupple.append("Lock in")
+            device_tupple.append("SR830")
         if self.checkBox_5.isChecked():
             device_tupple.append("АКИП")
 

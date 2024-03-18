@@ -69,7 +69,7 @@ class Ui_Selectdevice(QtWidgets.QDialog):
         self.pushButton.setText(_translate("Selectdevice", "Maisheng"))
         self.pushButton_5.setText(_translate("Selectdevice", "SVPS34"))
         self.pushButton_2.setText(_translate("Selectdevice", "Polarity Relay"))
-        self.pushButton_3.setText(_translate("Selectdevice", "Lock in"))
+        self.pushButton_3.setText(_translate("Selectdevice", "SR830"))
         self.pushButton_4.setText(_translate("Selectdevice", "АКИП"))
 
     def set_color(self,mother_window):
@@ -85,7 +85,7 @@ class Ui_Selectdevice(QtWidgets.QDialog):
              self.pushButton_2.setStyleSheet("background-color: rgb(255, 85, 127);")
         else:
              self.pushButton_2.setStyleSheet("background-color: rgb(85, 255, 127);")
-        if "Lock in" in mother_window.dict_active_local_devices:
+        if "SR830" in mother_window.dict_active_local_devices:
              self.pushButton_3.setStyleSheet("background-color: rgb(255, 85, 127);")
         else:
              self.pushButton_3.setStyleSheet("background-color: rgb(85, 255, 127);")
