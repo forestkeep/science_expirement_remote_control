@@ -55,6 +55,7 @@ class maisheng_power_class(installation_device):
         else:
             # при новом запуске окна настроек необходимо обнулять активный порт для продолжения сканирования
             self.active_ports = []
+            print(4343343434343)
             self.setting_window = Ui_Set_power_supply()
             self.setting_window.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
             self.setting_window.setupUi(self.setting_window)

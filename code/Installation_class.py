@@ -83,14 +83,14 @@ class installation_class():
             try:
                 # self.dict_active_device_class[key+str(number_device)] = self.dict_device_class[key](
                 # current_installation_list, self, name=(key+str(number_device)))
-                self.dict_active_device_class[key + str(number_device)] = self.dict_device_class[key](
-                    name=(key+str(number_device)), installation_class=self)
+                self.dict_active_device_class[key + "_"+ str(number_device)] = self.dict_device_class[key](
+                    name=(key+"_"+str(number_device)), installation_class=self)
                 print(
-                    self.dict_active_device_class[key + str(number_device)])
+                    self.dict_active_device_class[key +"_"+ str(number_device)])
                 # словарь,показывающий статус готовности приборов, запуск установки будет произведен только если все девайсы имееют статус true
-                self.dict_status_active_device_class[key +
+                self.dict_status_active_device_class[key + "_"+
                                                      str(number_device)] = False
-                proven_device.append(key + "_" + str(number_device))
+                proven_device.append(key +"_"+ str(number_device))
                 number_device = number_device+1
             except:
                 print("под прибор |" + key + "| не удалось создать класс")
@@ -195,6 +195,7 @@ class installation_class():
                 except:
                     print(
                         "не удалось закрыть клиент связи, скорее всего, этого не требовалось")
+            print(self.dict_active_device_class[device])
             self.dict_active_device_class[device].show_setting_window()
         else:
             print("запущен эксперимент, запрещено менять параметры приборов")
@@ -1065,8 +1066,14 @@ class installation_class():
             with open(way, 'w') as file:
                 file.write(str(len(self.current_installation_list)))
                 for dev in self.current_installation_list:
-                    file.write(":")
+                    file.write("|")
                     file.write(dev[0:len(dev)-2:1])
+                file.write("\n")
+                for dev in self.current_installation_list:
+                    file.write(self.installation_window.label[dev].text())
+                    file.write("--------------------")
+                    file.write("\n")
+                    
 
     
 

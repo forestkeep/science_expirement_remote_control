@@ -1,0 +1,19 @@
+2/Maisheng/PR/trigger:Таймер
+sourse/time:10
+num steps:0
+baudrate:9600
+COM:COM4
+type_of_work:Стабилизация напряжения
+type_step:Заданный шаг
+high_limit:10
+low_limit:0.01
+step:2
+second_value:15
+repeat_reverse:False
+/trigger:Таймер
+sourse/time:10
+num steps:3
+baudrate:9600
+COM:COM4
+mode:Смена полярности
+
