@@ -48,11 +48,11 @@ class relay_pr1_class(installation_device):
         self.dict_buf_parameters["num steps"] = "1"
 
         # переменные для сохранения параметров окна-----------------------------
-        self.mode = "Смена полярности"
-        self.sourse_enter = "5"
-        self.boudrate = "9600"
-        self.comportslist = None
-        self.triger_enter = "Таймер"
+        #self.mode = "Смена полярности"
+        #self.sourse_enter = "5"
+        #self.boudrate = "9600"
+        #self.comportslist = None
+        #self.triger_enter = "Таймер"
         # --------------------------------------------------
         self.polarity = current_polarity.pol_1
         self.state_output = out_state.off
@@ -124,14 +124,14 @@ class relay_pr1_class(installation_device):
             self.key_to_signal_func = False
             # ============установка текущих параметров=======================
 
-            self.setting_window.sourse_enter.setCurrentText(self.sourse_enter)
-            self.setting_window.boudrate.setCurrentText(self.boudrate)
+            self.setting_window.sourse_enter.setCurrentText(self.dict_buf_parameters["sourse/time"])
+            self.setting_window.boudrate.setCurrentText(self.dict_buf_parameters["baudrate"])
             '''
             if self.comportslist is not None:
                 self.setting_window.comportslist.setCurrentText(
                     self.comportslist)
             '''
-            self.setting_window.triger_enter.setCurrentText(self.triger_enter)
+            self.setting_window.triger_enter.setCurrentText(self.dict_buf_parameters["trigger"])
 
             num_meas_list = ["5", "10", "20", "50"]
             # если в списке сигналов пусто, то и других активных приборов нет, текущий прибор в установке один
@@ -140,12 +140,12 @@ class relay_pr1_class(installation_device):
             self.setting_window.num_meas_enter.addItems(num_meas_list)
 
             self.setting_window.num_meas_enter.setCurrentText(
-                str(self.number_steps))
+                str(self.dict_buf_parameters["num steps"]))
 
             self.setting_window.sourse_enter.setCurrentText(
                 self.dict_buf_parameters["sourse/time"])
 
-            if self.mode != "Включение - Выключение":
+            if self.dict_buf_parameters["mode"] != "Включение - Выключение":
                 self.setting_window.change_pol_button.setChecked(True)
                 self.setting_window.radioButton.setEnabled(True)
             else:
@@ -199,25 +199,25 @@ class relay_pr1_class(installation_device):
     def add_parameters_from_window(self):
 
         if self.setting_window.radioButton.isChecked():
-            self.mode = "Включение - Выключение"
+            self.dict_buf_parameters["mode"] = "Включение - Выключение"
         else:
-            self.mode = "Смена полярности"
-        self.triger_enter = self.setting_window.triger_enter.currentText()
-        self.sourse_enter = self.setting_window.sourse_enter.currentText()
-        self.boudrate = self.setting_window.boudrate.currentText()
-        self.comportslist = self.setting_window.comportslist.currentText()
+            self.dict_buf_parameters["mode"] = "Смена полярности"
+        #self.triger_enter = self.setting_window.triger_enter.currentText()
+        #self.sourse_enter = self.setting_window.sourse_enter.currentText()
+        #self.boudrate = self.setting_window.boudrate.currentText()
+        #self.comportslist = self.setting_window.comportslist.currentText()
 
         try:
-            self.number_steps = int(
+            self.dict_buf_parameters["num steps"] = int(
                 self.setting_window.num_meas_enter.currentText())
         except:
             if self.setting_window.num_meas_enter.currentText() == "":
-                self.number_steps = self.setting_window.num_meas_enter.currentText()
+                self.dict_buf_parameters["num steps"] = self.setting_window.num_meas_enter.currentText()
             else:
-                self.number_steps = "Пока активны другие приборы"
+                self.dict_buf_parameters["num steps"] = "Пока активны другие приборы"
 
         if self.key_to_signal_func:
-            self.dict_buf_parameters["num steps"] = self.number_steps
+            #self.dict_buf_parameters["num steps"] = self.number_steps
             self.dict_buf_parameters["trigger"] = self.setting_window.triger_enter.currentText(
             )
             self.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_enter.currentText()
@@ -225,7 +225,7 @@ class relay_pr1_class(installation_device):
             )
             self.dict_buf_parameters["COM"] = self.setting_window.comportslist.currentText(
             )
-            self.dict_buf_parameters["mode"] = self.mode
+            #self.dict_buf_parameters["mode"] = self.mode
 
     def send_signal_ok(self):  # действие при подтверждении настроек, передать парамтры классу инсталляции, проверить и окрасить в цвет окошко, вписать паарметры
         self.add_parameters_from_window()
@@ -385,6 +385,7 @@ class relay_pr1_class(installation_device):
             print("Ошибка модбас модуля или клиента")
             return False
         return True
+
 
 
 '''

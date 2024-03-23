@@ -20,10 +20,10 @@ class sr830_class(installation_device):
         self.device = None  # класс прибора будет создан при подтверждении параметров,
         # переменная хранит все возможные источники сигналов , сделать функцию, формирующую этот список в зависимости от структуры установки
         self.counter = 0
-        self.dict_buf_parameters["time_const"] = "1000",  # секунды
-        self.dict_buf_parameters["filter_slope"] = "6",  # dB
-        self.dict_buf_parameters["SYNK_200_Hz"] = "off",
-        self.dict_buf_parameters["sensitivity"] = "1",  # вольты
+        self.dict_buf_parameters["time_const"] = "1000"  # секунды
+        self.dict_buf_parameters["filter_slope"] = "6"  # dB
+        self.dict_buf_parameters["SYNK_200_Hz"] = "off"
+        self.dict_buf_parameters["sensitivity"] = "1"  # вольты
         self.dict_buf_parameters["reserve"] = "high reserve"
         self.dict_buf_parameters["input_channel"] = "A"
         self.dict_buf_parameters["input_type"] = "AC"
@@ -34,25 +34,26 @@ class sr830_class(installation_device):
         self.dict_buf_parameters["num steps"] = "1"
 
         # переменные для сохранения параметров окна-----------------------------
-        self.frequency_enter = "400"
-        self.amplitude_enter = "1"
-        self.sourse_enter = "5"
-        self.boudrate = "9600"
-        self.comportslist = None
-        self.time_const_enter_number = "1"
-        self.time_const_enter_factor = "X1"
-        self.time_const_enter_decimal_factor = "ks"
-        self.Filt_slope_enter_level = "6 dB"
-        self.SYNK_enter = "On"
-        self.sensitivity_enter_number = "1"
-        self.sensitivity_enter_factor = "X1"
-        self.sensitivity_enter_decimal_factor = "V"
-        self.input_channels_enter = "A"
-        self.input_type_enter = "AC"
-        self.connect_ch_enter = "float"
-        self.reserve_enter = "high reserve"
-        self.filters_enter = "line"
-        self.triger_enter = "Таймер"
+        #self.frequency_enter = "400"
+        #self.amplitude_enter = "1"
+        #self.sourse_enter = "5"
+        #self.boudrate = "9600"
+        #self.comportslist = None
+        #self.time_const_enter_number = "1"
+        #self.time_const_enter_factor = "X1"
+        #self.time_const_enter_decimal_factor = "ks"
+        #self.Filt_slope_enter_level = "6 dB"
+        #self.SYNK_enter = "On"
+        #self.sensitivity_enter_number = "1"
+        #self.sensitivity_enter_factor = "X1"
+        #self.sensitivity_enter_decimal_factor = "V"
+
+        #self.input_channels_enter = "A"
+        #self.input_type_enter = "AC"
+        #self.connect_ch_enter = "float"
+        #self.reserve_enter = "high reserve"
+        #self.filters_enter = "line"
+        #self.triger_enter = "Таймер"
 
         # сюда при подтверждении параметров будет записан класс команд с клиентом
         self.command = None
@@ -173,42 +174,47 @@ class sr830_class(installation_device):
             # ============установка текущих параметров=======================
 
             self.setting_window.frequency_enter.setCurrentText(
-                self.frequency_enter)
+                str(self.dict_buf_parameters["frequency"]))
             self.setting_window.amplitude_enter.setCurrentText(
-                self.amplitude_enter)
-            self.setting_window.sourse_enter.setCurrentText(self.sourse_enter)
-            self.setting_window.boudrate.setCurrentText(self.boudrate)
+                str(self.dict_buf_parameters["amplitude"]))
+            self.setting_window.sourse_enter.setCurrentText(self.dict_buf_parameters["sourse/time"])
+            self.setting_window.boudrate.setCurrentText(self.dict_buf_parameters["baudrate"])
             '''
             if self.comportslist is not None:
                 self.setting_window.comportslist.setCurrentText(
                     self.comportslist)
             '''
+            number,factor,dec_factor = self.get_parts_time_const(float(self.dict_buf_parameters["time_const"]))
             self.setting_window.time_const_enter_number.setCurrentText(
-                self.time_const_enter_number)
+                number)
             self.setting_window.time_const_enter_factor.setCurrentText(
-                self.time_const_enter_factor)
+                factor)
             self.setting_window.time_const_enter_decimal_factor.setCurrentText(
-                self.time_const_enter_decimal_factor)
-            self.setting_window.Filt_slope_enter_level.setCurrentText(
-                self.Filt_slope_enter_level)
-            self.setting_window.SYNK_enter.setCurrentText(self.SYNK_enter)
+                dec_factor)
+            
+            self.setting_window.Filt_slope_enter_level.setCurrentText(str(self.dict_buf_parameters["filter_slope"]))
+            self.setting_window.SYNK_enter.setCurrentText(str(self.dict_buf_parameters["SYNK_200_Hz"]))
+
+            number,factor,dec_factor = self.get_parts_sen(float(self.dict_buf_parameters["sensitivity"]))
             self.setting_window.sensitivity_enter_number.setCurrentText(
-                self.sensitivity_enter_number)
+                number)
             self.setting_window.sensitivity_enter_factor.setCurrentText(
-                self.sensitivity_enter_factor)
+                factor)
             self.setting_window.sensitivity_enter_decimal_factor.setCurrentText(
-                self.sensitivity_enter_decimal_factor)
+                dec_factor)
+            
+
             self.setting_window.input_channels_enter.setCurrentText(
-                self.input_channels_enter)
+                self.dict_buf_parameters["input_channel"])
             self.setting_window.input_type_enter.setCurrentText(
-                self.input_type_enter)
+                self.dict_buf_parameters["input_type"])
             self.setting_window.connect_ch_enter.setCurrentText(
-                self.connect_ch_enter)
+                self.dict_buf_parameters["input_connect"])
             self.setting_window.reserve_enter.setCurrentText(
-                self.reserve_enter)
+                self.dict_buf_parameters["reserve"])
             self.setting_window.filters_enter.setCurrentText(
-                self.filters_enter)
-            self.setting_window.triger_enter.setCurrentText(self.triger_enter)
+                self.dict_buf_parameters["filters"])
+            self.setting_window.triger_enter.setCurrentText(self.dict_buf_parameters["trigger"])
             num_meas_list = ["5","10","20","50"]
             if self.installation_class.get_signal_list(self.name) != []:#если в списке сигналов пусто, то и других активных приборов нет, текущий прибор в установке один
                 num_meas_list.append("Пока активны другие приборы")
@@ -219,27 +225,6 @@ class sr830_class(installation_device):
             self.setting_window.sourse_enter.setCurrentText(
                 self.dict_buf_parameters["sourse/time"])
 
-            '''
-
-            if self.setting_window.triger_enter.currentText() == "Таймер":
-                self.setting_window.sourse_enter.clear()
-                self.setting_window.sourse_enter.setEditable(True)
-                self.setting_window.sourse_enter.addItems(
-                    ["5", "10", "30", "60", "120"])
-                self.setting_window.sourse_enter.setCurrentText(
-                    self.sourse_enter)
-                self.setting_window.label_sourse.setText("Время(с)")
-            else:
-                self.setting_window.sourse_enter.clear()
-                self.setting_window.sourse_enter.setEditable(False)
-                self.signal_list = self.installation_class.get_signal_list(
-                    self.name)
-                self.setting_window.sourse_enter.addItems(self.signal_list)
-                self.setting_window.sourse_enter.addItems(["1", "2", "3", "4"])
-                self.setting_window.sourse_enter.setCurrentText(
-                    self.sourse_enter)
-                self.setting_window.label_sourse.setText("Источник сигнала")
-            '''
             self.key_to_signal_func = True  # разрешаем выполенение функций
             self._action_when_select_trigger()
 
@@ -351,7 +336,7 @@ class sr830_class(installation_device):
         )]
         decimal_factor = time_const_enter_decimal_factor[self.setting_window.time_const_enter_decimal_factor.currentText(
         )]
-        return float(self.setting_window.time_const_enter_number.currentText()) * factor * decimal_factor
+        return round(float(self.setting_window.time_const_enter_number.currentText()) * factor * decimal_factor*1000000000)/1000000000
 
     def calculate_sensitivity(self) -> str:
         sensitivity_enter_factor = {"X1": 1, "X10": 10, "X100": 100}
@@ -364,26 +349,67 @@ class sr830_class(installation_device):
 
         return round((float(self.setting_window.sensitivity_enter_number.currentText()) * factor * decimal_factor)*1000000000)/1000000000
 
+    def get_parts_sen(self, value):
+        sensitivity_enter_decimal_factor = {
+            1:"V/uA", 0.001:"mV/nA", 0.000001:"uV/pA", 0.000000001:"nV/fA"} 
+        numbers = [1,3,5]
+        factors  = [1,10,100]
+        dec_factors = [1/1000000000,1/1000000,1/1000,1]
+
+        number = 1
+        factor = 1
+        dec_factor = 1
+        for i in range(len(numbers)):
+            for j in range(len(factors)):
+                for k in range(len(dec_factors)):
+                    if value == round(numbers[i]*factors[j]*dec_factors[k]*1000000000)/1000000000:
+                        number = numbers[i]
+                        factor = factors[j]
+                        dec_factor = dec_factors[k]
+                        break
+        return str(number), "X"+str(factor), sensitivity_enter_decimal_factor[dec_factor]
+
+    def get_parts_time_const(self, value):
+        time_const_enter_decimal_factor = {
+            1000:"ks", 1:"s", 0.001:"ms", 0.000001:"us"}
+        numbers = [1,3]
+        factors  = [1,10,100]
+        dec_factors = [1/1000000,1/1000,1,1000]
+
+        number = 1
+        factor = 1
+        dec_factor = 1
+        for i in range(len(numbers)):
+            for j in range(len(factors)):
+                for k in range(len(dec_factors)):
+                    if value == round(numbers[i]*factors[j]*dec_factors[k]*1000000000)/1000000000:
+                        number = numbers[i]
+                        factor = factors[j]
+                        dec_factor = dec_factors[k]
+                        break
+        return str(number),"X"+str(factor), time_const_enter_decimal_factor[dec_factor]
+
+
     def add_parameters_from_window(self):
-        self.frequency_enter = self.setting_window.frequency_enter.currentText()
-        self.amplitude_enter = self.setting_window.amplitude_enter.currentText()
-        self.time_const_enter_number = self.setting_window.time_const_enter_number.currentText()
-        self.time_const_enter_factor = self.setting_window.time_const_enter_factor.currentText()
-        self.time_const_enter_decimal_factor = self.setting_window.time_const_enter_decimal_factor.currentText()
-        self.Filt_slope_enter_level = self.setting_window.Filt_slope_enter_level.currentText()
-        self.SYNK_enter = self.setting_window.SYNK_enter.currentText()
-        self.sensitivity_enter_number = self.setting_window.sensitivity_enter_number.currentText()
-        self.sensitivity_enter_factor = self.setting_window.sensitivity_enter_factor.currentText()
-        self.sensitivity_enter_decimal_factor = self.setting_window.sensitivity_enter_decimal_factor.currentText()
-        self.input_channels_enter = self.setting_window.input_channels_enter.currentText()
-        self.input_type_enter = self.setting_window.input_type_enter.currentText()
-        self.connect_ch_enter = self.setting_window.connect_ch_enter.currentText()
-        self.reserve_enter = self.setting_window.reserve_enter.currentText()
-        self.filters_enter = self.setting_window.filters_enter.currentText()
-        self.triger_enter = self.setting_window.triger_enter.currentText()
-        self.sourse_enter = self.setting_window.sourse_enter.currentText()
-        self.boudrate = self.setting_window.boudrate.currentText()
-        self.comportslist = self.setting_window.comportslist.currentText()
+        #self.frequency_enter = self.setting_window.frequency_enter.currentText()
+        #self.amplitude_enter = self.setting_window.amplitude_enter.currentText()
+        #self.time_const_enter_number = self.setting_window.time_const_enter_number.currentText()
+        #self.time_const_enter_factor = self.setting_window.time_const_enter_factor.currentText()
+        #self.time_const_enter_decimal_factor = self.setting_window.time_const_enter_decimal_factor.currentText()
+        #self.Filt_slope_enter_level = self.setting_window.Filt_slope_enter_level.currentText()
+        #self.SYNK_enter = self.setting_window.SYNK_enter.currentText()
+        #self.sensitivity_enter_number = self.setting_window.sensitivity_enter_number.currentText()
+        #self.sensitivity_enter_factor = self.setting_window.sensitivity_enter_factor.currentText()
+        #self.sensitivity_enter_decimal_factor = self.setting_window.sensitivity_enter_decimal_factor.currentText()
+        #self.input_channels_enter = self.setting_window.input_channels_enter.currentText()
+        #self.input_type_enter = self.setting_window.input_type_enter.currentText()
+        #self.connect_ch_enter = self.setting_window.connect_ch_enter.currentText()
+        #self.reserve_enter = self.setting_window.reserve_enter.currentText()
+        #self.filters_enter = self.setting_window.filters_enter.currentText()
+        #self.triger_enter = self.setting_window.triger_enter.currentText()
+        #self.sourse_enter = self.setting_window.sourse_enter.currentText()
+        #self.boudrate = self.setting_window.boudrate.currentText()
+        #self.comportslist = self.setting_window.comportslist.currentText()
 
         try:
             self.number_steps = int(
@@ -394,25 +420,25 @@ class sr830_class(installation_device):
             else:
                 self.number_steps = "Пока активны другие приборы"
 
-        time_const = self.calculate_time_const()
-        sensitivity = self.calculate_sensitivity()
-        dict_filter_slope = {"6 dB": 6, "12 dB": 12, "18 dB": 18, "24 dB": 24}
-        filter_slope = dict_filter_slope[self.setting_window.Filt_slope_enter_level.currentText(
-        )]
+        #time_const = self.calculate_time_const()
+        #sensitivity = self.calculate_sensitivity()
+        #dict_filter_slope = {"6 dB": 6, "12 dB": 12, "18 dB": 18, "24 dB": 24}
+        #filter_slope = dict_filter_slope[self.setting_window.Filt_slope_enter_level.currentText()]
 
-        SYNK_200_Hz = self.setting_window.SYNK_enter.currentText()
-        reserve = self.setting_window.reserve_enter.currentText()
-        frequency = self.setting_window.frequency_enter.currentText()
-        amplitude = self.setting_window.amplitude_enter.currentText()
+        #SYNK_200_Hz = self.setting_window.SYNK_enter.currentText()
+        #reserve = self.setting_window.reserve_enter.currentText()
+        #frequency = self.setting_window.frequency_enter.currentText()
+        #amplitude = self.setting_window.amplitude_enter.currentText()
 
         if self.key_to_signal_func:
-            self.dict_buf_parameters["time_const"] = time_const
-            self.dict_buf_parameters["filter_slope"] = filter_slope
-            self.dict_buf_parameters["SYNK_200_Hz"] = SYNK_200_Hz
-            self.dict_buf_parameters["sensitivity"] = sensitivity
-            self.dict_buf_parameters["reserve"] = reserve
-            self.dict_buf_parameters["frequency"] = float(frequency)
-            self.dict_buf_parameters["amplitude"] = float(amplitude)
+            self.dict_buf_parameters["time_const"] = self.calculate_time_const()
+            self.dict_buf_parameters["filter_slope"] = float(self.setting_window.Filt_slope_enter_level.currentText(
+        ))
+            self.dict_buf_parameters["SYNK_200_Hz"] = self.setting_window.SYNK_enter.currentText()
+            self.dict_buf_parameters["sensitivity"] = self.calculate_sensitivity()
+            self.dict_buf_parameters["reserve"] = self.setting_window.reserve_enter.currentText()
+            self.dict_buf_parameters["frequency"] = float(self.setting_window.frequency_enter.currentText())
+            self.dict_buf_parameters["amplitude"] = float(self.setting_window.amplitude_enter.currentText())
             self.dict_buf_parameters["num steps"] = self.number_steps
 
             self.dict_buf_parameters["input_channel"] = self.setting_window.input_channels_enter.currentText(

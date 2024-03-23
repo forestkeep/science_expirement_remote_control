@@ -1,0 +1,2 @@
+1|PR
+trigger:Таймерsourse/time:5421num steps:3baudrate:9600COM:COM10mode:Смена полярности---------------------

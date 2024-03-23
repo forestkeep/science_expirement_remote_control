@@ -1,0 +1,3 @@
+Запущена установка 
+Список приборов: ['PR_1']
+Настройки PR_1: trigger - Таймерsourse/time - 10num steps - 1baudrate - 9600COM - COM4mode - Смена полярности

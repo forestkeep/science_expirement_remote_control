@@ -19,7 +19,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.N = len(list_of_device)
         if self.N < 3:
             self.N = 3
-        Installation.resize(self.N*160+10+270, 510)
+        Installation.resize(self.N*160+10+270, 530)
         self.centralwidget = QtWidgets.QWidget(Installation)
         self.centralwidget.setObjectName("centralwidget")
         # --------------------------
@@ -81,18 +81,18 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
         self.pbar = QtWidgets.QProgressBar(self.centralwidget)
         self.pbar.setGeometry(QtCore.QRect(
-            10, 440, 15+160*self.N, 20))
+            10, 450, 15+160*self.N, 20))
         self.pbar.setValue(0)
         self.start_button = QtWidgets.QPushButton(self.centralwidget)
         self.start_button.setGeometry(QtCore.QRect(
-            30+160*self.N, 340, 221, 81))
+            30+160*self.N, 345, 221, 100))
         font = QtGui.QFont()
         font.setPointSize(24)
         self.start_button.setFont(font)
         self.start_button.setObjectName("start_button")
         self.pause_button = QtWidgets.QPushButton(self.centralwidget)
         self.pause_button.setGeometry(QtCore.QRect(
-            150+160*self.N, 440, 101, 23))
+            150+160*self.N, 450, 101, 23))
         self.pause_button.setObjectName("pause_button")
 
         # self.cancel_button = QtWidgets.QPushButton(self.centralwidget)
@@ -216,10 +216,20 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
         self.log = QtWidgets.QTextEdit(self.centralwidget)
         self.log.setGeometry(QtCore.QRect(
-            10, 320, 10+160*self.N, 110))
+            10, 345, 10+160*self.N, 100))
         self.log.setObjectName("log_text")
         self.log.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.log.setReadOnly(True)
+
+        self.clear_log_button = QtWidgets.QPushButton(self.centralwidget)
+        self.clear_log_button.setGeometry(QtCore.QRect(
+            10, 325, 18, 18))
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("clean.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
+        self.clear_log_button.setIcon(icon)
+        self.clear_log_button.setIconSize(QtCore.QSize(15, 15))
+        self.clear_log_button.setObjectName("clear_log_button")
+
 
         Installation.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(Installation)

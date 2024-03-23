@@ -18,10 +18,11 @@ from enum import Enum
 from Classes import is_debug
 from write_exp_data import process_and_export, type_save_file
 
-# серый 147, 149, 153
-# желтый 209, 207, 100
-# зеленый 212, 250, 147
-# красный 247, 142, 106
+
+import logging
+logging.basicConfig(level=logging.DEBUG, filename="py_log.log",filemode="w",format="%(asctime)s %(levelname)s %(message)s")
+
+
 
 
 class exp_th_connection():
@@ -41,6 +42,7 @@ class message_status(Enum):
 class installation_class():
     def __init__(self) -> None:
         self.exp_th_connect = exp_th_connection()
+        logging.debug("тест логгера")
 
         self.way_to_save_installation_file = None
 
@@ -96,6 +98,7 @@ class installation_class():
                 print("под прибор |" + key + "| не удалось создать класс")
 
         self.current_installation_list = proven_device
+        logging.debug(f"состав установки {proven_device}")
         current_installation_list = self.current_installation_list
 
         self.installation_window = Ui_Installation()
@@ -127,6 +130,7 @@ class installation_class():
 
         self.installation_window.start_button.clicked.connect(
             lambda: self.push_button_start())
+        self.installation_window.start_button.setToolTip("запуск эксперимента будет доступен \n после настройки всех приборов \n в установке ")
         self.installation_window.start_button.setStyleSheet(
             "background-color: rgb(147, 149, 153);")
         self.installation_window.start_button.setText("Старт")
@@ -141,8 +145,14 @@ class installation_class():
             lambda: self.push_button_save_installation_as())
         self.installation_window.open_installation_button.triggered.connect(
             lambda: self.push_button_open_installation())
+        
+        self.installation_window.clear_log_button.clicked.connect(lambda: self.clear_log())
+        self.installation_window.clear_log_button.setToolTip("Очистить лог")
+
 
         # print("реконструирован класс установки")
+    def clear_log(self):
+        self.installation_window.log.clear()
 
     def pause_exp(self):
         if self.is_experiment_running():
@@ -1038,7 +1048,6 @@ class installation_class():
         else:
             self.write_data_to_save_installation_file(self.way_to_save_installation_file)
         
-
     def push_button_save_installation_as(self):
         print("нажата кнопка сохранения установки с выбором пути")
         options = QtWidgets.QFileDialog.Options()
@@ -1050,7 +1059,6 @@ class installation_class():
             print(fileName)
             self.push_button_save_installation()
 
-
     def push_button_open_installation(self):
         print("нажата кнопка открыть установку")
         options = QtWidgets.QFileDialog.Options()
@@ -1059,6 +1067,7 @@ class installation_class():
             self.installation_window)
         if fileName is not None:
             try:
+                self.read_info_by_saved_installation(fileName)
                 pass  # попробовать отккыть установку
             except:
                 print("не удалось открыть установку")
@@ -1070,13 +1079,51 @@ class installation_class():
                     file.write(dev[0:len(dev)-2:1])
                 file.write("\n")
                 for dev in self.current_installation_list:
-                    file.write(self.installation_window.label[dev].text())
-                    file.write("--------------------")
+                    file.write(self.installation_window.label[dev].text().replace("\n",""))
+                    file.write("---------------------")
                     file.write("\n")
-                    
 
-    
+    def read_info_by_saved_installation(self, filename):
+        with open(filename, 'r') as file:
+                buffer = file.readlines()
 
+        for i in range(len(buffer)):
+            buffer[i] = buffer[i][:-1]
+        buffer[0] = buffer[0].split("|")
+        new_installation_list = {}
+        count = 0
+        for device in buffer[0][1::]:
+            if device not in self.dict_device_class.keys():
+                print(fr"ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку")
+                self.add_text_to_log(fr"ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку", status="err")
+                return
+            else:
+                new_installation_list[count] = device
+            count+=1
+        
+        settings_devices = []
+        new_set = []
+        for i in range(1,len(buffer),1):
+            if buffer[i]=="---------------------":
+                settings_devices.append(new_set)
+                new_set = []
+            else:
+                new_set.append(buffer[i])
+        lst_dict_settings = []
+        for set in settings_devices:
+            new_dict = {}
+            for data in set:
+                data = data.split(":")
+                new_dict[data[0]] = data[1]
+            lst_dict_settings.append(new_dict)#список со словарями настроек приборов
+
+        self.close_window_installation()
+        self.dict_active_device_class = {} #обнуляем словарь с классами приборов
+        self.reconstruct_installation(new_installation_list.values())
+        self.show_window_installation()
+
+        for device,settings in zip(self.dict_active_device_class.values(),lst_dict_settings):
+            device.set_parameters(settings)
 
 if __name__ == "__main__":
 
@@ -1085,11 +1132,11 @@ if __name__ == "__main__":
     lst2 = ["PR", "SR830",
             "SR830", "SR830",
             "SR830"]
-    lst = ["Maisheng","PR"]
+    lst = ["Maisheng","SR830","PR"]
     lst4 = ["PR"]
     app = QtWidgets.QApplication(sys.argv)
     a = installation_class()
-    a.reconstruct_installation(lst)
+    a.reconstruct_installation(lst4)
     a.show_window_installation()
     sys.exit(app.exec_())
 

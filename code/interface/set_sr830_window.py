@@ -424,15 +424,15 @@ class Ui_Set_sr830(QtWidgets.QDialog):
             3, _translate("Set_power_supply", "us"))
         self.label_16.setText(_translate("Set_power_supply", "Filter slope"))
         self.Filt_slope_enter_level.setCurrentText(
-            _translate("Set_power_supply", "6 dB"))
+            _translate("Set_power_supply", "6"))
         self.Filt_slope_enter_level.setItemText(
-            0, _translate("Set_power_supply", "6 dB"))
+            0, _translate("Set_power_supply", "6"))
         self.Filt_slope_enter_level.setItemText(
-            1, _translate("Set_power_supply", "12 dB"))
+            1, _translate("Set_power_supply", "12"))
         self.Filt_slope_enter_level.setItemText(
-            2, _translate("Set_power_supply", "18 dB"))
+            2, _translate("Set_power_supply", "18"))
         self.Filt_slope_enter_level.setItemText(
-            3, _translate("Set_power_supply", "24 dB"))
+            3, _translate("Set_power_supply", "24"))
         self.label_17.setText(_translate("Set_power_supply", "SYNK < 200 Hz"))
         self.SYNK_enter.setCurrentText(_translate("Set_power_supply", "On"))
         self.SYNK_enter.setItemText(0, _translate("Set_power_supply", "On"))

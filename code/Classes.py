@@ -93,7 +93,7 @@ class installation_device(control_in_experiment):
         is_correct = True
         if self.number_steps == "Пока активны другие приборы":
             return is_correct
-        if self.step_index < self.number_steps-1:
+        if int(self.step_index) < int(self.number_steps)-1:
             self.step_index = self.step_index + 1
         else:
             is_correct = False  # след шага нет
@@ -224,3 +224,12 @@ class installation_device(control_in_experiment):
         self.is_test = True
     def reset_test_mode(self):
         self.is_test = False
+
+    def set_parameters(self, parameters):
+        """функция необходима для настройки параметров прибора в установке при добавлении прибора извне или при открытии сохраненной установки, передаваемый словарь гарантированно должен содержать параметры именно для данного прибора"""
+        self.dict_buf_parameters = copy.deepcopy(parameters)
+        self.dict_settable_parameters = copy.deepcopy(parameters)
+        #print(fr"вошли в функцию передачи параметров установке. имя прибора{self.name}")
+        #TODO:парсить параметры и записывать в соответсвующие переменные, предназначенные для сохранения параметров из окна
+        self.installation_class.message_from_device_settings(
+            self.name, True, self.dict_settable_parameters)
