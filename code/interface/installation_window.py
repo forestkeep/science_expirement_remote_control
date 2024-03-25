@@ -95,6 +95,15 @@ class Ui_Installation(QtWidgets.QMainWindow):
             150+160*self.N, 450, 101, 23))
         self.pause_button.setObjectName("pause_button")
 
+
+        self.label_state = QtWidgets.QLabel(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.label_state.setFont(font)
+        self.label_state.setGeometry(QtCore.QRect(
+            10, 470, 15+160*self.N, 20))
+        self.label_state.setObjectName("label_state")
+
         # self.cancel_button = QtWidgets.QPushButton(self.centralwidget)
         # self.cancel_button.setGeometry(QtCore.QRect(
         #    150+160*self.N, 440, 101, 23))
@@ -225,7 +234,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.clear_log_button.setGeometry(QtCore.QRect(
             10, 325, 18, 18))
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("clean.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
+        icon.addPixmap(QtGui.QPixmap("picture/clean.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
         self.clear_log_button.setIcon(icon)
         self.clear_log_button.setIconSize(QtCore.QSize(15, 15))
         self.clear_log_button.setObjectName("clear_log_button")
@@ -306,6 +315,8 @@ class Ui_Installation(QtWidgets.QMainWindow):
 # =========================================================================================
         self.label_19.setText(_translate(
             "settings_save", "Как сохранить результаты?"))
+        self.label_state.setText(_translate(
+            "settings_save", "Состояние"))
         self.way_save_button.setText(_translate("settings_save", "Путь"))
         self.label_21.setText(_translate(
             "settings_save", "Кол-во измерений в точке"))

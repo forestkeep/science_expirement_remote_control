@@ -212,7 +212,7 @@ class relay_pr1_class(installation_device):
                 self.setting_window.num_meas_enter.currentText())
         except:
             if self.setting_window.num_meas_enter.currentText() == "":
-                self.dict_buf_parameters["num steps"] = self.setting_window.num_meas_enter.currentText()
+                self.dict_buf_parameters["num steps"] = int(self.setting_window.num_meas_enter.currentText())
             else:
                 self.dict_buf_parameters["num steps"] = "Пока активны другие приборы"
 

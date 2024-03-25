@@ -1,4 +1,0 @@
-3|Maisheng|SR830|PR
-trigger:Внешний сигналsourse/time:SR830_2num steps:0baudrate:9600COM:COM10type_of_work:Стабилизация напряженияtype_step:Заданный шагhigh_limit:125low_limit:0.01step:1.25second_value:4.5repeat_reverse:False---------------------
-trigger:Таймерsourse/time:10num steps:3baudrate:9600COM:COM10time_const:1e-05filter_slope:6.0SYNK_200_Hz:Onsensitivity:1.0reserve:high reserveinput_channel:Ainput_type:DCinput_connect:groundfilters:outfrequency:365.0amplitude:1.0---------------------
-trigger:Таймерsourse/time:985num steps:521baudrate:9600COM:COM10mode:Включение - Выключение---------------------

@@ -148,11 +148,15 @@ class installation_class():
         
         self.installation_window.clear_log_button.clicked.connect(lambda: self.clear_log())
         self.installation_window.clear_log_button.setToolTip("Очистить лог")
+        self.set_state_text("Ожидание настройки приборов")
 
 
         # print("реконструирован класс установки")
     def clear_log(self):
         self.installation_window.log.clear()
+
+    def set_state_text(self,text):
+        self.installation_window.label_state.setText(text)
 
     def pause_exp(self):
         if self.is_experiment_running():
@@ -166,6 +170,7 @@ class installation_class():
             else:
                 self.installation_window.pause_button.setText("Возобновить")
                 self.pause_flag = True
+                self.set_state_text("Ожидание продолжения...")
                 self.timer_for_pause_exp.start(50)
 
     def pause_actions(self):
@@ -193,6 +198,7 @@ class installation_class():
 
     def stoped_experiment(self):
         self.stop_experiment = True
+        self.set_state_text("Остановка...")
 
     def testable(self, device):
         # print("кнопка настройки нажата, устройство -" + str(device))
@@ -344,6 +350,7 @@ class installation_class():
         else:
             if self.is_all_device_settable() and self.key_to_start_installation and not self.is_experiment_running():
                 self.stop_experiment = True
+                self.set_state_text("Старт эксперимента")
                 self.installation_window.pause_button.setStyleSheet(
                     "background-color: rgb(212, 250, 147);")
 
@@ -640,6 +647,7 @@ class installation_class():
 
                 if not is_debug:
                     status = False
+                    self.set_state_text("Остановка, ошибка")
                     break
 
                 # --------------------------------------------------------
@@ -692,6 +700,7 @@ class installation_class():
                 pass
                 # TODO: пауза эксперимента. остановка таймеров
             else:
+                self.set_state_text("Продолжение эксперимента")
                 # ----------------------------
                 if time.time() - sr > 2:
                     sr = time.time()
@@ -716,6 +725,7 @@ class installation_class():
 
                 if number_active_device == 0:
                     '''остановка эксперимента, нет активных приборов'''
+                    self.set_state_text("Остановка эксперимента...")
                     self.stop_experiment = True
                     print("не осталось активных приборов, эксперимент остановлен")
                 if number_device_which_act_while == number_active_device and number_active_device == 1:
@@ -732,6 +742,7 @@ class installation_class():
                             target_priority = device.get_priority()
 
                 if target_execute is not False:
+                    self.set_state_text("Выполняется действие " + target_execute.get_name())
                     target_execute.set_status_step(False)
                     if target_execute.on_next_step() is not False:
                         target_execute.number_meas += 1
@@ -815,11 +826,13 @@ class installation_class():
         # ждем, пока ббудет показано сообщение в основном потоке
         while self.exp_th_connect.is_message_show == False:
             pass
+        self.set_state_text("Сохранение результатов")
 
         try:
             self.save_results()
         except:
             print("не удалось сохранить результаты")
+        self.set_state_text("Подготовка к эксперименту")
 
         # ------------------подготовка к повторному началу эксперимента---------------------
         self.is_experiment_endless = False
@@ -838,6 +851,7 @@ class installation_class():
 
             # если оказались в этой точке, значит приборы настроены корректно и нет проблем с конфликтами ком портов, если подключение не будет установлено, то ключ снова будет сброшен
             self.key_to_start_installation = True
+            self.set_state_text("Ожидание старта эксперимента")
 
             self.create_clients()
             self.set_clients_for_device()

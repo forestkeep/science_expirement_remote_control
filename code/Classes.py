@@ -27,6 +27,7 @@ class control_in_experiment():
         self.previous_step_time = False
         self.pause_time = False
         self.number_meas = 0
+        self.time_of_action = 3# время, необходимое для совершения одного шага
 
     def set_priority(self, priority) -> bool:
         self.priority = priority
@@ -91,9 +92,10 @@ class installation_device(control_in_experiment):
     def on_next_step(self):  # функция сообщает прибору, что нужно перейти на следующий шаг, например, выставить новые значения тока и напряжения в случае источника питания
         '''активирует следующий шаг прибора'''
         is_correct = True
-        if self.number_steps == "Пока активны другие приборы":
+        print(self.number_steps, "колво шагов осталось")
+        if self.dict_buf_parameters["num steps"] == "Пока активны другие приборы":
             return is_correct
-        if int(self.step_index) < int(self.number_steps)-1:
+        if int(self.step_index) < int(self.dict_buf_parameters["num steps"])-1:
             self.step_index = self.step_index + 1
         else:
             is_correct = False  # след шага нет
