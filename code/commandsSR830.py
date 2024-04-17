@@ -4,7 +4,7 @@ import time
 
 
 class commandsSR830():
-    def __init__(self, client) -> None:
+    def __init__(self, device) -> None:
 
         self.COMM_ID = '*IDN'
 
@@ -26,22 +26,22 @@ class commandsSR830():
 
         self.COMM_SERIAL_PULL_STATUS_BYTE = '*STB?\r\n'
 
-        self.client = client
+        self.device = device
         
     def push_autogain(self):
         print(bytes(self.COMM_AUTO_GAIN, "ascii") + b'\r\n')
-        self.client.write(bytes(self.COMM_AUTO_GAIN, "ascii") + b'\r\n')
+        self.device.client.write(bytes(self.COMM_AUTO_GAIN, "ascii") + b'\r\n')
 
     def push_autophase(self):
         print(bytes(self.COMM_AUTO_APHS, "ascii") + b'\r\n')
-        self.client.write(bytes(self.COMM_AUTO_APHS, "ascii") + b'\r\n')
+        self.device.client.write(bytes(self.COMM_AUTO_APHS, "ascii") + b'\r\n')
 
     def get_parameter(self, command, timeout, param=False):
         if param == False:
-            self.client.write(bytes(command, "ascii") + b'?\r\n')
+            self.device.client.write(bytes(command, "ascii") + b'?\r\n')
         else:
             param = str(param)
-            self.client.write(bytes(command, "ascii") +
+            self.device.client.write(bytes(command, "ascii") +
                               b'? ' + bytes(param, "ascii") + b'\r\n')
         if param != False:
             print("чтение параметров", bytes(command, "ascii") +
@@ -51,7 +51,7 @@ class commandsSR830():
 
         start_time = time.time()
         while time.time() - start_time < timeout:
-            line = self.client.readline().decode().strip()
+            line = self.device.client.readline().decode().strip()
             if line:
                 print("Received:", line)
                 return line
@@ -62,7 +62,7 @@ class commandsSR830():
         if ampl < 0.004 or ampl > 5:
             return False
         print(bytes("SLVL", "ascii") + bytes(str(ampl), "ascii") + b'\r\n')
-        self.client.write(bytes("SLVL", "ascii") +
+        self.device.client.write(bytes("SLVL", "ascii") +
                           bytes(str(ampl), "ascii") + b'\r\n')
         return True
 
@@ -71,7 +71,7 @@ class commandsSR830():
         if freq > 102000 or freq < 2:
             return False
         print(bytes("FREQ", "ascii") + bytes(str(freq), "ascii") + b'\r\n')
-        self.client.write(bytes("FREQ", "ascii") +
+        self.device.client.write(bytes("FREQ", "ascii") +
                           bytes(str(freq), "ascii") + b'\r\n')
         return True
 
@@ -210,7 +210,7 @@ class commandsSR830():
                 break
         if code is not False:
             print(bytes(command, "ascii") + bytes(str(code), "ascii") + b'\r\n')
-            self.client.write(bytes(command, "ascii") +
+            self.device.client.write(bytes(command, "ascii") +
                               bytes(str(code), "ascii") + b'\r\n')
             return True
         return False
@@ -218,15 +218,15 @@ class commandsSR830():
     def _set_phase(self, x):
         if x < -360 or x > 730:
             return False
-        self.client.write(b'PHAS' + str(x) + b'\r\n')
+        self.device.client.write(b'PHAS' + str(x) + b'\r\n')
         b'PHAS' + str(x) + b'\r\n'  # -360.00 ≤ x ≤ 729.99
         return True
 
     def _set_reference_sourse(self, x):
         if x == "ext":
-            self.client.write(b'FMOD 0\r\n')
+            self.device.client.write(b'FMOD 0\r\n')
         else:
-            self.client.write(b'FMOD 1\r\n')
+            self.device.client.write(b'FMOD 1\r\n')
 
 
 if __name__ == "__main__":

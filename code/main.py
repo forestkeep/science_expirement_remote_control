@@ -7,8 +7,9 @@ from interface.selectdevice_window import Ui_Selectdevice
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QMessageBox
 import interface.info_window_dialog
-from test3 import Ui_SVPS34_control
+from svps34_control import Ui_SVPS34_control
 from Installation_class import installation_class
+import qdarktheme
 # pyuic5 name.ui -o name.py - запускаем из папки с файлом ui в cmd
 
 
@@ -74,7 +75,6 @@ class Mywindow(QtWidgets.QMainWindow):
         self.dialog.show()
 
     def message_from_info_dialog(self, answer):
-        print(answer)
         if answer == True:
             self.key_to_new_window_installation = False
             self.current_installation_class.close_window_installation()
@@ -95,13 +95,10 @@ class Mywindow(QtWidgets.QMainWindow):
             msg.setIcon(QMessageBox.Warning)
 
             msg.exec_()
-            print("прибор уже создан бл!")
         else:
             if name == "Maisheng_":
                 self.dict_active_local_devices_window[name] = maisheng_ui_window(
                 )
-                # создаем в двух ращзных словарях значения по ключу
-                # self.dict_active_local_devices[name] = maisheng_class()
             if name == "PR_":
                 self.dict_active_local_devices_window[name] = Relay_Ui_MainWindow(
                 )
@@ -109,8 +106,12 @@ class Mywindow(QtWidgets.QMainWindow):
             if name == "SVPS34":
                 self.dict_active_local_devices_window[name] = Ui_SVPS34_control(
                 )
-                # self.dict_active_local_devices[name] = SVPS32_class()
 
+                SVPS34_control = QtWidgets.QMainWindow()
+                ui = Ui_SVPS34_control()
+                ui.setupUi(SVPS34_control)
+                SVPS34_control.show()
+               
             if name == "SR830_":
                 pass
             '''
@@ -129,6 +130,7 @@ class Mywindow(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
+    qdarktheme.setup_theme(corner_shape="sharp")
     start_window = Mywindow()
     start_window.show()
     sys.exit(app.exec_())

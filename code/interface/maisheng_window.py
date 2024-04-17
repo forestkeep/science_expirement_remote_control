@@ -221,8 +221,25 @@ class maisheng_ui_window(QtWidgets.QMainWindow):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
-        self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        #self.retranslateUi(MainWindow)
+        #QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+
+        MainWindow.setWindowTitle("MainWindow")
+        self.onoffoutputbutton.setText("Вкл")
+        self.startstopButton.setText("Start")
+        self.scan_button.setText("Scan")
+        self.connect_button.setText("Connect")
+        self.label_10.setText("Status:")
+        self.label_7.setText("Mode")
+        self.label_3.setText("Start")
+        self.label_4.setText("Finish")
+        self.label_5.setText("Points")
+        self.label_6.setText("Period(s)")
+        self.label_8.setText("Max Voltage")
+        self.label_9.setText("Max Current")
+        self.label.setText("V")
+        self.label_2.setText("A")
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate

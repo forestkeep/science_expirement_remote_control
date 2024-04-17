@@ -28,6 +28,7 @@ def extract_settings(file_path):
 
     return settings
 def process_and_export(input_file_path, output_file_path, output_type):
+    print("сохраняем результаты")
     # Определяем функцию обработки строк
     def process_input_strings(input_strings):
         instruments_data = {}

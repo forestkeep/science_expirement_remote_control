@@ -91,24 +91,24 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
         Dialog.setWindowTitle(_translate("Dialog", "Создание установки"))
         self.label.setText(_translate(
             "Dialog", "Выберите приборы для создания установки"))
-        self.checkBox.setText(_translate("Dialog", "Maisheng"))
-        self.checkBox_2.setText(_translate("Dialog", "SVPS34"))
+        self.checkBox.setText(_translate("Dialog", "Maisheng WSD-20H15"))
+        self.checkBox_2.setText(_translate("Dialog", "АКИП-2404"))
         self.checkBox_3.setText(_translate("Dialog", "Polarity Relay"))
         self.checkBox_4.setText(_translate("Dialog", "SR830"))
-        self.checkBox_5.setText(_translate("Dialog", "АКИП"))
+        self.checkBox_5.setText(_translate("Dialog", "Rigol DP832A"))
 
     def send_signal(self):
         device_tupple = []
         if self.checkBox.isChecked():
             device_tupple.append("Maisheng")
         if self.checkBox_2.isChecked():
-            device_tupple.append("SVPS34")
+            device_tupple.append("АКИП-2404")
         if self.checkBox_3.isChecked():
             device_tupple.append("PR")
         if self.checkBox_4.isChecked():
             device_tupple.append("SR830")
         if self.checkBox_5.isChecked():
-            device_tupple.append("АКИП")
+            device_tupple.append("DP832A")
 
         # проверяем состояние всех чек бокс и передаем список приборов в главное окно
         self.signal_to_main_window.emit(device_tupple)

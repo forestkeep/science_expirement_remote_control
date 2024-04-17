@@ -1,6 +1,6 @@
 import sys
 from PyQt5 import QtGui, QtCore, QtWidgets
-
+import pyvisa
 
 class Window1(QtWidgets.QMainWindow):
     textSaved = QtCore.pyqtSignal(str)
@@ -130,9 +130,16 @@ class MainWindow(QtWidgets.QWidget):
         self.textEdit.setText(text)
 
 
-if __name__ == '__main__':
-    app = QtWidgets.QApplication(sys.argv)
-    w = MainWindow()
-    w.show()
-    sys.exit(app.exec_())
 
+
+
+
+if __name__ == '__main__':
+
+    rm = pyvisa.ResourceManager()
+    print(rm.list_resources())
+
+    #app = QtWidgets.QApplication(sys.argv)
+    #w = MainWindow()
+   # w.show()
+    #sys.exit(app.exec_())

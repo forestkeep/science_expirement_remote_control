@@ -15,8 +15,8 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(397, 340)
-        MainWindow.setStyleSheet("font-family: Noto Sans SC;\n"
-"background-color: qlineargradient(spread:pad, x1:1, y1:1, x2:0, y2:0, stop:0 rgba(220, 220, 220, 30), stop:0.427447 rgba(240, 240, 240,30), stop:1 rgba(255, 255, 255, 30));")
+        #MainWindow.setStyleSheet("font-family: Noto Sans SC;\n"
+#"background-color: qlineargradient(spread:pad, x1:1, y1:1, x2:0, y2:0, stop:0 rgba(220, 220, 220, 30), stop:0.427447 rgba(240, 240, 240,30), stop:1 rgba(255, 255, 255, 30));")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.widget = QtWidgets.QWidget(self.centralwidget)
@@ -31,7 +31,7 @@ class Ui_MainWindow(object):
         font.setFamily("Noto Sans SC")
         font.setPointSize(13)
         self.pushButton.setFont(font)
-        self.pushButton.setStyleSheet("background-color: rgb(224, 250, 255);")
+        #self.pushButton.setStyleSheet("background-color: rgb(224, 250, 255);")
         self.pushButton.setObjectName("pushButton")
         self.verticalLayout.addWidget(self.pushButton)
         self.pushButton_2 = QtWidgets.QPushButton(self.widget)
@@ -40,7 +40,7 @@ class Ui_MainWindow(object):
         font.setFamily("Noto Sans SC")
         font.setPointSize(13)
         self.pushButton_2.setFont(font)
-        self.pushButton_2.setStyleSheet("background-color: rgb(224, 250, 255);")
+        #self.pushButton_2.setStyleSheet("background-color: rgb(224, 250, 255);")
         self.pushButton_2.setObjectName("pushButton_2")
         self.verticalLayout.addWidget(self.pushButton_2)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -56,6 +56,8 @@ class Ui_MainWindow(object):
         self.menu_2.setObjectName("menu_2")
         self.menu_3 = QtWidgets.QMenu(self.menubar)
         self.menu_3.setObjectName("menu_3")
+        self.menu_4 = QtWidgets.QMenu(self.menubar)
+        self.menu_4.setObjectName("menu_4")
         MainWindow.setMenuBar(self.menubar)
         self.action_2 = QtWidgets.QAction(MainWindow)
         self.action_2.setObjectName("action_2")
@@ -63,6 +65,10 @@ class Ui_MainWindow(object):
         self.action_4.setObjectName("action_4")
         self.actionMaisheng = QtWidgets.QAction(MainWindow)
         self.actionMaisheng.setObjectName("actionMaisheng")
+
+        self.actionCreateNew = QtWidgets.QAction(MainWindow)
+        self.actionCreateNew.setObjectName("CreateNew")
+
         self.actionSVPS34 = QtWidgets.QAction(MainWindow)
         self.actionSVPS34.setObjectName("actionSVPS34")
         self.actionLock_in = QtWidgets.QAction(MainWindow)
@@ -76,9 +82,12 @@ class Ui_MainWindow(object):
         self.menu_3.addAction(self.actionSVPS34)
         self.menu_3.addAction(self.actionLock_in)
         self.menu_3.addAction(self.action_9)
+        self.menu_4.addAction(self.actionCreateNew)
+   
         self.menubar.addAction(self.menu.menuAction())
         self.menubar.addAction(self.menu_2.menuAction())
         self.menubar.addAction(self.menu_3.menuAction())
+        self.menubar.addAction(self.menu_4.menuAction())
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -91,6 +100,7 @@ class Ui_MainWindow(object):
         self.menu.setTitle(_translate("MainWindow", "Меню"))
         self.menu_2.setTitle(_translate("MainWindow", "Создание установки"))
         self.menu_3.setTitle(_translate("MainWindow", "Приборы"))
+        self.menu_4.setTitle(_translate("Mainwindow", "Создать прибор"))
         self.action_2.setText(_translate("MainWindow", "Выбор приборов"))
         self.action_4.setText(_translate("MainWindow", "один"))
         self.actionMaisheng.setText(_translate("MainWindow", "Maisheng"))

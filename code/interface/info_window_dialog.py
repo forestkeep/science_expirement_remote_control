@@ -20,10 +20,10 @@ class Ui_Dialog(QtWidgets.QDialog):
 
         Dialog.setObjectName("Ахтунг!")
         Dialog.resize(210, 161)
-        Dialog.setStyleSheet("background-color: rgb(255, 200, 202);")
+        #Dialog.setStyleSheet("background-color: rgb(255, 200, 202);")
         self.buttonBox = QtWidgets.QDialogButtonBox(Dialog)
         self.buttonBox.setGeometry(QtCore.QRect(20, 120, 161, 32))
-        self.buttonBox.setStyleSheet("background-color: rgb(255, 170, 0);")
+        #self.buttonBox.setStyleSheet("background-color: rgb(255, 170, 0);")
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(
             QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)

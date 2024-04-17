@@ -16,13 +16,17 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         Set_power_supply.setObjectName("Set_sr830")
         Set_power_supply.resize(303, 664)
         Set_power_supply.setSizeGripEnabled(False)
-        Set_power_supply.setModal(False)
+        Set_power_supply.setModal(True)
+
+
         self.buttonBox = QtWidgets.QDialogButtonBox(Set_power_supply)
         self.buttonBox.setGeometry(QtCore.QRect(100, 620, 191, 32))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(
             QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
+
+
         self.verticalLayoutWidget_2 = QtWidgets.QWidget(Set_power_supply)
         self.verticalLayoutWidget_2.setGeometry(QtCore.QRect(10, 330, 281, 80))
         self.verticalLayoutWidget_2.setObjectName("verticalLayoutWidget_2")
@@ -56,6 +60,8 @@ class Ui_Set_sr830(QtWidgets.QDialog):
         self.amplitude_enter.setObjectName("amplitude_enter")
         self.horizontalLayout_2.addWidget(self.amplitude_enter)
         self.verticalLayout_2.addLayout(self.horizontalLayout_2)
+
+        
         self.verticalLayoutWidget_3 = QtWidgets.QWidget(Set_power_supply)
         self.verticalLayoutWidget_3.setGeometry(QtCore.QRect(10, 10, 281, 101))
         self.verticalLayoutWidget_3.setObjectName("verticalLayoutWidget_3")

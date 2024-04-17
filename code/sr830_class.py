@@ -9,59 +9,35 @@ from pymeasure.adapters import SerialAdapter
 import copy
 from commandsSR830 import commandsSR830
 import time
-from Classes import device_response_to_step, installation_device
+from Classes import ch_response_to_step, base_device, ch_response_to_step, base_ch
 from Classes import is_debug
+from Classes import not_ready_style_border, not_ready_style_background, ready_style_border, ready_style_background, warning_style_border, warning_style_background
 
 
-class sr830_class(installation_device):
+class sr830_class(base_device):
     def __init__(self, name, installation_class) -> None:
         super().__init__(name, "serial", installation_class)
         print("класс синхронного детектора создан")
+        self.ch1 = ch_sr830_class(1, self)
+        self.channels=[self.ch1]
+        self.ch1.is_active = True#по умолчанию для каждого прибора включен первый канал
+        self.active_channel = self.ch1 #поле необходимо для записи параметров при настройке в нужный канал
+
+
+
         self.device = None  # класс прибора будет создан при подтверждении параметров,
         # переменная хранит все возможные источники сигналов , сделать функцию, формирующую этот список в зависимости от структуры установки
         self.counter = 0
-        self.dict_buf_parameters["time_const"] = "1000"  # секунды
-        self.dict_buf_parameters["filter_slope"] = "6"  # dB
-        self.dict_buf_parameters["SYNK_200_Hz"] = "off"
-        self.dict_buf_parameters["sensitivity"] = "1"  # вольты
-        self.dict_buf_parameters["reserve"] = "high reserve"
-        self.dict_buf_parameters["input_channel"] = "A"
-        self.dict_buf_parameters["input_type"] = "AC"
-        self.dict_buf_parameters["input_connect"] = "ground"
-        self.dict_buf_parameters["filters"] = "line"
-        self.dict_buf_parameters["frequency"] = "400"
-        self.dict_buf_parameters["amplitude"] = "1"
-        self.dict_buf_parameters["num steps"] = "1"
-
-        # переменные для сохранения параметров окна-----------------------------
-        #self.frequency_enter = "400"
-        #self.amplitude_enter = "1"
-        #self.sourse_enter = "5"
-        #self.boudrate = "9600"
-        #self.comportslist = None
-        #self.time_const_enter_number = "1"
-        #self.time_const_enter_factor = "X1"
-        #self.time_const_enter_decimal_factor = "ks"
-        #self.Filt_slope_enter_level = "6 dB"
-        #self.SYNK_enter = "On"
-        #self.sensitivity_enter_number = "1"
-        #self.sensitivity_enter_factor = "X1"
-        #self.sensitivity_enter_decimal_factor = "V"
-
-        #self.input_channels_enter = "A"
-        #self.input_type_enter = "AC"
-        #self.connect_ch_enter = "float"
-        #self.reserve_enter = "high reserve"
-        #self.filters_enter = "line"
-        #self.triger_enter = "Таймер"
-
         # сюда при подтверждении параметров будет записан класс команд с клиентом
         self.command = None
 
-    def show_setting_window(self):
-        if self.is_window_created:
-            self.setting_window.show()
-        else:
+    def get_number_channels(self) -> int:
+        return len(self.channels)
+    
+    def show_setting_window(self, number_of_channel):
+            
+            self.switch_channel(number_of_channel)
+
             self.timer_for_scan_com_port = QTimer()
             self.timer_for_scan_com_port.timeout.connect(
                 lambda: self._scan_com_ports())
@@ -80,55 +56,57 @@ class sr830_class(installation_device):
             self.setting_window.boudrate.addItems(
                 ["50", "75", "110", "150", "300", "600", "1200", "2400", "4800", "9600", "19200", "38400", "57600", "115200"])
 
-            self.setting_window.sourse_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+            #self.setting_window.sourse_enter.setStyleSheet(
+             #   "background-color: rgb(255, 255, 255);")
 
             # self.setting_window.sourse_enter.setEditable(True)
             # self.setting_window.sourse_enter.addItems(
             # ["5", "10", "30", "60", "120"])
             self.setting_window.triger_enter.addItems(
                 ["Внешний сигнал"])
+
             self.setting_window.triger_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.sourse_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.amplitude_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.frequency_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
 
             self.setting_window.SYNK_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.filters_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.reserve_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+               ready_style_border)
             self.setting_window.connect_ch_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.Filt_slope_enter_level.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.input_type_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.sensitivity_enter_decimal_factor.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.sensitivity_enter_factor.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.sensitivity_enter_number.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.time_const_enter_decimal_factor.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.time_const_enter_number.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.time_const_enter_factor.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.input_channels_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.comportslist.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.boudrate.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.num_meas_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
+
 
             self.setting_window.frequency_enter.setEditable(True)
             self.setting_window.frequency_enter.addItems(
@@ -174,17 +152,17 @@ class sr830_class(installation_device):
             # ============установка текущих параметров=======================
 
             self.setting_window.frequency_enter.setCurrentText(
-                str(self.dict_buf_parameters["frequency"]))
+                str(self.active_channel.dict_buf_parameters["frequency"]))
             self.setting_window.amplitude_enter.setCurrentText(
-                str(self.dict_buf_parameters["amplitude"]))
-            self.setting_window.sourse_enter.setCurrentText(self.dict_buf_parameters["sourse/time"])
+                str(self.active_channel.dict_buf_parameters["amplitude"]))
+            self.setting_window.sourse_enter.setCurrentText(self.active_channel.dict_buf_parameters["sourse/time"])
             self.setting_window.boudrate.setCurrentText(self.dict_buf_parameters["baudrate"])
             '''
             if self.comportslist is not None:
                 self.setting_window.comportslist.setCurrentText(
                     self.comportslist)
             '''
-            number,factor,dec_factor = self.get_parts_time_const(float(self.dict_buf_parameters["time_const"]))
+            number,factor,dec_factor = self.get_parts_time_const(float(self.active_channel.dict_buf_parameters["time_const"]))
             self.setting_window.time_const_enter_number.setCurrentText(
                 number)
             self.setting_window.time_const_enter_factor.setCurrentText(
@@ -192,10 +170,10 @@ class sr830_class(installation_device):
             self.setting_window.time_const_enter_decimal_factor.setCurrentText(
                 dec_factor)
             
-            self.setting_window.Filt_slope_enter_level.setCurrentText(str(self.dict_buf_parameters["filter_slope"]))
-            self.setting_window.SYNK_enter.setCurrentText(str(self.dict_buf_parameters["SYNK_200_Hz"]))
+            self.setting_window.Filt_slope_enter_level.setCurrentText(str(self.active_channel.dict_buf_parameters["filter_slope"]))
+            self.setting_window.SYNK_enter.setCurrentText(str(self.active_channel.dict_buf_parameters["SYNK_200_Hz"]))
 
-            number,factor,dec_factor = self.get_parts_sen(float(self.dict_buf_parameters["sensitivity"]))
+            number,factor,dec_factor = self.get_parts_sen(float(self.active_channel.dict_buf_parameters["sensitivity"]))
             self.setting_window.sensitivity_enter_number.setCurrentText(
                 number)
             self.setting_window.sensitivity_enter_factor.setCurrentText(
@@ -205,25 +183,26 @@ class sr830_class(installation_device):
             
 
             self.setting_window.input_channels_enter.setCurrentText(
-                self.dict_buf_parameters["input_channel"])
+                self.active_channel.dict_buf_parameters["input_channel"])
             self.setting_window.input_type_enter.setCurrentText(
-                self.dict_buf_parameters["input_type"])
+                self.active_channel.dict_buf_parameters["input_type"])
             self.setting_window.connect_ch_enter.setCurrentText(
-                self.dict_buf_parameters["input_connect"])
+                self.active_channel.dict_buf_parameters["input_connect"])
             self.setting_window.reserve_enter.setCurrentText(
-                self.dict_buf_parameters["reserve"])
+                self.active_channel.dict_buf_parameters["reserve"])
             self.setting_window.filters_enter.setCurrentText(
-                self.dict_buf_parameters["filters"])
-            self.setting_window.triger_enter.setCurrentText(self.dict_buf_parameters["trigger"])
+                self.active_channel.dict_buf_parameters["filters"])
+            self.setting_window.comportslist.addItem(self.dict_buf_parameters["COM"])
+            self.setting_window.triger_enter.setCurrentText(self.active_channel.dict_buf_parameters["trigger"])
             num_meas_list = ["5","10","20","50"]
-            if self.installation_class.get_signal_list(self.name) != []:#если в списке сигналов пусто, то и других активных приборов нет, текущий прибор в установке один
+            if self.installation_class.get_signal_list(self.name, self.active_channel.number) != []:#если в списке сигналов пусто, то и других активных приборов нет, текущий прибор в установке один
                 num_meas_list.append("Пока активны другие приборы")
             self.setting_window.num_meas_enter.addItems(num_meas_list)
             self.setting_window.num_meas_enter.setCurrentText(
                 str(self.number_steps))
 
             self.setting_window.sourse_enter.setCurrentText(
-                self.dict_buf_parameters["sourse/time"])
+                self.active_channel.dict_buf_parameters["sourse/time"])
 
             self.key_to_signal_func = True  # разрешаем выполенение функций
             self._action_when_select_trigger()
@@ -268,7 +247,7 @@ class sr830_class(installation_device):
             try:
                 int(self.setting_window.num_meas_enter.currentText())
             except:
-                if self.setting_window.num_meas_enter.currentText() == "Пока активны другие приборы" and self.installation_class.get_signal_list(self.name) != []:
+                if self.setting_window.num_meas_enter.currentText() == "Пока активны другие приборы" and self.installation_class.get_signal_list(self.name, self.active_channel.number) != []:
                     pass
                 else:
                     is_num_steps_correct = False
@@ -279,46 +258,47 @@ class sr830_class(installation_device):
                 except:
                     is_time_correct = False
 
+
             self.setting_window.sensitivity_enter_number.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.sensitivity_enter_factor.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.sensitivity_enter_decimal_factor.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
 
             self.setting_window.amplitude_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.frequency_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.num_meas_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.sourse_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
 
             if not is_number_correct:
                 self.setting_window.sensitivity_enter_number.setStyleSheet(
-                    "background-color: rgb(255, 180, 180);")
+                    not_ready_style_border)
             if not is_fact_correct:
                 self.setting_window.sensitivity_enter_factor.setStyleSheet(
-                    "background-color: rgb(255, 180, 180);")
+                    not_ready_style_border)
             if not is_dec_fact_correct:
                 self.setting_window.sensitivity_enter_decimal_factor.setStyleSheet(
-                    "background-color: rgb(255, 180, 180);")
+                    not_ready_style_border)
 
             if not is_freq_correct:
                 self.setting_window.frequency_enter.setStyleSheet(
-                    "background-color: rgb(255, 180, 180);")
+                    not_ready_style_border)
             if not is_ampl_correct:
                 self.setting_window.amplitude_enter.setStyleSheet(
-                    "background-color: rgb(255, 180, 180);")
+                    not_ready_style_border)
 
             if not is_num_steps_correct:
                 self.setting_window.num_meas_enter.setStyleSheet(
-                    "background-color: rgb(255, 180, 180);")
+                    not_ready_style_border)
 
             if not is_time_correct:
                 self.setting_window.sourse_enter.setStyleSheet(
-                    "background-color: rgb(255, 180, 180);")
+                    not_ready_style_border)
 
             if is_number_correct and is_fact_correct and is_dec_fact_correct and is_ampl_correct and is_freq_correct and is_num_steps_correct and is_time_correct:
                 return True
@@ -431,28 +411,29 @@ class sr830_class(installation_device):
         #amplitude = self.setting_window.amplitude_enter.currentText()
 
         if self.key_to_signal_func:
-            self.dict_buf_parameters["time_const"] = self.calculate_time_const()
-            self.dict_buf_parameters["filter_slope"] = float(self.setting_window.Filt_slope_enter_level.currentText(
+            self.active_channel.dict_buf_parameters["time_const"] = self.calculate_time_const()
+            self.active_channel.dict_buf_parameters["filter_slope"] = float(self.setting_window.Filt_slope_enter_level.currentText(
         ))
-            self.dict_buf_parameters["SYNK_200_Hz"] = self.setting_window.SYNK_enter.currentText()
-            self.dict_buf_parameters["sensitivity"] = self.calculate_sensitivity()
-            self.dict_buf_parameters["reserve"] = self.setting_window.reserve_enter.currentText()
-            self.dict_buf_parameters["frequency"] = float(self.setting_window.frequency_enter.currentText())
-            self.dict_buf_parameters["amplitude"] = float(self.setting_window.amplitude_enter.currentText())
-            self.dict_buf_parameters["num steps"] = self.number_steps
+            self.active_channel.dict_buf_parameters["SYNK_200_Hz"] = self.setting_window.SYNK_enter.currentText()
+            self.active_channel.dict_buf_parameters["sensitivity"] = self.calculate_sensitivity()
+            self.active_channel.dict_buf_parameters["reserve"] = self.setting_window.reserve_enter.currentText()
+            self.active_channel.dict_buf_parameters["frequency"] = float(self.setting_window.frequency_enter.currentText())
+            self.active_channel.dict_buf_parameters["amplitude"] = float(self.setting_window.amplitude_enter.currentText())
+            self.active_channel.dict_buf_parameters["num steps"] = self.number_steps
 
-            self.dict_buf_parameters["input_channel"] = self.setting_window.input_channels_enter.currentText(
+            self.active_channel.dict_buf_parameters["input_channel"] = self.setting_window.input_channels_enter.currentText(
             )
-            self.dict_buf_parameters["input_type"] = self.setting_window.input_type_enter.currentText(
+            self.active_channel.dict_buf_parameters["input_type"] = self.setting_window.input_type_enter.currentText(
             )
-            self.dict_buf_parameters["input_connect"] = self.setting_window.connect_ch_enter.currentText(
+            self.active_channel.dict_buf_parameters["input_connect"] = self.setting_window.connect_ch_enter.currentText(
             )
 
-            self.dict_buf_parameters["filters"] = self.setting_window.filters_enter.currentText(
+            self.active_channel.dict_buf_parameters["filters"] = self.setting_window.filters_enter.currentText(
             )
-            self.dict_buf_parameters["trigger"] = self.setting_window.triger_enter.currentText(
+            self.active_channel.dict_buf_parameters["trigger"] = self.setting_window.triger_enter.currentText(
             )
-            self.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_enter.currentText()
+            self.active_channel.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_enter.currentText()
+
             self.dict_buf_parameters["baudrate"] = self.setting_window.boudrate.currentText(
             )
             self.dict_buf_parameters["COM"] = self.setting_window.comportslist.currentText(
@@ -460,36 +441,47 @@ class sr830_class(installation_device):
 
     def send_signal_ok(self):  # действие при подтверждении настроек, передать парамтры классу инсталляции, проверить и окрасить в цвет окошко, вписать паарметры
         self.add_parameters_from_window()
-        # те же самые настройки и я не настроен, ничего не делаем
-        if self.dict_buf_parameters == self.dict_settable_parameters and not self.i_am_set:
+        # те же самые настройки, ничего не делаем
+        if (self.active_channel.dict_buf_parameters == self.active_channel.dict_settable_parameters and self.dict_buf_parameters == self.dict_settable_parameters):
             return
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
-        self.i_am_set = False
+        self.active_channel.dict_settable_parameters = copy.deepcopy(self.active_channel.dict_buf_parameters)
 
-        self.is_parameters_correct = True
+        is_parameters_correct = True
         if self.dict_buf_parameters["COM"] == 'Нет подключенных портов':
-            self.is_parameters_correct = False
+            is_parameters_correct = False
         self.timer_for_scan_com_port.stop()
 
         if not self._is_correct_parameters():
-            self.is_parameters_correct = False
+            is_parameters_correct = False
 
-        if self.is_parameters_correct:
+        if is_parameters_correct:
             pass
         else:
             pass
+
         self.installation_class.message_from_device_settings(
-            self.name, self.is_parameters_correct, self.dict_settable_parameters)
+            self.name,
+            self.active_channel.number,
+            is_parameters_correct,
+            {
+                **self.dict_settable_parameters,
+                **self.active_channel.dict_settable_parameters,
+            },
+        )
+
+
 
     # фцункция подтверждения корректности параметров от контроллера установкию. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств
     def confirm_parameters(self):
-        print(str(self.name) +
-              " получил подтверждение настроек, рассчитываем шаги")
+        #print(str(self.name) +
+        #      " получил подтверждение настроек, рассчитываем шаги")
         if True:
 
-            self.step_index = -1
-            self.i_am_set = True
-            self.command = commandsSR830(self.client)
+            for ch in self.channels:
+                if ch.is_ch_active():
+                    ch.step_index = -1
+            self.command = commandsSR830(self)
             self.device = SR830(SerialAdapter(self.client))
             '''
 
@@ -506,108 +498,115 @@ class sr830_class(installation_device):
             pass
     # настройка прибора перед началом эксперимента, переопределяется при каждлом старте эксперимента
 
-    def action_before_experiment(self) -> bool:  # менять для каждого прибора
-
-        print("настройка прибора " + str(self.name) + " перед экспериментом..")
+    def action_before_experiment(self, number_of_channel) -> bool:  # менять для каждого прибора
+        self.switch_channel(number_of_channel)
+        print(
+            f"настройка канала {number_of_channel} прибора "
+            + str(self.name)
+            + " перед экспериментом.."
+        )
         pause = 0.1
         status = True
         if not self.command._set_filter_slope(
-                slope=self.dict_settable_parameters["filter_slope"]):
+                slope=self.active_channel.dict_settable_parameters["filter_slope"]):
             status = False
         print((status))
         time.sleep(pause)
         if not self.command._set_input_conf(
-                conf=self.dict_settable_parameters["input_channel"]):
+                conf=self.active_channel.dict_settable_parameters["input_channel"]):
             status = False
         print((status))
         time.sleep(pause)
         if not self.command._set_input_type_conf(
-                type_conf=self.dict_settable_parameters["input_type"]):
+                type_conf=self.active_channel.dict_settable_parameters["input_type"]):
             status = False
         print((status))
         time.sleep(pause)
         if not self.command._set_input_type_connect(
-                input_ground=self.dict_settable_parameters["input_connect"]):
+                input_ground=self.active_channel.dict_settable_parameters["input_connect"]):
             status = False
         print((status))
         time.sleep(pause)
         if not self.command._set_line_filters(
-                type=self.dict_settable_parameters["filters"]):
+                type=self.active_channel.dict_settable_parameters["filters"]):
             status = False
         print((status))
         time.sleep(pause)
         if not self.command._set_reserve(
-                reserve=self.dict_settable_parameters["reserve"]):
+                reserve=self.active_channel.dict_settable_parameters["reserve"]):
             status = False
         print((status))
         time.sleep(pause)
         if not self.command._set_time_const(
-                time_constant=self.dict_settable_parameters["time_const"]):
+                time_constant=self.active_channel.dict_settable_parameters["time_const"]):
             status = False
         print((status))
         time.sleep(pause)
         if not self.command._set_sens(
-                sens=self.dict_settable_parameters["sensitivity"]):
+                sens=self.active_channel.dict_settable_parameters["sensitivity"]):
             status = False
         print((status))
         time.sleep(pause)
         if not self.command._set_frequency(
-                freq=self.dict_settable_parameters["frequency"]):
+                freq=self.active_channel.dict_settable_parameters["frequency"]):
             status = False
         print((status))
         time.sleep(pause)
         if not self.command._set_amplitude(
-                ampl=self.dict_settable_parameters["amplitude"]):
+                ampl=self.active_channel.dict_settable_parameters["amplitude"]):
             status = False
         print((status))
         return status
 
-    def action_end_experiment(self) -> bool:
+    def action_end_experiment(self, number_of_channel) -> bool:
         '''плавное выключение прибора'''
+        self.switch_channel(number_of_channel)
         return True
 
-    def do_meas(self):
+    def do_meas(self, number_of_channel):
         '''прочитать текущие и настроенные значения'''
+        self.switch_channel(number_of_channel)
         print("делаем измерение", self.name)
 
         start_time = time.time()
-        parameters = [self.name]
+        parameters = [self.name + " ch-" + str(self.active_channel.number)]
         is_correct = True
 
         is_stop_analyze = False
         count = 0
         result_analyze = False
-        while not is_stop_analyze:
-            self.command.push_autophase()
-            buf_display_value = []
-            for i in range(10):
-                disp2 = self.command.get_parameter(self.command.COMM_DISPLAY, timeout=1, param=2)
-                print(disp2)
-                if not disp2:
-                    continue
-                else:
-                    buf_display_value.append(float(disp2))
-                    #val = ["disp2=" + str(disp2)]
-                    #parameters.append(val)
-                #time.sleep(0.05)
-            if len(buf_display_value) > 3:
-                if max(buf_display_value) < 2 and min(buf_display_value) > -2:#выход за границы
-                    if len(buf_display_value) >= 5:
-                        for i in range(len(buf_display_value)-2):#анализ монотонности
-                            if buf_display_value[i] >= buf_display_value[i+1] and buf_display_value[i+1] <= buf_display_value[i+2]:
-                                is_stop_analyze = True
-                                result_analyze = True
-                                break
-                            if buf_display_value[i] <= buf_display_value[i+1] and buf_display_value[i+1] >= buf_display_value[i+2]:
-                                is_stop_analyze = True
-                                result_analyze = True
-                                break
-
-            count+=1
-            print("счетчик повторов нажатий кнопки автофаза",count)
-            if count >= 10:
-                is_stop_analyze = True
-
+        if not is_debug:
+            while not is_stop_analyze:
+                self.command.push_autophase()
+                buf_display_value = []
+                for i in range(10):
+                    disp2 = self.command.get_parameter(self.command.COMM_DISPLAY, timeout=1, param=2)
+                    print(disp2)
+                    if not disp2:
+                        continue
+                    else:
+                        buf_display_value.append(float(disp2))
+                        #val = ["disp2=" + str(disp2)]
+                        #parameters.append(val)
+                    #time.sleep(0.05)
+                if len(buf_display_value) > 3:
+                    if max(buf_display_value) < 2 and min(buf_display_value) > -2:#выход за границы
+                        if len(buf_display_value) >= 5:
+                            for i in range(len(buf_display_value)-2):#анализ монотонности
+                                if buf_display_value[i] >= buf_display_value[i+1] and buf_display_value[i+1] <= buf_display_value[i+2]:
+                                    is_stop_analyze = True
+                                    result_analyze = True
+                                    break
+                                if buf_display_value[i] <= buf_display_value[i+1] and buf_display_value[i+1] >= buf_display_value[i+2]:
+                                    is_stop_analyze = True
+                                    result_analyze = True
+                                    break
+            
+                count+=1
+                print("счетчик повторов нажатий кнопки автофаза",count)
+                if count >= 10:
+                    is_stop_analyze = True
+            
 
         if result_analyze == True:
             print("удалось устаканить фазу, измеряем...")
@@ -654,7 +653,7 @@ class sr830_class(installation_device):
 
         if is_correct:
             print("сделан шаг", self.name)
-            ans = device_response_to_step.Step_done
+            ans = ch_response_to_step.Step_done
         else:
             print("Ошибка шага", self.name)
             val = ["disp1=" + "fail"]
@@ -664,7 +663,7 @@ class sr830_class(installation_device):
             val = ["phase=" + "fail"]
             parameters.append(val)
 
-            ans = device_response_to_step.Step_fail
+            ans = ch_response_to_step.Step_fail
 
         return ans, parameters, time.time() - start_time
 
@@ -676,7 +675,30 @@ class sr830_class(installation_device):
         return False
 
 
+class ch_sr830_class(base_ch):
+    def __init__(self, number, device_class) -> None:
+        super().__init__(number)
+        print(f"канал {number} создан")
+        #print(self.am_i_should_do_step, "ацаыввыаваываываывыаывываываываываываывавыаывыыв")
+        self.base_duration_step = 0.1#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
+        self.dict_buf_parameters["time_const"] = "1000"  # секунды
+        self.dict_buf_parameters["filter_slope"] = "6"  # dB
+        self.dict_buf_parameters["SYNK_200_Hz"] = "off"
+        self.dict_buf_parameters["sensitivity"] = "1"  # вольты
+        self.dict_buf_parameters["reserve"] = "high reserve"
+        self.dict_buf_parameters["input_channel"] = "A"
+        self.dict_buf_parameters["input_type"] = "AC"
+        self.dict_buf_parameters["input_connect"] = "ground"
+        self.dict_buf_parameters["filters"] = "line"
+        self.dict_buf_parameters["frequency"] = "400"
+        self.dict_buf_parameters["amplitude"] = "1"
+        self.dict_buf_parameters["num steps"] = "1"
+        
+
 if __name__ == "__main__":
+
+
+    
     pass
     # Создание клиента Modbus RTU
     # client = ModbusSerialClient(

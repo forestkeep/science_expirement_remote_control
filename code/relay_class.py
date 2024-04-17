@@ -9,7 +9,7 @@ from pymeasure.adapters import SerialAdapter
 import copy
 from commandsSR830 import commandsSR830
 import time
-from Classes import device_response_to_step, installation_device
+from Classes import base_ch, base_device, ch_response_to_step
 from Classes import is_debug
 from interface.relay_set_window import Ui_Set_relay
 from pymodbus.client import ModbusSerialClient
@@ -37,7 +37,7 @@ class current_polarity(enum.Enum):
     pol_2 = 2
 
 
-class relay_pr1_class(installation_device):
+class relay_pr1_class(base_device):
     def __init__(self, name, installation_class) -> None:
         super().__init__(name, "modbus", installation_class)
         print("класс реле создан")
@@ -144,6 +144,7 @@ class relay_pr1_class(installation_device):
 
             self.setting_window.sourse_enter.setCurrentText(
                 self.dict_buf_parameters["sourse/time"])
+            self.setting_window.comportslist.addItem(self.dict_buf_parameters["COM"])
 
             if self.dict_buf_parameters["mode"] != "Включение - Выключение":
                 self.setting_window.change_pol_button.setChecked(True)
@@ -344,10 +345,10 @@ class relay_pr1_class(installation_device):
 
         if is_correct:
             print("сделан шаг", self.name)
-            ans = device_response_to_step.Step_done
+            ans = ch_response_to_step.Step_done
         else:
             print("Ошибка шага", self.name)
-            ans = device_response_to_step.Step_fail
+            ans = ch_response_to_step.Step_fail
 
         return ans, parameters, time.time() - start_time
 

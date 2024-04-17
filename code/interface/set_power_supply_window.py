@@ -19,187 +19,138 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         Set_power_supply.resize(302, 384)
         Set_power_supply.setSizeGripEnabled(False)
         Set_power_supply.setModal(False)
-        self.buttonBox = QtWidgets.QDialogButtonBox(Set_power_supply)
+
+        self.gridLayout = QtWidgets.QGridLayout(Set_power_supply)
+
+
+        self.buttonBox = QtWidgets.QDialogButtonBox()
         self.buttonBox.setGeometry(QtCore.QRect(80, 340, 191, 32))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(
             QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
 
-        self.horizontalLayoutWidget = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 215, 261, 41))
-        self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
-        self.horizontalLayout = QtWidgets.QHBoxLayout(
-            self.horizontalLayoutWidget)
-        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        self.label_3 = QtWidgets.QLabel(self.horizontalLayoutWidget)
-        self.label_3.setObjectName("label_3")
-        self.horizontalLayout.addWidget(self.label_3)
-        self.triger_enter = QtWidgets.QComboBox(self.horizontalLayoutWidget)
+        self.triger_enter = QtWidgets.QComboBox()
         self.triger_enter.setCurrentText("")
         self.triger_enter.setObjectName("triger_enter")
-        self.horizontalLayout.addWidget(self.triger_enter)
 
-        self.horizontalLayoutWidget33 = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget33.setGeometry(
-            QtCore.QRect(10, 170, 261, 41))
-        self.horizontalLayoutWidget33.setObjectName("horizontalLayoutWidget33")
-        self.horizontalLayout33 = QtWidgets.QHBoxLayout(
-            self.horizontalLayoutWidget33)
-        self.horizontalLayout33.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout33.setObjectName("horizontalLayout33")
-        self.second_value_limit_label = QtWidgets.QLabel(
-            self.horizontalLayoutWidget33)
+        self.label_3 = QtWidgets.QLabel()
+        self.label_3.setObjectName("label_3")
+
+        self.second_value_limit_label = QtWidgets.QLabel()
         self.second_value_limit_label.setObjectName("second_value_limit_label")
-        self.horizontalLayout33.addWidget(self.second_value_limit_label)
 
-        self.second_limit_enter = QtWidgets.QComboBox(
-            self.horizontalLayoutWidget33)
+        self.second_limit_enter = QtWidgets.QComboBox()
         self.second_limit_enter.setCurrentText("")
         self.second_limit_enter.setObjectName("second_limit_enter")
         self.second_limit_enter.setEditable(True)
-        self.horizontalLayout33.addWidget(self.second_limit_enter)
 
-        self.horizontalLayoutWidget333 = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget333.setGeometry(
-            QtCore.QRect(145, 190, 261, 41))
-        self.horizontalLayoutWidget333.setObjectName(
-            "horizontalLayoutWidget333")
-        self.horizontalLayout333 = QtWidgets.QHBoxLayout(
-            self.horizontalLayoutWidget333)
-        self.horizontalLayout333.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout333.setObjectName("horizontalLayout33")
-        self.radioButton = QtWidgets.QRadioButton(
-            self.horizontalLayoutWidget333)
+        self.radioButton = QtWidgets.QRadioButton()
         self.radioButton.setObjectName("radioButton")
-        self.horizontalLayout333.addWidget(self.radioButton)
-        
 
-        self.horizontalLayoutWidget_2 = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget_2.setGeometry(
-            QtCore.QRect(10, 60, 261, 31))
-        self.horizontalLayoutWidget_2.setObjectName("horizontalLayoutWidget_2")
-        self.horizontalLayout_2 = QtWidgets.QHBoxLayout(
-            self.horizontalLayoutWidget_2)
-        self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        self.label_4 = QtWidgets.QLabel(self.horizontalLayoutWidget_2)
+        self.label_4 = QtWidgets.QLabel()
         self.label_4.setObjectName("label_4")
-        self.horizontalLayout_2.addWidget(self.label_4)
-        self.type_step_enter = QtWidgets.QComboBox(
-            self.horizontalLayoutWidget_2)
+
+        self.type_step_enter = QtWidgets.QComboBox()
         self.type_step_enter.setCurrentText("")
         self.type_step_enter.setObjectName("type_step_enter")
-        self.horizontalLayout_2.addWidget(self.type_step_enter)
-        self.horizontalLayoutWidget_3 = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget_3.setGeometry(
-            QtCore.QRect(10, 10, 261, 41))
-        self.horizontalLayoutWidget_3.setObjectName("horizontalLayoutWidget_3")
-        self.horizontalLayout_3 = QtWidgets.QHBoxLayout(
-            self.horizontalLayoutWidget_3)
-        self.horizontalLayout_3.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
-        self.label_5 = QtWidgets.QLabel(self.horizontalLayoutWidget_3)
+
+        self.label_5 = QtWidgets.QLabel()
         self.label_5.setObjectName("label_5")
-        self.horizontalLayout_3.addWidget(self.label_5)
-        self.type_work_enter = QtWidgets.QComboBox(
-            self.horizontalLayoutWidget_3)
+
+        self.type_work_enter = QtWidgets.QComboBox()
         self.type_work_enter.setCurrentText("")
         self.type_work_enter.setObjectName("type_work_enter")
-        self.horizontalLayout_3.addWidget(self.type_work_enter)
-        self.gridLayoutWidget = QtWidgets.QWidget(Set_power_supply)
-        self.gridLayoutWidget.setGeometry(QtCore.QRect(10, 100, 261, 80))
-        self.gridLayoutWidget.setObjectName("gridLayoutWidget")
-        self.gridLayout_2 = QtWidgets.QGridLayout(self.gridLayoutWidget)
-        self.gridLayout_2.setContentsMargins(0, 0, 0, 0)
-        self.gridLayout_2.setObjectName("gridLayout_2")
-        self.label_6 = QtWidgets.QLabel(self.gridLayoutWidget)
+
+        self.label_6 = QtWidgets.QLabel()
         self.label_6.setObjectName("label_6")
-        self.gridLayout_2.addWidget(self.label_6, 2, 0, 1, 1)
-        self.label_2 = QtWidgets.QLabel(self.gridLayoutWidget)
+
+        self.label_2 = QtWidgets.QLabel()
         self.label_2.setObjectName("label_2")
-        self.gridLayout_2.addWidget(self.label_2, 1, 0, 1, 1)
-        self.label = QtWidgets.QLabel(self.gridLayoutWidget)
+
+        self.label = QtWidgets.QLabel()
         self.label.setObjectName("label")
-        self.gridLayout_2.addWidget(self.label, 0, 0, 1, 1)
-        self.start_enter = QtWidgets.QComboBox(self.gridLayoutWidget)
+
+        self.start_enter = QtWidgets.QComboBox()
         self.start_enter.setEditable(True)
         self.start_enter.setCurrentText("")
         self.start_enter.setObjectName("start_enter")
-        self.gridLayout_2.addWidget(self.start_enter, 0, 1, 1, 1)
-        self.stop_enter = QtWidgets.QComboBox(self.gridLayoutWidget)
+
+        self.stop_enter = QtWidgets.QComboBox()
         self.stop_enter.setEditable(True)
         self.stop_enter.setCurrentText("")
         self.stop_enter.setObjectName("stop_enter")
-        self.gridLayout_2.addWidget(self.stop_enter, 1, 1, 1, 1)
-        self.step_enter = QtWidgets.QComboBox(self.gridLayoutWidget)
+
+        self.step_enter = QtWidgets.QComboBox()
         self.step_enter.setStyleSheet("")
         self.step_enter.setEditable(True)
         self.step_enter.setCurrentText("")
         self.step_enter.setObjectName("step_enter")
-        self.gridLayout_2.addWidget(self.step_enter, 2, 1, 1, 1)
-        self.verticalLayoutWidget = QtWidgets.QWidget(Set_power_supply)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(280, 100, 16, 80))
-        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
-        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.label_7 = QtWidgets.QLabel(self.verticalLayoutWidget)
-        self.label_7.setObjectName("label_7")
-        self.verticalLayout.addWidget(self.label_7)
-        self.label_8 = QtWidgets.QLabel(self.verticalLayoutWidget)
+
+        self.label_8 = QtWidgets.QLabel()
         self.label_8.setObjectName("label_8")
-        self.verticalLayout.addWidget(self.label_8)
-        self.label_9 = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.label_7 = QtWidgets.QLabel()
+        self.label_7.setObjectName("label_7")
+        self.label_9 = QtWidgets.QLabel()
         self.label_9.setObjectName("label_9")
-        self.verticalLayout.addWidget(self.label_9)
-
-        self.horizontalLayoutWidget_4 = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget_4.setGeometry(
-            QtCore.QRect(10, 275, 261, 41))
-        self.horizontalLayoutWidget_4.setObjectName("horizontalLayoutWidget_4")
-        self.horizontalLayout_4 = QtWidgets.QHBoxLayout(
-            self.horizontalLayoutWidget_4)
-        self.horizontalLayout_4.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
-        self.label_10 = QtWidgets.QLabel(self.horizontalLayoutWidget_4)
+        self.label_10 = QtWidgets.QLabel()
         self.label_10.setObjectName("label_10")
-        self.horizontalLayout_4.addWidget(self.label_10)
-        self.comportslist = QtWidgets.QComboBox(self.horizontalLayoutWidget_4)
+
+        self.comportslist = QtWidgets.QComboBox()
         self.comportslist.setObjectName("comportslist")
-        self.horizontalLayout_4.addWidget(self.comportslist)
 
-        self.horizontalLayoutWidget_5 = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget_5.setGeometry(
-            QtCore.QRect(10, 300, 261, 41))
-        self.horizontalLayoutWidget_5.setObjectName("horizontalLayoutWidget_5")
-        self.horizontalLayout_5 = QtWidgets.QHBoxLayout(
-            self.horizontalLayoutWidget_5)
-        self.horizontalLayout_5.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
-        self.label_11 = QtWidgets.QLabel(self.horizontalLayoutWidget_5)
+        self.label_11 = QtWidgets.QLabel()
         self.label_11.setObjectName("label_11")
-        self.horizontalLayout_5.addWidget(self.label_11)
-        self.boudrate = QtWidgets.QComboBox(self.horizontalLayoutWidget_5)
-        self.boudrate.setObjectName("boudrate")
-        self.horizontalLayout_5.addWidget(self.boudrate)
 
-        self.horizontalLayoutWidget_6 = QtWidgets.QWidget(Set_power_supply)
-        self.horizontalLayoutWidget_6.setGeometry(
-            QtCore.QRect(10, 240, 261, 41))
-        self.horizontalLayoutWidget_6.setObjectName("horizontalLayoutWidget_6")
-        self.horizontalLayout_6 = QtWidgets.QHBoxLayout(
-            self.horizontalLayoutWidget_6)
-        self.horizontalLayout_6.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout_6.setObjectName("horizontalLayout_6")
-        self.label_sourse = QtWidgets.QLabel(self.horizontalLayoutWidget_6)
+        self.boudrate = QtWidgets.QComboBox()
+        self.boudrate.setObjectName("boudrate")
+
+        self.label_sourse = QtWidgets.QLabel()
         self.label_sourse.setObjectName("label_sourse")
-        self.horizontalLayout_6.addWidget(self.label_sourse)
-        self.sourse_enter = QtWidgets.QComboBox(self.horizontalLayoutWidget_6)
+
+        self.sourse_enter = QtWidgets.QComboBox()
         self.sourse_enter.setCurrentText("")
         self.sourse_enter.setObjectName("sourse_enter")
-        self.horizontalLayout_6.addWidget(self.sourse_enter)
+
+
+        self.gridLayout.addWidget(self.label_5,0,0,1,1)
+        self.gridLayout.addWidget(self.type_work_enter,0,1,1,2)
+
+        self.gridLayout.addWidget(self.label_4,1,0,1,1)
+        self.gridLayout.addWidget(self.type_step_enter,1,1,1,2)
+
+        self.gridLayout.addWidget(self.label,2,0,1,1)
+        self.gridLayout.addWidget(self.start_enter,2,1,1,2)
+
+        self.gridLayout.addWidget(self.label_2,3,0,1,1)
+        self.gridLayout.addWidget(self.stop_enter,3,1,1,2)
+
+        self.gridLayout.addWidget(self.label_6,4,0,1,1)
+        self.gridLayout.addWidget(self.step_enter,4,1,1,2)
+
+        self.gridLayout.addWidget(self.label_7,2,4,1,1)
+        self.gridLayout.addWidget(self.label_8,3,4,1,1)
+        self.gridLayout.addWidget(self.label_9,4,4,1,1)
+
+        self.gridLayout.addWidget(self.second_value_limit_label,5,0,1,1)
+        self.gridLayout.addWidget(self.second_limit_enter,5,1,1,2)
+
+        self.gridLayout.addWidget(self.radioButton,6,1,1,1)
+
+        self.gridLayout.addWidget(self.label_3,7,0,1,1)
+        self.gridLayout.addWidget(self.triger_enter,7,1,1,2)
+
+        self.gridLayout.addWidget(self.label_sourse,8,0,1,1)
+        self.gridLayout.addWidget(self.sourse_enter,8,1,1,2)
+
+        self.gridLayout.addWidget(self.label_10,9,0,1,1)
+        self.gridLayout.addWidget(self.comportslist,9,1,1,2)
+
+        self.gridLayout.addWidget(self.label_11,10,0,1,1)
+        self.gridLayout.addWidget(self.boudrate,10,1,1,2)
+
+        self.gridLayout.addWidget(self.buttonBox,11,1,2,2)
+
 
         self.retranslateUi(Set_power_supply)
         self.buttonBox.accepted.connect(
@@ -207,14 +158,14 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         self.buttonBox.rejected.connect(
             Set_power_supply.reject)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Set_power_supply)
-
+        
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна крестиком
         print("окно настройки блока закрыто крестиком")
 
     def retranslateUi(self, Set_power_supply):
         _translate = QtCore.QCoreApplication.translate
         Set_power_supply.setWindowTitle(
-            _translate("Set_power_supply", "Dialog"))
+            _translate("Set_power_supply", "настройка источника питания"))
         self.label_3.setText(_translate("Set_power_supply", "Триггер"))
         self.second_value_limit_label.setText(
             _translate("Set_power_supply", "V/A не больше"))
