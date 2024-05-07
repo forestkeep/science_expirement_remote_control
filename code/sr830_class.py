@@ -17,14 +17,11 @@ from Classes import not_ready_style_border, not_ready_style_background, ready_st
 class sr830_class(base_device):
     def __init__(self, name, installation_class) -> None:
         super().__init__(name, "serial", installation_class)
-        print("класс синхронного детектора создан")
+        #print("класс синхронного детектора создан")
         self.ch1 = ch_sr830_class(1, self)
         self.channels=[self.ch1]
         self.ch1.is_active = True#по умолчанию для каждого прибора включен первый канал
         self.active_channel = self.ch1 #поле необходимо для записи параметров при настройке в нужный канал
-
-
-
         self.device = None  # класс прибора будет создан при подтверждении параметров,
         # переменная хранит все возможные источники сигналов , сделать функцию, формирующую этот список в зависимости от структуры установки
         self.counter = 0
@@ -62,8 +59,7 @@ class sr830_class(base_device):
             # self.setting_window.sourse_enter.setEditable(True)
             # self.setting_window.sourse_enter.addItems(
             # ["5", "10", "30", "60", "120"])
-            self.setting_window.triger_enter.addItems(
-                ["Внешний сигнал"])
+            self.setting_window.triger_enter.addItems(["Таймер", "Внешний сигнал"])
 
             self.setting_window.triger_enter.setStyleSheet(
                 ready_style_border)
@@ -369,7 +365,6 @@ class sr830_class(base_device):
                         break
         return str(number),"X"+str(factor), time_const_enter_decimal_factor[dec_factor]
 
-
     def add_parameters_from_window(self):
         #self.frequency_enter = self.setting_window.frequency_enter.currentText()
         #self.amplitude_enter = self.setting_window.amplitude_enter.currentText()
@@ -470,8 +465,6 @@ class sr830_class(base_device):
             },
         )
 
-
-
     # фцункция подтверждения корректности параметров от контроллера установкию. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств
     def confirm_parameters(self):
         #print(str(self.name) +
@@ -500,62 +493,58 @@ class sr830_class(base_device):
 
     def action_before_experiment(self, number_of_channel) -> bool:  # менять для каждого прибора
         self.switch_channel(number_of_channel)
-        print(
-            f"настройка канала {number_of_channel} прибора "
-            + str(self.name)
-            + " перед экспериментом.."
-        )
+        #print(f"настройка канала {number_of_channel} прибора "+ str(self.name)+ " перед экспериментом..")
         pause = 0.1
         status = True
         if not self.command._set_filter_slope(
                 slope=self.active_channel.dict_settable_parameters["filter_slope"]):
             status = False
-        print((status))
+        #print((status))
         time.sleep(pause)
         if not self.command._set_input_conf(
                 conf=self.active_channel.dict_settable_parameters["input_channel"]):
             status = False
-        print((status))
+        #print((status))
         time.sleep(pause)
         if not self.command._set_input_type_conf(
                 type_conf=self.active_channel.dict_settable_parameters["input_type"]):
             status = False
-        print((status))
+        #print((status))
         time.sleep(pause)
         if not self.command._set_input_type_connect(
                 input_ground=self.active_channel.dict_settable_parameters["input_connect"]):
             status = False
-        print((status))
+        #print((status))
         time.sleep(pause)
         if not self.command._set_line_filters(
                 type=self.active_channel.dict_settable_parameters["filters"]):
             status = False
-        print((status))
+        #print((status))
         time.sleep(pause)
         if not self.command._set_reserve(
                 reserve=self.active_channel.dict_settable_parameters["reserve"]):
             status = False
-        print((status))
+        #print((status))
         time.sleep(pause)
         if not self.command._set_time_const(
                 time_constant=self.active_channel.dict_settable_parameters["time_const"]):
             status = False
-        print((status))
+        #print((status))
         time.sleep(pause)
         if not self.command._set_sens(
                 sens=self.active_channel.dict_settable_parameters["sensitivity"]):
             status = False
-        print((status))
+        #print((status))
         time.sleep(pause)
         if not self.command._set_frequency(
                 freq=self.active_channel.dict_settable_parameters["frequency"]):
             status = False
-        print((status))
+        #print((status))
         time.sleep(pause)
         if not self.command._set_amplitude(
                 ampl=self.active_channel.dict_settable_parameters["amplitude"]):
             status = False
-        print((status))
+        #print((status))
         return status
 
     def action_end_experiment(self, number_of_channel) -> bool:
@@ -566,7 +555,7 @@ class sr830_class(base_device):
     def do_meas(self, number_of_channel):
         '''прочитать текущие и настроенные значения'''
         self.switch_channel(number_of_channel)
-        print("делаем измерение", self.name)
+        #print("делаем измерение", self.name)
 
         start_time = time.time()
         parameters = [self.name + " ch-" + str(self.active_channel.number)]
@@ -581,7 +570,7 @@ class sr830_class(base_device):
                 buf_display_value = []
                 for i in range(10):
                     disp2 = self.command.get_parameter(self.command.COMM_DISPLAY, timeout=1, param=2)
-                    print(disp2)
+                    #print(disp2)
                     if not disp2:
                         continue
                     else:
@@ -603,13 +592,13 @@ class sr830_class(base_device):
                                     break
             
                 count+=1
-                print("счетчик повторов нажатий кнопки автофаза",count)
+                #print("счетчик повторов нажатий кнопки автофаза",count)
                 if count >= 10:
                     is_stop_analyze = True
             
 
         if result_analyze == True:
-            print("удалось устаканить фазу, измеряем...")
+            #print("удалось устаканить фазу, измеряем...")
             disp1 = self.command.get_parameter(
                 command=self.command.COMM_DISPLAY, timeout=1, param=1)
             if not disp1:
@@ -634,7 +623,7 @@ class sr830_class(base_device):
                 val = ["phase=" + str(phase)]
                 parameters.append(val)
         else:
-            print("Не получилось обнулить фазу, ставим прочерки", self.name)
+           # print("Не получилось обнулить фазу, ставим прочерки", self.name)
             val = ["disp1=" + "fail"]
             parameters.append(val)
             val = ["disp2=" + "fail"]
@@ -652,10 +641,10 @@ class sr830_class(base_device):
         # -----------------------------
 
         if is_correct:
-            print("сделан шаг", self.name)
+            #print("сделан шаг", self.name)
             ans = ch_response_to_step.Step_done
         else:
-            print("Ошибка шага", self.name)
+            #print("Ошибка шага", self.name)
             val = ["disp1=" + "fail"]
             parameters.append(val)
             val = ["disp2=" + "fail"]
@@ -670,7 +659,7 @@ class sr830_class(base_device):
     def check_connect(self) -> bool:
         line = self.command.get_parameter(self.command.COMM_ID, timeout=1)
         if line is not False:
-            print(line)
+            #print(line)
             return True
         return False
 
@@ -678,9 +667,9 @@ class sr830_class(base_device):
 class ch_sr830_class(base_ch):
     def __init__(self, number, device_class) -> None:
         super().__init__(number)
-        print(f"канал {number} создан")
+        #print(f"канал {number} создан")
         #print(self.am_i_should_do_step, "ацаыввыаваываываывыаывываываываываываывавыаывыыв")
-        self.base_duration_step = 0.1#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
+        self.base_duration_step = 2#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.dict_buf_parameters["time_const"] = "1000"  # секунды
         self.dict_buf_parameters["filter_slope"] = "6"  # dB
         self.dict_buf_parameters["SYNK_200_Hz"] = "off"

@@ -31,10 +31,11 @@ class saving_data():
         max_dev_set_len = 0
         for dev in self.devices:
             column_number += len(dev.data.keys()) + 1
-        if len(dev.data["time"]) > max_dev_data_len:
-            max_dev_data_len = len(dev.data["time"])
-        if len(dev.settings) > max_dev_set_len:
-            max_dev_set_len = len(dev.settings)
+            if 'time' in dev.data:
+                if len(dev.data["time"]) > max_dev_data_len:
+                    max_dev_data_len = len(dev.data["time"])
+            if len(dev.settings) > max_dev_set_len:
+                max_dev_set_len = len(dev.settings)
 
         data_frame = {}
         for h in range(column_number):
@@ -66,8 +67,9 @@ class saving_data():
         h = 0
         max_index = 0
         for dev in self.devices:
-            if len(dev.data["time"]) > max_index:
-                max_index = len(dev.data["time"])
+            if 'time' in dev.data:
+                if len(dev.data["time"]) > max_index:
+                    max_index = len(dev.data["time"])
 
         for i in range(max_index):
             for dev in self.devices:
@@ -155,7 +157,7 @@ class saving_data():
                             file.write(f"---\t")
                     file.write("\t")
                 file.write("\n")
-            print(number_tab)
+            #print(number_tab)
 
             '''ищем максимальный индекс по настройкам из всех приборов'''
             max_index = 0
@@ -206,7 +208,7 @@ class saving_data():
                 if is_file_correct == False:
                     if line.find("Запущена установка") != -1:  # нам подсунули нужный файл
                         is_file_correct = True
-                        print("файл нужный")
+                        #print("файл определен как файл результатов")
                         continue
 
                 if line.find("Настройки") != -1:
@@ -259,5 +261,5 @@ def process_and_export(input_file_path, output_file_path, output_type):
 
 if __name__ == "__main__":
     save = saving_data()
-    input_file = "Maisheng_1_DP832A_2_SR830_4_2024-04-14 14-16-38.txt"
+    input_file = "DP832A_4_2024-04-21 18-32-20.txt"
     save.save_data(input_file, "output_data.xlsx", type_save_file.excel)

@@ -120,19 +120,27 @@ class device_page(QtWidgets.QWidget):
             self.channels[5].state_Button.clicked.connect(
                 lambda: self.click_change_ch(5))
 
-    def click_change_ch(self, num):
+    def click_change_ch(self, num, is_open = None):
         '''открыть или закрыть канал'''
 
+        num = int(num)
+        if is_open == None:
         # меняем состояние
-        if self.ch_state[num-1] == state_ch.open:
-            self.ch_state[num-1] = state_ch.closed
-        else:
+            if self.ch_state[num-1] == state_ch.open:
+                self.ch_state[num-1] = state_ch.closed
+            else:
+                self.ch_state[num-1] = state_ch.open
+                #self.installation_class.add_new_channel(self.device_class.get_name(),num)
+        elif is_open == True:
             self.ch_state[num-1] = state_ch.open
-            #self.installation_class.add_new_channel(self.device_class.get_name(),num)
+        else:
+            self.ch_state[num-1] = state_ch.closed
 
         self.installation_class.set_state_ch(self.device_class.get_name(), num, self.ch_state[num-1] == state_ch.open)
 
+        self.update_widgets()
 
+    def update_widgets(self):
         # удаляем виджеты
         for i in reversed(range(self.channelsLayout.count())):
             self.channelsLayout.itemAt(i).widget().setParent(None)
@@ -142,24 +150,8 @@ class device_page(QtWidgets.QWidget):
             if self.ch_state[j] == state_ch.open:
                 self.channelsLayout.addWidget(self.channels[j+1])
             else:
+                pass
                 self.channelsLayout.addWidget(self.add_ch_button[j+1])
-
-        self.name_device.setStyleSheet(ready_style_border)
-        ch_count = 0
-        for ch in self.device_class.channels:
-            if ch.is_active:
-                if ch.i_am_seted == False:
-                    pass
-                    self.name_device.setStyleSheet(not_ready_style_border)
-                else:
-                    ch_count+=1
-        if ch_count == 0:
-            pass
-            self.name_device.setStyleSheet(not_ready_style_border)
-
-
-
-            
 
 
     def click_del_button(self):
@@ -168,6 +160,15 @@ class device_page(QtWidgets.QWidget):
 
     def set_ch_color(self, ch_num, color):
         self.channels[ch_num].set_color(color)
+
+    def set_state_ch_widget(self, num, state):
+        num = int(num)
+        if state == True:
+            self.ch_state[num-1] = state_ch.open
+        else:
+            self.ch_state[num-1] = state_ch.closed
+
+        self.installation_class.set_state_ch(self.device_class.get_name(), num, self.ch_state[num-1] == state_ch.open)
 
 class channel_page(QtWidgets.QWidget):
     def __init__(self, num, installation_class, name_device, parent=None):
@@ -321,7 +322,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
             self.verticalLayoutWidget_2)
         self.repeat_measurement_enter.setEditable(False)
         self.repeat_measurement_enter.setObjectName("repeat_measurement_enter")
-        self.repeat_measurement_enter.addItem("")
+        self.repeat_measurement_enter.addItems(["1","2","3","4","5","6","7","8","9","10"])
 
         self.horizontalLayout_3.addWidget(self.repeat_measurement_enter)
         self.verticalLayout.addLayout(self.horizontalLayout_3)
@@ -338,7 +339,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
             self.verticalLayoutWidget_2)
         self.repeat_exp_enter.setEditable(False)
         self.repeat_exp_enter.setObjectName("repeat_exp_enter")
-        self.repeat_exp_enter.addItem("")
+        self.repeat_exp_enter.addItems(["1","2","3","4","5","6","7","8","9","10"])
         self.horizontalLayout_2.addWidget(self.repeat_exp_enter)
         self.verticalLayout_2.addLayout(self.horizontalLayout_2)
 
@@ -391,7 +392,9 @@ class Ui_Installation(QtWidgets.QMainWindow):
         QtCore.QMetaObject.connectSlotsByName(base_window)
 
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна
-        print("окно инталляции закрыто крестиком")
+        #print("окно инталляции закрыто крестиком")
+        for dev_win in self.devices_lay.values():
+            dev_win.setParent(None)
         self.installation_close_signal.emit(1)
 
     def retranslateUi(self, Installation):

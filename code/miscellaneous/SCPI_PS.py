@@ -114,9 +114,24 @@ class commmsnds():
 
 
 if __name__ == "__main__":
-        
-        client = serial.Serial("COM16", 9600, timeout=1)
-        #client.write(10)
+
+        '''
+        f = open('mnipifreq4Rmeas.txt', 'a')
+        line =""
+        i = 0 
+        while True:
+            buf = client.read()
+            buf = str(buf)
+            line+=buf
+            i+=1
+            if i > 20:
+                i = 0
+                f.write(line + '\n')
+                print(line)
+                line = ""
+
+
+
         ans = 0b01111111
         ans+=0b00000001
         rr = 0x0
@@ -125,6 +140,7 @@ if __name__ == "__main__":
         tmpBuffer = 128
         print(chr(rr))
         client.write(1)
+        '''
         '''
 
 

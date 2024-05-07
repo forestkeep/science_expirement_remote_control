@@ -11,6 +11,7 @@ import serial.tools.list_ports
 from datetime import datetime
 import time
 from Classes import ch_response_to_step
+from mnipi_e7_20_class import mnipi_e7_20_class
 import threading
 from PyQt5.QtCore import QTimer
 from interface.save_repeat_set_window import save_repeat_set_window
@@ -18,6 +19,7 @@ from enum import Enum
 from Classes import is_debug
 from Parse_data import process_and_export, type_save_file
 from rigol_dp832a import rigol_dp832a_class
+from AKIP2404 import akip2404_class
 import qdarktheme
 
 from Classes import not_ready_style_border, not_ready_style_background, ready_style_border, ready_style_background, warning_style_border, warning_style_background
@@ -68,7 +70,7 @@ class installation_class():
             lambda: self.connection_two_thread())
 
         self.dict_device_class = {
-            "Maisheng": maisheng_power_class, "SR830": sr830_class, "PR": relay_pr1_class, "DP832A": rigol_dp832a_class}
+            "Maisheng": maisheng_power_class, "SR830": sr830_class, "PR": relay_pr1_class, "DP832A": rigol_dp832a_class, "АКИП-2404":akip2404_class, "E7-20MNIPI":mnipi_e7_20_class}
         self.dict_active_device_class = {}
         # self.dict_status_active_device_class = {}
         self.clients = []  # здесь хранятся классы клиентов для всех устройств, они создаются и передаются каждому устройству в установке
@@ -86,6 +88,8 @@ class installation_class():
         # print(current_installation_list)
         proven_device = []
         number_device = 1
+        self.dict_active_device_class = {}
+
         for key in current_installation_list:  # создаем классы переданных приборов
             try:
                 self.dict_active_device_class[key + "_" + str(number_device)] = self.dict_device_class[key](
@@ -95,7 +99,8 @@ class installation_class():
                 proven_device.append(key + "_" + str(number_device))
                 number_device = number_device+1
             except:
-                print("под прибор |" + key + "| не удалось создать класс")
+                pass
+                #print("под прибор |" + key + "| не удалось создать класс")
 
         self.current_installation_list = proven_device
         # logging.debug(f"состав установки {proven_device}")
@@ -107,26 +112,6 @@ class installation_class():
         self.installation_window.setupUi(
             self.installation_window, self, self.dict_active_device_class)
 
-        '''
-        if len(current_installation_list) > 0:
-            self.installation_window.change_device_button[current_installation_list[0]].clicked.connect(
-                lambda: self.testable(current_installation_list[0]))
-        if len(current_installation_list) > 1:
-            self.installation_window.change_device_button[current_installation_list[1]].clicked.connect(
-                lambda: self.testable(current_installation_list[1]))
-        if len(current_installation_list) > 2:
-            self.installation_window.change_device_button[current_installation_list[2]].clicked.connect(
-                lambda: self.testable(current_installation_list[2]))
-        if len(current_installation_list) > 3:
-            self.installation_window.change_device_button[current_installation_list[3]].clicked.connect(
-                lambda: self.testable(current_installation_list[3]))
-        if len(current_installation_list) > 4:
-            self.installation_window.change_device_button[current_installation_list[4]].clicked.connect(
-                lambda: self.testable(current_installation_list[4]))
-        if len(current_installation_list) > 5:
-            self.installation_window.change_device_button[current_installation_list[5]].clicked.connect(
-                lambda: self.testable(current_installation_list[5]))
-        '''
         self.installation_window.way_save_button.clicked.connect(
             lambda: self.set_way_save())
 
@@ -158,10 +143,31 @@ class installation_class():
 
     def delete_device(self, device):
         del self.dict_active_device_class[device]
+
+        buf_dev = {}
+        buf_wid = {}
+        i = 1
+        for key in self.dict_active_device_class.keys():
+            dev = self.dict_active_device_class[key]
+            wid = self.installation_window.devices_lay[key]
+            buf_dev[key[:-1]+str(i)] = dev
+            buf_wid[key[:-1]+str(i)] = wid
+            dev.set_name(key[:-1]+str(i))
+            self.get_device_widget(key).name_device.setText(key[:-1]+str(i))
+            for ch in self.get_device_widget(key).channels.values():
+                ch.name_device = key[:-1]+str(i)
+            i+=1
+
+        self.installation_window.devices_lay = buf_wid
+        self.dict_active_device_class = buf_dev
+        
         self.preparation_experiment()
 
     def get_channel_widget(self, name_device, num_channel):
         return self.installation_window.devices_lay[name_device].channels[num_channel]
+    
+    def get_device_widget(self, name_device):
+        return self.installation_window.devices_lay[name_device]
 
     def clear_log(self):
         self.installation_window.log.clear()
@@ -232,7 +238,7 @@ class installation_class():
             self.dict_active_device_class[device].show_setting_window(num_ch)
         else:
             pass
-            print("запущен эксперимент, запрещено менять параметры приборов")
+            #print("запущен эксперимент, запрещено менять параметры приборов")
 
     def show_window_installation(self):
         self.installation_window.show()
@@ -297,8 +303,9 @@ class installation_class():
     def preparation_experiment(self):
         #print("подготовка к эксперименту")
         self.key_to_start_installation = False
+        
         if self.is_all_device_settable():
-            print("все каналы имеют статус настроен")
+            #print("все каналы имеют статус настроен")
             if self.analyse_com_ports():
                 # если оказались в этой точке, значит приборы настроены корректно и нет проблем с конфликтами ком портов, если подключение не будет установлено, то ключ снова будет сброшен
                 self.confirm_devices_parameters()
@@ -323,11 +330,13 @@ class installation_class():
             device.confirm_parameters()
 
     def add_new_channel(self, device, num):
-        print(f"добавлен новый канал {num} устройство {device}")
+        pass
+        #print(f"добавлен новый канал {num} устройство {device}")
 
     def set_clients_for_device(self):  # передать созданные клиенты приборам
         for device, client in zip(self.dict_active_device_class.values(), self.clients):
-            device.set_client(client)
+            if client is not False:
+                device.set_client(client)
 
     def message_from_device_status_connect(self, answer, name_device):
         if answer == True:
@@ -385,13 +394,15 @@ class installation_class():
                 self.installation_window.start_button.setText("Стоп")
 
                 status = True  # последние проверки перед стартом
-
                 if status:
                     self.stop_experiment = False
                     # создаем текстовый файл
                     name_file = ""
                     for i in self.dict_active_device_class.values():
-                        name_file = name_file + str(i.get_name()) + "_"
+                        for ch in i.channels:
+                            if ch.is_ch_active():
+                                name_file = name_file + str(i.get_name()) + "_"
+                                break
                     currentdatetime = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
                     self.buf_file = f"{name_file + currentdatetime}.txt"
                     self.write_data_to_buf_file(
@@ -420,7 +431,6 @@ class installation_class():
                         self.installation_window.repeat_measurement_enter.currentText())
                     self.add_text_to_log("Создан файл " + self.buf_file)
                     self.add_text_to_log("Эксперимент начат")
-
                     self.experiment_thread = threading.Thread(
                         target=self.exp_th, daemon=True)
                     self.experiment_thread.start()
@@ -534,7 +544,7 @@ class installation_class():
         # -----------------анализ других случаев------------
         sourses = self.cycle_analyse()
         if sourses:
-            print("зацикливание:", sourses)
+            #print("зацикливание:", sourses)
             for sourse in sourses:
                 dev, ch = sourse.split()[0], sourse.split()[1]
                 first_ch = ch[3:4:1]
@@ -567,8 +577,7 @@ class installation_class():
                         message += "эксперимент будет продолжаться бесконечно"
                         self.add_text_to_log(
                             message, status="err")
-                        print(
-                            "бесконечный эксперимент, зацикливание с бесконечным количеством шагов")
+                        #print("бесконечный эксперимент, зацикливание с бесконечным количеством шагов")
                         break  # прошли круг
 
         return experiment_endless
@@ -637,7 +646,7 @@ class installation_class():
                 if row[0] == False or row[i] in setted_dev:
                     break
                 if row[0] == row[i]:
-                    print("зацикливание по строке ", row)
+                    #print("зацикливание по строке ", row)
                     setted_dev.append(row[0])
                     dev, ch = row[0].split()[0], row[0].split()[1]
                     ch_num = ch[3:4:1]
@@ -666,17 +675,15 @@ class installation_class():
                     if trig == "Таймер":
                         steps = device.get_steps_number(ch.number)
                         if steps is not False:
-                            buf_time = steps * \
+                            buf_time = (steps * \
                                 (device.get_trigger_value(
-                                    ch.number) + ch.base_duration_step)
+                                    ch.number) + ch.base_duration_step))*float(self.installation_window.repeat_measurement_enter.currentText())
+
+                    elif trig == "Внешний сигнал":
+                        # TODO: рассчитать время в случае срабатывания цепочек приборов. Найти корень цепочки и смотреть на его параметры, значение таймера и количество повторов, затем рассчитать длительность срабатывания цепочки и сравнить со значением таймера, вернуть наибольшее
+                        continue
                     else:
                         continue
-
-                elif trig == "Внешний сигнал":
-                    # TODO: рассчитать время в случае срабатывания цепочек приборов. Найти корень цепочки и смотреть на его параметры, значение таймера и количество повторов, затем рассчитать длительность срабатывания цепочки и сравнить со значением таймера, вернуть наибольшее
-                    continue
-                else:
-                    continue
 
                 if buf_time is not False:
 
@@ -719,15 +726,15 @@ class installation_class():
     def exp_th(self):
         status = True
         self.add_text_to_log("настройка приборов.. ")
-        # print("запущен поток эксперимента")
+        #print("запущен поток эксперимента")
 
         for dev in self.dict_active_device_class.values():
             for ch in dev.channels:
                 if ch.is_ch_active():
+                    #print(ch.number, "канал состояние")
                     ans = dev.action_before_experiment(ch.number)
                     if ans == False:
-                        print("ошибка при настройке " +
-                              dev.get_name() + " перед экспериментом")
+                        #print("ошибка при настройке " +dev.get_name() + " перед экспериментом")
 
                         if not is_debug:
                             status = False
@@ -752,7 +759,7 @@ class installation_class():
                 max_exp_time = 100000
                 # не определено время
 
-            print("общее время эксперимента", max_exp_time)
+            #print("общее время эксперимента", max_exp_time)
 
             start_exp_time = time.time()
             self.installation_window.pbar.setMinimum(0)
@@ -783,7 +790,7 @@ class installation_class():
                 # ----------------------------
                 if time.time() - sr > 2:
                     sr = time.time()
-                    # print("активных приборов - ", number_active_device)
+                    #print("активных приборов - ", number_active_device)
                 # -----------------------------------
 
                 self.pbar_percent = (
@@ -809,7 +816,7 @@ class installation_class():
                     '''остановка эксперимента, нет активных приборов'''
                     self.set_state_text("Остановка эксперимента...")
                     self.stop_experiment = True
-                    print("не осталось активных приборов, эксперимент остановлен")
+                    #print("не осталось активных приборов, эксперимент остановлен")
                 if number_device_which_act_while == number_active_device and number_active_device == 1:
                     '''если активный прибор один и он работает, пока работают другие, то стоп'''
                     self.stop_experiment = True
@@ -820,7 +827,6 @@ class installation_class():
                     for ch in device.channels:
                         if ch.is_ch_active():
                             if device.get_status_step(ch.number) == True:
-                                # print(device.get_name(), "приоритет",device.get_priority())
                                 if ch.get_priority() < target_priority:
                                     target_execute = [device, ch]
                                     target_priority = ch.get_priority()
@@ -831,7 +837,7 @@ class installation_class():
                     self.set_state_text(
                         "Выполняется действие " + device.get_name() + " ch-" + str(ch.number))
                     device.set_status_step(ch.number, False)
-                    if device.on_next_step(ch.number) is not False:
+                    if device.on_next_step(ch.number, repeat = 3) == ch_response_to_step.Step_done:
                         ch.number_meas += 1
                         repeat_counter = 0
                         while repeat_counter < self.repeat_meas:
@@ -850,6 +856,7 @@ class installation_class():
                                 ch.am_i_active_in_experiment = False
                                 error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
                                 break
+                    
 
                     else:
                         ch.am_i_active_in_experiment = False
@@ -861,7 +868,7 @@ class installation_class():
                     subscribers = self.get_subscribers([[device.get_name(), ch.number]], [
                                                        device.get_name(), ch.number])
 
-                    print(device.get_name(), "подписчики", subscribers)
+                    #print(device.get_name(), "подписчики", subscribers)
 
                     if ch.am_i_active_in_experiment == False:
                         '''останавливаем всех подписчиков'''
@@ -893,8 +900,8 @@ class installation_class():
                 if ch.is_ch_active():
                     ans = dev.action_end_experiment(ch.number)
                     if ans == False:
-                        print("ошибка при действии " +
-                              dev.get_name() + " после эксперимента")
+                        pass
+                        #print("ошибка при действии " +dev.get_name() + " после эксперимента")
         self.pbar_percent = 0  # сбрасываем прогресс бар
 
         if error:
@@ -923,7 +930,8 @@ class installation_class():
         try:
             self.save_results()
         except:
-            print("не удалось сохранить результаты")
+            pass
+            #print("не удалось сохранить результаты")
         self.set_state_text("Подготовка к эксперименту")
 
         # ------------------подготовка к повторному началу эксперимента---------------------
@@ -1066,11 +1074,15 @@ class installation_class():
                 list_type_connection.append(device.get_type_connection())
                 list_COMs.append(device.get_COM())
                 list_baud.append(device.get_baud())
+            else:
+                list_type_connection.append(False)
+                list_COMs.append(False)
+                list_baud.append(False)
         for i in range(len(list_baud)):
             if list_type_connection[i] == "serial":
                 ser = serial.Serial(list_COMs[i], int(list_baud[i]), timeout=1)
                 self.clients.append(ser)
-            if list_type_connection[i] == "modbus":
+            elif list_type_connection[i] == "modbus":
                 if list_COMs[i] in dict_modbus_clients.keys():
                     # если клиент был создан ранее, то просто добавляем ссылку на него
                     self.clients.append(dict_modbus_clients[list_COMs[i]])
@@ -1078,8 +1090,10 @@ class installation_class():
                     dict_modbus_clients[list_COMs[i]] = ModbusSerialClient(
                         method='rtu', port=list_COMs[i], baudrate=int(list_baud[i]), stopbits=1, bytesize=8, parity='E', timeout=0.3, retries=1, retry_on_empty=True)
                     self.clients.append(dict_modbus_clients[list_COMs[i]])
-            if list_type_connection[i] != "modbus" and list_type_connection[i] != "serial":
-                print("нет такого типа подключения")
+            elif list_type_connection[i] != "modbus" and list_type_connection[i] != "serial":
+                self.clients.append(False)
+                #print("нет такого типа подключения")
+        #print(list_type_connection, )
 
     def show_parameters_of_device_on_label(self, device, num_channel, list_parameters):
         labeltext = ""
@@ -1095,11 +1109,15 @@ class installation_class():
         status = True
         if len(self.dict_active_device_class.values()) == 0:
             status = False
-        channels_count = 0
+        
+        active_channels = 0
+
         for dev in self.dict_active_device_class.values():
+            channels_count = 0
             status_dev = True
             for ch in dev.channels:
                 if ch.is_ch_active():
+                    active_channels+=1
                     if not ch.is_ch_seted():
                         status_dev = False
                         status = False
@@ -1109,7 +1127,7 @@ class installation_class():
 
             if channels_count == 0:  # прибор активен, но нет включенных каналов
                 status_dev = False
-
+                
             if status_dev:
                 #print("красим слой в зеленый")
                 self.installation_window.devices_lay[dev.get_name(
@@ -1125,6 +1143,9 @@ class installation_class():
                 status = False
                 break
         '''
+        if active_channels == 0:
+            status = False
+
         return status
 
     def write_parameters_to_file(self, name_device, text):
@@ -1135,18 +1156,21 @@ class installation_class():
 
     def save_results(self):
         if self.way_to_save_file != False:  # если выбран путь для сохранения результатов
-            print("путь сохранения результата", self.way_to_save_file)
+            #print("путь сохранения результата", self.way_to_save_file)
 
             if self.type_file_for_result == type_save_file.origin:
-                print("выбран тип origin для сохранения результата")
+                pass
+                #print("выбран тип origin для сохранения результата")
 
             elif self.type_file_for_result == type_save_file.excel:
-                print("выбран тип файла excel для сохранения результата")
+                pass
+                #print("выбран тип файла excel для сохранения результата")
             elif self.type_file_for_result == type_save_file.txt:
-                print("выбран текстовый тип файла для сохранения результата")
+                pass
+                #print("выбран текстовый тип файла для сохранения результата")
             else:
-                print(
-                    "тип файла для сохранения результата не определен, сохраняем в txt")
+                pass
+                #print("тип файла для сохранения результата не определен, сохраняем в txt")
 
             process_and_export(
                 self.buf_file, self.way_to_save_file, self.type_file_for_result)
@@ -1200,6 +1224,7 @@ class installation_class():
         else:
             self.write_data_to_save_installation_file(
                 self.way_to_save_installation_file)
+            self.installation_window.setWindowTitle("Experiment control - " + self.way_to_save_installation_file)
 
     def push_button_save_installation_as(self):
         # print("нажата кнопка сохранения установки с выбором пути")
@@ -1208,7 +1233,10 @@ class installation_class():
         fileName, ans = QtWidgets.QFileDialog.getSaveFileName(self.installation_window,
                                                               "Save File", "", "Text Files(*.txt)", options=options)
         if ans == "Text Files(*.txt)":
-            self.way_to_save_installation_file = fileName + ".txt"
+            if ".txt" in fileName:
+                self.way_to_save_installation_file = fileName
+            else:
+                self.way_to_save_installation_file = fileName + ".txt"
             # print(fileName)
             self.push_button_save_installation()
 
@@ -1221,22 +1249,29 @@ class installation_class():
         if fileName is not None:
             try:
                 self.read_info_by_saved_installation(fileName)
-                pass  # попробовать отккыть установку
+                self.way_to_save_installation_file = fileName
+                self.installation_window.setWindowTitle("Experiment control - " + fileName)
             except:
-                print("не удалось открыть установку")
+                pass
+                #print("не удалось открыть установку")
 
     def write_data_to_save_installation_file(self, way):
         with open(way, 'w') as file:
-            file.write(str(len(self.current_installation_list)))
-            for dev in self.current_installation_list:
+            file.write(str(len(self.dict_active_device_class.keys())))
+            for dev in self.dict_active_device_class.keys():
                 file.write("|")
-                file.write(dev[0:len(dev)-2:1])
+                file.write(dev[0:len(dev):1])
             file.write("\n")
-            for dev in self.current_installation_list:
-                file.write(
-                    self.installation_window.label[dev].text().replace("\n", ""))
-                file.write("---------------------")
-                file.write("\n")
+
+            for dev in self.dict_active_device_class.values():
+                for ch in dev.channels:
+                        file.write(dev.get_name() + " " + str(ch.number) + "\n")
+                        if ch.is_ch_active():
+                            file.write(self.get_channel_widget(dev.get_name(), ch.number).label_settings_channel.text().replace("\n", "") + "\n")
+                        else:
+                            file.write("not active" + "\n")
+                        file.write("---------------------")
+                        file.write("\n")
 
     def read_info_by_saved_installation(self, filename):
         with open(filename, 'r') as file:
@@ -1248,49 +1283,86 @@ class installation_class():
         new_installation_list = {}
         count = 0
         for device in buffer[0][1::]:
-            if device not in self.dict_device_class.keys():
-                print(
-                    fr"ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку")
+            if device[:-2] not in self.dict_device_class.keys():
+                #print(fr"ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку")
                 self.add_text_to_log(
                     fr"ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку", status="err")
                 return
             else:
-                new_installation_list[count] = device
+                #new_installation_list[count] = device
+                new_installation_list[device] = {}#создаем в качестве значения список, сюда поместим словари с каналами в виде ключей
             count += 1
 
         settings_devices = []
-        new_set = []
+
+        is_create_ch = True
+        is_add_info = False
         for i in range(1, len(buffer), 1):
+            if is_add_info and not(buffer[i] == "---------------------"):
+                new_installation_list[name_dev][ch].append(buffer[i])
+            if is_create_ch:
+                is_create_ch = False
+                name_dev = buffer[i].split()[0]
+                ch = buffer[i].split()[1]
+                new_installation_list[name_dev][ch] = []
+                is_add_info = True
             if buffer[i] == "---------------------":
-                settings_devices.append(new_set)
-                new_set = []
-            else:
-                new_set.append(buffer[i])
-        lst_dict_settings = []
-        for set in settings_devices:
-            new_dict = {}
-            for data in set:
-                data = data.split(":")
-                new_dict[data[0]] = data[1]
-            # список со словарями настроек приборов
-            lst_dict_settings.append(new_dict)
+                is_add_info = False
+                is_create_ch = True
+
+        for key in new_installation_list.keys():
+            for ch in new_installation_list[key].keys():
+                    new_dict = {}
+                    for data in new_installation_list[key][ch]:
+                        if ":" in data:
+                            data = data.split(":")
+                            try:
+                                new_dict[data[0]] = data[1]
+                            except:
+                                pass
+                                #print(f"ошибка добавления параметра {data} прибор {key} канал {ch}")
+                        else:
+                            if data == "Не настроено" or data == "not active":
+                                new_dict[data] = data
+                                break
+                    new_installation_list[key][ch] = new_dict
+
 
         self.close_window_installation()
         self.dict_active_device_class = {}  # обнуляем словарь с классами приборов
-        self.reconstruct_installation(new_installation_list.values())
+
+        new_install = []
+        for dev in new_installation_list.keys():
+            new_install.append(dev[:-2])
+        self.reconstruct_installation(new_install)
         self.show_window_installation()
 
-        for device, settings in zip(self.dict_active_device_class.values(), lst_dict_settings):
-            device.set_parameters(settings)
+        for device in self.dict_active_device_class.values():
+            for ch in device.channels:
+                open_ch = True
+                for param in new_installation_list[device.get_name()][str(ch.number)]:
+                    if open_ch == True:
+                        open_ch = False
+                        if param == "not active":
+                            self.get_device_widget(device.get_name()).set_state_ch_widget(ch.number, False)
+                        else:
+                            self.get_device_widget(device.get_name()).set_state_ch_widget(ch.number, True)
+
+                device.set_parameters(int(ch.number) ,new_installation_list[device.get_name()][str(ch.number)])
+
+            self.get_device_widget(device.get_name()).update_widgets()
 
 
 if __name__ == "__main__":
     # import pyqtcss
 
-    print(QtWidgets.QStyleFactory.keys())
-    lst = ["Maisheng", "SR830", "PR", "DP832A"]
-    lst5 = ["Maisheng", "DP832A", "Maisheng", "SR830"]
+    #print(float('03'))
+
+    #print(QtWidgets.QStyleFactory.keys())
+    lst = ["Maisheng", "SR830", "PR", "DP832A", "АКИП2404", "E7-20MNIPI"]
+    lst5 = ["Maisheng","АКИП2404"]
     lst4 = ["DP832A"]
+    lst11 = ["DP832A", "АКИП2404", "E7-20MNIPI"]
 
     app = QtWidgets.QApplication(sys.argv)
 
@@ -1303,7 +1375,7 @@ if __name__ == "__main__":
     # app.setStyle('Fusion')
     # ['windowsvista', 'Windows', 'Fusion']
     a = installation_class()
-    a.reconstruct_installation(lst5)
+    a.reconstruct_installation(lst11)
     a.show_window_installation()
     sys.exit(app.exec_())
 

@@ -35,7 +35,7 @@ class Window1(QtWidgets.QMainWindow):
             self.textSaved.emit(signal)
     def showMessage2(self, message):
         self.counter=self.counter+1
-        print(self.counter,message)
+        #print(self.counter,message)
         
 
 class Window2(QtWidgets.QDialog):
@@ -137,7 +137,7 @@ class MainWindow(QtWidgets.QWidget):
 if __name__ == '__main__':
 
     rm = pyvisa.ResourceManager()
-    print(rm.list_resources())
+    #print(rm.list_resources())
 
     #app = QtWidgets.QApplication(sys.argv)
     #w = MainWindow()

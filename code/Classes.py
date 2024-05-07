@@ -38,6 +38,7 @@ class control_in_experiment():
         return self.priority
 
     def increment_priority(self):
+        #print("приоритет", self.priority)
         if self.priority > 1:
             self.priority = self.priority - 1
         else:
@@ -77,6 +78,9 @@ class base_device():
         # разрешает исполнение кода в функциях, срабатывающих по сигналам
         self.key_to_signal_func = False
 
+    def set_name(self, name):
+        self.name = name
+
     def set_status_step(self, ch_num, status):
         '''сообщаем каналу прибору статус шага, должен проводить измерение или нет'''
         self.switch_channel(ch_num)
@@ -113,7 +117,6 @@ class base_device():
     def on_next_step(self, number_of_channel):  # функция сообщает прибору, что нужно перейти на следующий шаг, например, выставить новые значения тока и напряжения в случае источника питания
         '''активирует следующий шаг канала прибора'''
         self.switch_channel(number_of_channel)
-
         is_correct = True
         if self.active_channel.dict_buf_parameters["num steps"] == "Пока активны другие приборы":
             return is_correct
@@ -280,14 +283,31 @@ class base_device():
     def set_parameters(self,number_of_channel, parameters):
         """функция необходима для настройки параметров прибора в установке при добавлении прибора извне или при открытии сохраненной установки, передаваемый словарь гарантированно должен содержать параметры именно для данного прибора"""
         self.switch_channel(number_of_channel)
-        self.dict_buf_parameters = copy.deepcopy(parameters)#временно 4,04,2024
-        self.dict_settable_parameters = copy.deepcopy(parameters)#временно 4,04,2024
-        self.active_channel.dict_buf_parameters = copy.deepcopy(parameters)#временно 4,04,2024
-        self.active_channel.dict_settable_parameters = copy.deepcopy(parameters)#временно 4,04,2024
-        #print(fr"вошли в функцию передачи параметров установке. имя прибора{self.name}")
-        #TODO:парсить параметры и записывать в соответсвующие переменные, предназначенные для сохранения параметров из окна
+        status = True
+        for param in parameters.keys():
+            if param == "Не настроено":
+                self.active_channel.set_active(True)
+                status = False
+                break
+            elif param == "not active":
+                status = False
+                self.active_channel.set_active(False)
+                break
+            else:
+                self.active_channel.set_active(True)
+                
+            if param == "COM" or param == "baudrate":
+                self.dict_buf_parameters[param] = parameters[param]
+                self.dict_settable_parameters[param] = parameters[param]
+            else:
+                self.active_channel.dict_buf_parameters[param] = parameters[param]
+                self.active_channel.dict_settable_parameters[param] = parameters[param]
+        
+        #print(self.dict_settable_parameters, self.active_channel.dict_settable_parameters)
+        
+
         self.installation_class.message_from_device_settings(
-            self.name,self.active_channel.number, True, {**self.dict_settable_parameters, **self.active_channel.dict_settable_parameters})
+            self.name,self.active_channel.number, status, {**self.dict_settable_parameters, **self.active_channel.dict_settable_parameters})
         
 class base_ch(control_in_experiment):
     '''базовый класс канала устройства'''

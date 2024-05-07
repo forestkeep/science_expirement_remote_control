@@ -1,64 +1,0 @@
-Запущена установка 
-Список_приборов: Maisheng_1 DP832A_2 SR830_4 
-Настройки Maisheng_1 ch-1baudrate - 9600COM - COM15trigger - Таймерsourse/time - 5num steps - 26type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 50low_limit - 0.01step - 2second_value - 15repeat_reverse - False--------------------
-Настройки DP832A_2 ch-1baudrate - 9600COM - COM16trigger - Таймерsourse/time - 10num steps - 16type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 30low_limit - 0.001step - 2second_value - 5repeat_reverse - False--------------------
-Настройки DP832A_2 ch-2 baudrate - 9600COM - COM16trigger - Таймерsourse/time - 10num steps - 6type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 10low_limit - 0.001step - 2second_value - 5repeat_reverse - False--------------------
-Настройки SR830_4 ch-1baudrate - 9600COM - COM6trigger - Внешний сигналsourse/time - Maisheng_1 ch-1num steps - 10time_const - 1000.0filter_slope - 6.0SYNK_200_Hz - Onsensitivity - 1.0reserve - high reserveinput_channel - Ainput_type - ACinput_connect - groundfilters - linefrequency - 400.0amplitude - 1.0--------------------
-14-16-49 Maisheng_1 ch-1	['voltage_set=0.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-16-49 SR830_4 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-14-16-50 DP832A_2 ch-1	['voltage_set=0.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-16-50 DP832A_2 ch-2	['voltage_set=0.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-16-54 Maisheng_1 ch-1	['voltage_set=2.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-16-54 SR830_4 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-14-16-59 Maisheng_1 ch-1	['voltage_set=4.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-16-59 SR830_4 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-14-17-00 DP832A_2 ch-1	['voltage_set=2.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-17-00 DP832A_2 ch-2	['voltage_set=2.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-17-04 Maisheng_1 ch-1	['voltage_set=6.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-17-04 SR830_4 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-14-17-09 Maisheng_1 ch-1	['voltage_set=8.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-17-09 SR830_4 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-14-17-10 DP832A_2 ch-1	['voltage_set=4.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-17-10 DP832A_2 ch-2	['voltage_set=4.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-17-14 Maisheng_1 ch-1	['voltage_set=10.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-17-14 SR830_4 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-14-17-19 Maisheng_1 ch-1	['voltage_set=12.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-17-19 SR830_4 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-14-17-20 DP832A_2 ch-1	['voltage_set=6.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-17-20 DP832A_2 ch-2	['voltage_set=6.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-17-24 Maisheng_1 ch-1	['voltage_set=14.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-17-24 SR830_4 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-14-17-29 Maisheng_1 ch-1	['voltage_set=16.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-17-29 SR830_4 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-14-17-30 DP832A_2 ch-1	['voltage_set=8.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-17-30 DP832A_2 ch-2	['voltage_set=8.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-17-34 Maisheng_1 ch-1	['voltage_set=18.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-17-34 SR830_4 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-14-17-39 Maisheng_1 ch-1	['voltage_set=20.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-17-40 DP832A_2 ch-1	['voltage_set=10.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-17-40 DP832A_2 ch-2	['voltage_set=10.0']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-17-44 Maisheng_1 ch-1	['voltage_set=22.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-17-49 Maisheng_1 ch-1	['voltage_set=24.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-17-50 DP832A_2 ch-1	['voltage_set=12.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-17-54 Maisheng_1 ch-1	['voltage_set=26.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-17-59 Maisheng_1 ch-1	['voltage_set=28.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-18-00 DP832A_2 ch-1	['voltage_set=14.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-18-04 Maisheng_1 ch-1	['voltage_set=30.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-18-09 Maisheng_1 ch-1	['voltage_set=32.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-18-10 DP832A_2 ch-1	['voltage_set=16.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-18-14 Maisheng_1 ch-1	['voltage_set=34.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-18-19 Maisheng_1 ch-1	['voltage_set=36.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-18-20 DP832A_2 ch-1	['voltage_set=18.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-18-24 Maisheng_1 ch-1	['voltage_set=38.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-18-29 Maisheng_1 ch-1	['voltage_set=40.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-18-30 DP832A_2 ch-1	['voltage_set=20.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-18-34 Maisheng_1 ch-1	['voltage_set=42.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-18-39 Maisheng_1 ch-1	['voltage_set=44.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-18-40 DP832A_2 ch-1	['voltage_set=22.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-18-44 Maisheng_1 ch-1	['voltage_set=46.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-18-49 Maisheng_1 ch-1	['voltage_set=48.01']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-18-50 DP832A_2 ch-1	['voltage_set=24.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-18-54 Maisheng_1 ch-1	['voltage_set=50.0']	['voltage_rel=847']	['current_set=15.0']	['current_rel=68.0']	
-14-19-00 DP832A_2 ch-1	['voltage_set=26.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-19-10 DP832A_2 ch-1	['voltage_set=28.001']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	
-14-19-20 DP832A_2 ch-1	['voltage_set=30.0']	['voltage_rel=847']	['current_set=5.0']	['current_rel=58.0']	

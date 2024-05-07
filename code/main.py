@@ -2,7 +2,7 @@ import sys
 from interface.main_window import Ui_MainWindow
 from interface.maisheng_window import maisheng_ui_window
 from interface.relay_window import Relay_Ui_MainWindow, relay_class
-from installation_check_devices import installation_Ui_Dialog
+from interface.installation_check_devices import installation_Ui_Dialog
 from interface.selectdevice_window import Ui_Selectdevice
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QMessageBox
@@ -57,16 +57,18 @@ class Mywindow(QtWidgets.QMainWindow):
     def message_from_new_installation(self, list):
         if len(list) != 0:
             self.current_installation_list = list
+
             self.current_installation_class.reconstruct_installation(
                 self.current_installation_list)
             self.current_installation_class.show_window_installation()
-            print("показано окно установки")
+            #print("показано окно установки")
             self.current_installation_class.installation_window.installation_close_signal.connect(
                 self.unlock_to_create_new_installation)
 
         else:
-            print("установка не создана, лист пустой")
-        print(self.current_installation_list)
+            pass
+            #print("установка не создана, лист пустой")
+        #print(self.current_installation_list)
 
     def info_window(self, text):
         self.dialog = QtWidgets.QDialog()
@@ -87,7 +89,7 @@ class Mywindow(QtWidgets.QMainWindow):
 
     def message_from_new_device_local_control(self, name):
         self.select_local_device.close()
-        print(name)
+        #print(name)
         if name in self.dict_active_local_devices:
             msg = QMessageBox()
             msg.setWindowTitle("Ошибка")
@@ -111,7 +113,7 @@ class Mywindow(QtWidgets.QMainWindow):
                 ui = Ui_SVPS34_control()
                 ui.setupUi(SVPS34_control)
                 SVPS34_control.show()
-               
+
             if name == "SR830_":
                 pass
             '''

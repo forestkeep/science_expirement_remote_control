@@ -17,7 +17,7 @@ from power_supply_class import power_supply
 class ch_power_supply_class(base_ch):
     def __init__(self, number, device_class) -> None:
         super().__init__(number)
-        self.base_duration_step = 0.1#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
+        self.base_duration_step = 2#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.steps_current = []
         self.steps_voltage = []
         self.max_current = 15
@@ -102,13 +102,13 @@ class maisheng_power_class(power_supply):
                     address=address, count=count, slave=slave, values=values
                 )
                 if ans.isError():
-                    print("ошибка ответа устройства при установке значения", ans)
+                    #print("ошибка ответа устройства при установке значения", ans)
                     return False
                 else:
                     pass
                     # print(ans.registers)
             except:
-                print("Ошибка модбас модуля или клиента")
+                #print("Ошибка модбас модуля или клиента")
                 return False
             return True
 
@@ -124,13 +124,13 @@ class maisheng_power_class(power_supply):
                 )
 
                 if ans.isError():
-                    print("ошибка ответа устройства при чтении текущего", ans)
+                    #print("ошибка ответа устройства при чтении текущего", ans)
                     return False
                 else:
                     # print(ans.registers)
                     return ans.registers
             except:
-                print("Ошибка модбас модуля или клиента")
+                #print("Ошибка модбас модуля или клиента")
                 return False
 
     def _get_current_voltage(self, ch_num):
@@ -167,13 +167,13 @@ class maisheng_power_class(power_supply):
             )
 
             if ans.isError():
-                print("ошибка ответа устройства при чтении установленного", ans)
+                #print("ошибка ответа устройства при чтении установленного", ans)
                 return False
             else:
                 # print(ans.registers)
                 return ans.registers
         except:
-            print("Ошибка модбас модуля или клиента")
+            #print("Ошибка модбас модуля или клиента")
             return False
 
     def _get_setting_voltage(self, ch_num):
@@ -233,26 +233,26 @@ if __name__ == "__main__":
     power_supply.set_client(client)
     power_supply.set_test_mode()
     while True:
-        print("введи значение напряжения, разделитель точка")
+        #print("введи значение напряжения, разделитель точка")
         voltage = input()
         flag = True
         try:
             voltage = float(voltage)
         except:
-            print("ошибка, нужно ввести число")
+            #print("ошибка, нужно ввести число")
             flag = False
 
         if flag:
             ans = power_supply._set_voltage(voltage * 100)
-            print("ответ модуля:", ans)
+            #print("ответ модуля:", ans)
             time.sleep(2)
-            print("читаем установленное значение напряжения...")
+            #print("читаем установленное значение напряжения...")
             ans = power_supply._get_setting_voltage()
-            print("ответ модуля на чтение установленного напряжения:", ans)
+            #print("ответ модуля на чтение установленного напряжения:", ans)
             time.sleep(2)
-            print("читаем текущее значение напряжения...")
+            #print("читаем текущее значение напряжения...")
             ans = power_supply._get_current_voltage()
-            print("ответ модуля на чтение текущего напряжения(с дисплея):", ans)
+            #print("ответ модуля на чтение текущего напряжения(с дисплея):", ans)
 
             client.close()
 

@@ -54,7 +54,7 @@ class Ui_Set_relay(QtWidgets.QDialog):
         self.verticalLayout_2.addLayout(self.horizontalLayout_2)
         self.verticalLayoutWidget_10 = QtWidgets.QWidget(Set_power_supply)
         self.verticalLayoutWidget_10.setGeometry(
-            QtCore.QRect(10, 100, 280, 110))
+            QtCore.QRect(10, 100, 280, 120))
         self.verticalLayoutWidget_10.setObjectName("verticalLayoutWidget_10")
 
         self.verticalLayout_10 = QtWidgets.QVBoxLayout(
@@ -128,8 +128,8 @@ class Ui_Set_relay(QtWidgets.QDialog):
         self.num_series_enter.setObjectName("num_series_enter")
         self.num_series_enter.addItem("")
         self.num_series_enter.addItem("")
-        self.num_series_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+        #self.num_series_enter.setStyleSheet(
+         #       "background-color: rgb(255, 255, 255);")
         self.gridLayout.addWidget(self.num_series_enter,3,1,1,1)
         #--------------------------------------------------
         #--------------------------------------------------
@@ -173,6 +173,7 @@ class Ui_Set_relay(QtWidgets.QDialog):
         self.comportslist.setObjectName("comportslist")
         self.horizontalLayout_4.addWidget(self.comportslist)
         self.verticalLayout_11.addLayout(self.horizontalLayout_4)
+        '''
         self.line = QtWidgets.QFrame(Set_power_supply)
         self.line.setGeometry(QtCore.QRect(10, 210, 281, 20))
         self.line.setFrameShape(QtWidgets.QFrame.HLine)
@@ -183,6 +184,7 @@ class Ui_Set_relay(QtWidgets.QDialog):
         self.line_2.setFrameShape(QtWidgets.QFrame.HLine)
         self.line_2.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line_2.setObjectName("line_2")
+        '''
 
         self.retranslateUi(Set_power_supply)
         self.buttonBox.accepted.connect(

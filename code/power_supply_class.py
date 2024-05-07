@@ -5,12 +5,13 @@ from Classes import ch_response_to_step, base_device, ch_response_to_step, base_
 import time
 from Classes import is_debug
 from Classes import not_ready_style_border, not_ready_style_background, ready_style_border, ready_style_background, warning_style_border, warning_style_background
+import random
 
 
 class power_supply(base_device):
     def __init__(self, name,type_connection, installation_class) -> None:
         super().__init__(name, type_connection, installation_class)
-        print(f"класс источника питания  {name} создан")
+        #print(f"класс источника питания  {name} создан")
 
     def get_number_channels(self) -> int:
         return len(self.channels)
@@ -58,6 +59,7 @@ class power_supply(base_device):
             ]
         )
         
+
         self.setting_window.sourse_enter.setStyleSheet(
             ready_style_border
         )
@@ -337,7 +339,7 @@ class power_supply(base_device):
 
     def _change_units(self):
         if self.key_to_signal_func:
-            print("изменить параметры")
+            #print("изменить параметры")
             self.setting_window.second_limit_enter.setEnabled(True)
             if (
                 self.setting_window.type_work_enter.currentText()
@@ -369,7 +371,7 @@ class power_supply(base_device):
 
     def _action_when_select_step(self):
         if self.key_to_signal_func:
-            print("выбор шага")
+            #print("выбор шага")
             if self.setting_window.type_step_enter.currentText() == "Адаптивный шаг":
                 self.setting_window.step_enter.setEnabled(False)
                 self.setting_window.step_enter.setStyleSheet(
@@ -432,9 +434,7 @@ class power_supply(base_device):
             else:
                 self.active_channel.dict_buf_parameters["repeat_reverse"] = False
 
-    def send_signal_ok(
-        self,
-    ):  # действие при подтверждении настроек, передать парамтры классу инсталляции, проверить и окрасить в цвет окошко, вписать паарметры
+    def send_signal_ok(self,):
         "вызывается только после закрытия окна настроек"
         self.add_parameters_from_window()
         # те же самые настройки, ничего не делаем
@@ -481,9 +481,7 @@ class power_supply(base_device):
     def confirm_parameters(self):  # менять для каждого прибора
         """метод подтверждения корректности параметров от контроллера установки. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств"""
 
-        print(
-            f" устройство {self.name} получило подтверждение настроек, рассчитываем шаги"
-        )
+        #print(f" устройство {self.name} получило подтверждение настроек, рассчитываем шаги")
 
         # self.client.write_registers(address=int(
         # "0040", 16), count=2, slave=1, values=[0, 120])
@@ -566,8 +564,8 @@ class power_supply(base_device):
                 for cur, vol in zip(buf_current, buf_voltage):
                     self.active_channel.steps_current.append(cur)
                     self.active_channel.steps_voltage.append(vol)
-            print("напряжение",self.active_channel.steps_voltage)
-            print("ток",self.active_channel.steps_current)
+            #print("напряжение",self.active_channel.steps_voltage)
+           # print("ток",self.active_channel.steps_current)
 
             self.active_channel.dict_settable_parameters["num steps"] = len(
                 self.active_channel.steps_voltage
@@ -579,20 +577,16 @@ class power_supply(base_device):
     ) -> bool:
         """ставит минимально возможные значения тока и напряжения, включает выход прибора"""
         self.switch_channel(number_of_channel)
-        print(
-            f"настройка канала {number_of_channel} прибора "
-            + str(self.name)
-            + " перед экспериментом.."
-        )
+        #print(f"настройка канала {number_of_channel} прибора "+ str(self.name)+ " перед экспериментом..")
 
         is_correct = True
-        if self._set_voltage(self.active_channel.number, self.active_channel.min_step_V * 100) == False:
+        if self._set_voltage(self.active_channel.number, self.active_channel.min_step_V) == False:
             is_correct = False
-        if self._set_current(self.active_channel.number, self.active_channel.min_step_A * 100) == False:
+        if self._set_current(self.active_channel.number, self.active_channel.min_step_A) == False:
             is_correct = False
 
         if is_correct:
-            self._output_switching_on()
+            self._output_switching_on(self.active_channel.number)
             return True
         else:
             return False
@@ -600,9 +594,10 @@ class power_supply(base_device):
     def action_end_experiment(self, number_of_channel) -> bool:
         """плавное выключение прибора"""
         self.switch_channel(number_of_channel)
-        print("Плавное выключение источника питания")
+        #print("Плавное выключение источника питания")
         count = 3
         is_voltage_read = False
+
         while count > 0:
             voltage = self._get_setting_voltage(self.active_channel.number)
             if voltage == False:
@@ -614,52 +609,65 @@ class power_supply(base_device):
             step = 5
             while voltage > step:
                 voltage -= step
-                print("напряжение = ", voltage)
-                self._set_voltage(self.active_channel.number, voltage * 100)
+                #print("напряжение = ", voltage)
+                self._set_voltage(self.active_channel.number, voltage)
                 time.sleep(5)
+
 
         self._output_switching_off(self.active_channel.number)
         return
 
     def on_next_step(
-        self, number_of_channel
+        self, number_of_channel, repeat = 1
     ) -> bool:  # переопределена для источника питания
         """активирует следующие значение тока, напряжения прибора, если текущие значения максимальны, то возвращает ложь"""
         self.switch_channel(number_of_channel)
-        is_correct = True
-
+        answer = ch_response_to_step.Step_done
+        if is_debug:
+            pass
+            #print("индекс массива ", self.active_channel.step_index)
         if self.active_channel.step_index < len(self.active_channel.steps_voltage) - 1:
             self.active_channel.step_index = self.active_channel.step_index + 1
 
-            if (
-                self._set_voltage(self.active_channel.number,
-                    self.active_channel.steps_voltage[self.active_channel.step_index]
-                    * 100
-                )
-                == False
-            ):
-                is_correct = False
+            i = 0
+            while i < repeat or answer != ch_response_to_step.Step_done:
+                if (
+                    self._set_voltage(self.active_channel.number,
+                        self.active_channel.steps_voltage[self.active_channel.step_index]
+                    )
+                    == False
+                ):
+                    answer = ch_response_to_step.Step_fail
 
-            if (
-                self._set_current(self.active_channel.number,
-                    self.active_channel.steps_current[self.active_channel.step_index]
-                    * 100
-                )
-                == False
-            ):
-                is_correct = False
+                if is_debug:
+                    if answer == ch_response_to_step.Step_fail:
+                        #print(f"ошибка установки напряжения {self.name}, {self.active_channel.number}")
+                        answer = ch_response_to_step.Step_done
 
-            if is_correct:
-                """ожидание установки значений"""
+                if (
+                    self._set_current(self.active_channel.number,
+                        self.active_channel.steps_current[self.active_channel.step_index]
+                    )
+                    == False
+                ):
+                    answer = ch_response_to_step.Step_fail
+
+                if is_debug:
+                    if answer == ch_response_to_step.Step_fail:
+                        #print(f"ошибка установки тока {self.name}, {self.active_channel.number}")
+                        answer = ch_response_to_step.Step_done
+
                 time.sleep(1)
+                i+=1
         else:
-            is_correct = False  # след шага нет
+            answer = ch_response_to_step.End_list_of_steps  # след шага нет
+
 
 
         if is_debug:
-            is_correct = True
+            answer = ch_response_to_step.Step_done
 
-        return is_correct
+        return answer
 
     def do_meas(self, number_of_channel):
         self.switch_channel(number_of_channel)
@@ -676,12 +684,22 @@ class power_supply(base_device):
         else:
             is_correct = False
 
+        if is_debug:
+            if is_correct == False:
+                pass
+                #print(f"ошибка чтения выставленного значения напряжения {self.name}, {self.active_channel.number}")
+
         voltage = self._get_current_voltage(self.active_channel.number)
         if voltage is not False:
             val = ["voltage_rel=" + str(voltage)]
             parameters.append(val)
         else:
             is_correct = False
+
+        if is_debug:
+            if is_correct == False:
+                pass
+                #print(f"ошибка чтения текущего значения напряжения {self.name}, {self.active_channel.number}")
 
         current = self._get_setting_current(self.active_channel.number)
         if current is not False:
@@ -690,6 +708,11 @@ class power_supply(base_device):
         else:
             is_correct = False
 
+        if is_debug:
+            if is_correct == False:
+                pass
+                #print(f"ошибка чтения выставленного значения тока {self.name}, {self.active_channel.number}")
+
         current = self._get_current_current(self.active_channel.number)
         if current is not False:
             val = ["current_rel=" + str(current)]
@@ -697,27 +720,36 @@ class power_supply(base_device):
         else:
             is_correct = False
 
+        if is_debug:
+            if is_correct == False:
+                pass
+                #print(f"ошибка чтения измеренного значения тока {self.name}, {self.active_channel.number}")
+
         # -----------------------------
         if is_debug:
-            is_correct = True
-            parameters.append(
-                ["voltage_set=" + str(self.active_channel.steps_voltage[self.active_channel.step_index])]
-            )
-            parameters.append(["voltage_rel=" + str(847)])
-            parameters.append(
-                ["current_set=" + str(self.active_channel.steps_current[self.active_channel.step_index])]
-            )
-            parameters.append(
-                ["current_rel=" + str(self.active_channel.steps_current[self.active_channel.step_index] + 53)]
-            )
+            if is_correct == False:
+                is_correct = True
+                parameters.append(
+                    ["voltage_set=" + str(self.active_channel.steps_voltage[self.active_channel.step_index])]
+                )
+                parameters.append(["voltage_rel=" + str(random.random() * 30)])
+                parameters.append(
+                    ["current_set=" + str(self.active_channel.steps_current[self.active_channel.step_index])]
+                )
+                parameters.append(
+                    ["current_rel=" + str(random.random() * 3)]
+                )
         # -----------------------------
-
+        if not is_correct:
+            is_correct = True
+            #print("что-то не получилось при шаге")
+            
         if is_correct:
-            print("сделан шаг", self.name + " ch " + str(self.active_channel.number))
+            #print("сделан шаг", self.name + " ch " + str(self.active_channel.number))
             ans = ch_response_to_step.Step_done
 
         else:
-            print("Ошибка шага", self.name + " ch " + str(self.active_channel.number))
+            #print("Ошибка шага", self.name + " ch " + str(self.active_channel.number))
             val = ["voltage_set=" + "fail"]
             parameters.append(val)
             val = ["voltage_rel=" + "fail"]

@@ -23,8 +23,11 @@ from PyQt5.QtWidgets import *
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+from Classes import not_ready_style_border, not_ready_style_background, ready_style_border, ready_style_background, warning_style_border, warning_style_background
 import sys
 import enum
+
+
 
 
 class out_state(enum.Enum):
@@ -40,12 +43,15 @@ class current_polarity(enum.Enum):
 class relay_pr1_class(base_device):
     def __init__(self, name, installation_class) -> None:
         super().__init__(name, "modbus", installation_class)
-        print("класс реле создан")
+        #print("класс реле создан")
         self.device = None  # класс прибора будет создан при подтверждении параметров,
         # переменная хранит все возможные источники сигналов , сделать функцию, формирующую этот список в зависимости от структуры установки
         self.counter = 0
-        self.dict_buf_parameters["mode"] = "Смена полярности",
-        self.dict_buf_parameters["num steps"] = "1"
+
+        self.ch1 = ch_PR_class(1, self)
+        self.channels=[self.ch1]
+        self.ch1.is_active = True#по умолчанию для каждого прибора включен первый канал
+        self.active_channel = self.ch1 #поле необходимо для записи параметров при настройке в нужный канал
 
         # переменные для сохранения параметров окна-----------------------------
         #self.mode = "Смена полярности"
@@ -60,10 +66,12 @@ class relay_pr1_class(base_device):
         # сюда при подтверждении параметров будет записан класс команд с клиентом
         self.command = None
 
-    def show_setting_window(self):
-        if self.is_window_created:
-            self.setting_window.show()
-        else:
+
+    def get_number_channels(self) -> int:
+        return len(self.channels)
+    
+    def show_setting_window(self,number_of_channel):
+            self.switch_channel(number_of_channel)
             self.timer_for_scan_com_port = QTimer()
             self.timer_for_scan_com_port.timeout.connect(
                 lambda: self._scan_com_ports())
@@ -83,24 +91,25 @@ class relay_pr1_class(base_device):
                 ["50", "75", "110", "150", "300", "600", "1200", "2400", "4800", "9600", "19200", "38400", "57600", "115200"])
 
             self.setting_window.sourse_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
 
             # self.setting_window.sourse_enter.setEditable(True)
             # self.setting_window.sourse_enter.addItems(
             # ["5", "10", "30", "60", "120"])
-            self.setting_window.triger_enter.addItems(
-                ["Внешний сигнал"])
+            self.setting_window.triger_enter.addItems(["Таймер", "Внешний сигнал"])
+        
             self.setting_window.triger_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.sourse_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
 
             self.setting_window.comportslist.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.boudrate.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.num_meas_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
+            
 
             self.setting_window.num_meas_enter.setEditable(True)
             self.setting_window.num_meas_enter.addItems(
@@ -124,29 +133,29 @@ class relay_pr1_class(base_device):
             self.key_to_signal_func = False
             # ============установка текущих параметров=======================
 
-            self.setting_window.sourse_enter.setCurrentText(self.dict_buf_parameters["sourse/time"])
+            self.setting_window.sourse_enter.setCurrentText(self.active_channel.dict_buf_parameters["sourse/time"])
             self.setting_window.boudrate.setCurrentText(self.dict_buf_parameters["baudrate"])
             '''
             if self.comportslist is not None:
                 self.setting_window.comportslist.setCurrentText(
                     self.comportslist)
             '''
-            self.setting_window.triger_enter.setCurrentText(self.dict_buf_parameters["trigger"])
+            self.setting_window.triger_enter.setCurrentText(self.active_channel.dict_buf_parameters["trigger"])
 
             num_meas_list = ["5", "10", "20", "50"]
             # если в списке сигналов пусто, то и других активных приборов нет, текущий прибор в установке один
-            if self.installation_class.get_signal_list(self.name) != []:
+            if self.installation_class.get_signal_list(self.name, self.active_channel.number) != []:
                 num_meas_list.append("Пока активны другие приборы")
             self.setting_window.num_meas_enter.addItems(num_meas_list)
 
             self.setting_window.num_meas_enter.setCurrentText(
-                str(self.dict_buf_parameters["num steps"]))
+                str(self.active_channel.dict_buf_parameters["num steps"]))
 
             self.setting_window.sourse_enter.setCurrentText(
-                self.dict_buf_parameters["sourse/time"])
+                self.active_channel.dict_buf_parameters["sourse/time"])
             self.setting_window.comportslist.addItem(self.dict_buf_parameters["COM"])
 
-            if self.dict_buf_parameters["mode"] != "Включение - Выключение":
+            if self.active_channel.dict_buf_parameters["mode"] != "Включение - Выключение":
                 self.setting_window.change_pol_button.setChecked(True)
                 self.setting_window.radioButton.setEnabled(True)
             else:
@@ -178,19 +187,19 @@ class relay_pr1_class(base_device):
                     int(self.setting_window.sourse_enter.currentText())
                 except:
                     is_time_correct = False
-
+            
             self.setting_window.num_meas_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
+                ready_style_border)
             self.setting_window.sourse_enter.setStyleSheet(
-                "background-color: rgb(255, 255, 255);")
-
+                ready_style_border)
+            
             if not is_num_steps_correct:
                 self.setting_window.num_meas_enter.setStyleSheet(
-                    "background-color: rgb(255, 180, 180);")
+                    not_ready_style_border)
 
             if not is_time_correct:
                 self.setting_window.sourse_enter.setStyleSheet(
-                    "background-color: rgb(255, 180, 180);")
+                    not_ready_style_border)
 
             if is_num_steps_correct and is_time_correct:
                 return True
@@ -200,28 +209,28 @@ class relay_pr1_class(base_device):
     def add_parameters_from_window(self):
 
         if self.setting_window.radioButton.isChecked():
-            self.dict_buf_parameters["mode"] = "Включение - Выключение"
+            self.active_channel.dict_buf_parameters["mode"] = "Включение - Выключение"
         else:
-            self.dict_buf_parameters["mode"] = "Смена полярности"
+            self.active_channel.dict_buf_parameters["mode"] = "Смена полярности"
         #self.triger_enter = self.setting_window.triger_enter.currentText()
         #self.sourse_enter = self.setting_window.sourse_enter.currentText()
         #self.boudrate = self.setting_window.boudrate.currentText()
         #self.comportslist = self.setting_window.comportslist.currentText()
 
         try:
-            self.dict_buf_parameters["num steps"] = int(
+            self.active_channel.dict_buf_parameters["num steps"] = int(
                 self.setting_window.num_meas_enter.currentText())
         except:
             if self.setting_window.num_meas_enter.currentText() == "":
-                self.dict_buf_parameters["num steps"] = int(self.setting_window.num_meas_enter.currentText())
+                self.active_channel.dict_buf_parameters["num steps"] = int(self.setting_window.num_meas_enter.currentText())
             else:
-                self.dict_buf_parameters["num steps"] = "Пока активны другие приборы"
+                self.active_channel.dict_buf_parameters["num steps"] = "Пока активны другие приборы"
 
         if self.key_to_signal_func:
             #self.dict_buf_parameters["num steps"] = self.number_steps
-            self.dict_buf_parameters["trigger"] = self.setting_window.triger_enter.currentText(
+            self.active_channel.dict_buf_parameters["trigger"] = self.setting_window.triger_enter.currentText(
             )
-            self.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_enter.currentText()
+            self.active_channel.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_enter.currentText()
             self.dict_buf_parameters["baudrate"] = self.setting_window.boudrate.currentText(
             )
             self.dict_buf_parameters["COM"] = self.setting_window.comportslist.currentText(
@@ -229,27 +238,31 @@ class relay_pr1_class(base_device):
             #self.dict_buf_parameters["mode"] = self.mode
 
     def send_signal_ok(self):  # действие при подтверждении настроек, передать парамтры классу инсталляции, проверить и окрасить в цвет окошко, вписать паарметры
+        "вызывается только после закрытия окна настроек"
         self.add_parameters_from_window()
-        # те же самые настройки и я не настроен, ничего не делаем
-        if self.dict_buf_parameters == self.dict_settable_parameters and not self.i_am_set:
+        # те же самые настройки, ничего не делаем
+        if (self.active_channel.dict_buf_parameters == self.active_channel.dict_settable_parameters and self.dict_buf_parameters == self.dict_settable_parameters):
             return
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
-        self.i_am_set = False
+        self.active_channel.dict_settable_parameters = copy.deepcopy(self.active_channel.dict_buf_parameters)
 
-        self.is_parameters_correct = True
+        is_parameters_correct = True
         if self.dict_buf_parameters["COM"] == 'Нет подключенных портов':
-            self.is_parameters_correct = False
+            is_parameters_correct = False
         self.timer_for_scan_com_port.stop()
 
         if not self._is_correct_parameters():
-            self.is_parameters_correct = False
+            is_parameters_correct = False
 
-        if self.is_parameters_correct:
-            pass
-        else:
-            pass
         self.installation_class.message_from_device_settings(
-            self.name, self.is_parameters_correct, self.dict_settable_parameters)
+            self.name,
+            self.active_channel.number,
+            is_parameters_correct,
+            {
+                **self.dict_settable_parameters,
+                **self.active_channel.dict_settable_parameters,
+            },
+        )
 
 
 # drgtregtdfgdssdfsersrcsersacrersrsarsecrserctscarscrsecrrersdarsadfdscfdsfcsdfcsdfsdfdfasfsdfsdfsffsdfsdfsfsdfsfsfsdfsdfsdfsdfsdfsdfsdfsfsdfsdfsdfsdfsdfsfsfdfsdfsdfsdfsdfsdfsdfsdfsdfsdfdfsdfsdfsdfsdfsdfsdfdsfsdfsdfsdffdfsd
@@ -258,8 +271,7 @@ class relay_pr1_class(base_device):
 
 
     def confirm_parameters(self):
-        print(str(self.name) +
-              " получил подтверждение настроек, рассчитываем шаги")
+        #print(str(self.name) +" получил подтверждение настроек, рассчитываем шаги")
         if True:
 
             self.step_index = -1
@@ -268,73 +280,73 @@ class relay_pr1_class(base_device):
             pass
     # настройка прибора перед началом эксперимента, переопределяется при каждлом старте эксперимента
 
-    def action_before_experiment(self) -> bool:  # менять для каждого прибора
-
-        print("настройка прибора " + str(self.name) + " перед экспериментом..")
+    def action_before_experiment(self, number_of_channel) -> bool:  # менять для каждого прибора
+        self.switch_channel(number_of_channel)
+        #print(f"настройка канала {number_of_channel} прибора "+ str(self.name)+ " перед экспериментом..")
         status = True
-        if not self._set_polarity_1():
+        if not self._set_polarity_1(self.active_channel.number):
             return False
         else:
-            self.polarity = current_polarity.pol_1
-        if not self._output_switching_on():
+            self.active_channel.polarity = current_polarity.pol_1
+        if not self._output_switching_on(self.active_channel.number):
             return False
         else:
-            self.state_output = out_state.on
+            self.active_channel.state_output = out_state.on
 
         return status
 
-    def action_end_experiment(self) -> bool:
+    def action_end_experiment(self, number_of_channel) -> bool:
         '''выключение прибора'''
-        print("выключение прибора " + str(self.name) + " после эксперимента")
+        self.switch_channel(number_of_channel)
         status = True
-        if not self._set_polarity_1():
+        if not self._set_polarity_1(self.active_channel.number):
             return False
         else:
             self.polarity = current_polarity.pol_1
-        if not self._output_switching_off():
+        if not self._output_switching_off(self.active_channel.number):
             return False
         else:
             self.state_output = out_state.off
 
         return status
 
-    def do_meas(self):
-        print("делаем действие", self.name)
-
+    def do_meas(self, number_of_channel):
+        #print("делаем действие", self.name)
+        self.switch_channel(number_of_channel)
         start_time = time.time()
         parameters = [self.name]
         is_correct = True
 
-        if self.dict_settable_parameters["mode"] == "Смена полярности":
-            if self.polarity == current_polarity.pol_1:
-                if not self._set_polarity_2():
+        if self.active_channel.dict_settable_parameters["mode"] == "Смена полярности":
+            if self.active_channel.polarity == current_polarity.pol_1:
+                if not self._set_polarity_2(self.active_channel.number):
                     is_correct = False
                     val = ["Полярность=" + "fail"]
                 else:
-                    self.polarity = current_polarity.pol_2
+                    self.active_channel.polarity = current_polarity.pol_2
                     val = ["Полярность=" + str(2)]
             else:
-                if not self._set_polarity_1():
+                if not self._set_polarity_1(self.active_channel.number):
                     is_correct = False
                     val = ["Полярность=" + "fail"]
                 else:
                     val = ["Полярность=" + str(1)]
-                    self.polarity = current_polarity.pol_1
+                    self.active_channel.polarity = current_polarity.pol_1
         else:
-            if self.state_output == out_state.on:
-                if not self._output_switching_off():
+            if self.active_channel.state_output == out_state.on:
+                if not self._output_switching_off(self.active_channel.number):
                     is_correct = False
                     val = ["Выход=" + "fail"]
                 else:
-                    self.state_output = out_state.off
+                    self.active_channel.state_output = out_state.off
                     val = ["Выход=" + "Выкл"]
             else:
-                if not self._output_switching_on():
+                if not self._output_switching_on(self.active_channel.number):
                     is_correct = False
                     val = ["Выход=" + "fail"]
                 else:
                     val = ["Выход=" + "Вкл"]
-                    self.state_output = out_state.on
+                    self.active_channel.state_output = out_state.on
         parameters.append(val)
 
 
@@ -344,10 +356,10 @@ class relay_pr1_class(base_device):
         # -----------------------------
 
         if is_correct:
-            print("сделан шаг", self.name)
+           # print("сделан шаг", self.name + " ch " + str(self.active_channel.number))
             ans = ch_response_to_step.Step_done
         else:
-            print("Ошибка шага", self.name)
+            #print("ошибка шага", self.name + " ch " + str(self.active_channel.number))
             ans = ch_response_to_step.Step_fail
 
         return ans, parameters, time.time() - start_time
@@ -355,23 +367,28 @@ class relay_pr1_class(base_device):
     def check_connect(self) -> bool:
         return True
 
-    def _set_polarity_1(self) -> bool:
+    def _set_polarity_1(self, number_of_channel) -> bool:
+        self.switch_channel(number_of_channel)
         response = self._write_reg(address=0x03E8, value=0x0008, slave=0x0A)
         return response
 
-    def _set_polarity_2(self) -> bool:
+    def _set_polarity_2(self, number_of_channel) -> bool:
+        self.switch_channel(number_of_channel)
         response = self._write_reg(address=0x03E8, value=0x0108, slave=0x0A)
         return response
 
-    def _output_switching_on(self) -> bool:
+    def _output_switching_on(self, number_of_channel) -> bool:
+        self.switch_channel(number_of_channel)
         response = self._write_reg(address=0x03E7, value=0x0108, slave=0x0A)
         return response
 
-    def _output_switching_off(self) -> bool:
+    def _output_switching_off(self, number_of_channel) -> bool:
+        self.switch_channel(number_of_channel)
         response = self._write_reg(address=0x03E7, value=0x0008, slave=0x0A)
         return response
 
-    def _change_polarity(self) -> bool:
+    def _change_polarity(self, number_of_channel) -> bool:
+        self.switch_channel(number_of_channel)
         response = self._write_reg(address=0x03E8, value=0x0308, slave=0x0A)
         return response
 
@@ -380,13 +397,25 @@ class relay_pr1_class(base_device):
             ans = self.client.write_register(
                 address=address, slave=slave, value=value)
             if isinstance(ans, ExceptionResponse):
-                print("ошибка записи в регистр реле", ans)
+                #print("ошибка записи в регистр реле", ans)
                 return False
         except:
-            print("Ошибка модбас модуля или клиента")
+            #print("Ошибка модбас модуля или клиента")
             return False
         return True
 
+
+class ch_PR_class(base_ch):
+    def __init__(self, number, device_class) -> None:
+        super().__init__(number)
+        #print(f"канал {number} создан")
+        #print(self.am_i_should_do_step, "ацаыввыаваываываывыаывываываываываываывавыаывыыв")
+        self.base_duration_step = 0.1#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
+        self.dict_buf_parameters["mode"] = "Смена полярности",
+        self.dict_buf_parameters["num steps"] = "1"
+        self.polarity = current_polarity.pol_1
+        self.state_output = out_state.off
+        
 
 
 '''

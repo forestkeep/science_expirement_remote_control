@@ -3,20 +3,20 @@ from interface.set_power_supply_window import Ui_Set_power_supply
 from PyQt5.QtCore import QTimer, QDateTime
 from Classes import ch_response_to_step, base_device, ch_response_to_step, base_ch
 from power_supply_class import power_supply
-
+import time
 
 class ch_power_supply_class(base_ch):
-    def __init__(self, number, device_class) -> None:
+    def __init__(self, number, device_class, max_current, max_voltage, max_power, min_step_A = 0.001, min_step_V = 0.001, min_step_W = 1) -> None:
         super().__init__(number)
-        self.base_duration_step = 0.1#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
+        self.base_duration_step = 2#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.steps_current = []
         self.steps_voltage = []
-        self.max_current = 5
-        self.max_voltage = 30
-        self.max_power = 300
-        self.min_step_V = 0.001
-        self.min_step_A = 0.001
-        self.min_step_W = 1
+        self.max_current = max_current
+        self.max_voltage = max_voltage
+        self.max_power = max_power
+        self.min_step_V = min_step_V
+        self.min_step_A = min_step_A
+        self.min_step_W = min_step_W
         self.dict_buf_parameters["type_of_work"] = "Стабилизация напряжения"
         self.dict_buf_parameters["type_step"] = "Заданный шаг"
         self.dict_buf_parameters["high_limit"] = str(10)
@@ -29,9 +29,9 @@ class ch_power_supply_class(base_ch):
 class rigol_dp832a_class(power_supply):
     def __init__(self, name,installation_class) -> None:
         super().__init__(name, "serial", installation_class)
-        self.ch1 = ch_power_supply_class(1, self)
-        self.ch2 = ch_power_supply_class(2, self)
-        self.ch3 = ch_power_supply_class(3, self)
+        self.ch1 = ch_power_supply_class(1, self, 3, 30, 300)
+        self.ch2 = ch_power_supply_class(2, self, 3, 30, 300)
+        self.ch3 = ch_power_supply_class(3, self, 3, 5, 20)
         self.channels = [self.ch1, self.ch2, self.ch3]
         self.ch1.is_active = True#по умолчанию для каждого прибора включен первый канал
         self.active_channel = self.ch1 #поле необходимо для записи параметров при настройке в нужный канал
@@ -42,6 +42,7 @@ class rigol_dp832a_class(power_supply):
         self.select_channel(ch_num)
         self.client.write(f'VOLT {voltage}\n'.encode())
         self.client.write(f'VOLT?\n'.encode())
+        time.sleep(0.2)
         response = self.client.readline().decode().strip()
         try:
             response = float(response)
@@ -64,7 +65,7 @@ class rigol_dp832a_class(power_supply):
         self.client.close()
         return  response == current
 
-    def _output_switching_on(self,ch_num) -> bool:
+    def _output_switching_on(self, ch_num) -> bool:
         '''включить канал'''
         self.open_port()
         self.client.write(f'OUTP CH{ch_num},ON\n'.encode())
@@ -82,6 +83,7 @@ class rigol_dp832a_class(power_supply):
         self.select_channel(ch_num)
         self.client.write(f'MEAS:VOLT?\n'.encode())
         response = self.client.readline().decode().strip()
+        #print("отввет на запрос v",response )
         try:
             response = float(response)
         except:
@@ -95,6 +97,7 @@ class rigol_dp832a_class(power_supply):
         self.select_channel(ch_num)
         self.client.write(f'MEAS:CURR?\n'.encode())
         response = self.client.readline().decode().strip()
+        #print("отввет на запрос тока",response )
         try:
             response = float(response)
         except:
@@ -143,7 +146,7 @@ class rigol_dp832a_class(power_supply):
 
 
 if __name__ == "__main__":
-    print("тестирование ригола")
+    #print("тестирование ригола")
     rt = 0
 
     rigol = rigol_dp832a_class("rigol", rt)
