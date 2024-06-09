@@ -22,20 +22,24 @@ class GraphApp(QMainWindow):
         self.layout.addWidget(self.chart_view, 0, 1,6,6)
 
         self.series = []
-        self.dataY = [np.arange(0, 100, 10), np.arange(40, 50, 1)]
-        self.dataX = [np.arange(0, 500, 1), np.arange(100, 200, 5)]
-        print(self.dataX)
-        print(self.dataY)
+        self.data = []
+        for i in range(4):
+            random_array = np.random.randint(1, 10, 10)
+            print(random_array)
+            self.data.append(random_array)
+
+        self.data1 = [np.arange(0, 10, 1), np.arange(20, 30, 1)]
+        self.dataX = [np.arange(10, 20, 1), np.arange(30, 40, 1)]
         self.check_X = []
         self.check_Y = []
-        for i in range(2):
+        for i in range(4):
             checkbox = QCheckBox(f"МассивУ {i+1}")
             self.check_X.append(checkbox)
             checkbox.setChecked(False)
             checkbox.stateChanged.connect(lambda state, i=i: self.update_chart(i, state, 0))
             self.layout.addWidget(checkbox,7,i+4)
 
-        for i in range(2):
+        for i in range(4):
             checkbox = QCheckBox(f"МассивX {i+1}")
             self.check_Y.append(checkbox)
             checkbox.setChecked(False)
@@ -44,12 +48,12 @@ class GraphApp(QMainWindow):
         #self.update_chart(0, Qt.Checked)
 
     def update_chart(self, index, state, axis):
+        print(f"{state=}")
         if state == Qt.Checked:
             print("проверяем чек боксы противоположной оси", index, axis)
             kX = 0
             kY = 0
             if axis == 0:
-                print(222)
                 for ch in self.check_X:
                     if kX != index:
                         ch.setChecked(False)
@@ -63,7 +67,6 @@ class GraphApp(QMainWindow):
                 if kY > 1:
                     kY = 1
             else:
-                print(111)
                 for ch in self.check_Y:
                     if kY != index:
                         ch.setChecked(False)
@@ -76,7 +79,7 @@ class GraphApp(QMainWindow):
                 if kX > 1:
                     kX = 1
             
-            print(kX, kY)
+
             for s in self.series:
                 self.chart.removeSeries(s)
             self.series = []

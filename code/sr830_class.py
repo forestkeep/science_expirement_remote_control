@@ -10,11 +10,11 @@ import copy
 from commandsSR830 import commandsSR830
 import time
 from Classes import ch_response_to_step, base_device, ch_response_to_step, base_ch
-from Classes import is_debug
 from Classes import not_ready_style_border, not_ready_style_background, ready_style_border, ready_style_background, warning_style_border, warning_style_background
+import logging
+logger = logging.getLogger(__name__)
 
-
-class sr830_class(base_device):
+class sr830Class(base_device):
     def __init__(self, name, installation_class) -> None:
         super().__init__(name, "serial", installation_class)
         #print("класс синхронного детектора создан")
@@ -153,11 +153,8 @@ class sr830_class(base_device):
                 str(self.active_channel.dict_buf_parameters["amplitude"]))
             self.setting_window.sourse_enter.setCurrentText(self.active_channel.dict_buf_parameters["sourse/time"])
             self.setting_window.boudrate.setCurrentText(self.dict_buf_parameters["baudrate"])
-            '''
-            if self.comportslist is not None:
-                self.setting_window.comportslist.setCurrentText(
-                    self.comportslist)
-            '''
+            self.setting_window.comportslist.setCurrentText(self.dict_buf_parameters["COM"])
+
             number,factor,dec_factor = self.get_parts_time_const(float(self.active_channel.dict_buf_parameters["time_const"]))
             self.setting_window.time_const_enter_number.setCurrentText(
                 number)
@@ -188,7 +185,6 @@ class sr830_class(base_device):
                 self.active_channel.dict_buf_parameters["reserve"])
             self.setting_window.filters_enter.setCurrentText(
                 self.active_channel.dict_buf_parameters["filters"])
-            self.setting_window.comportslist.addItem(self.dict_buf_parameters["COM"])
             self.setting_window.triger_enter.setCurrentText(self.active_channel.dict_buf_parameters["trigger"])
             num_meas_list = ["5","10","20","50"]
             if self.installation_class.get_signal_list(self.name, self.active_channel.number) != []:#если в списке сигналов пусто, то и других активных приборов нет, текущий прибор в установке один
@@ -438,7 +434,8 @@ class sr830_class(base_device):
         self.add_parameters_from_window()
         # те же самые настройки, ничего не делаем
         if (self.active_channel.dict_buf_parameters == self.active_channel.dict_settable_parameters and self.dict_buf_parameters == self.dict_settable_parameters):
-            return
+            #return
+            pass
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
         self.active_channel.dict_settable_parameters = copy.deepcopy(self.active_channel.dict_buf_parameters)
 
@@ -564,7 +561,7 @@ class sr830_class(base_device):
         is_stop_analyze = False
         count = 0
         result_analyze = False
-        if not is_debug:
+        if not self.is_debug:
             while not is_stop_analyze:
                 self.command.push_autophase()
                 buf_display_value = []
@@ -632,7 +629,7 @@ class sr830_class(base_device):
             parameters.append(val)
 
         # -----------------------------
-        if is_debug:
+        if self.is_debug:
             if is_correct == False:
                 is_correct = True
                 parameters.append(["disp1=" + str(254)])

@@ -1,4 +1,0 @@
-Запущена установка 
-Список приборов: ['SR830_1']
-Настройки SR830_1: trigger - Таймерsourse/time - 3num steps - 3baudrate - 9600COM - COM10time_const - 1000.0filter_slope - 6SYNK_200_Hz - Onsensitivity - 1.0reserve - high reserveinput_channel - Ainput_type - ACinput_connect - floatfilters - linefrequency - 400.0amplitude - 1.0
-21-39-54 SR830_1	['disp1=0']	['disp2=0']	['phase=-147.57']	

@@ -1,8 +1,0 @@
-Запущена установка 
-Список приборов: ['Maisheng1']
-Настройки Maisheng1: trigger - Таймерsourse/time - 5type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 12low_limit - 1step - 3second_value - 7baudrate - 9600COM - COM4
-20-14-55 Maisheng1	['voltage_set=1.0']	['voltage_rel=1.03']	['current_set=7.0']	['current_rel=0.27']	
-20-15-02 Maisheng1	['voltage_set=4.0']	['voltage_rel=4.03']	['current_set=7.0']	['current_rel=1.02']	
-20-15-10 Maisheng1	['voltage_set=7.0']	['voltage_rel=6.94']	['current_set=7.0']	['current_rel=1.85']	
-20-15-17 Maisheng1	['voltage_set=10.0']	['voltage_rel=9.92']	['current_set=7.0']	['current_rel=2.68']	
-20-15-25 Maisheng1	['voltage_set=12.0']	['voltage_rel=11.74']	['current_set=7.0']	['current_rel=3.24']	

@@ -1,0 +1,87 @@
+;   Prolific PL2303 VCP Series
+
+;   ser2pl_1.INF (for Win11)
+
+;   Copyright (c) 2021, Prolific Technology Inc.
+
+
+[version]
+signature="$CHICAGO$"
+Class=Ports
+ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
+Provider=%PRO%
+DriverVer=07/27/2021,3.9.0.2
+CatalogFile=ser2pl_1.cat
+
+; ================= Device Install section =====================
+
+[ControlFlags]
+ExcludeFromSelect=*
+
+[Manufacturer]
+%PRO%=PRO,NTAMD64
+
+[SourceDisksFiles]
+ser2pl64_1.sys=1
+
+[SourceDisksNames]
+1=%DISK_NAME%,
+
+[DestinationDirs] 
+DefaultDestDir  = 12
+
+
+[PRO.NTAMD64]
+%DeviceDesc1% = ComPort, USB\VID_067B&PID_2303
+%DeviceDesc2% = ComPort, USB\VID_067B&PID_2304
+
+[ComPort.AddReg]
+HKR,,PortSubClass,1,01
+
+[ComPort.HW.AddReg]
+HKR,,"UpperFilters",0x00010000,"serenum"
+HKR,,"WDF","WdfDirectedPowerTransitionEnable",0x00010001,1
+
+[ComPort.NTAMD64]
+CopyFiles=ComPort.NTAMD64.Copy
+AddReg=ComPort.NTAMD64.AddReg
+
+[ComPort.NTAMD64.HW]
+AddReg=ComPort.HW.AddReg
+
+[ComPort.NTAMD64.Services]
+AddService = ser2pl_1, 0x00000002, Serial_Service_Inst.NTAMD64
+AddService = Serenum,,Serenum_Service_Inst
+
+[ComPort.NTAMD64.Copy]
+ser2pl64_1.sys
+
+[ComPort.NTAMD64.AddReg]
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,ser2pl64_1.sys
+HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
+
+
+[Serial_Service_Inst.NTAMD64]
+DisplayName    = %Serial.SVCDESC%                            
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
+StartType      = 3                  ; SERVICE_DEMAND_START
+ErrorControl   = 1                  ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\ser2pl64_1.sys                            
+LoadOrderGroup = Base
+
+[Serenum_Service_Inst]
+DisplayName    = %Serenum.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\serenum.sys
+LoadOrderGroup = PNP Filter
+
+[Strings]
+PRO = "Prolific"
+DeviceDesc1 = "Prolific USB-to-Serial Comm Port"
+DeviceDesc2 = "Prolific USB-to-GPIO/PWM Port"
+Serial.SVCDESC  = "Prolific ser2pl_1 Serial Port WDF Driver"
+Serenum.SVCDESC = "Serenum Filter Driver"
+DISK_NAME = "USB-Serial Cable Diskette"

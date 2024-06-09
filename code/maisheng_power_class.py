@@ -4,6 +4,8 @@ from PyQt5.QtCore import QTimer, QDateTime
 from Classes import ch_response_to_step, base_device, ch_response_to_step, base_ch
 import time
 from power_supply_class import power_supply
+import logging
+logger = logging.getLogger(__name__)
 # 3Регулируемый блок питания MAISHENG WSD-20H15 (200В, 15А)
 # Создание клиента Modbus RTU
 
@@ -34,7 +36,7 @@ class ch_power_supply_class(base_ch):
         self.dict_buf_parameters["second_value"] = str(self.max_current)
         self.dict_buf_parameters["repeat_reverse"] = False
 
-class maisheng_power_class(power_supply):
+class maishengPowerClass(power_supply):
     def __init__(self, name, installation_class) -> None:
 
         super().__init__(name, "modbus", installation_class)
@@ -49,12 +51,14 @@ class maisheng_power_class(power_supply):
 
 
     def _set_voltage(self,ch_num, voltage) -> bool:  # в сотых долях вольта 20000 - 200В
+        voltage*=100
         response = self._write_reg(
             address=int("0040", 16), count=2, slave=1, values=[0, int(voltage)]
         )
         return response
 
     def _set_current(self,ch_num, current) -> bool:  # в сотых долях ампера
+        current*=100
         response = self._write_reg(
             address=int("0041", 16), count=2, slave=1, values=[0, int(current)]
         )
@@ -229,7 +233,7 @@ if __name__ == "__main__":
         method="rtu", port="COM3", baudrate=9600, stopbits=1, bytesize=8, parity="E"
     )
 
-    power_supply = maisheng_power_class("wsd", "rere")
+    power_supply = maishengPowerClass("wsd", "rere")
     power_supply.set_client(client)
     power_supply.set_test_mode()
     while True:

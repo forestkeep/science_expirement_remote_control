@@ -2,11 +2,12 @@ from enum import Enum
 import serial.tools.list_ports
 from PyQt5.QtCore import QTimer, QDateTime
 import copy
+import logging
+logger = logging.getLogger(__name__)
 
-is_debug = True
 
-not_ready_style_border = "border: 1px solid rgb(180, 0, 0); border-radius: 5px;"
-not_ready_style_background = "background-color: rgb(100, 50, 50);" 
+not_ready_style_border = "border: 1px solid rgb(180, 0, 0); border-radius: 5px; QToolTip { background-color: lightblue; color: black; border: 1px solid black; }"
+not_ready_style_background = "background-color: rgb(100, 50, 50); QToolTip { background-color: lightblue; color: black; border: 1px solid black; }"
 
 ready_style_border = "border: 1px solid rgb(0, 150, 0); border-radius: 5px;"
 ready_style_background = "background-color: rgb(50, 100, 50);" 
@@ -29,8 +30,9 @@ class control_in_experiment():
         self.number_meas = 0
         self.time_of_action = 3# время, необходимое для совершения одного шага
         self.step_index = -1
+        self.last_step_time = 5#хранит время, затраченное на последний сделанной шаг в эксперименте. Необходимо для подстройки продолжительности эксперимента
 
-    def set_priority(self, priority) -> bool:
+    def set_priority(self, priority: int) -> bool:
         self.priority = priority
         return True
 
@@ -38,7 +40,6 @@ class control_in_experiment():
         return self.priority
 
     def increment_priority(self):
-        #print("приоритет", self.priority)
         if self.priority > 1:
             self.priority = self.priority - 1
         else:
@@ -52,6 +53,7 @@ class base_device():
 
     def __init__(self, name, type_connection, installation_class) -> None:
         super().__init__()
+        self.is_debug = False
         self.is_test = False #флаг переводит прибор в режим теста, выдаются сырые данные от функций передачи и приема
         self.timer_for_scan_com_port = QTimer()
         self.timer_for_scan_com_port.timeout.connect(
@@ -77,9 +79,13 @@ class base_device():
         self.channels = []
         # разрешает исполнение кода в функциях, срабатывающих по сигналам
         self.key_to_signal_func = False
+        logger.debug(f"класс {self.name} создан")
 
     def set_name(self, name):
         self.name = name
+
+    def set_debug(self, state):
+        self.is_debug = state
 
     def set_status_step(self, ch_num, status):
         '''сообщаем каналу прибору статус шага, должен проводить измерение или нет'''
@@ -114,24 +120,24 @@ class base_device():
                     return True
             return False
     
-    def on_next_step(self, number_of_channel):  # функция сообщает прибору, что нужно перейти на следующий шаг, например, выставить новые значения тока и напряжения в случае источника питания
+    def on_next_step(self, number_of_channel, repeat = 1):  #в случае активных приборов(например, источник питания) функция переопределяется в классе прибора
         '''активирует следующий шаг канала прибора'''
         self.switch_channel(number_of_channel)
-        is_correct = True
+        answer = ch_response_to_step.Step_done
         if self.active_channel.dict_buf_parameters["num steps"] == "Пока активны другие приборы":
-            return is_correct
+            return answer
         if int(self.active_channel.step_index) < int(self.active_channel.dict_buf_parameters["num steps"])-1:
             self.active_channel.step_index = self.active_channel.step_index + 1
         else:
-            is_correct = False  # след шага нет
-        return is_correct
+            answer = ch_response_to_step.End_list_of_steps  # след шага нет
+
+        return answer
 
     def get_name(self) -> str:
         return str(self.name)
 
     def _scan_com_ports(self):
         '''проверяет наличие ком портов в системе'''
-        #print("hop!")
         self.timer_for_scan_com_port.stop()
         ports = serial.tools.list_ports.comports()
         local_list_com_ports = []
@@ -146,9 +152,13 @@ class base_device():
                 ser.close()
             except (OSError, serial.SerialException):
                 pass
+
         if local_list_com_ports == []:
-            local_list_com_ports.append("Нет подключенных портов")
-            self.setting_window.comportslist.setStyleSheet(not_ready_style_border)
+            try:
+                local_list_com_ports.append("Нет подключенных портов")
+                self.setting_window.comportslist.setStyleSheet(not_ready_style_border)
+            except:
+                pass
 
         if local_list_com_ports == self.active_ports:
             pass
@@ -156,18 +166,15 @@ class base_device():
             try:
                 current_val = self.setting_window.comportslist.currentText()
                 self.setting_window.comportslist.clear()
-                #print("порты очищены")
                 self.setting_window.comportslist.addItems(local_list_com_ports)
                 self.setting_window.comportslist.setStyleSheet(ready_style_border)
             except:
                 stop = True
         try:
             AllItems = [self.setting_window.comportslist.itemText(i) for i in range(self.setting_window.comportslist.count())]
-            #print(AllItems)
             
             for i in range(1,len(AllItems), 1):
                 if AllItems[i] == self.setting_window.comportslist.currentText() and i != self.setting_window.comportslist.currentIndex():
-                    #print("бинго", AllItems[i])
                     self.setting_window.comportslist.removeItem(i)
         except:
             pass
@@ -231,7 +238,6 @@ class base_device():
     def get_steps_number(self, number_of_channel):
         '''возвращает число шагов прибора, если число не ограничено, то возвращает False'''
         self.switch_channel(number_of_channel)
-        #print(self.active_channel.dict_settable_parameters["num steps"], "число шагов")
         try:
             answer = int(self.active_channel.dict_settable_parameters["num steps"])
         except:
@@ -244,7 +250,6 @@ class base_device():
 
     def _action_when_select_trigger(self):
         if self.key_to_signal_func:
-            # print("выбор триггера")
             if self.setting_window.triger_enter.currentText() == "Таймер":
                 try:
                     buf = int(self.active_channel.dict_buf_parameters["sourse/time"])
@@ -264,7 +269,6 @@ class base_device():
                 # предоставьте список сигналов, я прибор под именем self.name канал self.active_channel.number
                 self.active_channel.signal_list = self.installation_class.get_signal_list(
                     self.name, self.active_channel.number)
-                #print("сигналы",self.active_channel.signal_list)
                 signals = []
                 for sig in self.active_channel.signal_list:
                     signals.append(str(sig[0])+" ch-"+str(sig[1]))
@@ -279,6 +283,10 @@ class base_device():
 
     def reset_test_mode(self):
         self.is_test = False
+
+    def open_port(self):
+        if self.client.is_open == False:
+            self.client.open()
 
     def set_parameters(self,number_of_channel, parameters):
         """функция необходима для настройки параметров прибора в установке при добавлении прибора извне или при открытии сохраненной установки, передаваемый словарь гарантированно должен содержать параметры именно для данного прибора"""
@@ -302,9 +310,6 @@ class base_device():
             else:
                 self.active_channel.dict_buf_parameters[param] = parameters[param]
                 self.active_channel.dict_settable_parameters[param] = parameters[param]
-        
-        #print(self.dict_settable_parameters, self.active_channel.dict_settable_parameters)
-        
 
         self.installation_class.message_from_device_settings(
             self.name,self.active_channel.number, status, {**self.dict_settable_parameters, **self.active_channel.dict_settable_parameters})

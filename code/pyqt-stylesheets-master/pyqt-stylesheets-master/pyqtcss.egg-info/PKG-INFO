@@ -1,9 +1,0 @@
-Metadata-Version: 2.1
-Name: pyqtcss
-Version: 1.0
-Summary: PyQt5 style sheets
-Home-page: https://github.com/sommerc/pyqt-stylesheets
-Author: Christoph Sommer
-Author-email: christoph.sommer@imba.oeaw.ac.at
-License: BSD
-License-File: LICENSE

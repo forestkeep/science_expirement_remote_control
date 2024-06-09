@@ -1,19 +1,0 @@
-3|DP832A_1|АКИП2404_2|E7-20MNIPI_3
-DP832A_1 1
-baudrate:9600COM:COM6trigger:Таймерsourse/time:10num steps:5type_of_work:Стабилизация напряженияtype_step:Заданный шагhigh_limit:10low_limit:0.001step:2second_value:3repeat_reverse:False
----------------------
-DP832A_1 2
-not active
----------------------
-DP832A_1 3
-baudrate:9600COM:COM6trigger:Таймерsourse/time:10num steps:2type_of_work:Стабилизация напряженияtype_step:Заданный шагhigh_limit:5low_limit:0.001step:2second_value:3repeat_reverse:True
----------------------
-АКИП2404_2 1
-not active
----------------------
-АКИП2404_2 2
-not active
----------------------
-E7-20MNIPI_3 1
-baudrate:9600COM:COM5trigger:Таймерsourse/time:10num steps:3meas L:Falsemeas R:Falsemeas I:Falsemeas C:Truemeas Z:Truefrequency:1000.0level:1.0offset:0.0
----------------------

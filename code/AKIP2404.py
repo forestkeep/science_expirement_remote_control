@@ -13,14 +13,38 @@ import copy
 from commandsSR830 import commandsSR830
 import time
 from Classes import ch_response_to_step, base_device, ch_response_to_step, base_ch
-from Classes import is_debug
 from Classes import not_ready_style_border, not_ready_style_background, ready_style_border, ready_style_background, warning_style_border, warning_style_background
+import logging
+logger = logging.getLogger(__name__)
+
+'''
+
+Команда	                               Описание
+[:SENSe]:VOLTage:AC:CH1	               Установить канал CH1 напряжения AC
+[:SENSe]:VOLTage:AC:CH2	               Установить канал CH2 напряжения AC
+[:SENSe]:VOLTage:AC:RANGe[:UPPer] 	   Выбрать диапазон (верхняя граница)
+[:SENSe]:VOLTage:AC:RANGe[:UPPer]?	   Запросить текущий диапазон
+[:SENSe]:VOLTage:AC:FILTer 	           Выбрать режим отображения 3½ или 4½
+[:SENSe]:VOLTage:AC:FILTer?	           Запросить статус фильтра
+[:SENSe]:VOLTage:AC:GND 	           Включить/выключить заземление
+[:SENSe]:VOLTage:AC:GND?	           Проверить статус заземления
+[:SENSe]:VOLTage:AC:RANGe:AUTO 	       Включить/выключить авторазбор диапазона
+[:SENSe]:VOLTage:AC:RANGe:AUTO?	       Проверить статус авторазбора диапазона
+:CALCulate:FUNCtion ""	               Выполнить математическую функцию
+:CALCulate:FUNCtion?	               Запросить текущую математическую функцию
+:SYSTem:VERSion?	                   Получить версию системы
+IDN?	                               Получить строку идентификации прибора
+*RST	                               Сбросить конфигурацию до включения
+:TRG	                               Однократное запуск измерения
+:TRIGger:SOURce { BUS	IMMediate}     Установить триггер начала измерения.  BUS - по команде с шины данных
+:READ?	                               Получить измеренные данные
+'''
 
 
-class akip2404_class(base_device):
+class akip2404Class(base_device):
     def __init__(self, name, installation_class) -> None:
         super().__init__(name, "serial", installation_class)
-        print("класс вольтметра")
+        #print("класс вольтметра")
         self.ch1 = ch_akip_class(1, self)
         self.ch2 = ch_akip_class(2, self)
         self.channels=[self.ch1, self.ch2]
@@ -193,7 +217,6 @@ class akip2404_class(base_device):
             self.active_channel.dict_buf_parameters["range"] = self.setting_window.range_enter.currentText(
             )
 
-
             self.active_channel.dict_buf_parameters["trigger"] = self.setting_window.triger_enter.currentText(
             )
             self.active_channel.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_enter.currentText()
@@ -207,7 +230,8 @@ class akip2404_class(base_device):
         self.add_parameters_from_window()
         # те же самые настройки, ничего не делаем
         if (self.active_channel.dict_buf_parameters == self.active_channel.dict_settable_parameters and self.dict_buf_parameters == self.dict_settable_parameters):
-            return
+            #return
+            pass
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
         self.active_channel.dict_settable_parameters = copy.deepcopy(self.active_channel.dict_buf_parameters)
 
@@ -243,81 +267,39 @@ class akip2404_class(base_device):
             for ch in self.channels:
                 if ch.is_ch_active():
                     ch.step_index = -1
-            self.command = commandsSR830(self)
-            self.device = SR830(SerialAdapter(self.client))
-            '''
-
-            if self.check_connect():
-                self.installation_class.message_from_device_status_connect(
-                    True, self.name)
-            else:
-                self.installation_class.message_from_device_status_connect(
-                    False, self.name)
-            pass
-            '''
-
         else:
             pass
     # настройка прибора перед началом эксперимента, переопределяется при каждлом старте эксперимента
 
     def action_before_experiment(self, number_of_channel) -> bool:  # менять для каждого прибора
         self.switch_channel(number_of_channel)
+        self.select_channel(channel = self.active_channel.number)
         print(
             f"настройка канала {number_of_channel} прибора "
             + str(self.name)
             + " перед экспериментом.."
         )
-        pause = 0.1
+        
         status = True
-        if not self.command._set_filter_slope(
-                slope=self.active_channel.dict_settable_parameters["filter_slope"]):
-            status = False
-        print((status))
-        time.sleep(pause)
-        if not self.command._set_input_conf(
-                conf=self.active_channel.dict_settable_parameters["input_channel"]):
-            status = False
-        print((status))
-        time.sleep(pause)
-        if not self.command._set_input_type_conf(
-                type_conf=self.active_channel.dict_settable_parameters["input_type"]):
-            status = False
-        print((status))
-        time.sleep(pause)
-        if not self.command._set_input_type_connect(
-                input_ground=self.active_channel.dict_settable_parameters["input_connect"]):
-            status = False
-        print((status))
-        time.sleep(pause)
-        if not self.command._set_line_filters(
-                type=self.active_channel.dict_settable_parameters["filters"]):
-            status = False
-        print((status))
-        time.sleep(pause)
-        if not self.command._set_reserve(
-                reserve=self.active_channel.dict_settable_parameters["reserve"]):
-            status = False
-        print((status))
-        time.sleep(pause)
-        if not self.command._set_time_const(
-                time_constant=self.active_channel.dict_settable_parameters["time_const"]):
-            status = False
-        print((status))
-        time.sleep(pause)
-        if not self.command._set_sens(
-                sens=self.active_channel.dict_settable_parameters["sensitivity"]):
-            status = False
-        print((status))
-        time.sleep(pause)
-        if not self.command._set_frequency(
-                freq=self.active_channel.dict_settable_parameters["frequency"]):
-            status = False
-        print((status))
-        time.sleep(pause)
-        if not self.command._set_amplitude(
-                ampl=self.active_channel.dict_settable_parameters["amplitude"]):
-            status = False
-        print((status))
+        if self.active_channel.dict_settable_parameters["range"] != "Auto":
+            try:
+                strip = self.active_channel.dict_buf_parameters["range"][-2:]
+                if strip == "mV":
+                    val = float(self.active_channel.dict_buf_parameters["range"][0:-2:])/1000
+                else:
+                    val = float(self.active_channel.dict_buf_parameters["range"][0:-1:])
+                ans = self.set_parameter(command = ':SENSe:VOLTage:AC:RANGe:UPPer',timeout = 1,param = val)
+                print(f"{ans=}")
+                if ans == False:
+                    status = False
+            except ValueError as e:
+                print("Ошибка преобразования строки в число(АКИП2404):", e)
+        else:
+            pass
+            #TODO: проверить, включен ли режим авто, если нет, то включить
+            #[:SENSe]:VOLTage:AC:RANGe:AUTO 	Включить/выключить авторазбор диапазона
+            #[:SENSe]:VOLTage:AC:RANGe:AUTO?
+
         return status
 
     def action_end_experiment(self, number_of_channel) -> bool:
@@ -337,80 +319,22 @@ class akip2404_class(base_device):
         is_stop_analyze = False
         count = 0
         result_analyze = False
-        if not is_debug:
-            while not is_stop_analyze:
-                self.command.push_autophase()
-                buf_display_value = []
-                for i in range(10):
-                    disp2 = self.command.get_parameter(self.command.COMM_DISPLAY, timeout=1, param=2)
-                    print(disp2)
-                    if not disp2:
-                        continue
-                    else:
-                        buf_display_value.append(float(disp2))
-                        #val = ["disp2=" + str(disp2)]
-                        #parameters.append(val)
-                    #time.sleep(0.05)
-                if len(buf_display_value) > 3:
-                    if max(buf_display_value) < 2 and min(buf_display_value) > -2:#выход за границы
-                        if len(buf_display_value) >= 5:
-                            for i in range(len(buf_display_value)-2):#анализ монотонности
-                                if buf_display_value[i] >= buf_display_value[i+1] and buf_display_value[i+1] <= buf_display_value[i+2]:
-                                    is_stop_analyze = True
-                                    result_analyze = True
-                                    break
-                                if buf_display_value[i] <= buf_display_value[i+1] and buf_display_value[i+1] >= buf_display_value[i+2]:
-                                    is_stop_analyze = True
-                                    result_analyze = True
-                                    break
+        if not self.is_debug:
+            pass
             
-                count+=1
-                print("счетчик повторов нажатий кнопки автофаза",count)
-                if count >= 10:
-                    is_stop_analyze = True
-            
-
-        if result_analyze == True:
-            print("удалось устаканить фазу, измеряем...")
-            disp1 = self.command.get_parameter(
-                command=self.command.COMM_DISPLAY, timeout=1, param=1)
-            if not disp1:
-                is_correct = False
-            else:
-                val = ["disp1=" + str(disp1)]
-                parameters.append(val)
-
-            disp2 = self.command.get_parameter(
-                self.command.COMM_DISPLAY, timeout=1, param=2)
-            if not disp2:
-                is_correct = False
-            else:
-                val = ["disp2=" + str(disp2)]
-                parameters.append(val)
-
-            phase = self.command.get_parameter(
-                self.command.PHASE, timeout=1)
-            if not phase:
-                is_correct = False
-            else:
-                val = ["phase=" + str(phase)]
-                parameters.append(val)
+        
+        voltage = self._get_current_voltage(self.active_channel.number)
+        if voltage is not False:
+            val = ["voltage=" + str(voltage)]
+            parameters.append(val)
         else:
-            print("Не получилось обнулить фазу, ставим прочерки", self.name)
-            val = ["disp1=" + "fail"]
-            parameters.append(val)
-            val = ["disp2=" + "fail"]
-            parameters.append(val)
-            val = ["phase=" + "fail"]
-            parameters.append(val)
+            is_correct = False
 
         # -----------------------------
-        if is_debug:
+        if self.is_debug:
             if is_correct == False:
                 is_correct = True
-                parameters.append(["disp1=" + str(254)])
-                parameters.append(["disp2=" + str(847)])
-                parameters.append(["phase=" + str(777)])
+                parameters.append(["voltage=" + str(254)])
         # -----------------------------
 
         if is_correct:
@@ -418,36 +342,92 @@ class akip2404_class(base_device):
             ans = ch_response_to_step.Step_done
         else:
             print("Ошибка шага", self.name)
-            val = ["disp1=" + "fail"]
-            parameters.append(val)
-            val = ["disp2=" + "fail"]
-            parameters.append(val)
-            val = ["phase=" + "fail"]
+            val = ["voltage=" + "fail"]
             parameters.append(val)
 
             ans = ch_response_to_step.Step_fail
 
         return ans, parameters, time.time() - start_time
 
+    def _get_current_voltage(self, ch_num) -> float:
+        '''возвращает значение установленного напряжения канала'''
+        self.open_port()
+        self.select_channel(ch_num)
+        response = self.get_parameter('READ', 1)
+        print("ответ на запрос v",response )
+        if response is not False:
+            num, ed = response[:6], response[6:].strip() if response != False else (None, None)
+        try:
+            response = float(num) / 1000 if ed == "mV" else float(num)
+        except:
+            response = False
+        self.client.close()
+        return  response
+    
+    def set_parameter(self, command, timeout, param):
+        self.open_port()
+        param = str(param)
+        self.client.write(bytes(command, "ascii") +
+                              b' ' + bytes(param, "ascii") + b'\r\n')
+        
+        print(bytes(command, "ascii") + b' ' + bytes(param, "ascii") + b'\r\n')
+
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            line = self.client.readline().decode().strip()
+            if line:
+                print("Received:", line)
+                return line
+        return False
+
+    def get_parameter(self, command, timeout, param=False):
+        self.open_port()
+        if param == False:
+            self.client.write(bytes(command, "ascii") + b'?\r\n')
+        else:
+            param = str(param)
+            self.client.write(bytes(command, "ascii") +
+                              b'? ' + bytes(param, "ascii") + b'\r\n')
+        if param != False:
+            print("чтение параметров", bytes(command, "ascii") +
+                  b'? ' + bytes(param, "ascii") + b'\r\n')
+        else:
+            print(bytes(command, "ascii") + b'?\r\n')
+
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            line = self.client.readline().decode().strip()
+            if line:
+                print("Received:", line)
+                return line
+        return False
+    
     def check_connect(self) -> bool:
-        line = self.command.get_parameter(self.command.COMM_ID, timeout=1)
-        if line is not False:
-            print(line)
+        line = self.get_parameter("*IDN", timeout=1)
+        ver = self.get_parameter(":SYSTem:VERSion", timeout=1)
+        if line is not False and ver is not False:
+            print(line + " "+ ver)
             return True
         return False
 
+    def open_port(self):
+        if self.client.is_open == False:
+            self.client.open()
+
+    def select_channel(self, channel):
+        self.open_port()	
+        self.client.write(f':VOLTage:AC:CH{channel}\n'.encode())
 
 class ch_akip_class(base_ch):
     def __init__(self, number, device_class) -> None:
         super().__init__(number)
-        print(f"канал {number} создан")
+        #print(f"канал {number} создан")
         #print(self.am_i_should_do_step, "ацаыввыаваываываывыаывываываываываываывавыаывыыв")
         self.base_duration_step = 0.1#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.dict_buf_parameters["type_meas"] = "Напряжение"  # секунды
         self.dict_buf_parameters["range"] = "Auto"  # dB
         self.dict_buf_parameters["num steps"] = "1"
         
-
 if __name__ == "__main__":
 
 

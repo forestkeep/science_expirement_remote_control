@@ -81,10 +81,10 @@ class device():
         print(answer)
         if answer.find("Remote control") != -1 or answer.find("Hand control") != -1:
             #self.status = state_device.Connect
-            print("connect")
+            #print("connect")
             return True
         else:
-            print("fail connect")
+            #print("fail connect")
             return False
     def get_temperature(self):
         self.ser.write(b'temp')
@@ -558,7 +558,7 @@ class Ui_SVPS34_control(object):
         self.get_temp_button.setText(_translate("SVPS34_control", "Get temperature"))
         self.temp_label.setText(_translate("SVPS34_control", "Temperature = "))
     def ty(self):
-        print(666666)
+        pass
 
 
 if __name__ == "__main__":

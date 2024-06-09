@@ -9,60 +9,64 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+import logging
+logger = logging.getLogger(__name__)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(397, 340)
-        #MainWindow.setStyleSheet("font-family: Noto Sans SC;\n"
-#"background-color: qlineargradient(spread:pad, x1:1, y1:1, x2:0, y2:0, stop:0 rgba(220, 220, 220, 30), stop:0.427447 rgba(240, 240, 240,30), stop:1 rgba(255, 255, 255, 30));")
+
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.widget = QtWidgets.QWidget(self.centralwidget)
-        self.widget.setGeometry(QtCore.QRect(10, 20, 371, 261))
-        self.widget.setObjectName("widget")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.widget)
-        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.pushButton = QtWidgets.QPushButton(self.widget)
-        self.pushButton.setMinimumSize(QtCore.QSize(100, 120))
+
+        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton.setMinimumSize(QtCore.QSize(100, 100))
         font = QtGui.QFont()
         font.setFamily("Noto Sans SC")
         font.setPointSize(13)
         self.pushButton.setFont(font)
-        #self.pushButton.setStyleSheet("background-color: rgb(224, 250, 255);")
         self.pushButton.setObjectName("pushButton")
         self.verticalLayout.addWidget(self.pushButton)
-        self.pushButton_2 = QtWidgets.QPushButton(self.widget)
-        self.pushButton_2.setMinimumSize(QtCore.QSize(0, 120))
-        font = QtGui.QFont()
-        font.setFamily("Noto Sans SC")
-        font.setPointSize(13)
+
+        self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_2.setMinimumSize(QtCore.QSize(100, 100))
         self.pushButton_2.setFont(font)
-        #self.pushButton_2.setStyleSheet("background-color: rgb(224, 250, 255);")
         self.pushButton_2.setObjectName("pushButton_2")
         self.verticalLayout.addWidget(self.pushButton_2)
+
         MainWindow.setCentralWidget(self.centralwidget)
+
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
+
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 397, 20))
         self.menubar.setObjectName("menubar")
+
         self.menu = QtWidgets.QMenu(self.menubar)
         self.menu.setObjectName("menu")
+
         self.menu_2 = QtWidgets.QMenu(self.menubar)
         self.menu_2.setObjectName("menu_2")
+
         self.menu_3 = QtWidgets.QMenu(self.menubar)
         self.menu_3.setObjectName("menu_3")
+
         self.menu_4 = QtWidgets.QMenu(self.menubar)
         self.menu_4.setObjectName("menu_4")
+
         MainWindow.setMenuBar(self.menubar)
+
         self.action_2 = QtWidgets.QAction(MainWindow)
         self.action_2.setObjectName("action_2")
+
         self.action_4 = QtWidgets.QAction(MainWindow)
         self.action_4.setObjectName("action_4")
+
         self.actionMaisheng = QtWidgets.QAction(MainWindow)
         self.actionMaisheng.setObjectName("actionMaisheng")
 
@@ -71,10 +75,13 @@ class Ui_MainWindow(object):
 
         self.actionSVPS34 = QtWidgets.QAction(MainWindow)
         self.actionSVPS34.setObjectName("actionSVPS34")
+
         self.actionLock_in = QtWidgets.QAction(MainWindow)
         self.actionLock_in.setObjectName("actionLock_in")
+
         self.action_9 = QtWidgets.QAction(MainWindow)
         self.action_9.setObjectName("action_9")
+
         self.menu.addSeparator()
         self.menu_2.addAction(self.action_2)
         self.menu_2.addSeparator()
@@ -83,7 +90,7 @@ class Ui_MainWindow(object):
         self.menu_3.addAction(self.actionLock_in)
         self.menu_3.addAction(self.action_9)
         self.menu_4.addAction(self.actionCreateNew)
-   
+
         self.menubar.addAction(self.menu.menuAction())
         self.menubar.addAction(self.menu_2.menuAction())
         self.menubar.addAction(self.menu_3.menuAction())

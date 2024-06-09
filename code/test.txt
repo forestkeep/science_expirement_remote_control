@@ -1,7 +1,0 @@
-1|АКИП2404_2
-АКИП2404_2 1
-baudrate:9600COM:COM5trigger:Таймерsourse/time:10num steps:3type_meas:Напряжениеrange:Auto
----------------------
-АКИП2404_2 2
-not active
----------------------

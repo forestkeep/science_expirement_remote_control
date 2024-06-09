@@ -1,15 +1,0 @@
-Запущена установка 
-Список приборов: ['Maisheng 1', 'SR830 2']
-Настройки Maisheng 1: trigger - Таймерsourse/time - 10num steps - 6baudrate - 9600COM - COM4type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 10low_limit - 0.01step - 2second_value - 15
-Настройки SR830 2: trigger - Внешний сигналsourse/time - Maisheng 1num steps - Пока активны другие приборыbaudrate - 9600COM - COM10time_const - 1000.0filter_slope - 6SYNK_200_Hz - Onsensitivity - 1.0reserve - high reserveinput_channel - Ainput_type - ACinput_connect - floatfilters - linefrequency - 400.0amplitude - 1.0
-18-55-53 Maisheng 1	['voltage_set=0.01']	['voltage_rel=0.05']	['current_set=15.0']	['current_rel=0.0']	
-18-55-56 SR830 2	['disp1=0']	['disp2=0']	['phase=-179.51']	
-18-56-03 Maisheng 1	['voltage_set=2.0']	['voltage_rel=2.04']	['current_set=15.0']	['current_rel=0.53']	
-18-56-06 SR830 2	['disp1=0']	['disp2=0']	['phase=-179.51']	
-18-56-13 Maisheng 1	['voltage_set=4.01']	['voltage_rel=4.05']	['current_set=15.0']	['current_rel=1.08']	
-18-56-16 SR830 2	['disp1=0']	['disp2=0']	['phase=-179.51']	
-18-56-23 Maisheng 1	['voltage_set=6.01']	['voltage_rel=6.03']	['current_set=15.0']	['current_rel=1.31']	
-18-56-26 SR830 2	['disp1=0']	['disp2=0']	['phase=-179.51']	
-18-56-33 Maisheng 1	['voltage_set=8.01']	['voltage_rel=7.81']	['current_set=15.0']	['current_rel=1.86']	
-18-56-36 SR830 2	['disp1=0']	['disp2=0']	['phase=-179.51']	
-18-56-43 Maisheng 1	['voltage_set=10.0']	['voltage_rel=9.74']	['current_set=15.0']	['current_rel=2.41']	

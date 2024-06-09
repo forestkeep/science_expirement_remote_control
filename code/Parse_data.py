@@ -3,6 +3,8 @@ from datetime import datetime
 import pandas
 from pandas.io.excel import ExcelWriter
 import os
+import logging
+logger = logging.getLogger(__name__)
 
 
 class saved_data():
@@ -113,9 +115,25 @@ class saving_data():
 
         daytime = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
 
-        with ExcelWriter(output_file_path,
-                         mode="a" if os.path.exists(output_file_path) else "w") as excel_writer:
-            df.to_excel(excel_writer, sheet_name=daytime)
+        try:
+            with ExcelWriter(output_file_path,mode="a" if os.path.exists(output_file_path) else "w") as excel_writer:df.to_excel(excel_writer, sheet_name=daytime)
+        except :
+            logger.warning(f"Эксель файл не записан {output_file_path=} {self.input_file=}")
+            #print("файл открыт или прав нет, пишем в другой")
+            output_file_path = output_file_path[:-5] + "(0).xlsx"
+            for i in range(1,10):
+                output_file_path = output_file_path[:-8] + f"({str(i)}).xlsx"
+                if os.path.exists(output_file_path):
+                    if i == 9:
+                        pass
+                        #print("ахтукнг!!!!!")
+                    continue
+                else:
+                    with ExcelWriter(output_file_path,mode="w") as excel_writer:
+                        df.to_excel(excel_writer, sheet_name=daytime)
+                    break
+
+
 
     def __save_txt(self, output_file_path):
         '''вывод параметров приборов рядом друг с другом'''
@@ -198,6 +216,7 @@ class saving_data():
             self.__save_origin(output_file_path)
 
     def __parse_data(self, input_file_path):
+        self.input_file = input_file_path
         is_file_correct = False
         self.devices = []
         setting_reading = False
@@ -216,13 +235,13 @@ class saving_data():
                     dev = line.split()
                     buf = saved_data(dev[1], dev[2])
                     self.devices.append(buf)
-                    # print(dev)
+                    #print(dev)
                     continue
 
                 if setting_reading:
                     '''читаем настройки устройства до первой пустой строки'''
                     if line.find("--------------------") != -1:
-                        # print("разделитель")
+                        #print("разделитель")
                         setting_reading = False
                         continue
                     else:
@@ -233,10 +252,13 @@ class saving_data():
                 if parameters_reading == False and len(self.devices) > 0 and setting_reading == False:
                     '''если выполнено это условие, то найстройки всех приборов записаны и мы начинаем считывать параметры построчно и раскидывать их по приборам и каналам'''
                     parameters_reading = True
-                    # print("начинаем считывать параметры")
+                    #print("начинаем считывать параметры")
                 if parameters_reading:
                     buf = line.split()
+                    #print(buf)
                     # получаем класс, куда нужно записывать данные
+                    if buf == [] :
+                        continue
                     dev = self.__get_device(self.devices, buf[1], buf[2])
                     if dev != False:
                         if "time" in dev.data:
@@ -251,7 +273,9 @@ class saving_data():
                             if param[0] in dev.data:
                                 dev.data[param[0]].append(param[1])
                             else:
+                                #print(param)
                                 dev.data[param[0]] = [param[1]]
+                                
 
         # for dev in self.devices:
         #    print(dev, dev.name_device, dev.ch, dev.settings)
@@ -261,5 +285,5 @@ def process_and_export(input_file_path, output_file_path, output_type):
 
 if __name__ == "__main__":
     save = saving_data()
-    input_file = "DP832A_4_2024-04-21 18-32-20.txt"
-    save.save_data(input_file, "output_data.xlsx", type_save_file.excel)
+    input_file = "buf_files\E7-20MNIPI_1_DP832A_2_2024-06-03 22-33-59.txt"
+    save.save_data(input_file, "testData.xlsx", type_save_file.excel)

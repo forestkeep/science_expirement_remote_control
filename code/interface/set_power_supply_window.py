@@ -1,4 +1,6 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+import logging
+logger = logging.getLogger(__name__)
 
 class Ui_Set_power_supply(QtWidgets.QDialog):
 
@@ -9,8 +11,6 @@ class Ui_Set_power_supply(QtWidgets.QDialog):
         Set_power_supply.setModal(False)
 
         self.gridLayout = QtWidgets.QGridLayout(Set_power_supply)
-
-
         self.buttonBox = QtWidgets.QDialogButtonBox()
         self.buttonBox.setGeometry(QtCore.QRect(80, 340, 191, 32))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)

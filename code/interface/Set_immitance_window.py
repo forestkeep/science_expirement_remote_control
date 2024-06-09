@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+import logging
+logger = logging.getLogger(__name__)
 
 class Ui_Set_immitans(QtWidgets.QDialog):
 

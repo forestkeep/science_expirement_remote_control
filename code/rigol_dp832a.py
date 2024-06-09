@@ -4,11 +4,13 @@ from PyQt5.QtCore import QTimer, QDateTime
 from Classes import ch_response_to_step, base_device, ch_response_to_step, base_ch
 from power_supply_class import power_supply
 import time
+import logging
+logger = logging.getLogger(__name__)
 
 class ch_power_supply_class(base_ch):
     def __init__(self, number, device_class, max_current, max_voltage, max_power, min_step_A = 0.001, min_step_V = 0.001, min_step_W = 1) -> None:
         super().__init__(number)
-        self.base_duration_step = 2#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
+        self.base_duration_step = 10#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.steps_current = []
         self.steps_voltage = []
         self.max_current = max_current
@@ -26,7 +28,7 @@ class ch_power_supply_class(base_ch):
         self.dict_buf_parameters["repeat_reverse"] = False
 
 
-class rigol_dp832a_class(power_supply):
+class rigolDp832aClass(power_supply):
     def __init__(self, name,installation_class) -> None:
         super().__init__(name, "serial", installation_class)
         self.ch1 = ch_power_supply_class(1, self, 3, 30, 300)
@@ -38,6 +40,7 @@ class rigol_dp832a_class(power_supply):
 
     def _set_voltage(self,ch_num, voltage) -> bool:
         '''установить значение напряжения канала'''
+        logger.debug(f"устанавливаем напряжение {voltage} канала {ch_num}")
         self.open_port()
         self.select_channel(ch_num)
         self.client.write(f'VOLT {voltage}\n'.encode())
@@ -49,10 +52,12 @@ class rigol_dp832a_class(power_supply):
         except:
             response = False
         self.client.close()
+        logger.debug(f"статус {response == voltage}")
         return  response == voltage
 
     def _set_current(self,ch_num, current) -> bool: 
         '''установить значение тока канала'''
+        logger.debug(f"устанавливаем ток {current} канала {ch_num}")
         self.open_port()
         self.select_channel(ch_num)
         self.client.write(f'CURR {current}\n'.encode())
@@ -63,6 +68,7 @@ class rigol_dp832a_class(power_supply):
         except:
             response = False
         self.client.close()
+        logger.debug(f"статус {response == current}")
         return  response == current
 
     def _output_switching_on(self, ch_num) -> bool:
@@ -135,10 +141,6 @@ class rigol_dp832a_class(power_supply):
         '''возвращает состояние канала вкл(true) или выкл(false)'''
         pass
 
-    def open_port(self):
-        if self.client.is_open == False:
-            self.client.open()
-
     def select_channel(self, channel):
         self.open_port()
         self.client.write(f'INST CH{channel}\n'.encode())
@@ -149,7 +151,7 @@ if __name__ == "__main__":
     #print("тестирование ригола")
     rt = 0
 
-    rigol = rigol_dp832a_class("rigol", rt)
+    rigol = rigolDp832aClass("rigol", rt)
     rigol.show_setting_window(rt)
 
  

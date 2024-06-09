@@ -1,0 +1,119 @@
+;   Prolific PL2303G VCP / PL232X CDC Series
+
+;   plser_1.INF (for Win11)
+
+;   Copyright (c) 2021, Prolific Technology Inc.
+
+
+[version]
+signature="$CHICAGO$"
+Class=Ports
+ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
+Provider=%PRO%
+DriverVer=07/19/2021,5.2.0.2
+CatalogFile=plser_1.cat
+
+; ================= Device Install section =====================
+
+[ControlFlags]
+ExcludeFromSelect=*
+
+[Manufacturer]
+%PRO%=PRO,NTAMD64
+
+[SourceDisksFiles]
+plser64_1.sys=1
+
+[SourceDisksNames]
+1=%DISK_NAME%,
+
+[DestinationDirs] 
+DefaultDestDir  = 12
+
+
+[PRO.NTAMD64]
+%DeviceDesc1% = ComPort, USB\VID_067B&PID_23B3
+%DeviceDesc2% = ComPort, USB\VID_067B&PID_23C3
+%DeviceDesc3% = ComPort, USB\VID_067B&PID_23D3
+%DeviceDesc4% = ComPort, USB\VID_067B&PID_23E3
+%DeviceDesc5% = ComPort, USB\VID_067B&PID_23F3
+%DeviceDesc6% = ComPort, USB\VID_067B&PID_2323
+%DeviceDesc7% = ComPort, USB\VID_067B&PID_23A3&REV_0705
+%DeviceDesc8% = ComPort, USB\VID_067B&PID_23A3&REV_0605
+%DeviceDesc9% = ComPort, USB\VID_067B&PID_23A3&REV_0505
+%DeviceDesc10% = ComPort, USB\VID_067B&PID_23A3&REV_0405
+%DeviceDesc11% = ComPort, USB\VID_067B&PID_23A3&REV_0305
+%DeviceDesc12% = ComPort, USB\VID_067B&PID_23A3&REV_0105
+%DeviceDesc13% = ComPort, USB\VID_067B&PID_23A3&REV_0100
+%DeviceDesc14% = ComPort, USB\VID_067B&PID_23A3
+%DeviceDesc15% = ComPort, USB\VID_067B&PID_FFFF
+%DeviceDesc16% = ComPort, USB\VID_067B&PID_2320
+%DeviceDesc17% = ComPort, USB\VID_067B&PID_2321&MI_00
+%DeviceDesc18% = ComPort, USB\VID_067B&PID_2322
+
+[ComPort.AddReg]
+HKR,,PortSubClass,1,01
+
+[ComPort.HW.AddReg]
+HKR,,"UpperFilters",0x00010000,"serenum"
+HKR,,"WDF","WdfDirectedPowerTransitionEnable",0x00010001,1
+
+[ComPort.NTAMD64]
+CopyFiles=ComPort.NTAMD64.Copy
+AddReg=ComPort.NTAMD64.AddReg
+
+[ComPort.NTAMD64.HW]
+AddReg=ComPort.HW.AddReg
+
+[ComPort.NTAMD64.Services]
+AddService = plser_1, 0x00000002, Serial_Service_Inst.NTAMD64
+AddService = Serenum,,Serenum_Service_Inst
+
+[ComPort.NTAMD64.Copy]
+plser64_1.sys
+
+[ComPort.NTAMD64.AddReg]
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,plser64_1.sys
+HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
+
+
+[Serial_Service_Inst.NTAMD64]
+DisplayName    = %Serial.SVCDESC%                            
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
+StartType      = 3                  ; SERVICE_DEMAND_START
+ErrorControl   = 1                  ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\plser64_1.sys                            
+LoadOrderGroup = Base
+
+[Serenum_Service_Inst]
+DisplayName    = %Serenum.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\serenum.sys
+LoadOrderGroup = PNP Filter
+
+[Strings]
+PRO = "Prolific"
+DeviceDesc1 = "Prolific PL2303GB USB Serial COM Port"
+DeviceDesc2 = "Prolific PL2303GT USB Serial COM Port"
+DeviceDesc3 = "Prolific PL2303GL USB Serial COM Port"
+DeviceDesc4 = "Prolific PL2303GE USB Serial COM Port"
+DeviceDesc5 = "Prolific PL2303GS USB Serial COM Port"
+DeviceDesc6 = "Prolific PL2303GD USB Serial COM Port"
+DeviceDesc7 = "Prolific PL2303GR USB Serial COM Port"
+DeviceDesc8 = "Prolific PL2303GS USB Serial COM Port"
+DeviceDesc9 = "Prolific PL2303GE USB Serial COM Port"
+DeviceDesc10 = "Prolific PL2303GL USB Serial COM Port"
+DeviceDesc11 = "Prolific PL2303GT USB Serial COM Port"
+DeviceDesc12 = "Prolific PL2303GC USB Serial COM Port"
+DeviceDesc13 = "Prolific PL2303GC USB Serial COM Port"
+DeviceDesc14 = "Prolific PL2303GC USB Serial COM Port"
+DeviceDesc15 = "Prolific PL2303FF USB Serial COM Port"
+DeviceDesc16 = "Prolific PL2320 USB CDC Serial Port"
+DeviceDesc17 = "Prolific PL2321 USB CDC Serial Port"
+DeviceDesc18 = "Prolific PL2322 USB CDC Serial Port"
+Serial.SVCDESC  = "Prolific PLSER_1 Serial Port WDF Driver"
+Serenum.SVCDESC = "Serenum Filter Driver"
+DISK_NAME = "USB-Serial Cable Diskette"

@@ -10,7 +10,6 @@ import copy
 from commandsSR830 import commandsSR830
 import time
 from Classes import base_ch, base_device, ch_response_to_step
-from Classes import is_debug
 from interface.relay_set_window import Ui_Set_relay
 from pymodbus.client import ModbusSerialClient
 from pymodbus.utilities import computeCRC
@@ -26,6 +25,8 @@ from PyQt5.QtCore import *
 from Classes import not_ready_style_border, not_ready_style_background, ready_style_border, ready_style_background, warning_style_border, warning_style_background
 import sys
 import enum
+import logging
+logger = logging.getLogger(__name__)
 
 
 
@@ -40,7 +41,7 @@ class current_polarity(enum.Enum):
     pol_2 = 2
 
 
-class relay_pr1_class(base_device):
+class relayPr1Class(base_device):
     def __init__(self, name, installation_class) -> None:
         super().__init__(name, "modbus", installation_class)
         #print("класс реле создан")
@@ -135,11 +136,8 @@ class relay_pr1_class(base_device):
 
             self.setting_window.sourse_enter.setCurrentText(self.active_channel.dict_buf_parameters["sourse/time"])
             self.setting_window.boudrate.setCurrentText(self.dict_buf_parameters["baudrate"])
-            '''
-            if self.comportslist is not None:
-                self.setting_window.comportslist.setCurrentText(
-                    self.comportslist)
-            '''
+
+            self.setting_window.comportslist.setCurrentText(self.dict_buf_parameters["COM"])
             self.setting_window.triger_enter.setCurrentText(self.active_channel.dict_buf_parameters["trigger"])
 
             num_meas_list = ["5", "10", "20", "50"]
@@ -153,7 +151,6 @@ class relay_pr1_class(base_device):
 
             self.setting_window.sourse_enter.setCurrentText(
                 self.active_channel.dict_buf_parameters["sourse/time"])
-            self.setting_window.comportslist.addItem(self.dict_buf_parameters["COM"])
 
             if self.active_channel.dict_buf_parameters["mode"] != "Включение - Выключение":
                 self.setting_window.change_pol_button.setChecked(True)
@@ -177,7 +174,7 @@ class relay_pr1_class(base_device):
             try:
                 int(self.setting_window.num_meas_enter.currentText())
             except:
-                if self.setting_window.num_meas_enter.currentText() == "Пока активны другие приборы" and self.installation_class.get_signal_list(self.name) != []:
+                if self.setting_window.num_meas_enter.currentText() == "Пока активны другие приборы" and self.installation_class.get_signal_list(self.name, self.active_channel.number) != []:
                     pass
                 else:
                     is_num_steps_correct = False
@@ -242,7 +239,8 @@ class relay_pr1_class(base_device):
         self.add_parameters_from_window()
         # те же самые настройки, ничего не делаем
         if (self.active_channel.dict_buf_parameters == self.active_channel.dict_settable_parameters and self.dict_buf_parameters == self.dict_settable_parameters):
-            return
+            #return
+            pass
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
         self.active_channel.dict_settable_parameters = copy.deepcopy(self.active_channel.dict_buf_parameters)
 
@@ -351,7 +349,7 @@ class relay_pr1_class(base_device):
 
 
         # -----------------------------
-        if is_debug:
+        if self.is_debug:
             is_correct = True
         # -----------------------------
 
@@ -447,7 +445,7 @@ if __name__ == '__main__':
     if isinstance(reply, ExceptionResponse):
         print("ошибка записи в регистр реле", reply)
     '''
-    clas = relay_pr1_class("rerere", 1)
+    clas = relayPr1Class("rerere", 1)
     clas.show_setting_window()
     sys.exit(app.exec_())
 

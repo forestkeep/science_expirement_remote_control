@@ -9,7 +9,8 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+import logging
+logger = logging.getLogger(__name__)
 
 class maisheng_ui_window(QtWidgets.QMainWindow):
     def setupUi(self, MainWindow):

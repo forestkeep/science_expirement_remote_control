@@ -9,7 +9,8 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+import logging
+logger = logging.getLogger(__name__)
 
 class Ui_Set_sr830(QtWidgets.QDialog):
     def setupUi(self, Set_power_supply):

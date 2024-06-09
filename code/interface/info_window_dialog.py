@@ -9,7 +9,8 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+import logging
+logger = logging.getLogger(__name__)
 
 class Ui_Dialog(QtWidgets.QDialog):
     signal_to_main_window = QtCore.pyqtSignal(bool)

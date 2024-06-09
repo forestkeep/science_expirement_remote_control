@@ -9,7 +9,8 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+import logging
+logger = logging.getLogger(__name__)
 
 class installation_Ui_Dialog(QtWidgets.QDialog):
     signal_to_main_window = QtCore.pyqtSignal(list)
@@ -19,96 +20,82 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
             mother_window.message_from_new_installation)
         Dialog.setObjectName("Dialog")
         Dialog.resize(330, 243)
-        self.widget = QtWidgets.QWidget(Dialog)
-        self.widget.setGeometry(QtCore.QRect(20, 30, 295, 195))
-        self.widget.setObjectName("widget")
-        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.widget)
-        self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.label = QtWidgets.QLabel(self.widget)
+        Dialog.setSizeGripEnabled(True)
+        
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(Dialog)
+        self.verticalLayout_2.setContentsMargins(5, 5, 5, 5)
+        
+        self.label = QtWidgets.QLabel("Выберите приборы для установки")
         font = QtGui.QFont()
         font.setPointSize(14)
         self.label.setFont(font)
-        self.label.setScaledContents(False)
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setWordWrap(True)
-        self.label.setObjectName("label")
         self.verticalLayout_2.addWidget(self.label)
-        self.splitter = QtWidgets.QSplitter(self.widget)
-        self.splitter.setOrientation(QtCore.Qt.Horizontal)
-        self.splitter.setObjectName("splitter")
-        self.widget1 = QtWidgets.QWidget(self.splitter)
-        self.widget1.setObjectName("widget1")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.widget1)
-        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.checkBox = QtWidgets.QCheckBox(self.widget1)
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.checkBox.setFont(font)
-        self.checkBox.setObjectName("checkBox")
-        self.verticalLayout.addWidget(self.checkBox)
-        self.checkBox_2 = QtWidgets.QCheckBox(self.widget1)
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.checkBox_2.setFont(font)
-        self.checkBox_2.setObjectName("checkBox_2")
-        self.verticalLayout.addWidget(self.checkBox_2)
-        self.checkBox_3 = QtWidgets.QCheckBox(self.widget1)
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.checkBox_3.setFont(font)
-        self.checkBox_3.setObjectName("checkBox_3")
-        self.verticalLayout.addWidget(self.checkBox_3)
-        self.checkBox_4 = QtWidgets.QCheckBox(self.widget1)
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.checkBox_4.setFont(font)
-        self.checkBox_4.setObjectName("checkBox_4")
-        self.verticalLayout.addWidget(self.checkBox_4)
-        self.checkBox_5 = QtWidgets.QCheckBox(self.widget1)
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.checkBox_5.setFont(font)
-        self.checkBox_5.setObjectName("checkBox_5")
-        self.verticalLayout.addWidget(self.checkBox_5)
-        self.buttonBox = QtWidgets.QDialogButtonBox(self.splitter)
-        self.buttonBox.setOrientation(QtCore.Qt.Vertical)
-        self.buttonBox.setStandardButtons(
-            QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
-        self.buttonBox.setObjectName("buttonBox")
+        
+        self.splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         self.verticalLayout_2.addWidget(self.splitter)
-        self.buttonBox.button(
-            QtWidgets.QDialogButtonBox.Ok).clicked.connect(self.send_signal)
+        
+        self.widget1 = QtWidgets.QWidget()
+        self.widget1_layout = QtWidgets.QVBoxLayout(self.widget1)
+        self.widget1_layout.setContentsMargins(0, 0, 0, 0)
+        
+        font = QtGui.QFont()
+        font.setPointSize(12)
 
+        self.checkBox = QtWidgets.QCheckBox("Maisheng WSD-20H15")
+        self.checkBox.setFont(font)
+        self.widget1_layout.addWidget(self.checkBox)
+
+        self.checkBox_2 = QtWidgets.QCheckBox("АКИП-2404")
+        self.checkBox_2.setFont(font)
+        self.widget1_layout.addWidget(self.checkBox_2)
+
+        self.checkBox_3 = QtWidgets.QCheckBox("Polarity Relay")
+        self.checkBox_3.setFont(font)
+        self.widget1_layout.addWidget(self.checkBox_3)
+
+        self.checkBox_4 = QtWidgets.QCheckBox("SR830")
+        self.checkBox_4.setFont(font)
+        self.widget1_layout.addWidget(self.checkBox_4)
+
+        self.checkBox_5 = QtWidgets.QCheckBox("Rigol DP832A")
+        self.checkBox_5.setFont(font)
+        self.widget1_layout.addWidget(self.checkBox_5)
+
+        self.checkBox_6 = QtWidgets.QCheckBox("E7-20MNIPI")
+        self.checkBox_6.setFont(font)
+        self.widget1_layout.addWidget(self.checkBox_6)
+
+        self.splitter.addWidget(self.widget1)
+
+        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
+        self.verticalLayout_2.addWidget(self.buttonBox)
+        
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(self.send_signal)
+        self.buttonBox.accepted.connect(Dialog.accept)
+        self.buttonBox.rejected.connect(Dialog.reject)
+        
         self.retranslateUi(Dialog)
-        self.buttonBox.accepted.connect(Dialog.accept)  # type: ignore
-        self.buttonBox.rejected.connect(Dialog.reject)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Создание установки"))
-        self.label.setText(_translate(
-            "Dialog", "Выберите приборы для создания установки"))
-        self.checkBox.setText(_translate("Dialog", "Maisheng WSD-20H15"))
-        self.checkBox_2.setText(_translate("Dialog", "АКИП-2404"))
-        self.checkBox_3.setText(_translate("Dialog", "Polarity Relay"))
-        self.checkBox_4.setText(_translate("Dialog", "SR830"))
-        self.checkBox_5.setText(_translate("Dialog", "Rigol DP832A"))
+        Dialog.setWindowTitle(_translate("Dialog", "Мастер создания установки"))
 
     def send_signal(self):
-        device_tupple = []
+        device_list = []
         if self.checkBox.isChecked():
-            device_tupple.append("Maisheng")
+            device_list.append("Maisheng")
         if self.checkBox_2.isChecked():
-            device_tupple.append("АКИП-2404")
+            device_list.append("АКИП-2404")
         if self.checkBox_3.isChecked():
-            device_tupple.append("PR")
+            device_list.append("PR")
         if self.checkBox_4.isChecked():
-            device_tupple.append("SR830")
+            device_list.append("SR830")
         if self.checkBox_5.isChecked():
-            device_tupple.append("DP832A")
+            device_list.append("DP832A")
+        if self.checkBox_6.isChecked():
+            device_list.append("E7-20MNIPI")
 
-        # проверяем состояние всех чек бокс и передаем список приборов в главное окно
-        self.signal_to_main_window.emit(device_tupple)
+        self.signal_to_main_window.emit(device_list)

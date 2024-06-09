@@ -9,7 +9,8 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+import logging
+logger = logging.getLogger(__name__)
 
 class save_repeat_set_window(QtWidgets.QDialog):
     def setupUi(self, settings_save):

@@ -10,30 +10,29 @@ import interface.info_window_dialog
 from svps34_control import Ui_SVPS34_control
 from Installation_class import installation_class
 import qdarktheme
-# pyuic5 name.ui -o name.py - запускаем из папки с файлом ui в cmd
+from PyQt5 import QtCore, QtGui, QtWidgets
+import os
+import logging
+from logging.handlers import RotatingFileHandler
 
 
-class Mywindow(QtWidgets.QMainWindow):
+
+
+class MyWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.ui = Ui_MainWindow()  # создаем экземпляр класс ui_main_window
-        self.ui.setupUi(self)  # вызываем метод из созданного класс
+        self.ui = Ui_MainWindow()  
+        logger.debug("запуск программы")
+        self.ui.setupUi(self)  
         self.dict_active_local_devices = {}
-        self.dict_active_local_devices_window = {}
-
         self.key_to_new_window_installation = False
-        self.key_to_new_window_devices = []
         self.ui.pushButton.clicked.connect(self.open_select_device_window)
         self.ui.pushButton_2.clicked.connect(self.open_installation_window)
         self.current_installation_class = installation_class()
         self.current_installation_list = []
-        # self.current_installation_class.installation_window.closeEvent(lambda: self.toggle_key_installation())
 
     def toggle_key_installation(self, answer_signal):
-        if self.key_to_new_window_installation:
-            self.key_to_new_window_installation = False
-        else:
-            self.key_to_new_window_installation = True
+        self.key_to_new_window_installation = not self.key_to_new_window_installation
 
     def unlock_to_create_new_installation(self, somewhere):
         self.key_to_new_window_installation = False
@@ -53,22 +52,15 @@ class Mywindow(QtWidgets.QMainWindow):
             self.ui_window.setupUi(self.new_window, self)
             self.key_to_new_window_installation = True
             self.new_window.show()
+            #self.close()
 
-    def message_from_new_installation(self, list):
-        if len(list) != 0:
-            self.current_installation_list = list
-
-            self.current_installation_class.reconstruct_installation(
-                self.current_installation_list)
+    def message_from_new_installation(self, device_list):
+        if device_list:
+            self.current_installation_list = device_list
+            self.current_installation_class.reconstruct_installation(self.current_installation_list)
             self.current_installation_class.show_window_installation()
-            #print("показано окно установки")
-            self.current_installation_class.installation_window.installation_close_signal.connect(
-                self.unlock_to_create_new_installation)
-
-        else:
-            pass
-            #print("установка не создана, лист пустой")
-        #print(self.current_installation_list)
+            self.close()
+            self.current_installation_class.installation_window.installation_close_signal.connect(self.unlock_to_create_new_installation)
 
     def info_window(self, text):
         self.dialog = QtWidgets.QDialog()
@@ -77,65 +69,57 @@ class Mywindow(QtWidgets.QMainWindow):
         self.dialog.show()
 
     def message_from_info_dialog(self, answer):
-        if answer == True:
+        if answer:
             self.key_to_new_window_installation = False
             self.current_installation_class.close_window_installation()
             self.open_installation_window()
-            # self.current_installation_class = 0
-
-            pass  # отправлено ок нужно закрыть уже созданную установку
-        else:
-            pass  # отправлено отмена
 
     def message_from_new_device_local_control(self, name):
         self.select_local_device.close()
-        #print(name)
-        if name in self.dict_active_local_devices:
-            msg = QMessageBox()
-            msg.setWindowTitle("Ошибка")
-            msg.setText("Окно управления прибором уже открыто")
-            msg.setIcon(QMessageBox.Warning)
-
-            msg.exec_()
-        else:
+        if name not in self.dict_active_local_devices and False:
             if name == "Maisheng_":
-                self.dict_active_local_devices_window[name] = maisheng_ui_window(
-                )
+                self.dict_active_local_devices_window[name] = maisheng_ui_window()
             if name == "PR_":
-                self.dict_active_local_devices_window[name] = Relay_Ui_MainWindow(
-                )
+                self.dict_active_local_devices_window[name] = Relay_Ui_MainWindow()
                 self.dict_active_local_devices[name] = relay_class()
             if name == "SVPS34":
-                self.dict_active_local_devices_window[name] = Ui_SVPS34_control(
-                )
-
+                self.dict_active_local_devices_window[name] = Ui_SVPS34_control()
                 SVPS34_control = QtWidgets.QMainWindow()
                 ui = Ui_SVPS34_control()
                 ui.setupUi(SVPS34_control)
                 SVPS34_control.show()
-
             if name == "SR830_":
                 pass
-            '''
-					self.dict_active_local_devices_window[i] = 
-					self.dict_active_local_devices[i] = 
-					'''
             if name == "АКИП":
                 pass
-            '''
-					self.dict_active_local_devices_window[i] = 
-					self.dict_active_local_devices[i] = 
-					'''
             if name == "other...":
                 pass
 
-
 if __name__ == "__main__":
+    os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+    logger = logging.getLogger(__name__)
+    FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s'
+    console = logging.StreamHandler()
+    console.setLevel(logging.DEBUG)
+
+    folder_path = "log_files"
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    file_handler = RotatingFileHandler('log_files\logfile.log', maxBytes=100000, backupCount=3)
+
+    logging.basicConfig(encoding='utf-8', format=FORMAT, level=logging.DEBUG, handlers=[file_handler, console])
+
+    #auto-py-to-exe
+    os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+
+
+
+
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
-    start_window = Mywindow()
+    start_window = MyWindow()
     start_window.show()
     sys.exit(app.exec_())
-
 
 # pyuic5 name.ui -o name.py
