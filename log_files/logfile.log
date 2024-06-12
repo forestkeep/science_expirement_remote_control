@@ -1,0 +1,305 @@
+2024-06-10 19:36:45,876 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12823.0, 4, 126]
+2024-06-10 19:36:45,974 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:46,692 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 23, 50, 0, 0, 4, 126]
+2024-06-10 19:36:46,692 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12823.0, 4, 126]
+2024-06-10 19:36:47,180 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:36:47,233 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:47,946 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 23, 50, 0, 0, 4, 126]
+2024-06-10 19:36:47,946 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12823.0, 4, 126]
+2024-06-10 19:36:48,045 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:48,771 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 23, 50, 0, 0, 4, 126]
+2024-06-10 19:36:48,772 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12823.0, 4, 126]
+2024-06-10 19:36:49,181 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:36:49,223 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:50,017 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 22, 50, 0, 0, 4, 125]
+2024-06-10 19:36:50,017 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12822.0, 4, 125]
+2024-06-10 19:36:50,107 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:50,791 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 23, 50, 0, 0, 4, 126]
+2024-06-10 19:36:50,793 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12823.0, 4, 126]
+2024-06-10 19:36:51,187 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:36:51,230 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:52,040 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 23, 50, 0, 0, 4, 126]
+2024-06-10 19:36:52,041 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12823.0, 4, 126]
+2024-06-10 19:36:52,137 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:52,855 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 23, 50, 0, 0, 4, 126]
+2024-06-10 19:36:52,855 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12823.0, 4, 126]
+2024-06-10 19:36:53,190 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:36:53,225 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:53,676 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 22, 50, 0, 0, 4, 125]
+2024-06-10 19:36:53,676 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12822.0, 4, 125]
+2024-06-10 19:36:53,771 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:54,507 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 23, 50, 0, 0, 4, 126]
+2024-06-10 19:36:54,508 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12823.0, 4, 126]
+2024-06-10 19:36:55,194 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:36:55,227 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:55,756 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 23, 50, 0, 0, 4, 126]
+2024-06-10 19:36:55,757 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12823.0, 4, 126]
+2024-06-10 19:36:55,851 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:56,578 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 22, 50, 0, 0, 4, 125]
+2024-06-10 19:36:56,579 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12822.0, 4, 125]
+2024-06-10 19:36:57,197 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:36:57,240 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:57,769 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 54, 1, 3, 2, 6, 0, 0, 0, 252, 23, 50, 0, 0, 4, 157]
+2024-06-10 19:36:57,769 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 54, 1, 3, 'Rp', 'Q', 0.0, 12823.0, 4, 157]
+2024-06-10 19:36:57,864 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:58,590 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 23, 50, 0, 0, 4, 126]
+2024-06-10 19:36:58,601 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12823.0, 4, 126]
+2024-06-10 19:36:59,204 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:36:59,236 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:36:59,846 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 23, 50, 0, 0, 4, 126]
+2024-06-10 19:36:59,846 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12823.0, 4, 126]
+2024-06-10 19:36:59,936 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:37:00,670 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 23, 50, 0, 0, 4, 126]
+2024-06-10 19:37:00,671 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12823.0, 4, 126]
+2024-06-10 19:37:01,206 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:37:01,241 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:37:01,869 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 215, 49, 0, 0, 4, 61]
+2024-06-10 19:37:01,870 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 12759.0, 4, 61]
+2024-06-10 19:37:01,956 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:37:02,685 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 244, 43, 0, 0, 4, 84]
+2024-06-10 19:37:02,685 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11252.0, 4, 84]
+2024-06-10 19:37:03,212 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:37:03,255 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:37:03,936 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 241, 43, 0, 0, 4, 81]
+2024-06-10 19:37:03,936 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11249.0, 4, 81]
+2024-06-10 19:37:04,027 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:37:04,762 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 239, 43, 0, 0, 4, 79]
+2024-06-10 19:37:04,763 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11247.0, 4, 79]
+2024-06-10 19:37:05,220 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:37:05,257 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:37:05,955 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 240, 43, 0, 0, 4, 80]
+2024-06-10 19:37:05,955 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11248.0, 4, 80]
+2024-06-10 19:37:06,046 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:37:06,782 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 239, 43, 0, 0, 4, 79]
+2024-06-10 19:37:06,783 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11247.0, 4, 79]
+2024-06-10 19:37:06,841 - Installation_class - DEBUG - exp_th - остановка эксперимента, нет активных приборов
+2024-06-10 19:37:06,843 - Installation_class - DEBUG - exp_th - Эксперимент завершен
+2024-06-10 19:37:14,656 - Installation_class - DEBUG - preparation_experiment - подготовка к эксперименту
+2024-06-10 19:37:14,656 - Installation_class - DEBUG - preparation_experiment - все каналы имеют статус настроен
+2024-06-10 19:40:23,374 - Installation_class - DEBUG - preparation_experiment - подготовка к эксперименту
+2024-06-10 19:40:23,379 - Installation_class - DEBUG - preparation_experiment - все каналы имеют статус настроен
+2024-06-10 19:40:23,583 - Installation_class - DEBUG - push_button_start - Эксперимент начатСоздан файл buf_files\E7-20MNIPI_1_2024-06-10 19-40-23.txt
+2024-06-10 19:40:23,591 - Installation_class - DEBUG - exp_th - запущен поток эксперимента
+2024-06-10 19:40:23,591 - mnipi_e7_20_class - DEBUG - action_before_experiment - настройка канала 1 прибора E7-20MNIPI_1 перед экспериментом..
+2024-06-10 19:40:23,603 - Installation_class - DEBUG - exp_th - общее время эксперимента = 120.0
+2024-06-10 19:40:25,609 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:25,610 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:25,612 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:25,612 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:25,699 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:26,368 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:26,368 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:27,609 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:27,648 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:28,414 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:28,414 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:28,509 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:29,239 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 233, 43, 0, 0, 4, 73]
+2024-06-10 19:40:29,239 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11241.0, 4, 73]
+2024-06-10 19:40:29,609 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:29,651 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:30,066 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:30,066 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:30,160 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:30,889 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:30,890 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:31,615 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:31,663 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:32,137 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:32,140 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:32,240 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:32,960 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:32,960 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:33,623 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:33,665 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:34,155 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 54, 1, 3, 2, 6, 0, 0, 0, 252, 235, 43, 0, 0, 4, 106]
+2024-06-10 19:40:34,155 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 54, 1, 3, 'Rp', 'Q', 0.0, 11243.0, 4, 106]
+2024-06-10 19:40:34,241 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:34,977 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:34,977 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:35,624 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:35,666 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:36,228 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 54, 1, 3, 2, 6, 0, 0, 0, 252, 235, 43, 0, 0, 4, 106]
+2024-06-10 19:40:36,229 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 54, 1, 3, 'Rp', 'Q', 0.0, 11243.0, 4, 106]
+2024-06-10 19:40:36,313 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:37,049 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:37,049 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:37,627 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:37,665 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:38,296 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:38,296 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:38,385 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:39,123 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:39,124 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:39,629 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:39,665 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:40,320 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:40,322 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:40,409 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:41,143 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:41,144 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:41,632 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:41,669 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:42,390 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:42,390 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:42,478 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:43,206 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:43,206 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:43,640 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:43,673 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:44,411 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 234, 43, 0, 0, 4, 74]
+2024-06-10 19:40:44,413 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11242.0, 4, 74]
+2024-06-10 19:40:44,499 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:45,225 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 224, 43, 0, 0, 4, 64]
+2024-06-10 19:40:45,236 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 11232.0, 4, 64]
+2024-06-10 19:40:45,646 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:45,679 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:46,478 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 188, 39, 0, 0, 4, 24]
+2024-06-10 19:40:46,478 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10172.0, 4, 24]
+2024-06-10 19:40:46,570 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:47,306 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 187, 39, 0, 0, 4, 23]
+2024-06-10 19:40:47,307 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10171.0, 4, 23]
+2024-06-10 19:40:47,646 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:47,679 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:48,129 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 186, 39, 0, 0, 4, 22]
+2024-06-10 19:40:48,130 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10170.0, 4, 22]
+2024-06-10 19:40:48,216 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:48,951 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 186, 39, 0, 0, 4, 22]
+2024-06-10 19:40:48,951 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10170.0, 4, 22]
+2024-06-10 19:40:49,646 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:49,679 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:50,141 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 186, 39, 0, 0, 4, 22]
+2024-06-10 19:40:50,141 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10170.0, 4, 22]
+2024-06-10 19:40:50,244 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:50,969 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 185, 39, 0, 0, 4, 21]
+2024-06-10 19:40:50,969 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10169.0, 4, 21]
+2024-06-10 19:40:51,647 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:51,680 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:52,212 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 54, 1, 3, 2, 6, 0, 0, 0, 252, 185, 39, 0, 0, 4, 52]
+2024-06-10 19:40:52,222 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 54, 1, 3, 'Rp', 'Q', 0.0, 10169.0, 4, 52]
+2024-06-10 19:40:52,308 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:53,034 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 185, 39, 0, 0, 4, 21]
+2024-06-10 19:40:53,034 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10169.0, 4, 21]
+2024-06-10 19:40:53,652 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:53,686 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:54,236 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 184, 39, 0, 0, 4, 20]
+2024-06-10 19:40:54,236 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10168.0, 4, 20]
+2024-06-10 19:40:54,337 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:55,060 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 184, 39, 0, 0, 4, 20]
+2024-06-10 19:40:55,060 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10168.0, 4, 20]
+2024-06-10 19:40:55,659 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:55,693 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:56,310 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 184, 39, 0, 0, 4, 20]
+2024-06-10 19:40:56,310 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10168.0, 4, 20]
+2024-06-10 19:40:56,395 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:57,134 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 184, 39, 0, 0, 4, 20]
+2024-06-10 19:40:57,134 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10168.0, 4, 20]
+2024-06-10 19:40:57,664 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:57,703 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:58,381 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 184, 39, 0, 0, 4, 20]
+2024-06-10 19:40:58,381 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10168.0, 4, 20]
+2024-06-10 19:40:58,475 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:40:59,197 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 184, 39, 0, 0, 4, 20]
+2024-06-10 19:40:59,207 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10168.0, 4, 20]
+2024-06-10 19:40:59,668 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:40:59,702 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:00,403 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 184, 39, 0, 0, 4, 20]
+2024-06-10 19:41:00,404 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10168.0, 4, 20]
+2024-06-10 19:41:00,491 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:01,226 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 184, 39, 0, 0, 4, 20]
+2024-06-10 19:41:01,227 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10168.0, 4, 20]
+2024-06-10 19:41:01,674 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:41:01,717 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:02,471 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 184, 39, 0, 0, 4, 20]
+2024-06-10 19:41:02,471 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10168.0, 4, 20]
+2024-06-10 19:41:02,570 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:03,297 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 183, 39, 0, 0, 4, 19]
+2024-06-10 19:41:03,298 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10167.0, 4, 19]
+2024-06-10 19:41:03,681 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:41:03,715 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:04,492 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 184, 39, 0, 0, 4, 20]
+2024-06-10 19:41:04,492 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10168.0, 4, 20]
+2024-06-10 19:41:04,590 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:05,310 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 183, 39, 0, 0, 4, 19]
+2024-06-10 19:41:05,310 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10167.0, 4, 19]
+2024-06-10 19:41:05,682 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:41:05,725 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:06,137 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 184, 39, 0, 0, 4, 20]
+2024-06-10 19:41:06,142 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10168.0, 4, 20]
+2024-06-10 19:41:06,229 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:06,958 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 184, 39, 0, 0, 4, 20]
+2024-06-10 19:41:06,965 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10168.0, 4, 20]
+2024-06-10 19:41:07,687 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:41:07,724 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:08,209 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 54, 1, 3, 2, 6, 0, 0, 0, 252, 183, 39, 0, 0, 4, 50]
+2024-06-10 19:41:08,209 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 54, 1, 3, 'Rp', 'Q', 0.0, 10167.0, 4, 50]
+2024-06-10 19:41:08,299 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:09,034 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 183, 39, 0, 0, 4, 19]
+2024-06-10 19:41:09,035 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10167.0, 4, 19]
+2024-06-10 19:41:09,696 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:41:09,729 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:10,224 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 54, 1, 3, 2, 6, 0, 0, 0, 252, 183, 39, 0, 0, 4, 50]
+2024-06-10 19:41:10,224 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 54, 1, 3, 'Rp', 'Q', 0.0, 10167.0, 4, 50]
+2024-06-10 19:41:10,319 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:11,046 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 183, 39, 0, 0, 4, 19]
+2024-06-10 19:41:11,046 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10167.0, 4, 19]
+2024-06-10 19:41:11,700 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:41:11,741 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:12,294 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 54, 1, 3, 2, 6, 0, 0, 0, 252, 183, 39, 0, 0, 4, 50]
+2024-06-10 19:41:12,304 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 54, 1, 3, 'Rp', 'Q', 0.0, 10167.0, 4, 50]
+2024-06-10 19:41:12,391 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:13,118 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 182, 39, 0, 0, 4, 18]
+2024-06-10 19:41:13,118 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10166.0, 4, 18]
+2024-06-10 19:41:13,701 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:41:13,741 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:14,318 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 183, 39, 0, 0, 4, 19]
+2024-06-10 19:41:14,318 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10167.0, 4, 19]
+2024-06-10 19:41:14,411 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:15,141 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 183, 39, 0, 0, 4, 19]
+2024-06-10 19:41:15,141 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10167.0, 4, 19]
+2024-06-10 19:41:15,702 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:41:15,739 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:16,390 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 183, 39, 0, 0, 4, 19]
+2024-06-10 19:41:16,390 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10167.0, 4, 19]
+2024-06-10 19:41:16,490 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:17,217 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 183, 39, 0, 0, 4, 19]
+2024-06-10 19:41:17,218 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10167.0, 4, 19]
+2024-06-10 19:41:17,705 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:41:17,747 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:18,466 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 182, 39, 0, 0, 4, 18]
+2024-06-10 19:41:18,467 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10166.0, 4, 18]
+2024-06-10 19:41:18,552 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:19,283 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 182, 39, 0, 0, 4, 18]
+2024-06-10 19:41:19,283 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10166.0, 4, 18]
+2024-06-10 19:41:19,707 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:41:19,749 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:20,479 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 182, 39, 0, 0, 4, 18]
+2024-06-10 19:41:20,479 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10166.0, 4, 18]
+2024-06-10 19:41:20,573 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:21,306 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 183, 39, 0, 0, 4, 19]
+2024-06-10 19:41:21,306 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10167.0, 4, 19]
+2024-06-10 19:41:21,708 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:41:21,741 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:22,558 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 1, 0, 0, 252, 179, 39, 0, 0, 4, 16]
+2024-06-10 19:41:22,559 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 1.0000000000000001e-07, 10163.0, 4, 16]
+2024-06-10 19:41:22,645 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:23,382 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 181, 39, 0, 0, 4, 17]
+2024-06-10 19:41:23,389 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10165.0, 4, 17]
+2024-06-10 19:41:23,720 - Installation_class - DEBUG - exp_th - Выполняется действие E7-20MNIPI_1 ch-1
+2024-06-10 19:41:23,755 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:24,571 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 182, 39, 0, 0, 4, 18]
+2024-06-10 19:41:24,571 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10166.0, 4, 18]
+2024-06-10 19:41:24,662 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - измеряем Rp
+2024-06-10 19:41:25,400 - mnipi_e7_20_class - DEBUG - read_parameters - принята строка [170, 0, 0, 100, 1, 0, 3, 23, 1, 3, 2, 6, 0, 0, 0, 252, 182, 39, 0, 0, 4, 18]
+2024-06-10 19:41:25,402 - mnipi_e7_20_class - DEBUG - meas_focus_parameter - попытка 1, ответ [0.0, 100, 1000.0, 23, 1, 3, 'Rp', 'Q', 0.0, 10166.0, 4, 18]
+2024-06-10 19:41:25,455 - Installation_class - DEBUG - exp_th - остановка эксперимента, нет активных приборов
+2024-06-10 19:41:25,455 - Installation_class - DEBUG - exp_th - Эксперимент завершен
+2024-06-10 19:41:30,146 - Installation_class - DEBUG - preparation_experiment - подготовка к эксперименту
+2024-06-10 19:41:30,149 - Installation_class - DEBUG - preparation_experiment - все каналы имеют статус настроен
+2024-06-10 19:41:39,682 - __main__ - DEBUG - __init__ - запуск программы
+2024-06-10 19:41:39,695 - Installation_class - DEBUG - __init__ - запуск установки
+2024-06-11 23:51:42,669 - pymeasure.instruments.instrument - INFO - __init__ - Initializing Stanford Research Systems SR830 Lock-in amplifier.
+2024-06-11 23:52:31,636 - pymeasure.instruments.instrument - INFO - __init__ - Initializing Stanford Research Systems SR830 Lock-in amplifier.
+2024-06-11 23:58:34,299 - pymeasure.instruments.instrument - INFO - __init__ - Initializing Stanford Research Systems SR830 Lock-in amplifier.
+2024-06-11 23:58:34,300 - pymeasure.instruments.instrument - INFO - __init__ - Initializing Stanford Research Systems SR830 Lock-in amplifier.
+2024-06-11 23:58:34,301 - pymeasure.instruments.instrument - INFO - __init__ - Initializing Stanford Research Systems SR830 Lock-in amplifier.

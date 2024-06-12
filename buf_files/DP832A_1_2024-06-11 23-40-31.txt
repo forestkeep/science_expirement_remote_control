@@ -1,0 +1,3 @@
+Запущена установка 
+Список_приборов: DP832A_1 
+Настройки DP832A_1 ch-1baudrate - 9600COM - COM7trigger - Таймерsourse/time - 10num steps - 6type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 10low_limit - 0,001step - 2second_value - 3repeat_reverse - False--------------------
