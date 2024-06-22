@@ -1,0 +1,518 @@
+2024-06-17 18:06:13,407 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:13,413 - pymodbus.logging - DEBUG - debug - Running transaction 16
+2024-06-17 18:06:13,413 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x0 0x0 0x1 0x31 0xca
+2024-06-17 18:06:13,413 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636773.413577
+2024-06-17 18:06:13,419 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:13,419 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:14,039 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:14,045 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:14,046 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:14,047 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:14,047 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:14,349 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:14,350 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x0 0x0 0x1 0x31 0xca
+2024-06-17 18:06:14,652 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:14,653 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:15,272 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:15,273 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:15,273 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:15,274 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:15,275 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:15,276 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:15,278 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:15,278 - pymodbus.logging - DEBUG - debug - Running transaction 17
+2024-06-17 18:06:15,279 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x41 0x0 0x2 0x94 0x1f
+2024-06-17 18:06:15,279 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636775.279029
+2024-06-17 18:06:15,283 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:15,284 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:15,898 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:15,900 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:15,901 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:15,902 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:15,903 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:16,204 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:16,204 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x41 0x0 0x2 0x94 0x1f
+2024-06-17 18:06:16,504 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:16,506 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:17,121 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:17,123 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:17,123 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:17,124 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:17,124 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:17,126 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:17,127 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:17,128 - pymodbus.logging - DEBUG - debug - Running transaction 18
+2024-06-17 18:06:17,128 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x1 0x0 0x1 0x60 0xa
+2024-06-17 18:06:17,128 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636777.128557
+2024-06-17 18:06:17,133 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:17,133 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:17,744 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:17,745 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:17,746 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:17,746 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:17,747 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:18,049 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:18,050 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x1 0x0 0x1 0x60 0xa
+2024-06-17 18:06:18,351 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:18,353 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:18,966 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:18,967 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:18,967 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:18,968 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:18,969 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:18,970 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:19,474 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:19,475 - pymodbus.logging - DEBUG - debug - Running transaction 19
+2024-06-17 18:06:19,476 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x10 0x0 0x40 0x0 0x2 0x4 0x0 0x0 0x0 0xc8 0xf6 0x9
+2024-06-17 18:06:19,477 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636779.4775
+2024-06-17 18:06:19,482 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:19,483 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:20,091 - pymodbus.logging - DEBUG - debug - No response received, Expected 8 bytes Received 0 bytes !!!!
+2024-06-17 18:06:20,092 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:20,092 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:20,093 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:20,094 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:20,395 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:20,395 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x10 0x0 0x40 0x0 0x2 0x4 0x0 0x0 0x0 0xc8 0xf6 0x9
+2024-06-17 18:06:20,696 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:20,697 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:21,313 - pymodbus.logging - DEBUG - debug - No response received, Expected 8 bytes Received 0 bytes !!!!
+2024-06-17 18:06:21,314 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:21,314 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:21,315 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:21,316 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:21,317 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:21,321 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:21,322 - pymodbus.logging - DEBUG - debug - Running transaction 20
+2024-06-17 18:06:21,323 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x40 0x0 0x2 0xc5 0xdf
+2024-06-17 18:06:21,323 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636781.323368
+2024-06-17 18:06:21,329 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:21,330 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:21,948 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:21,949 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:21,949 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:21,950 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:21,951 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:22,252 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:22,253 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x40 0x0 0x2 0xc5 0xdf
+2024-06-17 18:06:22,555 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:22,556 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:23,168 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:23,169 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:23,170 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:23,170 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:23,171 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:23,171 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:23,174 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:23,174 - pymodbus.logging - DEBUG - debug - Running transaction 21
+2024-06-17 18:06:23,175 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x0 0x0 0x1 0x31 0xca
+2024-06-17 18:06:23,175 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636783.175301
+2024-06-17 18:06:23,180 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:23,180 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:23,798 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:23,799 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:23,799 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:23,800 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:23,801 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:24,103 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:24,104 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x0 0x0 0x1 0x31 0xca
+2024-06-17 18:06:24,406 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:24,407 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:25,020 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:25,021 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:25,022 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:25,023 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:25,023 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:25,025 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:25,029 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:25,029 - pymodbus.logging - DEBUG - debug - Running transaction 22
+2024-06-17 18:06:25,030 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x41 0x0 0x2 0x94 0x1f
+2024-06-17 18:06:25,031 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636785.031586
+2024-06-17 18:06:25,037 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:25,038 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:25,648 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:25,649 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:25,649 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:25,650 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:25,651 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:25,952 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:25,953 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x41 0x0 0x2 0x94 0x1f
+2024-06-17 18:06:26,254 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:26,255 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:26,869 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:26,874 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:26,874 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:26,874 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:26,874 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:26,875 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:26,877 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:26,877 - pymodbus.logging - DEBUG - debug - Running transaction 23
+2024-06-17 18:06:26,877 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x1 0x0 0x1 0x60 0xa
+2024-06-17 18:06:26,877 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636786.877553
+2024-06-17 18:06:26,882 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:26,882 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:27,497 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:27,498 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:27,499 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:27,500 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:27,500 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:27,802 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:27,803 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x1 0x0 0x1 0x60 0xa
+2024-06-17 18:06:28,104 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:28,105 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:28,718 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:28,719 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:28,720 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:28,721 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:28,721 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:28,723 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:28,728 - experiment_control - DEBUG - exp_th - ¬ыполн€етс€ действие PR_2 ch-1
+2024-06-17 18:06:29,232 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:29,232 - pymodbus.logging - DEBUG - debug - Running transaction 24
+2024-06-17 18:06:29,232 - pymodbus.logging - DEBUG - debug - SEND: 0xa 0x6 0x3 0xe8 0x0 0x8 0x9 0x7
+2024-06-17 18:06:29,233 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636789.233282
+2024-06-17 18:06:29,237 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:29,237 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:29,858 - pymodbus.logging - DEBUG - debug - No response received, Expected 8 bytes Received 0 bytes !!!!
+2024-06-17 18:06:29,859 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:29,860 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:29,860 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:29,861 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:30,162 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:30,163 - pymodbus.logging - DEBUG - debug - SEND: 0xa 0x6 0x3 0xe8 0x0 0x8 0x9 0x7
+2024-06-17 18:06:30,464 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:30,465 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:31,077 - pymodbus.logging - DEBUG - debug - No response received, Expected 8 bytes Received 0 bytes !!!!
+2024-06-17 18:06:31,078 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:31,079 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:31,079 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:31,080 - pymodbus.logging - DEBUG - debug - Getting transaction 10
+2024-06-17 18:06:31,081 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:31,082 - experiment_control - DEBUG - exp_th - ¬ыполн€етс€ действие Maisheng_1 ch-1
+2024-06-17 18:06:31,084 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:31,084 - pymodbus.logging - DEBUG - debug - Running transaction 25
+2024-06-17 18:06:31,084 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x40 0x0 0x2 0xc5 0xdf
+2024-06-17 18:06:31,085 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636791.085401
+2024-06-17 18:06:31,089 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:31,089 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:31,706 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:31,706 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:31,706 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:31,706 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:31,707 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:32,007 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:32,009 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x40 0x0 0x2 0xc5 0xdf
+2024-06-17 18:06:32,309 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:32,311 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:32,917 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:32,917 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:32,917 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:32,917 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:32,917 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:32,918 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:32,920 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:32,920 - pymodbus.logging - DEBUG - debug - Running transaction 26
+2024-06-17 18:06:32,920 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x0 0x0 0x1 0x31 0xca
+2024-06-17 18:06:32,920 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636792.920372
+2024-06-17 18:06:32,925 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:32,925 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:33,529 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:33,530 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:33,530 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:33,531 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:33,532 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:33,833 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:33,834 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x0 0x0 0x1 0x31 0xca
+2024-06-17 18:06:34,136 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:34,136 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:34,755 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:34,755 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:34,755 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:34,756 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:34,756 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:34,757 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:34,760 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:34,760 - pymodbus.logging - DEBUG - debug - Running transaction 27
+2024-06-17 18:06:34,760 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x41 0x0 0x2 0x94 0x1f
+2024-06-17 18:06:34,760 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636794.760041
+2024-06-17 18:06:34,764 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:34,764 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:35,382 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:35,383 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:35,383 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:35,384 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:35,385 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:35,687 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:35,688 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x41 0x0 0x2 0x94 0x1f
+2024-06-17 18:06:35,989 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:35,990 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:36,597 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:36,598 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:36,599 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:36,600 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:36,600 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:36,600 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:36,603 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:36,603 - pymodbus.logging - DEBUG - debug - Running transaction 28
+2024-06-17 18:06:36,604 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x1 0x0 0x1 0x60 0xa
+2024-06-17 18:06:36,604 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636796.604063
+2024-06-17 18:06:36,609 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:36,610 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:37,222 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:37,223 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:37,223 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:37,224 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:37,225 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:37,526 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:37,527 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x1 0x0 0x1 0x60 0xa
+2024-06-17 18:06:37,828 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:37,829 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:38,440 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:38,442 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:38,442 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:38,443 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:38,443 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:38,445 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:38,949 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:38,949 - pymodbus.logging - DEBUG - debug - Running transaction 29
+2024-06-17 18:06:38,950 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x10 0x0 0x40 0x0 0x2 0x4 0x0 0x0 0x1 0x90 0xf6 0x63
+2024-06-17 18:06:38,951 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636798.951679
+2024-06-17 18:06:38,957 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:38,958 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:39,575 - pymodbus.logging - DEBUG - debug - No response received, Expected 8 bytes Received 0 bytes !!!!
+2024-06-17 18:06:39,576 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:39,576 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:39,577 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:39,578 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:39,879 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:39,880 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x10 0x0 0x40 0x0 0x2 0x4 0x0 0x0 0x1 0x90 0xf6 0x63
+2024-06-17 18:06:40,181 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:40,183 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:40,793 - pymodbus.logging - DEBUG - debug - No response received, Expected 8 bytes Received 0 bytes !!!!
+2024-06-17 18:06:40,794 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:40,794 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:40,795 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:40,796 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:40,797 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:40,802 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:40,802 - pymodbus.logging - DEBUG - debug - Running transaction 30
+2024-06-17 18:06:40,804 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x40 0x0 0x2 0xc5 0xdf
+2024-06-17 18:06:40,804 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636800.804151
+2024-06-17 18:06:40,809 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:40,811 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:41,420 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:41,421 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:41,421 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:41,422 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:41,423 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:41,726 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:41,727 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x40 0x0 0x2 0xc5 0xdf
+2024-06-17 18:06:42,028 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:42,030 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:42,636 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:42,637 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:42,637 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:42,638 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:42,639 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:42,640 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:42,642 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:42,642 - pymodbus.logging - DEBUG - debug - Running transaction 31
+2024-06-17 18:06:42,642 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x0 0x0 0x1 0x31 0xca
+2024-06-17 18:06:42,642 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636802.642616
+2024-06-17 18:06:42,647 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:42,647 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:43,260 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:43,261 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:43,262 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:43,262 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:43,262 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:43,564 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:43,564 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x0 0x0 0x1 0x31 0xca
+2024-06-17 18:06:43,865 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:43,866 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:44,476 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:44,476 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:44,476 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:44,477 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:44,477 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:44,478 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:44,481 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:44,481 - pymodbus.logging - DEBUG - debug - Running transaction 32
+2024-06-17 18:06:44,481 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x41 0x0 0x2 0x94 0x1f
+2024-06-17 18:06:44,481 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636804.481348
+2024-06-17 18:06:44,487 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:44,487 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:45,103 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:45,104 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:45,105 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:45,106 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:45,106 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:45,407 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:45,408 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x41 0x0 0x2 0x94 0x1f
+2024-06-17 18:06:45,710 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:45,711 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:46,318 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:46,319 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:46,319 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:46,320 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:46,321 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:46,322 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:46,325 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:46,325 - pymodbus.logging - DEBUG - debug - Running transaction 33
+2024-06-17 18:06:46,325 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x1 0x0 0x1 0x60 0xa
+2024-06-17 18:06:46,325 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636806.3256
+2024-06-17 18:06:46,330 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:46,331 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:46,945 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:46,946 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:46,946 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:46,947 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:46,948 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:47,249 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:47,250 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x4 0x0 0x1 0x0 0x1 0x60 0xa
+2024-06-17 18:06:47,551 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:47,553 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:48,159 - pymodbus.logging - DEBUG - debug - No response received, Expected 7 bytes Received 0 bytes !!!!
+2024-06-17 18:06:48,160 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:48,161 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:48,161 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:48,162 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:48,164 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:48,169 - experiment_control - DEBUG - exp_th - остановка эксперимента, нет активных приборов
+2024-06-17 18:06:48,172 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:48,172 - pymodbus.logging - DEBUG - debug - Running transaction 34
+2024-06-17 18:06:48,172 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x40 0x0 0x2 0xc5 0xdf
+2024-06-17 18:06:48,172 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636808.172433
+2024-06-17 18:06:48,177 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:48,177 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:48,785 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:48,786 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:48,786 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:48,787 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:48,788 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:49,089 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:49,090 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x40 0x0 0x2 0xc5 0xdf
+2024-06-17 18:06:49,392 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:49,393 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:50,006 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:50,008 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:50,008 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:50,009 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:50,009 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:50,011 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:50,013 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:50,013 - pymodbus.logging - DEBUG - debug - Running transaction 35
+2024-06-17 18:06:50,013 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x40 0x0 0x2 0xc5 0xdf
+2024-06-17 18:06:50,013 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636810.013887
+2024-06-17 18:06:50,018 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:50,018 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:50,635 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:50,636 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:50,636 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:50,637 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:50,638 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:50,939 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:50,940 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x40 0x0 0x2 0xc5 0xdf
+2024-06-17 18:06:51,241 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:51,242 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:51,853 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:51,854 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:51,854 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:51,855 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:51,856 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:51,856 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:51,859 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:51,859 - pymodbus.logging - DEBUG - debug - Running transaction 36
+2024-06-17 18:06:51,859 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x40 0x0 0x2 0xc5 0xdf
+2024-06-17 18:06:51,859 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636811.859843
+2024-06-17 18:06:51,864 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:51,864 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:52,476 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:52,477 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:52,477 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:52,478 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:52,479 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:52,781 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:52,781 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x3 0x0 0x40 0x0 0x2 0xc5 0xdf
+2024-06-17 18:06:53,082 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:53,083 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:53,697 - pymodbus.logging - DEBUG - debug - No response received, Expected 9 bytes Received 0 bytes !!!!
+2024-06-17 18:06:53,698 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:53,699 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:53,700 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:53,701 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:53,702 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:53,705 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:53,705 - pymodbus.logging - DEBUG - debug - Running transaction 37
+2024-06-17 18:06:53,705 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x10 0x0 0x42 0x0 0x2 0x4 0x0 0x0 0x0 0x0 0x76 0x46
+2024-06-17 18:06:53,705 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636813.705289
+2024-06-17 18:06:53,710 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:53,710 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:54,323 - pymodbus.logging - DEBUG - debug - No response received, Expected 8 bytes Received 0 bytes !!!!
+2024-06-17 18:06:54,324 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:54,324 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:54,325 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:54,326 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:54,627 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:54,627 - pymodbus.logging - DEBUG - debug - SEND: 0x1 0x10 0x0 0x42 0x0 0x2 0x4 0x0 0x0 0x0 0x0 0x76 0x46
+2024-06-17 18:06:54,928 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:54,929 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:55,538 - pymodbus.logging - DEBUG - debug - No response received, Expected 8 bytes Received 0 bytes !!!!
+2024-06-17 18:06:55,539 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:55,540 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:55,540 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:55,541 - pymodbus.logging - DEBUG - debug - Getting transaction 1
+2024-06-17 18:06:55,542 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:55,544 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:55,544 - pymodbus.logging - DEBUG - debug - Running transaction 38
+2024-06-17 18:06:55,544 - pymodbus.logging - DEBUG - debug - SEND: 0xa 0x6 0x3 0xe8 0x0 0x8 0x9 0x7
+2024-06-17 18:06:55,544 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636815.544955
+2024-06-17 18:06:55,549 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:55,550 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:56,162 - pymodbus.logging - DEBUG - debug - No response received, Expected 8 bytes Received 0 bytes !!!!
+2024-06-17 18:06:56,163 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:56,163 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:56,164 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:56,165 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:56,467 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:56,468 - pymodbus.logging - DEBUG - debug - SEND: 0xa 0x6 0x3 0xe8 0x0 0x8 0x9 0x7
+2024-06-17 18:06:56,769 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:56,770 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:57,384 - pymodbus.logging - DEBUG - debug - No response received, Expected 8 bytes Received 0 bytes !!!!
+2024-06-17 18:06:57,385 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:57,385 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:57,386 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:57,387 - pymodbus.logging - DEBUG - debug - Getting transaction 10
+2024-06-17 18:06:57,389 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:57,392 - pymodbus.logging - DEBUG - debug - Current transaction state - TRANSACTION_COMPLETE
+2024-06-17 18:06:57,392 - pymodbus.logging - DEBUG - debug - Running transaction 39
+2024-06-17 18:06:57,393 - pymodbus.logging - DEBUG - debug - SEND: 0xa 0x6 0x3 0xe7 0x0 0x8 0x39 0x4
+2024-06-17 18:06:57,394 - pymodbus.logging - DEBUG - debug - Changing state to IDLE - Last Frame End - None Current Time stamp - 1718636817.394949
+2024-06-17 18:06:57,400 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:57,402 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:58,008 - pymodbus.logging - DEBUG - debug - No response received, Expected 8 bytes Received 0 bytes !!!!
+2024-06-17 18:06:58,009 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:58,010 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:58,010 - pymodbus.logging - DEBUG - debug - Retry on empty response - 1
+2024-06-17 18:06:58,011 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING_FOR_REPLY" to "RETRYING"
+2024-06-17 18:06:58,312 - pymodbus.logging - DEBUG - debug - Sleeping 0.3
+2024-06-17 18:06:58,313 - pymodbus.logging - DEBUG - debug - SEND: 0xa 0x6 0x3 0xe7 0x0 0x8 0x39 0x4
+2024-06-17 18:06:58,615 - pymodbus.logging - DEBUG - debug - New Transaction state "SENDING"
+2024-06-17 18:06:58,616 - pymodbus.logging - DEBUG - debug - Changing transaction state from "SENDING" to "WAITING FOR REPLY"
+2024-06-17 18:06:59,225 - pymodbus.logging - DEBUG - debug - No response received, Expected 8 bytes Received 0 bytes !!!!
+2024-06-17 18:06:59,225 - pymodbus.logging - DEBUG - debug - Changing transaction state from "WAITING FOR REPLY" to "PROCESSING REPLY"
+2024-06-17 18:06:59,226 - pymodbus.logging - DEBUG - debug - RECV: 
+2024-06-17 18:06:59,227 - pymodbus.logging - DEBUG - debug - Processing: 
+2024-06-17 18:06:59,227 - pymodbus.logging - DEBUG - debug - Getting transaction 10
+2024-06-17 18:06:59,228 - pymodbus.logging - DEBUG - debug - Changing transaction state from "PROCESSING REPLY" to "TRANSACTION_COMPLETE"
+2024-06-17 18:06:59,230 - experiment_control - DEBUG - exp_th - Ёксперимент завершен
+2024-06-17 18:07:01,399 - Parse_data - WARNING - __save_excell - Ёксель файл не записан output_file_path='C:/Users/zahidovds/Desktop/virtual_for_uswindsens/main/testmnipirigol.xlsx' self.input_file='buf_files\\Maisheng_1_PR_2_2024-06-17 18-05-34.txt'
+2024-06-17 18:07:01,992 - Installation_class - DEBUG - preparation_experiment - подготовка к эксперименту
+2024-06-17 18:07:02,000 - Installation_class - DEBUG - preparation_experiment - все каналы имеют статус настроен
+2024-06-17 18:09:00,117 - pyvisa - DEBUG - close - Closing ResourceManager (session: 4291667)
+2024-06-17 18:12:10,385 - Parse_data - WARNING - __save_excell - Ёксель файл не записан output_file_path='C:/Users/zahidovds/Desktop/virtual_for_uswindsens/main/testmnipirigol.xlsx' self.input_file='buf_files\\Maisheng_1_PR_2_SR830_3_2024-06-17 18-10-15.txt'
+2024-06-17 18:18:54,566 - pyvisa - WARNING - open_resource - There is no class defined for (<InterfaceType.unknown: -1>, None). Using Resource
+2024-06-17 18:21:26,507 - Parse_data - WARNING - __save_excell - Ёксель файл не записан output_file_path='C:/Users/zahidovds/Desktop/virtual_for_uswindsens/main/test.xlsx' self.input_file='buf_files\\PR_1_2024-06-17 18-20-53.txt'
+2024-06-18 14:25:42,983 - pyvisa - WARNING - open_resource - There is no class defined for (<InterfaceType.unknown: -1>, None). Using Resource
+2024-06-18 14:25:44,503 - pyvisa - WARNING - open_resource - There is no class defined for (<InterfaceType.unknown: -1>, None). Using Resource
+2024-06-18 14:25:45,938 - pyvisa - WARNING - open_resource - There is no class defined for (<InterfaceType.unknown: -1>, None). Using Resource

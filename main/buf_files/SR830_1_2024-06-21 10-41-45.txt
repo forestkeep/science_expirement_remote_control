@@ -1,0 +1,3 @@
+Запущена установка 
+Список_приборов: SR830_1 
+Настройки SR830_1 ch-1baudrate - 9600COM - COM10trigger - Таймерsourse/time - 1num steps - 3000time_const - 1000,0filter_slope - 6,0SYNK_200_Hz - Onsensitivity - 1,0reserve - high reserveinput_channel - Ainput_type - ACinput_connect - groundfilters - linefrequency - 400,0amplitude - 1,0--------------------

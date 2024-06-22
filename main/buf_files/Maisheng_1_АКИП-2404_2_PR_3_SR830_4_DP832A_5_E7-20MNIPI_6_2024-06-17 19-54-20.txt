@@ -1,0 +1,30 @@
+Запущена установка 
+Список_приборов: Maisheng_1 АКИП-2404_2 PR_3 SR830_4 DP832A_5 E7-20MNIPI_6 
+Настройки Maisheng_1 ch-1baudrate - 9600COM - COM16trigger - Таймерsourse/time - 10num steps - 6type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 10low_limit - 0,01step - 2second_value - 15repeat_reverse - False--------------------
+Настройки АКИП-2404_2 ch-1baudrate - 9600COM - COM15trigger - Таймерsourse/time - 10num steps - 3type_meas - Напряжениеrange - Auto--------------------
+Настройки PR_3 ch-1baudrate - 9600COM - COM16trigger - Таймерsourse/time - 10num steps - 1mode - Смена полярности--------------------
+Настройки SR830_4 ch-1baudrate - 9600COM - COM15trigger - Таймерsourse/time - 10num steps - 3time_const - 1000,0filter_slope - 6,0SYNK_200_Hz - Onsensitivity - 1,0reserve - high reserveinput_channel - Ainput_type - ACinput_connect - groundfilters - linefrequency - 400,0amplitude - 1,0--------------------
+Настройки DP832A_5 ch-1baudrate - 9600COM - COM15trigger - Таймерsourse/time - 10num steps - 6type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 10low_limit - 0,001step - 2second_value - 3repeat_reverse - False--------------------
+Настройки E7-20MNIPI_6 ch-1baudrate - 9600COM - COM15trigger - Таймерsourse/time - 10num steps - 3meas L - Falsemeas R - Falsemeas I - Falsemeas C - Falsemeas Z - Truefrequency - 1000,0level - 1,0offset - 0,0--------------------
+19:54:42 АКИП-2404_2 ch-1	['voltage=254']	
+19:55:00 Maisheng_1 ch-1	['voltage_set=0,01']	['voltage_rel=26,147910223295142']	['current_set=15,0']	
+19:55:02 PR_3 ch-1	['Полярность=2']	
+19:55:02 SR830_4 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
+19:55:13 DP832A_5 ch-1	['voltage_set=0,001']	['voltage_rel=13,148526236146127']	['current_set=3,0']	
+19:55:13 E7-20MNIPI_6 ch-1	
+19:55:16 АКИП-2404_2 ch-1	['voltage=254']	
+19:55:33 Maisheng_1 ch-1	['voltage_set=2,01']	['voltage_rel=21,4476236713297']	['current_set=15,0']	
+19:55:33 SR830_4 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
+19:55:44 DP832A_5 ch-1	['voltage_set=2,001']	['voltage_rel=0,3287508484109569']	['current_set=3,0']	
+19:55:44 E7-20MNIPI_6 ch-1	
+19:55:46 АКИП-2404_2 ch-1	['voltage=254']	
+19:56:03 Maisheng_1 ch-1	['voltage_set=4,01']	['voltage_rel=11,873893817610263']	['current_set=15,0']	
+19:56:03 SR830_4 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
+19:56:15 DP832A_5 ch-1	['voltage_set=4,001']	['voltage_rel=15,88502424341706']	['current_set=3,0']	
+19:56:15 E7-20MNIPI_6 ch-1	
+19:56:32 Maisheng_1 ch-1	['voltage_set=6,01']	['voltage_rel=10,626931098449024']	['current_set=15,0']	
+19:56:43 DP832A_5 ch-1	['voltage_set=6,001']	['voltage_rel=16,183846033442045']	['current_set=3,0']	
+19:57:00 Maisheng_1 ch-1	['voltage_set=8,01']	['voltage_rel=24,98622722216326']	['current_set=15,0']	
+19:57:12 DP832A_5 ch-1	['voltage_set=8,001']	['voltage_rel=5,764830536257685']	['current_set=3,0']	
+19:57:29 Maisheng_1 ch-1	['voltage_set=10,0']	['voltage_rel=27,539963921997312']	['current_set=15,0']	
+19:57:41 DP832A_5 ch-1	['voltage_set=10,0']	['voltage_rel=18,74764901751872']	['current_set=3,0']	
