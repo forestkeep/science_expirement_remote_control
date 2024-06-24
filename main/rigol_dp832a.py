@@ -169,26 +169,32 @@ if __name__ == "__main__":
     #rigol = rigolDp832aClass("rigol", rt)
     #rigol.show_setting_window(rt)
 
-    print(f'CURR?\n')
-    print(f'CURR?\n'.encode())
-
     res = pyvisa.ResourceManager().list_resources()
-    print(res)
     rm = pyvisa.ResourceManager()
 
-    client = rm.open_resource(res[1])
-    #print(float(client.read_raw().decode('utf-8').strip()))
-    while True:
-        #print(client.read_raw())
-        data = client.read_raw()
-        print(data)
-        if data:
-                binary_data = int.from_bytes(data, byteorder='big')  # Конвертируем байт в двоичное представление
-                print(binary_data)
-                if binary_data == 170:
-                        flag = True
-                        mass = []
+    client = rm.open_resource(res[0])
 
+    client.write(f'*IDN?\n')
+    data = client.read_raw()
+    print(data)
+
+    ax = client.query_ascii_values(f'CURSor:MANual:AXValue? \n')
+    print(f"{ax=}")
+
+    bx = client.query_ascii_values(f'CURSor:MANual:BXValue? \n')
+    print(f"{bx=}")
+
+    ay = client.query_ascii_values(f'CURSor:MANual:AYValue? \n')
+    print(f"{ay=}")
+
+    by = client.query_ascii_values(f'CURSor:MANual:BYValue? \n')
+    print(f"{by=}")
+
+    vpp = client.query_ascii_values(f'MEASure:CHANnel1:ITEM? RMS\n' )
+    print(f"{vpp=}")
+
+    #MAX,VMIN,VPP,VTOP,VBASe,VAMP,VAVG,VRMS,OVERshoot,PREShoot,MARea,MP ARea,PERiod,FREQuency,RTIMe,FTIMe,PWIDth,NWIDth,PDUTy,NDUTy,RDELay,FDE Lay,RPHase,FPHase,TVMAX,TVMIN,PSLEWrate,NSLEWrate,VUPper, VMID,VLOWer,VARIance,PVRMS,PPULses,NPULses,PEDGes,NEDGes>
+    
 
 
 

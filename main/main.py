@@ -4,6 +4,7 @@ from interface.maisheng_window import maisheng_ui_window
 from interface.relay_window import Relay_Ui_MainWindow, relay_class
 from interface.installation_check_devices import installation_Ui_Dialog
 from interface.selectdevice_window import Ui_Selectdevice
+import PyQt5
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QMessageBox
 import interface.info_window_dialog
@@ -118,3 +119,4 @@ if __name__ == "__main__":
 
 # pyuic5 name.ui -o name.py
 #auto-py-to-exe
+#pyinstaller --onefile a.py --exclude-module PyQt5

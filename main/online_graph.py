@@ -1,4 +1,5 @@
 import sys
+import PyQt5 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QGraphicsView, QLabel, QHBoxLayout, QSizePolicy, QPushButton
 from PyQt5.QtCore import Qt, QTimer
 import pyqtgraph as pg
