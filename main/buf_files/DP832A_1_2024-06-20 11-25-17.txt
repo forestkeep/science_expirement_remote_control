@@ -1,9 +1,0 @@
-Запущена установка 
-Список_приборов: DP832A_1 
-Настройки DP832A_1 ch-1baudrate - 9600COM - COM10trigger - Таймерsourse/time - 5num steps - 6type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 10low_limit - 0,001step - 2second_value - 3repeat_reverse - False--------------------
-11:25:38 DP832A_1 ch-1	['voltage_set=0,001']	['voltage_rel=0,9031455844932779']	['current_set=3,0']	
-11:25:51 DP832A_1 ch-1	['voltage_set=2,001']	['voltage_rel=28,035058675046677']	['current_set=3,0']	
-11:26:04 DP832A_1 ch-1	['voltage_set=4,001']	['voltage_rel=10,291694374515222']	['current_set=3,0']	
-11:26:17 DP832A_1 ch-1	['voltage_set=6,001']	['voltage_rel=8,626010991405712']	['current_set=3,0']	
-11:26:30 DP832A_1 ch-1	['voltage_set=8,001']	['voltage_rel=0,05084708632802304']	['current_set=3,0']	
-11:26:42 DP832A_1 ch-1	['voltage_set=10,0']	['voltage_rel=18,30483512527488']	['current_set=3,0']	

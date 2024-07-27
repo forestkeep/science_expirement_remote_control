@@ -1,55 +1,0 @@
-Запущена установка 
-Список_приборов: SR830_1 
-Настройки SR830_1 ch-1baudrate - 9600COM - COM10trigger - Таймерsourse/time - 1num steps - 500time_const - 1000,0filter_slope - 6,0SYNK_200_Hz - Onsensitivity - 1,0reserve - high reserveinput_channel - Ainput_type - ACinput_connect - groundfilters - linefrequency - 400,0amplitude - 1,0--------------------
-10:34:35 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:36 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:37 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:38 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:39 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:40 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:41 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:42 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:43 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:44 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:45 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:46 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:47 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:48 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:49 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:50 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:51 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:52 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:53 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:54 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:55 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:56 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:57 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:58 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:34:59 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:00 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:01 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:02 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:03 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:04 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:05 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:06 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:07 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:08 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:09 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:10 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:11 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:12 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:13 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:14 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:15 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:16 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:17 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:18 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:19 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:20 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:21 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:22 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:23 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:24 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:25 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	
-10:35:26 SR830_1 ch-1	['disp1=fail']	['disp2=fail']	['phase=fail']	

@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-import pandas
+import pandas, copy
 from pandas.io.excel import ExcelWriter
 import os
 import logging
@@ -9,19 +9,16 @@ logger = logging.getLogger(__name__)
 
 class saved_data():
     '''класс хранения данных для отдельно взятого канала устройства'''
-
     def __init__(self, name_device, ch) -> None:
         self.name_device = name_device
         self.ch = ch
         self.settings = []
         self.data = {}
 
-
 class type_save_file(enum.Enum):
     txt = 1
     excel = 2
     origin = 3
-
 
 class saving_data():
     def __init__(self) -> None:
@@ -131,7 +128,7 @@ class saving_data():
                 if os.path.exists(output_file_path):
                     if i == 9:
                         pass
-                        #print("ахтукнг!!!!!")
+                        #print("ахтунг!!!!!")
                     continue
                 else:
                     with ExcelWriter(output_file_path,mode="w") as excel_writer:
@@ -139,9 +136,6 @@ class saving_data():
                     break
 
         return output_file_path
-
-
-
 
     def __save_txt(self, output_file_path):
         '''вывод параметров приборов рядом друг с другом'''
@@ -229,7 +223,9 @@ class saving_data():
         self.input_file = input_file_path
         is_file_correct = False
         self.devices = []
+        self.buf_settings_device = []
         setting_reading = False
+        setting_reading_device = False
         parameters_reading = False
         with open(input_file_path) as file:
             lines = file.readlines()
@@ -240,26 +236,52 @@ class saving_data():
                         #print("файл определен как файл результатов")
                         continue
 
-                if line.find("Настройки") != -1:
-                    setting_reading = True
-                    dev = line.split()
-                    buf = saved_data(dev[1], dev[2])
-                    self.devices.append(buf)
+                if line.find("Настройки") != -1 and line.find("ch-") == -1:
+                    setting_reading_device = True #здесь начало считывания настроек девайса
+                    dev = line.split()[1]
+                    self.buf_settings_device = []
+                    #buf = saved_data(dev[1], 1)
+                    #self.devices.append(buf)
                     #print(dev)
                     continue
 
+                if setting_reading_device:
+                    if line.find("Настройки") != -1 and line.find("ch-") != -1:
+                        #отсюда начинается считывание настрроек для канала, переносим туда настройки девайса и формируем класс записи
+                        setting_reading_device = False
+                        setting_reading = True
+
+                        ch = line.split()[1]
+                        buf = saved_data(dev, ch)
+                        buf.settings = copy.deepcopy(self.buf_settings_device)
+                        ##print(f"{buf.settings=} {self.buf_settings_device=}")
+                        self.buf_settings_device = []
+                        self.devices.append(buf)
+                        #print(dev, ch)
+                        continue
+                    else:
+                        self.buf_settings_device.append(line.rstrip('\n'))
+                        #print(f"{self.buf_settings_device=}")
+
+
                 if setting_reading:
-                    '''читаем настройки устройства до первой пустой строки'''
-                    if line.find("--------------------") != -1:
+                    '''читаем настройки канала до первой пустой строки или до начала настроек следующего канала'''
+                    if line.find("Настройки") != -1 and line.find("ch-") != -1:
+                        ch = line.split()[1]
+                        buf = saved_data(dev, ch)
+                        buf.settings = copy.deepcopy(self.buf_settings_device)
+                        self.devices.append(buf)
+                        self.buf_settings_device = []
+                        continue
+                    elif line.find("--------------------") != -1:
                         #print("разделитель")
                         setting_reading = False
                         continue
                     else:
-                        self.devices[len(self.devices) -
-                                     1].settings.append(line.rstrip('\n'))
+                        self.devices[len(self.devices) -1].settings.append(line.rstrip('\n'))
                         continue
 
-                if parameters_reading == False and len(self.devices) > 0 and setting_reading == False:
+                if parameters_reading == False and len(self.devices) > 0 and setting_reading == False and setting_reading_device==False:
                     '''если выполнено это условие, то найстройки всех приборов записаны и мы начинаем считывать параметры построчно и раскидывать их по приборам и каналам'''
                     parameters_reading = True
                     #print("начинаем считывать параметры")
@@ -297,6 +319,7 @@ def process_and_export(input_file_path, output_file_path, output_type, is_delete
         output_file_path = save.save_data(input_file_path, output_file_path, output_type)
         if is_delete_buf_file == True:
             os.remove(input_file_path)
+
     except:
         status = False
         #print("не вышло сохранить")
@@ -307,9 +330,14 @@ def process_and_export(input_file_path, output_file_path, output_type, is_delete
 
 if __name__ == "__main__":
     save = saving_data()
-    input_file = "buf_files\E7-20MNIPI_1_DP832A_2_2024-06-03 22-33-59.txt"
-    is_delete_buf_file = True
+    input_file = "buf_files/SR830_1_2024-07-10 19-19-57.txt"
+    is_delete_buf_file = False
+
     print(save.save_data(input_file, "testData.xlsx", type_save_file.excel))
+    if is_delete_buf_file == True:
+        print(343344)
+        os.remove(input_file)
+
 
 
 

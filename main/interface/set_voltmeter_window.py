@@ -2,33 +2,19 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import logging
 logger = logging.getLogger(__name__)
 
-class Ui_Set_voltmeter(QtWidgets.QDialog):
+if __name__ == "__main__":
+    from base_set_window import base_settings_window
+else:
+    from interface.base_set_window import base_settings_window
 
-    def setupUi(self, window):
-        window.setObjectName("Set_voltmeter")
-        window.resize(302, 384)
-        window.setSizeGripEnabled(False)
-        window.setModal(False)
+class Ui_Set_voltmeter(base_settings_window):
+    def __init__(self) -> None:
+        super().__init__()
 
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        font.setBold(True)
 
-        self.gridLayout = QtWidgets.QGridLayout(window)
+    def setupUi(self):
 
-        self.buttonBox = QtWidgets.QDialogButtonBox()
-        self.buttonBox.setGeometry(QtCore.QRect(80, 340, 191, 32))
-        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonBox.setStandardButtons(
-            QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
-        self.buttonBox.setObjectName("buttonBox")
-
-        self.triger_enter = QtWidgets.QComboBox()
-        self.triger_enter.setCurrentText("")
-        self.triger_enter.setObjectName("triger_enter")
-
-        self.trigger_label = QtWidgets.QLabel()
-        self.trigger_label.setObjectName("label_3")
+        self.remove_act()
 
         self.second_value_limit_label = QtWidgets.QLabel()
         self.second_value_limit_label.setObjectName("second_value_limit_label")
@@ -55,104 +41,27 @@ class Ui_Set_voltmeter(QtWidgets.QDialog):
         self.type_work_enter.setCurrentText("")
         self.type_work_enter.setObjectName("type_work_enter")
 
-        self.COM_label = QtWidgets.QLabel()
-        self.COM_label.setObjectName("label_10")
+        self.Layout_set_dev_meas.addWidget(self.settings_dev, 0, 0, 1, 3)
 
-        self.comportslist = QtWidgets.QComboBox()
-        self.comportslist.setObjectName("comportslist")
+        self.Layout_set_dev_meas.addWidget(self.mode_label, 1, 0, 1, 1)
+        self.Layout_set_dev_meas.addWidget(self.type_work_enter, 1, 1, 1, 2)
 
-        self.baud_label = QtWidgets.QLabel()
-        self.baud_label.setObjectName("label_11")
+        self.Layout_set_dev_meas.addWidget(self.range_label, 2, 0, 1, 1)
+        self.Layout_set_dev_meas.addWidget(self.range_enter, 2, 1, 1, 2)
 
-        self.boudrate = QtWidgets.QComboBox()
-        self.boudrate.setObjectName("boudrate")
+        self.retranslateUi(self)
 
-        self.label_sourse = QtWidgets.QLabel()
-        self.label_sourse.setObjectName("label_sourse")
-
-        self.sourse_enter = QtWidgets.QComboBox()
-        self.sourse_enter.setCurrentText("")
-        self.sourse_enter.setObjectName("sourse_enter")
-
-        self.num_meas_enter = QtWidgets.QComboBox()
-        self.num_meas_enter.setCurrentText("")
-        self.num_meas_enter.setObjectName("sourse_enter1")
-        self.gridLayout.addWidget(self.num_meas_enter, 2, 1, 1, 1)
-
-        self.label_num_meas = QtWidgets.QLabel()
-        self.label_num_meas.setObjectName("label_num_meas")
-
-        self.label_connection = QtWidgets.QLabel()
-        self.label_connection.setObjectName("connection")
-        self.label_connection.setFont(font)
-
-        self.settings_experiment = QtWidgets.QLabel()
-        self.settings_experiment.setObjectName("set_exp")
-        self.settings_experiment.setFont(font)
-
-        self.settings_dev = QtWidgets.QLabel()
-        self.settings_dev.setFont(font)
-
-        self.gridLayout.addWidget(self.settings_dev, 0, 0, 1, 3)
-
-        self.gridLayout.addWidget(self.mode_label, 1, 0, 1, 1)
-        self.gridLayout.addWidget(self.type_work_enter, 1, 1, 1, 2)
-
-        self.gridLayout.addWidget(self.range_label, 2, 0, 1, 1)
-        self.gridLayout.addWidget(self.range_enter, 2, 1, 1, 2)
-
-        self.gridLayout.addWidget(self.settings_experiment, 3, 0, 1, 3)
-
-        self.gridLayout.addWidget(self.trigger_label, 7, 0, 1, 1)
-        self.gridLayout.addWidget(self.triger_enter, 7, 1, 1, 2)
-
-        self.gridLayout.addWidget(self.label_sourse, 8, 0, 1, 1)
-        self.gridLayout.addWidget(self.sourse_enter, 8, 1, 1, 2)
-
-        self.gridLayout.addWidget(self.label_num_meas, 9, 0, 1, 1)
-        self.gridLayout.addWidget(self.num_meas_enter, 9, 1, 1, 2)
-
-        self.gridLayout.addWidget(self.label_connection, 10, 0, 1, 3)
-
-        self.gridLayout.addWidget(self.COM_label, 11, 0, 1, 1)
-        self.gridLayout.addWidget(self.comportslist, 11, 1, 1, 2)
-
-        self.gridLayout.addWidget(self.baud_label, 12, 0, 1, 1)
-        self.gridLayout.addWidget(self.boudrate, 12, 1, 1, 2)
-
-        self.gridLayout.addWidget(self.buttonBox, 13, 1, 2, 2)
-
-        self.retranslateUi(window)
-        self.buttonBox.accepted.connect(
-            window.accept)  # type: ignore
-        self.buttonBox.rejected.connect(
-            window.reject)  # type: ignore
-        QtCore.QMetaObject.connectSlotsByName(window)
-
-    def closeEvent(self, event):  # эта функция вызывается при закрытии окна крестиком
-        print("окно настройки блока закрыто крестиком")
-
-    def retranslateUi(self, Set_power_supply):
+    def retranslateUi(self, Set_window):
         _translate = QtCore.QCoreApplication.translate
-        Set_power_supply.setWindowTitle(
-            _translate("Set_power_supply", "настройка вольтметра"))
-        self.trigger_label.setText(_translate("Set_power_supply", "Триггер"))
+        Set_window.setWindowTitle(
+            _translate("Set_power_supply", "Настройка вольтметра"))
         self.range_label.setText(_translate("Set_power_supply", "Диапазон"))
         self.mode_label.setText(_translate(
             "Set_power_supply", "Что измеряем?"))
         self.COM_label.setText(_translate("Set_power_supply", "COM"))
         self.baud_label.setText(_translate("Set_power_supply", "Baudrate"))
-        self.label_sourse.setText(_translate(
-            "Set_power_supply", "Время(с)"))
-        self.label_num_meas.setText(_translate(
-            "Set_power_supply", "Кол-во измерений"))
         self.label_connection.setText(_translate(
             "Set_power_supply", "Параметры подключения"))
-        self.settings_experiment.setText(_translate(
-            "Set_power_supply", "Настройки работы в эксперименте"))
-        self.settings_dev.setText(_translate(
-            "Set_power_supply", "Настройки прибора"))
-
 
 if __name__ == "__main__":
     import qdarktheme
@@ -160,6 +69,6 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
     a = Ui_Set_voltmeter()
-    a.setupUi(a)
+    a.setupUi()
     a.show()
     sys.exit(app.exec_())

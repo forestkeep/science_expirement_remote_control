@@ -7,7 +7,7 @@ from PyQt5.QtCore import QTimer, QDateTime
 import serial
 import copy
 import time
-from Classes import ch_response_to_step, base_device, ch_response_to_step, base_ch
+from Classes import ch_response_to_step, base_device, ch_response_to_step, base_ch, which_part_in_ch
 from Classes import not_ready_style_border, not_ready_style_background, ready_style_border, ready_style_background, warning_style_border, warning_style_background
 import logging
 logger = logging.getLogger(__name__)
@@ -34,12 +34,41 @@ class CommandsMNIPI:
 class mnipiE720Class(base_device):
     def __init__(self, name, installation_class) -> None:
         super().__init__(name, "serial", installation_class)
-        #print("класс измерителя создан")
+
+        self.part_ch = which_part_in_ch.only_meas#указываем, из каких частей состоиит канал в данном приборе 
+        self.setting_window = Ui_Set_immitans()
+        self.base_settings_window()
+
+        self.setting_window.frequency_enter.setEditable(True)
+        self.setting_window.frequency_enter.addItems(["400"])
+        self.setting_window.level_enter.setEditable(True)
+        self.setting_window.level_enter.addItems(["1"])
+        self.setting_window.shift_enter.setEditable(True)
+        self.setting_window.shift_enter.addItems(["0"])
+
+        self.setting_window.shift_enter.setStyleSheet(ready_style_border)
+        self.setting_window.frequency_enter.setStyleSheet(ready_style_border)
+        self.setting_window.level_enter.setStyleSheet(ready_style_border)
+
+        self.setting_window.shift_enter.currentIndexChanged.connect(lambda: self._is_correct_parameters())
+        self.setting_window.level_enter.currentIndexChanged.connect(lambda: self._is_correct_parameters())
+        self.setting_window.frequency_enter.currentIndexChanged.connect(lambda: self._is_correct_parameters())
+            
+        self.setting_window.level_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
+        self.setting_window.frequency_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
+        self.setting_window.shift_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
+            
+        self.setting_window.check_capacitance.toggled.connect(lambda: self._is_correct_parameters())
+        self.setting_window.check_resistance.toggled.connect(lambda: self._is_correct_parameters())
+        self.setting_window.check_impedance.toggled.connect(lambda: self._is_correct_parameters())
+        self.setting_window.check_inductor.toggled.connect(lambda: self._is_correct_parameters())
+        self.setting_window.check_current.toggled.connect(lambda: self._is_correct_parameters())
+            
         self.commands = CommandsMNIPI()
-        self.ch1 = ch_mnipi_class(1, self)
-        self.channels=[self.ch1]
-        self.ch1.is_active = True # по умолчанию для каждого прибора включен первый канал
-        self.active_channel = self.ch1 #поле необходимо для записи параметров при настройке в нужный канал
+        self.ch1_meas = ch_mnipi_class(1, self)
+        self.channels=[self.ch1_meas]
+        self.ch1_meas.is_active = True # по умолчанию для каждого прибора включен первый канал
+        self.active_channel_meas = self.ch1_meas #поле необходимо для записи параметров при настройке в нужный канал
         self.device = None  # класс прибора будет создан при подтверждении параметров,
         # переменная хранит все возможные источники сигналов , сделать функцию, формирующую этот список в зависимости от структуры установки
         self.counter = 0
@@ -52,154 +81,30 @@ class mnipiE720Class(base_device):
         # сюда при подтверждении параметров будет записан класс команд с клиентом
         self.command = None
 
-    def get_number_channels(self) -> int:
-        return len(self.channels)
-    
+    @base_device.base_show_window
     def show_setting_window(self, number_of_channel):
             
             self.switch_channel(number_of_channel)
-
-            self.timer_for_scan_com_port = QTimer()
-            self.timer_for_scan_com_port.timeout.connect(
-                lambda: self._scan_com_ports())
-            # при новом запуске окна настроек необходимо обнулять активный порт для продолжения сканирования
-            self.active_ports = []
-
-            # self.is_window_created - True
-            self.setting_window = Ui_Set_immitans()
-            self.setting_window.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-            self.setting_window.setupUi(self.setting_window)
-
-            # +++++++++++++++++выбор ком порта+++++++++++++
-            self._scan_com_ports()
-            # ++++++++++++++++++++++++++++++++++++++++++
-
-            self.setting_window.boudrate.addItems(
-                ["50", "75", "110", "150", "300", "600", "1200", "2400", "4800", "9600", "19200", "38400", "57600", "115200"])
-
-            #self.setting_window.sourse_enter.setStyleSheet(
-            #  "background-color: rgb(255, 255, 255);")
-
-            #self.setting_window.sourse_enter.setEditable(True)
-            #self.setting_window.sourse_enter.addItems(
-            #["5", "10", "30", "60", "120"])
-            self.setting_window.triger_enter.addItems(["Таймер", "Внешний сигнал"])
-
-            self.setting_window.triger_enter.setStyleSheet(
-                ready_style_border)
-            self.setting_window.sourse_enter.setStyleSheet(
-                ready_style_border)
-            
-            self.setting_window.shift_enter.setStyleSheet(
-                ready_style_border)
-            self.setting_window.frequency_enter.setStyleSheet(
-                ready_style_border)
-            self.setting_window.level_enter.setStyleSheet(
-                ready_style_border)
-
-            self.setting_window.comportslist.setStyleSheet(
-                ready_style_border)
-            self.setting_window.boudrate.setStyleSheet(
-                ready_style_border)
-            self.setting_window.num_meas_enter.setStyleSheet(
-                ready_style_border)
-
-            
-            self.setting_window.frequency_enter.setEditable(True)
-            self.setting_window.frequency_enter.addItems(
-                ["400"])
-            self.setting_window.level_enter.setEditable(True)
-            self.setting_window.level_enter.addItems(
-                ["1"])
-            self.setting_window.shift_enter.setEditable(True)
-            self.setting_window.shift_enter.addItems(
-                ["0"])
-            
-            self.setting_window.num_meas_enter.setEditable(True)
-            self.setting_window.num_meas_enter.addItems(
-                ["3"])
-
-            # =======================прием сигналов от окна==================
-            self.setting_window.shift_enter.currentIndexChanged.connect(
-                lambda: self._is_correct_parameters())
-            self.setting_window.level_enter.currentIndexChanged.connect(
-                lambda: self._is_correct_parameters())
-            self.setting_window.frequency_enter.currentIndexChanged.connect(
-                lambda: self._is_correct_parameters())
-            
-
-            self.setting_window.triger_enter.currentIndexChanged.connect(
-                lambda: self._action_when_select_trigger())
-
-            
-            self.setting_window.level_enter.currentTextChanged.connect(
-                lambda: self._is_correct_parameters())
-            self.setting_window.frequency_enter.currentTextChanged.connect(
-                lambda: self._is_correct_parameters())
-            self.setting_window.shift_enter.currentTextChanged.connect(
-                lambda: self._is_correct_parameters())
-            
-
-            self.setting_window.num_meas_enter.currentTextChanged.connect(
-                lambda: self._is_correct_parameters())
-            self.setting_window.sourse_enter.currentTextChanged.connect(
-                lambda: self._is_correct_parameters())
-            
-            self.setting_window.check_capacitance.toggled.connect(lambda: self._is_correct_parameters())
-            self.setting_window.check_resistance.toggled.connect(lambda: self._is_correct_parameters())
-            self.setting_window.check_impedance.toggled.connect(lambda: self._is_correct_parameters())
-            self.setting_window.check_inductor.toggled.connect(lambda: self._is_correct_parameters())
-            self.setting_window.check_current.toggled.connect(lambda: self._is_correct_parameters())
-
-            self.setting_window.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(
-                self.send_signal_ok)
-            # ======================================================
-            self.setting_window.show()
             self.key_to_signal_func = False
+
             # ============установка текущих параметров=======================
 
-            self.setting_window.boudrate.setCurrentText(self.dict_buf_parameters["baudrate"])
+            self.setting_window.shift_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["offset"]))
+            self.setting_window.frequency_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["frequency"]))
+            self.setting_window.level_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["level"]))
             
-            self.setting_window.shift_enter.setCurrentText(
-                str(self.active_channel.dict_buf_parameters["offset"]))
-            self.setting_window.frequency_enter.setCurrentText(
-                str(self.active_channel.dict_buf_parameters["frequency"]))
-            self.setting_window.level_enter.setCurrentText(
-                str(self.active_channel.dict_buf_parameters["level"]))
-            
-            self.setting_window.comportslist.setCurrentText(self.dict_buf_parameters["COM"])
-            self.setting_window.triger_enter.setCurrentText(self.active_channel.dict_buf_parameters["trigger"])
-            num_meas_list = ["5","10","20","50"]
-            if self.installation_class.get_signal_list(self.name, self.active_channel.number) != []:#если в списке сигналов пусто, то и других активных приборов нет, текущий прибор в установке один
-                num_meas_list.append("Пока активны другие приборы")
-            self.setting_window.num_meas_enter.addItems(num_meas_list)
-            self.setting_window.num_meas_enter.setCurrentText(
-                str(self.number_steps))
-            
-            self.setting_window.check_capacitance.setChecked(False)
-            self.setting_window.check_resistance.setChecked(False)
-            self.setting_window.check_impedance.setChecked(False)
-            self.setting_window.check_inductor.setChecked(False)
-            self.setting_window.check_current.setChecked(False)
-
-            if self.active_channel.dict_buf_parameters["meas C"] == True:
-                self.setting_window.check_capacitance.setChecked(True)
-            if self.active_channel.dict_buf_parameters["meas R"] == True:
-                self.setting_window.check_resistance.setChecked(True)
-            if self.active_channel.dict_buf_parameters["meas Z"] == True:
-                self.setting_window.check_impedance.setChecked(True)
-            if self.active_channel.dict_buf_parameters["meas L"] == True:
-                self.setting_window.check_inductor.setChecked(True)
-            if self.active_channel.dict_buf_parameters["meas I"] == True:
-                self.setting_window.check_current.setChecked(True)
-
-
-            self.setting_window.sourse_enter.setCurrentText(
-                self.active_channel.dict_buf_parameters["sourse/time"])
+            self.setting_window.check_capacitance.setChecked(self.active_channel_meas.dict_buf_parameters["meas C"] == True)
+            self.setting_window.check_resistance.setChecked(self.active_channel_meas.dict_buf_parameters["meas R"] == True)
+            self.setting_window.check_impedance.setChecked(self.active_channel_meas.dict_buf_parameters["meas Z"] == True)
+            self.setting_window.check_inductor.setChecked(self.active_channel_meas.dict_buf_parameters["meas L"] == True)
+            self.setting_window.check_current.setChecked(self.active_channel_meas.dict_buf_parameters["meas I"] == True)
 
             self.key_to_signal_func = True  # разрешаем выполенение функций
             self._action_when_select_trigger()
+            self._is_correct_parameters()
+            self.setting_window.show()
 
+    @base_device.base_is_correct_parameters
     def _is_correct_parameters(self) -> bool:  # менять для каждого прибора
         if self.key_to_signal_func:
             # print("проверить параметры")
@@ -235,33 +140,11 @@ class mnipiE720Class(base_device):
                 if float(self.setting_window.shift_enter.currentText()) > 40 or float(self.setting_window.shift_enter.currentText()) < 0:
                     is_shift_correct = False
             # ----------------------------------------
-            try:
-                int(self.setting_window.num_meas_enter.currentText())
-            except:
-                if self.setting_window.num_meas_enter.currentText() == "Пока активны другие приборы" and self.installation_class.get_signal_list(self.name, self.active_channel.number) != []:
-                    pass
-                else:
-                    is_num_steps_correct = False
-
-            if self.setting_window.triger_enter.currentText() == "Таймер":
-                try:
-                    int(self.setting_window.sourse_enter.currentText())
-                except:
-                    is_time_correct = False
-
-
-
-            self.setting_window.shift_enter.setStyleSheet(
-                ready_style_border)
-            self.setting_window.level_enter.setStyleSheet(
-                ready_style_border)
-            self.setting_window.frequency_enter.setStyleSheet(
-                ready_style_border)
-            self.setting_window.num_meas_enter.setStyleSheet(
-                ready_style_border)
-            self.setting_window.sourse_enter.setStyleSheet(
-                ready_style_border)
             
+            self.setting_window.shift_enter.setStyleSheet(ready_style_border)
+            self.setting_window.level_enter.setStyleSheet(ready_style_border)
+            self.setting_window.frequency_enter.setStyleSheet(ready_style_border)
+  
             is_meas_checked = False
             if self.setting_window.check_capacitance.isChecked():
                 is_meas_checked = True
@@ -274,105 +157,54 @@ class mnipiE720Class(base_device):
             if self.setting_window.check_current.isChecked():
                 is_meas_checked = True
 
-
             if is_meas_checked == False:
-                self.setting_window.check_current.setStyleSheet(
-                not_ready_style_border)
-                self.setting_window.check_inductor.setStyleSheet(
-                not_ready_style_border)
-                self.setting_window.check_impedance.setStyleSheet(
-                not_ready_style_border)
-                self.setting_window.check_resistance.setStyleSheet(
-                not_ready_style_border)
-                self.setting_window.check_capacitance.setStyleSheet(
-                not_ready_style_border)
+                self.setting_window.check_current.setStyleSheet(not_ready_style_border)
+                self.setting_window.check_inductor.setStyleSheet(not_ready_style_border)
+                self.setting_window.check_impedance.setStyleSheet(not_ready_style_border)
+                self.setting_window.check_resistance.setStyleSheet(not_ready_style_border)
+                self.setting_window.check_capacitance.setStyleSheet(not_ready_style_border)
             else:
-                self.setting_window.check_current.setStyleSheet(
-                ready_style_border)
-                self.setting_window.check_inductor.setStyleSheet(
-                ready_style_border)
-                self.setting_window.check_impedance.setStyleSheet(
-                ready_style_border)
-                self.setting_window.check_resistance.setStyleSheet(
-                ready_style_border)
-                self.setting_window.check_capacitance.setStyleSheet(
-                ready_style_border)
-
-
+                self.setting_window.check_current.setStyleSheet(ready_style_border)
+                self.setting_window.check_inductor.setStyleSheet(ready_style_border)
+                self.setting_window.check_impedance.setStyleSheet(ready_style_border)
+                self.setting_window.check_resistance.setStyleSheet(ready_style_border)
+                self.setting_window.check_capacitance.setStyleSheet(ready_style_border)
 
             if not is_shift_correct:
-                self.setting_window.shift_enter.setStyleSheet(
-                    not_ready_style_border)
-
+                self.setting_window.shift_enter.setStyleSheet(not_ready_style_border)
             if not is_freq_correct:
-                self.setting_window.frequency_enter.setStyleSheet(
-                    not_ready_style_border)
+                self.setting_window.frequency_enter.setStyleSheet(not_ready_style_border)
             if not is_level_correct:
-                self.setting_window.level_enter.setStyleSheet(
-                    not_ready_style_border)
-
-            if not is_num_steps_correct:
-                self.setting_window.num_meas_enter.setStyleSheet(
-                    not_ready_style_border)
-
+                self.setting_window.level_enter.setStyleSheet(not_ready_style_border)
             if not is_time_correct:
-                self.setting_window.sourse_enter.setStyleSheet(
-                    not_ready_style_border)
+                self.setting_window.sourse_meas_enter.setStyleSheet(not_ready_style_border)
 
-            if is_shift_correct and is_level_correct and is_freq_correct and is_num_steps_correct and is_time_correct and is_meas_checked:
-                return True
-            else:
-                return False
+            return (is_shift_correct and is_level_correct and is_freq_correct and is_num_steps_correct and is_time_correct and is_meas_checked)
 
+        return False
+
+    @base_device.base_add_parameters_from_window
     def add_parameters_from_window(self):
-        try:
-            self.number_steps = int(
-                self.setting_window.num_meas_enter.currentText())
-        except:
-            if self.setting_window.num_meas_enter.currentText() == "":
-                self.number_steps = self.setting_window.num_meas_enter.currentText()
-            else:
-                self.number_steps = "Пока активны другие приборы"
 
         if self.key_to_signal_func:
+            #self.base_add_parameters_from_window()
+            self.active_channel_meas.dict_buf_parameters["offset"] = float(self.setting_window.shift_enter.currentText())
+            self.active_channel_meas.dict_buf_parameters["frequency"] = float(self.setting_window.frequency_enter.currentText())
+            self.active_channel_meas.dict_buf_parameters["level"] = float(self.setting_window.level_enter.currentText())
+            self.active_channel_meas.dict_buf_parameters["meas L"] = self.setting_window.check_inductor.isChecked() 
+            self.active_channel_meas.dict_buf_parameters["meas R"] = self.setting_window.check_resistance.isChecked()
+            self.active_channel_meas.dict_buf_parameters["meas I"] = self.setting_window.check_current.isChecked()
+            self.active_channel_meas.dict_buf_parameters["meas C"] = self.setting_window.check_capacitance.isChecked()
+            self.active_channel_meas.dict_buf_parameters["meas Z"] = self.setting_window.check_impedance.isChecked()
 
-            self.active_channel.dict_buf_parameters["offset"] = float(self.setting_window.shift_enter.currentText())
-            self.active_channel.dict_buf_parameters["frequency"] = float(self.setting_window.frequency_enter.currentText())
-            self.active_channel.dict_buf_parameters["level"] = float(self.setting_window.level_enter.currentText())
-            self.active_channel.dict_buf_parameters["num steps"] = self.number_steps
-            self.active_channel.dict_buf_parameters["trigger"] = self.setting_window.triger_enter.currentText(
-            )
-            self.active_channel.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_enter.currentText()
-
-            self.dict_buf_parameters["baudrate"] = self.setting_window.boudrate.currentText(
-            )
-            self.dict_buf_parameters["COM"] = self.setting_window.comportslist.currentText(
-            )
-
-            self.active_channel.dict_buf_parameters["meas L"] = False  
-            self.active_channel.dict_buf_parameters["meas R"] = False
-            self.active_channel.dict_buf_parameters["meas I"] = False
-            self.active_channel.dict_buf_parameters["meas C"] = False
-            self.active_channel.dict_buf_parameters["meas Z"] = False
-            if self.setting_window.check_capacitance.isChecked():
-                self.active_channel.dict_buf_parameters["meas C"] = True
-            if self.setting_window.check_resistance.isChecked():
-                self.active_channel.dict_buf_parameters["meas R"] = True
-            if self.setting_window.check_impedance.isChecked():
-                self.active_channel.dict_buf_parameters["meas Z"] = True
-            if self.setting_window.check_inductor.isChecked():
-                self.active_channel.dict_buf_parameters["meas L"] = True
-            if self.setting_window.check_current.isChecked():
-                self.active_channel.dict_buf_parameters["meas I"] = True
 
     def send_signal_ok(self):  # действие при подтверждении настроек, передать парамтры классу инсталляции, проверить и окрасить в цвет окошко, вписать паарметры
         self.add_parameters_from_window()
         # те же самые настройки, ничего не делаем
-        if (self.active_channel.dict_buf_parameters == self.active_channel.dict_settable_parameters and self.dict_buf_parameters == self.dict_settable_parameters):
-            #return
+        if (self.active_channel_meas.dict_buf_parameters == self.active_channel_meas.dict_settable_parameters and self.dict_buf_parameters == self.dict_settable_parameters):
             pass
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
-        self.active_channel.dict_settable_parameters = copy.deepcopy(self.active_channel.dict_buf_parameters)
+        self.active_channel_meas.dict_settable_parameters = copy.deepcopy(self.active_channel_meas.dict_buf_parameters)
 
         is_parameters_correct = True
         if self.dict_buf_parameters["COM"] == 'Нет подключенных портов':
@@ -382,19 +214,13 @@ class mnipiE720Class(base_device):
         if not self._is_correct_parameters():
             is_parameters_correct = False
 
-        if is_parameters_correct:
-            pass
-        else:
-            pass
-
         self.installation_class.message_from_device_settings(
-            self.name,
-            self.active_channel.number,
-            is_parameters_correct,
-            {
-                **self.dict_settable_parameters,
-                **self.active_channel.dict_settable_parameters,
-            },
+            name_device = self.name,
+            num_channel = self.active_channel_meas.number,
+            status_parameters = is_parameters_correct,
+            list_parameters_device = self.dict_settable_parameters,
+            #list_parameters_act = self.active_channel_act.dict_settable_parameters,
+            list_parameters_meas = self.active_channel_meas.dict_settable_parameters
         )
 
     # фцункция подтверждения корректности параметров от контроллера установкию. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств
@@ -418,49 +244,44 @@ class mnipiE720Class(base_device):
         #TODO: настройка перед экспериментов, установить частоту, уровень и смещение
         return status
 
-    def action_end_experiment(self, number_of_channel) -> bool:
-        '''плавное выключение прибора'''
-        self.switch_channel(number_of_channel)
-        return True
-
-    def do_meas(self, number_of_channel):
+    def do_meas(self, ch):
         '''прочитать текущие и настроенные значения'''
-        self.switch_channel(number_of_channel)
+        self.switch_channel(ch_name=ch.get_name())
         #print("делаем измерение", self.name)
 
         start_time = time.time()
-        parameters = [self.name + " ch-" + str(self.active_channel.number)]
+        parameters = [self.name + " " + str(ch.get_name())]
         is_correct = True
 
-        if self.active_channel.dict_settable_parameters["meas L"] == True:
+        if self.active_channel_meas.dict_settable_parameters["meas L"] == True:
                 self.open_port()
                 val, val2, status = self.meas_focus_parameter(focus_val="Lp", attempts=10)
                 parameters.append(val)
                 parameters.append(val2)
                 self.client.close()
 
-        if self.active_channel.dict_settable_parameters["meas R"] == True:
+        if self.active_channel_meas.dict_settable_parameters["meas R"] == True:
                 self.open_port()
                 val, val2, status = self.meas_focus_parameter(focus_val="Rp", attempts=10)
                 parameters.append(val)
                 parameters.append(val2)
                 self.client.close()
 
-        if self.active_channel.dict_settable_parameters["meas I"] == True:
+        if self.active_channel_meas.dict_settable_parameters["meas I"] == True:
                 self.open_port()
                 val, val2, status = self.meas_focus_parameter(focus_val='I', attempts=10)
                 parameters.append(val)
                 parameters.append(val2)
                 self.client.close()
 
-        if self.active_channel.dict_settable_parameters["meas C"] == True:
+        if self.active_channel_meas.dict_settable_parameters["meas C"] == True:
                 self.open_port()
                 val, val2, status = self.meas_focus_parameter(focus_val='Ср', attempts=10)
                 parameters.append(val)
                 parameters.append(val2)
                 self.client.close()
 
-        if self.active_channel.dict_settable_parameters["meas Z"] == True:
+        if self.active_channel_meas.dict_settable_parameters["meas Z"] == True:
                 self.open_port()
                 val, val2, status = self.meas_focus_parameter(focus_val='|Z|', attempts=10)
                 parameters.append(val)
@@ -634,7 +455,7 @@ class mnipiE720Class(base_device):
     
     def read_parameters(self, client, is_debug):
             is_reading = True
-            timeout = 3#sec
+            timeout = 1#sec
             timestamp = time.time()
             parameters =[]
             first_read_byte = False
@@ -676,7 +497,7 @@ class mnipiE720Class(base_device):
             
 class ch_mnipi_class(base_ch):
     def __init__(self, number, device_class) -> None:
-        super().__init__(number)
+        super().__init__(number, ch_type = "meas", device_class=device_class)
         #print(f"канал {number} создан")
         self.base_duration_step = 2#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.dict_buf_parameters["meas L"] = False  

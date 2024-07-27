@@ -1,0 +1,2 @@
+1|PR_1
+Настройки PR_1baudrate|9600COM|COM3Настройки ch-1_acttrigger|Таймерsourse/time|5num steps|10mode|Смена полярностиНастройки ch-1_meastrigger|Таймерsourse/time|2num steps|10hall1|Truehall2|Truehall3|Truehall4|True

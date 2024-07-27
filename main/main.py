@@ -1,20 +1,15 @@
-import sys
 from interface.main_window import Ui_MainWindow
 from interface.maisheng_window import maisheng_ui_window
-from interface.relay_window import Relay_Ui_MainWindow, relay_class
+from interface.relay_window import Relay_Ui_MainWindow
 from interface.installation_check_devices import installation_Ui_Dialog
 from interface.selectdevice_window import Ui_Selectdevice
-import PyQt5
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QMessageBox
-import interface.info_window_dialog
 from svps34_control import Ui_SVPS34_control
 from Installation_class import installation_class
-import qdarktheme
-from PyQt5 import QtCore, QtGui, QtWidgets
-import os
-import logging
 from logging.handlers import RotatingFileHandler
+import os, logging, qdarktheme, interface.info_window_dialog, sys
+
+#.venv\Scripts\Python main.py 
 
 class MyWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -80,7 +75,6 @@ class MyWindow(QtWidgets.QMainWindow):
                 self.dict_active_local_devices[name] = maisheng_ui_window()
             elif name == "Polarity Relay":
                 self.dict_active_local_devices[name] = Relay_Ui_MainWindow()
-                self.dict_active_local_devices[name] = relay_class()
             elif name == "SVPS34":
                 self.dict_active_local_devices[name] = Ui_SVPS34_control()
             elif name == "SR830":
@@ -119,4 +113,5 @@ if __name__ == "__main__":
 
 # pyuic5 name.ui -o name.py
 #auto-py-to-exe
-#pyinstaller --onefile a.py --exclude-module PyQt5
+#pyinstaller --onefile main.py --exclude-module PyQt5
+#pyinstaller --hidden-import=pyvisa_py example.py   https://github.com/pyvisa/pyvisa-py/issues/302

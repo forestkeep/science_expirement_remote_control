@@ -1,12 +1,5 @@
-import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_graph(points_x, points_y):
-    plt.plot(points_x, points_y)
-    plt.xlabel('Axis X')
-    plt.ylabel('Axis Y')
-    plt.title('Points Graph')
-    plt.show()
 
 class ArrayProcessor:
     def __combine_and_sort_arrays(self, array1, array2):
@@ -111,4 +104,4 @@ if __name__ == "__main__":
     print("X\ttime\tY")
     for i in range(len(x)):
         print(f"{x[i]}\t{time[i]}\t{y[i]}")
-    plot_graph(x, y)
+

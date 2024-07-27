@@ -1,31 +1,18 @@
-from pymeasure.instruments.srs import SR830
-from pymeasure.adapters import SerialAdapter
 import time
-
 
 class commandsSR830():
     def __init__(self, device) -> None:
-
         self.COMM_ID = '*IDN'
-
         self.COMM_TIME_CONSTANT = 'OFLT'
-
         self.COMM_GARMONIC = 'HARM'
         self.COMM_FREQUENCY = 'FREQ'
-
         self.PHASE = 'PHAS'
-
         self.SET_INT_FREQUENCY_SOURCE = 'FMOD'
-
         self.STR_SET_SIN_OUT = "SLVL{}\r\n"
-
         self.COMM_AUTO_GAIN = 'AGAN'
         self.COMM_AUTO_APHS = 'APHS'
-
         self.COMM_DISPLAY = 'OUTR'  # запрос значения с дисплея
-
         self.COMM_SERIAL_PULL_STATUS_BYTE = '*STB?\r\n'
-
         self.device = device
         
     def push_autogain(self):
@@ -36,19 +23,13 @@ class commandsSR830():
         #print(bytes(self.COMM_AUTO_APHS, "ascii") + b'\r\n')
         self.device.client.write(bytes(self.COMM_AUTO_APHS, "ascii") + b'\r\n')
 
-    def get_parameter(self, command, timeout, param=False):
+    def get_parameter(self, command, timeout = 1, param=False):
         if param == False:
             self.device.client.write(bytes(command, "ascii") + b'?\r\n')
         else:
             param = str(param)
             self.device.client.write(bytes(command, "ascii") +
                               b'? ' + bytes(param, "ascii") + b'\r\n')
-        if param != False:
-                  pass
-            #print("чтение параметров", bytes(command, "ascii") + b'? ' + bytes(param, "ascii") + b'\r\n')
-        else:
-            pass
-            #print(bytes(command, "ascii") + b'?\r\n')
 
         start_time = time.time()
         while time.time() - start_time < timeout:

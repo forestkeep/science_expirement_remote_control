@@ -13,9 +13,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class relay_class():
-    def __init__(self) -> None:
-        pass
 
 class Relay_Ui_MainWindow(object):
     def setupUi(self, MainWindow):

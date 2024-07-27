@@ -1,0 +1,18 @@
+Запущена установка 
+Список_приборов: Maisheng_1 
+Настройки Maisheng_1baudrate - 9600COM - COM3Настройки ch-1_acttrigger - Таймерsourse/time - 1num steps - 101type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 50low_limit - 0,01step - 1second_value - 15repeat_reverse - Truesoft_start - Truesoft_off - TrueНастройки ch-1_meastrigger - Таймерsourse/time - 5num steps - 15meas_cur - Truemeas_vol - Truemeas_set_cur - Truemeas_set_vol - True--------------------
+19:04:15 Maisheng_1 ch-1_meas	['voltage_set=0,6942702354290872']	['voltage_rel=18,912126979593083']	['current_set=0,498826083828511']	['current_rel=0,6279364814172539']	
+19:04:24 Maisheng_1 ch-1_meas	['voltage_set=0,5880603067532602']	['voltage_rel=6,90921154645679']	['current_set=0,25104813251592695']	['current_rel=9,770540857581048']	
+19:04:34 Maisheng_1 ch-1_meas	['voltage_set=0,8490180763808406']	['voltage_rel=10,626360852910015']	['current_set=0,17598292121981696']	['current_rel=22,236500724036294']	
+19:04:43 Maisheng_1 ch-1_meas	['voltage_set=0,3617677915695121']	['voltage_rel=7,188806246140784']	['current_set=0,14737178173062937']	['current_rel=24,963174076853495']	
+19:04:53 Maisheng_1 ch-1_meas	['voltage_set=0,841815042872249']	['voltage_rel=15,675537345502542']	['current_set=0,8059818927363451']	['current_rel=26,9806776254268']	
+19:05:02 Maisheng_1 ch-1_meas	['voltage_set=0,6015094555505089']	['voltage_rel=2,6614068787181377']	['current_set=0,28686465138647876']	['current_rel=11,738021478189557']	
+19:05:12 Maisheng_1 ch-1_meas	['voltage_set=0,21888812354158893']	['voltage_rel=27,63784573178384']	['current_set=0,745621673547325']	['current_rel=23,282294033276667']	
+19:05:21 Maisheng_1 ch-1_meas	['voltage_set=0,13423013716799181']	['voltage_rel=10,535632401494762']	['current_set=0,8283058641677937']	['current_rel=3,5827654081382154']	
+19:05:31 Maisheng_1 ch-1_meas	['voltage_set=0,8727552461877254']	['voltage_rel=25,259042075747608']	['current_set=0,26256579712104555']	['current_rel=6,5508953747057195']	
+19:05:40 Maisheng_1 ch-1_meas	['voltage_set=0,09467698122947643']	['voltage_rel=25,10046288052209']	['current_set=0,39275937659335713']	['current_rel=24,366806103005192']	
+19:05:50 Maisheng_1 ch-1_meas	['voltage_set=0,9059374297160305']	['voltage_rel=17,24673886657145']	['current_set=0,8228929052198156']	['current_rel=26,884738617912323']	
+19:05:59 Maisheng_1 ch-1_meas	['voltage_set=0,020457260629040963']	['voltage_rel=9,829328518816776']	['current_set=0,1362243342309094']	['current_rel=15,58348604277779']	
+19:06:09 Maisheng_1 ch-1_meas	['voltage_set=0,8845520604784184']	['voltage_rel=1,3095758942918867']	['current_set=0,22942980747422403']	['current_rel=5,161531070311105']	
+19:06:18 Maisheng_1 ch-1_meas	['voltage_set=0,9440548168319833']	['voltage_rel=24,965118160478593']	['current_set=0,155155870904077']	['current_rel=22,516306217476725']	
+19:06:28 Maisheng_1 ch-1_meas	['voltage_set=0,623013002770218']	['voltage_rel=29,071353178914663']	['current_set=0,8469523105609069']	['current_rel=19,399516441288284']	

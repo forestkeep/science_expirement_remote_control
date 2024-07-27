@@ -56,6 +56,11 @@ class MainWindow(ManagedWindow):
 
 
 if __name__ == "__main__":
+
+    test = '6.0'
+    print(float(test))
+
+
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     window.show()

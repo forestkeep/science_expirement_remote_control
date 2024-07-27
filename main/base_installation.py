@@ -42,6 +42,7 @@ class baseInstallation():
         self.repeat_meas = 1
         self.way_to_save_fail = None
 
+        self.list_resources = []
         self.thread_scan_resources = threading.Thread(target=self._search_resources)
         self.thread_scan_resources.daemon = True 
         self.thread_scan_resources.start()
@@ -76,19 +77,21 @@ class baseInstallation():
     def clear_log(self):
         self.installation_window.log.clear()
         
-    def get_signal_list(self, name_device, num_ch) -> tuple:
+    def get_signal_list(self, name_device, ch) -> tuple:
         buf_list = []
         for dev in self.dict_active_device_class.values():
-            for ch in dev.channels:
-                if dev.name != name_device or ch.number != num_ch:
-                    if ch.is_ch_active():
-                        buf_list.append([dev.name, ch.number])
+            for chan in dev.channels:
+                if chan.is_ch_active():
+                    if dev.name != name_device:
+                        buf_list.append(dev.name + " " + chan.get_name())
+                    elif chan.get_name() != ch.get_name():
+                        buf_list.append(dev.name + " " + chan.get_name())
         return buf_list
     
-    def name_to_class(self, name):
+    def name_to_class(self, name_device):
         '''возвращает экземпляр класса прибора'''
         for dev in self.dict_active_device_class.keys():
-            if name == dev:
+            if name_device == dev:
                 return self.dict_active_device_class[dev]
         return False
     
@@ -96,8 +99,8 @@ class baseInstallation():
         '''устанавливает приоритеты в эксперименте всем активным каналам во всех приборах'''
         priority = 1
         for dev, ch in self.get_active_ch_and_device():
-                    ch.set_priority(priority = priority)
-                    priority += 1
+            ch.set_priority(priority = priority)
+            priority += 1
                     
     def get_active_ch_and_device(self):
         for device in self.dict_active_device_class.values():
@@ -110,6 +113,8 @@ class baseInstallation():
             self.installation_window.log.setTextColor(QtGui.QColor('red'))
         elif status == "war":
             self.installation_window.log.setTextColor(QtGui.QColor('orange'))
+        elif status == "ok":
+            self.installation_window.log.setTextColor(QtGui.QColor('green'))
         else:
             self.installation_window.log.setTextColor(QtGui.QColor('white'))
 
@@ -128,7 +133,7 @@ class baseInstallation():
         try:
             self.installation_window.close()
             self.installation_window.setParent(None)
-            logger.debug("окно установки закрыто")
+            logger.info("окно установки закрыто")
         except:
             pass
 
@@ -165,9 +170,17 @@ class baseInstallation():
             self.way_to_save_file = fileName
             self.installation_window.way_save_text.setText(str(self.way_to_save_file))
             if self.save_results_now == True:
-                _ , self.way_to_save_file = process_and_export(self.buf_file, self.way_to_save_file, self.type_file_for_result, self.is_delete_buf_file)
+                status, self.way_to_save_file = process_and_export(self.buf_file, self.way_to_save_file, self.type_file_for_result, self.is_delete_buf_file)
                 self.installation_window.way_save_text.setText(str(self.way_to_save_file))
                 self.save_results_now = False
+                if status == True:
+                    if self.is_delete_buf_file== True:
+                        self.add_text_to_log(text=f"Результаты сохранены в {self.way_to_save_file}, файл {self.buf_file} был удален,", status= "ok")
+                    else:
+                        self.add_text_to_log(text=f"Результаты сохранены в {self.way_to_save_file}", status= "ok")
+                else:
+                    self.add_text_to_log(text=f"Не удалось сохранить результаты", status= "err")
+
         else:
             self.type_file_for_result = False
         self.is_window_save_dialog_showing = False
@@ -184,8 +197,15 @@ class baseInstallation():
             else:
                 self.type_file_for_result = type_save_file.txt
 
-            _ , self.way_to_save_file = process_and_export(self.buf_file, self.way_to_save_file, self.type_file_for_result, self.is_delete_buf_file)
+            status , self.way_to_save_file = process_and_export(self.buf_file, self.way_to_save_file, self.type_file_for_result, self.is_delete_buf_file)
             self.installation_window.way_save_text.setText(str(self.way_to_save_file))
+            if status == True:
+                if self.is_delete_buf_file== True:
+                    self.add_text_to_log(text=f"Результаты сохранены в {self.way_to_save_file}, файл {self.buf_file} был удален,", status= "ok")
+                else:
+                    self.add_text_to_log(text=f"Результаты сохранены в {self.way_to_save_file}", status= "ok")
+            else:
+                self.add_text_to_log(text=f"Не удалось сохранить результаты", status= "err")
 
         else:
             self.exp_th_connect.ask_save_the_results = True
@@ -300,7 +320,7 @@ class baseInstallation():
         with open(self.buf_file, "a") as file:
             file.write(str(message))
 
-    def message_from_device_settings(self, name_device, num_channel, status_parameters, list_parameters):
+    def message_from_device_settings(self, name_device, num_channel, status_parameters, list_parameters_device, list_parameters_act = None, list_parameters_meas = None ):
         logger.debug(f"Настройки канала {num_channel}  прибора " + str(
             name_device) + " переданы классу установка, статус - " + str(status_parameters))
 
@@ -308,7 +328,7 @@ class baseInstallation():
             self.set_border_color_device(
                 device_name=name_device, status_color=ready_style_border, num_ch=num_channel)
             self.show_parameters_of_device_on_label(
-                name_device, num_channel, list_parameters)
+                name_device, num_channel, list_parameters_device, list_parameters_act, list_parameters_meas)
         else:
             self.set_border_color_device(
                 device_name=name_device, status_color=not_ready_style_border, num_ch=num_channel)
@@ -345,11 +365,17 @@ class baseInstallation():
                 list_COMs.append(device.get_COM())
                 list_baud.append(device.get_baud())
             else:
+
                 list_type_connection.append(False)
                 list_COMs.append(False)
                 list_baud.append(False)
         for i in range(len(list_baud)):
-            if list_type_connection[i] != "modbus":
+
+
+            if list_type_connection[i] == False:
+                self.clients.append(False)
+
+            elif list_type_connection[i] != "modbus":
                 if list_COMs[i] in dict_serial_clients.keys():
                     self.clients.append(dict_serial_clients[list_COMs[i]])
                 else:
@@ -365,5 +391,3 @@ class baseInstallation():
                     dict_modbus_clients[list_COMs[i]] = ModbusSerialClient(
                         method='rtu', port=list_COMs[i], baudrate=int(list_baud[i]), stopbits=1, bytesize=8, parity='E', timeout=0.3, retries=1, retry_on_empty=True)
                     self.clients.append(dict_modbus_clients[list_COMs[i]])
-            elif list_type_connection[i] != "modbus" and list_type_connection[i] != "serial":
-                self.clients.append(False)

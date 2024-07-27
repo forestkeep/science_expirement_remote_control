@@ -106,7 +106,7 @@ class instrument():
     
     @staticmethod
     def get_visa_resourses() -> list:
-        res = pyvisa.ResourceManager().list_resources()
+        res = pyvisa.ResourceManager('@py').list_resources()
         return res
     
     @staticmethod

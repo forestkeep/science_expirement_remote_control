@@ -1,0 +1,23 @@
+Запущена установка 
+Список_приборов: DP832A_1 
+Настройки DP832A_1baudrate - 9600COM - COM3Настройки ch-3_acttrigger - Таймерsourse/time - 5num steps - 6type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 5low_limit - 0,001step - 1second_value - 3repeat_reverse - Falsesoft_start - Truesoft_off - TrueНастройки ch-3_meastrigger - Таймерsourse/time - 1num steps - 20meas_cur - Truemeas_vol - Truemeas_set_cur - Falsemeas_set_vol - False--------------------
+19:41:09 DP832A_1 ch-3_meas	['voltage_rel=0,875765216434764']	['current_rel=19,392545369125315']	
+19:41:11 DP832A_1 ch-3_meas	['voltage_rel=2,997495605475918']	['current_rel=9,845376442500163']	
+19:41:15 DP832A_1 ch-3_meas	['voltage_rel=22,58577457684377']	['current_rel=13,478584728593608']	
+19:41:18 DP832A_1 ch-3_meas	['voltage_rel=21,837885481757063']	['current_rel=15,769628049546782']	
+19:41:22 DP832A_1 ch-3_meas	['voltage_rel=17,05701845288402']	['current_rel=21,238098162442437']	
+19:41:24 DP832A_1 ch-3_meas	['voltage_rel=19,770379776976615']	['current_rel=20,055722075865372']	
+19:41:28 DP832A_1 ch-3_meas	['voltage_rel=0,1614030556483792']	['current_rel=1,4317803776436377']	
+19:41:31 DP832A_1 ch-3_meas	['voltage_rel=18,718419641495075']	['current_rel=6,982493565430254']	
+19:41:35 DP832A_1 ch-3_meas	['voltage_rel=17,95048013970202']	['current_rel=14,604944343713194']	
+19:41:37 DP832A_1 ch-3_meas	['voltage_rel=9,398186573377469']	['current_rel=19,951362682949455']	
+19:41:41 DP832A_1 ch-3_meas	['voltage_rel=1,239797275500616']	['current_rel=21,544408028405627']	
+19:41:44 DP832A_1 ch-3_meas	['voltage_rel=25,924600806063687']	['current_rel=18,826746172355087']	
+19:41:46 DP832A_1 ch-3_meas	['voltage_rel=11,668014697799368']	['current_rel=26,260335739203875']	
+19:41:49 DP832A_1 ch-3_meas	['voltage_rel=25,164488282512586']	['current_rel=6,916457313427261']	
+19:41:51 DP832A_1 ch-3_meas	['voltage_rel=9,763771880901329']	['current_rel=19,855912420931524']	
+19:41:54 DP832A_1 ch-3_meas	['voltage_rel=16,960482402048264']	['current_rel=9,419321404609695']	
+19:41:56 DP832A_1 ch-3_meas	['voltage_rel=2,345339311812069']	['current_rel=24,679548806026087']	
+19:41:59 DP832A_1 ch-3_meas	['voltage_rel=17,30666160367512']	['current_rel=16,60581122200124']	
+19:42:01 DP832A_1 ch-3_meas	['voltage_rel=16,85487197269855']	['current_rel=25,096221637266037']	
+19:42:03 DP832A_1 ch-3_meas	['voltage_rel=26,313103629923695']	['current_rel=15,35770849885189']	

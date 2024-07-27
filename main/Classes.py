@@ -1,5 +1,6 @@
 from enum import Enum
 from PyQt5.QtCore import QTimer, QDateTime
+from PyQt5 import QtWidgets, QtCore
 import copy, time, math
 import logging
 from Adapter import instrument
@@ -7,20 +8,26 @@ import threading
 import multiprocessing
 logger = logging.getLogger(__name__)
 
+not_ready_style_border = "border: 1px solid rgb(180, 0, 0); border-radius: 5px; QToolTip { color: #ffffff; background-color: rgb(180, 0, 0); border: 1px solid white;}"
+not_ready_style_background = "background-color: rgb(100, 50, 50);  QToolTip { color: #ffffff; background-color: rgb(100, 50, 50); border: 1px solid white;}"
 
-not_ready_style_border = "border: 1px solid rgb(180, 0, 0); border-radius: 5px; QToolTip { background-color: lightblue; color: black; border: 1px solid black; }"
-not_ready_style_background = "background-color: rgb(100, 50, 50); QToolTip { background-color: lightblue; color: black; border: 1px solid black; }"
+ready_style_border = "border: 1px solid rgb(0, 150, 0); border-radius: 5px; QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white;}"
+ready_style_background = "background-color: rgb(50, 100, 50); QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white;}" 
 
-ready_style_border = "border: 1px solid rgb(0, 150, 0); border-radius: 5px;"
-ready_style_background = "background-color: rgb(50, 100, 50);" 
+warning_style_border = "border: 1px solid rgb(180, 180, 0); border-radius: 5px; QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white;}"
+warning_style_background = "background-color: rgb(150, 160, 0); QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white;}"
 
-warning_style_border = "border: 1px solid rgb(180, 180, 0); border-radius: 5px;"
-warning_style_background = "background-color: rgb(150, 160, 0);"
+
+class which_part_in_ch(Enum):
+    bouth = 0
+    only_meas = 1
+    only_act = 2
 
 class ch_response_to_step(Enum):
     End_list_of_steps = 0
     Step_done = 1
-    Step_fail = 3
+    Step_fail = 2
+    Incorrect_ch = 3
 
 class control_in_experiment():
     def __init__(self) -> None:
@@ -59,14 +66,15 @@ class base_device():
         self.is_debug = False
         self.is_test = False #флаг переводит прибор в режим теста, выдаются сырые данные от функций передачи и приема
         self.timer_for_scan_com_port = QTimer()
-        self.timer_for_scan_com_port.timeout.connect(
-            lambda: self._scan_com_ports())
+        self.timer_for_scan_com_port.timeout.connect(lambda: self._scan_com_ports())
         # показывает тип подключения устройства, нужно для анализа, какие устройства могут быть подключены к одному ком порту
         #а так же для использования соответствуюшего модуля pyvisa или serial
         self.type_connection = type_connection
         self.installation_class = installation_class
         self.name = name
         self.setting_window = None
+
+        self.message_broker = installation_class.message_broker
 
         # показывает количество шагов, сюда же сохраняется параметр из окна считывания настроек. В случае источников питания это поле просто не используется. Количество шагов вычисляется по массиву токов или напряжений
         self.number_steps = "3"
@@ -80,6 +88,7 @@ class base_device():
         # переменная хранит список доступных ком-портов
         self.active_ports = []
         self.channels = []
+
         # разрешает исполнение кода в функциях, срабатывающих по сигналам
         self.key_to_signal_func = False
         logger.debug(f"класс {self.name} создан")
@@ -87,50 +96,294 @@ class base_device():
     def set_name(self, name):
         self.name = name
 
+    def get_object_ch(self, ch_name):
+        for ch in self.channels:
+            if ch.get_name() == ch_name:
+                return ch
+        return False
+
+    def base_settings_window(self):
+            '''установка базовых параметров для окна настройки прибора'''
+            self.setting_window.boudrate.addItems(["50","75","110","150","300","600","1200","2400","4800","9600","19200","38400","57600","115200",])
+            self.setting_window.boudrate.setStyleSheet(ready_style_border)
+            self.setting_window.comportslist.setStyleSheet(ready_style_border)
+
+            self.setting_window.setupUi()
+
+            if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
+                self.setting_window.triger_meas_enter.addItems(["Таймер", "Внешний сигнал"])
+                self.setting_window.triger_meas_enter.setEnabled(True)
+                self.setting_window.triger_meas_enter.setStyleSheet(ready_style_border)
+
+                #self.setting_window.sourse_meas_enter.setStyleSheet(ready_style_border)
+                self.setting_window.sourse_meas_enter.setStyleSheet(ready_style_border + "background-color: rgb(0, 0, 0);" )
+                self.setting_window.num_meas_enter.setStyleSheet(ready_style_border)
+                self.setting_window.num_meas_enter.setEditable(True)
+                self.setting_window.num_meas_enter.addItems(["1"])
+
+            if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
+                self.setting_window.triger_act_enter.addItems(["Таймер", "Внешний сигнал"])
+                self.setting_window.triger_act_enter.setEnabled(True)
+                self.setting_window.triger_act_enter.setStyleSheet(ready_style_border)
+
+                self.setting_window.sourse_act_enter.setStyleSheet(ready_style_border)
+                self.setting_window.sourse_act_enter.setStyleSheet(ready_style_border + "background-color: rgb(0, 0, 0);" )
+                try:
+                    self.setting_window.num_act_enter.setStyleSheet(ready_style_border)
+                    self.setting_window.num_act_enter.setEditable(True)
+                    self.setting_window.num_act_enter.addItems(["3"])
+                except:
+                    pass
+
+            # =======================прием сигналов от окна==================
+            if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
+                self.setting_window.triger_meas_enter.currentIndexChanged.connect(lambda: self._action_when_select_trigger())
+                self.setting_window.sourse_meas_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
+                self.setting_window.num_meas_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
+
+            if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
+                self.setting_window.triger_act_enter.currentIndexChanged.connect(lambda: self._action_when_select_trigger())
+                self.setting_window.sourse_act_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
+                try:
+                    self.setting_window.num_act_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
+                except:
+                    pass#такого поля в приборе не предусмотрено
+            self.setting_window.comportslist.currentTextChanged.connect(lambda: self._is_correct_parameters())
+            self.setting_window.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(self.send_signal_ok)
+
+    def base_show_window(func):
+        def wrapper(self, *args, **kwargs):
+            '''Устанавливает базовые параметры для канала действий при запуске окна'''
+            self.key_to_signal_func = False
+            self.active_ports = []
+            self.timer_for_scan_com_port.start(500)
+            # Установка текущих параметров
+            self.setting_window.comportslist.setCurrentText(self.dict_buf_parameters["COM"])
+            self.setting_window.boudrate.setCurrentText(self.dict_buf_parameters["baudrate"])
+            self.key_to_signal_func = True
+
+            if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
+                self.setting_window.triger_act_enter.setCurrentText(self.active_channel_act.dict_buf_parameters["trigger"])
+                self.setting_window.sourse_act_enter.setCurrentText(str(self.active_channel_act.dict_buf_parameters["sourse/time"]))
+                try:
+                    num_act_list = ["5","10","20","50"]
+                    if self.installation_class.get_signal_list(self.name, self.active_channel_act) != []:#если в списке сигналов пусто, то и других активных приборов нет, текущий прибор в установке один
+                        num_act_list.append("Пока активны другие приборы")
+                    self.setting_window.num_act_enter.clear()
+                    self.setting_window.num_act_enter.addItems(num_act_list)
+                    self.setting_window.num_act_enter.setCurrentText(str(self.active_channel_act.dict_buf_parameters["num steps"]))
+                except:
+                    pass
+
+            if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
+                self.setting_window.triger_meas_enter.setCurrentText(self.active_channel_meas.dict_buf_parameters["trigger"])
+                self.setting_window.sourse_meas_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["sourse/time"]))
+                num_meas_list = ["5","10","20","50"]
+                if self.installation_class.get_signal_list(self.name, self.active_channel_meas) != []:#если в списке сигналов пусто, то и других активных приборов нет, текущий прибор в установке один
+                    num_meas_list.append("Пока активны другие приборы")
+                self.setting_window.num_meas_enter.clear()
+                self.setting_window.num_meas_enter.addItems(num_meas_list)
+                self.setting_window.num_meas_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["num steps"]))
+
+            return func(self, *args, **kwargs)
+        return wrapper
+
+    def base_add_parameters_from_window(func):
+        '''Добавляет базовые параметры из окна в локальный буфер класса прибора'''
+        def wrapper(self, *args, **kwargs):
+            if self.key_to_signal_func:
+                if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
+                        self.active_channel_meas.dict_buf_parameters["num steps"] = self.setting_window.num_meas_enter.currentText()
+                        self.active_channel_meas.dict_buf_parameters["trigger"] = (self.setting_window.triger_meas_enter.currentText())
+                        self.active_channel_meas.dict_buf_parameters["sourse/time"] = (self.setting_window.sourse_meas_enter.currentText())
+
+                if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
+                    try:
+                        self.active_channel_act.dict_buf_parameters["num steps"] = self.setting_window.num_act_enter.currentText()
+                    except:
+                        pass
+    
+                    self.active_channel_act.dict_buf_parameters["trigger"] = (self.setting_window.triger_act_enter.currentText())
+                    self.active_channel_act.dict_buf_parameters["sourse/time"] = (self.setting_window.sourse_act_enter.currentText())
+
+                self.dict_buf_parameters["baudrate"] = (self.setting_window.boudrate.currentText())
+                self.dict_buf_parameters["COM"] = (self.setting_window.comportslist.currentText())
+                return func(self, *args, **kwargs)
+        return wrapper
+    
+    def base_is_correct_parameters(func) -> bool: 
+        def wrapper(self, *args, **kwargs):
+            if self.key_to_signal_func:
+                func_result = func(self, *args, **kwargs)
+                connnecting_sourse_correct = True
+
+                if self.setting_window.comportslist.currentText() == "Нет подключенных портов":
+                    connnecting_sourse_correct = False
+
+                if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
+                    self.active_channel_meas.is_num_steps_meas_correct = True
+                    self.active_channel_meas.is_time_meas_correct = True
+                    if self.setting_window.triger_meas_enter.currentText() == "Таймер":
+                            try:
+                                if int(self.setting_window.sourse_meas_enter.currentText()) < 1:
+                                    self.active_channel_meas.is_time_meas_correct = False
+                            except:
+                                print(f"{self.setting_window.sourse_meas_enter.currentText()=}")
+                                self.active_channel_meas.is_time_meas_correct = False
+
+                    try:
+                        if int(self.setting_window.num_meas_enter.currentText()) < 1:
+                            self.active_channel_meas.is_num_steps_meas_correct = False
+                    except:
+                            try:
+                                if self.setting_window.num_meas_enter.currentText() == "Пока активны другие приборы" \
+                                    and self.installation_class.get_signal_list(self.name, self.active_channel_meas) != []:
+                                    pass
+                                else:
+                                    self.active_channel_meas.is_num_steps_meas_correct = False
+                            except:
+                                pass
+                    
+                    self.setting_window.num_meas_enter.setStyleSheet(ready_style_border)
+
+                    self.setting_window.sourse_meas_enter.setStyleSheet(ready_style_border)
+
+                    if not self.active_channel_meas.is_time_meas_correct:
+                            print(112121212121212121)
+                            self.setting_window.sourse_meas_enter.setStyleSheet(not_ready_style_border)
+                    try:
+                        if not self.active_channel_meas.is_num_steps_meas_correct:
+                                self.setting_window.num_meas_enter.setStyleSheet(not_ready_style_border)
+                    except:
+                        pass
+
+                if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
+                    self.active_channel_act.is_num_steps_act_correct = True
+                    self.active_channel_act.is_time_act_correct = True
+
+                    if self.setting_window.triger_act_enter.currentText() == "Таймер":
+                            try:
+                                if int(self.setting_window.sourse_act_enter.currentText()) < 1:
+                                    self.active_channel_act.is_time_act_correct = False
+                            except:
+                                self.active_channel_act.is_time_act_correct = False
+
+                    if True:
+                        try:
+                            #print(f"{self.setting_window.num_act_enter.currentText()=}")
+                            #print(f"{type(self.setting_window.num_act_enter.currentText())=}")
+                            if int(self.setting_window.num_act_enter.currentText()) < 1:
+                                self.active_channel_act.is_num_steps_act_correct = False
+                        except:
+                                if self.setting_window.num_act_enter.currentText() == "Пока активны другие приборы" \
+                                and self.installation_class.get_signal_list(self.name, self.active_channel_act) != []:
+                                    pass
+                                else:
+                                    self.active_channel_act.is_num_steps_act_correct = False
+            
+                        self.setting_window.num_act_enter.setStyleSheet(ready_style_border)
+
+                    self.setting_window.sourse_act_enter.setStyleSheet(ready_style_border)
+
+                    if not self.active_channel_act.is_time_act_correct:
+                            self.setting_window.sourse_act_enter.setStyleSheet(not_ready_style_border)
+                    try:
+                        if not self.active_channel_act.is_num_steps_act_correct:
+                                self.setting_window.num_act_enter.setStyleSheet(not_ready_style_border)
+                    except:
+                        pass
+
+                if connnecting_sourse_correct == False:
+                    self.setting_window.comportslist.setStyleSheet(not_ready_style_border)
+                else:
+                    self.setting_window.comportslist.setStyleSheet(ready_style_border)
+
+                if self.part_ch == which_part_in_ch.bouth:
+                    #print(f"{self.active_channel_act.is_num_steps_act_correct=}")
+                    #print(f"{self.active_channel_act.is_time_act_correct=}")
+                    #print(f"{self.active_channel_meas.is_num_steps_meas_correct=}")
+                    #print(f"{self.active_channel_meas.is_time_meas_correct=}")
+                    return      self.active_channel_act.is_num_steps_act_correct \
+                            and self.active_channel_act.is_time_act_correct \
+                            and self.active_channel_meas.is_num_steps_meas_correct \
+                            and self.active_channel_meas.is_time_meas_correct \
+                            and func_result
+                elif self.part_ch == which_part_in_ch.only_meas:
+                    return self.active_channel_meas.is_num_steps_meas_correct \
+                            and self.active_channel_meas.is_time_meas_correct \
+                            and func_result
+                elif self.part_ch == which_part_in_ch.only_act:
+                    return self.active_channel_meas.is_num_steps_act_correct \
+                            and self.active_channel_meas.is_time_act_correct \
+                            and func_result
+                
+            func_result = func(self, *args, **kwargs)
+            return False and func_result
+        return wrapper
+
     def set_debug(self, state):
         self.is_debug = state
 
-    def set_status_step(self, ch_num, status):
+    def set_status_step(self, ch_name, status):
         '''сообщаем каналу прибору статус шага, должен проводить измерение или нет'''
-        self.switch_channel(ch_num)
+        self.switch_channel(ch_name=ch_name)
         self.active_channel.am_i_should_do_step = status
         return True
     
-    def get_status_step(self, ch_num):
+    def get_status_step(self, ch_name):
         """возвращает ответ на вопрос, "должен ли канал сделать шаг?" """
-        self.switch_channel(ch_num)
+        self.switch_channel(ch_name = ch_name)
         return self.active_channel.get_status_step()
 
     def set_state_ch(self, ch_num, state):
         '''устанавливаем состояние канала в эксперименте, участвует или нет'''
-        self.switch_channel(ch_num)
-        self.active_channel.is_active = state
+        for ch in self.channels:
+            if ch.get_number() == ch_num:
+                ch.is_active = state
 
     def set_status_settings_ch(self, ch_num, state):
         '''устанавливаем статус настроек канала, если все ок, то ставим true, если нет, то false'''
-        self.switch_channel(ch_num)
-        self.active_channel.i_am_seted = state
+        for ch in self.channels:
+            if ch.get_number() == ch_num:
+                ch.i_am_seted = state
 
-    def switch_channel(self, number):
-            try:
-                number = int(number)
-            except:
+    def switch_channel(self, number = None, ch_name = None):
+            '''переключает активный канала либо по номеру, либо по имени. Если переключение по имени, то актвный канал будет доступен в 
+            self.active_channel, если по номеру, то канала измерений будет в self.active_channel_meas, а канал действий в self.active_channel_act'''
+            #print(number)
+            if number is not None:
+                try:
+                    number = int(number)
+                except:
+                    return False
+                
+                status = False
+                for ch in self.channels:
+                    if number == ch.number:
+                        status = True
+                        if ch.ch_type == "meas":
+                            self.active_channel_meas = ch
+                        if ch.ch_type == "act":
+                            self.active_channel_act = ch
+
+                return status
+            
+            elif ch_name is not None:
+                for ch in self.channels:
+                    if ch_name == ch.get_name():
+                        self.active_channel = ch
+                        return True
                 return False
             
-            for ch in self.channels:
-                if number == ch.number:
-                    self.active_channel = ch
-                    return True
             return False
-    
-    def on_next_step(self, number_of_channel, repeat = 1):  #в случае активных приборов(например, источник питания) функция переопределяется в классе прибора
+      
+    def on_next_step(self, ch, repeat = 1):
         '''активирует следующий шаг канала прибора'''
-        self.switch_channel(number_of_channel)
         answer = ch_response_to_step.Step_done
-        if self.active_channel.dict_buf_parameters["num steps"] == "Пока активны другие приборы":
+        if ch.dict_settable_parameters["num steps"] == "Пока активны другие приборы":
             return answer
-        if int(self.active_channel.step_index) < int(self.active_channel.dict_buf_parameters["num steps"])-1:
-            self.active_channel.step_index = self.active_channel.step_index + 1
+        if int(ch.step_index) < int(ch.dict_settable_parameters["num steps"])-1:
+            ch.step_index = ch.step_index + 1
         else:
             answer = ch_response_to_step.End_list_of_steps  # след шага нет
 
@@ -173,18 +426,16 @@ class base_device():
             start_time = time.time()
             result = func(*args, **kwargs)
             end_time = time.time()
-            print(f"Метод {func.__name__} - {end_time - start_time} с")
+            #print(f"Метод {func.__name__} - {end_time - start_time} с")
             return result
         return wrapper
-
-    @time_decorator
 
     def _scan_com_ports(self):
         '''проверяет наличие ком портов в системе'''
         self.timer_for_scan_com_port.stop()
 
         local_list_com_ports = self.installation_class.get_list_resources()
-        print(f"{local_list_com_ports}")
+        #print(f"{local_list_com_ports}")
         stop = False
         if local_list_com_ports == []:
             try:
@@ -211,6 +462,12 @@ class base_device():
                     self.setting_window.comportslist.removeItem(i)
         except:
             pass
+
+        if self.setting_window.comportslist.currentText() == "Нет подключенных портов" \
+            or self.setting_window.comportslist.currentText() == "":
+                self.setting_window.comportslist.setStyleSheet(not_ready_style_border)
+        else:
+                self.setting_window.comportslist.setStyleSheet(ready_style_border)
         
         self.active_ports = local_list_com_ports
 
@@ -220,7 +477,7 @@ class base_device():
             stop = True
 
         if not stop:
-            self.timer_for_scan_com_port.start(6000)
+            self.timer_for_scan_com_port.start(1000)
 
     def get_type_connection(self) -> str:
         return self.type_connection
@@ -239,28 +496,30 @@ class base_device():
             answer = False
         return answer
 
-    def get_trigger_value(self, number_of_channel):
+    def get_trigger_value(self, ch):
         '''возвращает источник сигнала или время в секундах, если в качестве триггера выбран таймер, в случае ошибки возвращает False'''
-        self.switch_channel(number_of_channel)
-        trigger = self.get_trigger(number_of_channel)
+        trigger = self.get_trigger(ch)
+        if trigger == False:
+            logger.warning(f"Ошибка при воозвате типа трриггера {trigger=}")
+            answer = False
 
-        if trigger == "Таймер":
+        elif trigger.lower() == "таймер":
             try:
-                answer = int(self.active_channel.dict_settable_parameters["sourse/time"])
+                answer = int(ch.dict_settable_parameters["sourse/time"])
             except:
                 answer = False
-        elif trigger == "Внешний сигнал":
-            answer = self.active_channel.dict_settable_parameters["sourse/time"]
+        elif trigger.lower() == "внешний сигнал":
+            answer = ch.dict_settable_parameters["sourse/time"]
+            
         else:
             answer = False
         
         return answer
 
-    def get_trigger(self, number_of_channel):
+    def get_trigger(self, ch):
         '''возвращает тип триггера, таймер или внешний сигнал'''
-        self.switch_channel(number_of_channel)
         try:
-            answer = self.active_channel.dict_settable_parameters["trigger"]
+            answer = ch.dict_settable_parameters["trigger"]
         except:
             answer = False
         return answer
@@ -268,48 +527,75 @@ class base_device():
     def set_client(self, client):
         self.client = client
 
-    def get_steps_number(self, number_of_channel):
+    def get_steps_number(self, ch):
         '''возвращает число шагов прибора, если число не ограничено, то возвращает False'''
-        self.switch_channel(number_of_channel)
         try:
-            answer = int(self.active_channel.dict_settable_parameters["num steps"])
+            answer = int(ch.dict_settable_parameters["num steps"])
         except:
             answer = False
         return answer
 
-    def get_settings(self, number_of_channel):
-        self.switch_channel(number_of_channel)
-        return {**self.dict_settable_parameters, **self.active_channel.dict_settable_parameters}
+    def get_settings(self):
+        return self.dict_settable_parameters
 
     def _action_when_select_trigger(self):
         if self.key_to_signal_func:
-            if self.setting_window.triger_enter.currentText() == "Таймер":
-                try:
-                    buf = int(self.active_channel.dict_buf_parameters["sourse/time"])
-                except:
-                    buf = 5
-                self.setting_window.sourse_enter.clear()
-                self.setting_window.sourse_enter.setEditable(True)
-                self.setting_window.sourse_enter.addItems(
-                    [str(buf), "10", "30", "60", "120"])
-                self.setting_window.sourse_enter.setCurrentText(str(buf))
-                self.setting_window.label_sourse.setText("Время(с)")
-            else:
-                # buf = self.setting_window.sourse_enter.currentText()
-                buf = self.active_channel.dict_buf_parameters["sourse/time"]
-                self.setting_window.sourse_enter.clear()
-                self.setting_window.sourse_enter.setEditable(False)
-                # предоставьте список сигналов, я прибор под именем self.name канал self.active_channel.number
-                self.active_channel.signal_list = self.installation_class.get_signal_list(
-                    self.name, self.active_channel.number)
-                signals = []
-                for sig in self.active_channel.signal_list:
-                    signals.append(str(sig[0])+" ch-"+str(sig[1]))
-                self.setting_window.sourse_enter.addItems(signals)
-                if buf in self.active_channel.signal_list:
-                    self.setting_window.sourse_enter.setCurrentText(buf)
-                self.setting_window.label_sourse.setText("Источник сигнала")
-            # self.add_parameters_from_window()
+            if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
+                self.active_channel_act.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_act_enter.currentText()
+                if self.setting_window.triger_act_enter.currentText() == "Таймер":
+                    try:
+                        buf = int(self.active_channel_act.dict_buf_parameters["sourse/time"])
+                    except:
+                        buf = 5
+                    self.setting_window.sourse_act_enter.clear()
+                    self.setting_window.sourse_act_enter.setEditable(True)
+                    self.setting_window.sourse_act_enter.addItems([str(buf), "10", "30", "60", "120"])
+                    self.setting_window.sourse_act_enter.setCurrentText(str(buf))
+                    self.setting_window.sourse_act_label.setText("Время(с)")
+                else:
+                    buf = self.active_channel_act.dict_buf_parameters["sourse/time"]
+                    self.setting_window.sourse_act_enter.clear()
+                    self.setting_window.sourse_act_enter.setEditable(False)
+                    # предоставьте список сигналов, я прибор под именем self.name канал self.active_channel.name
+                    #self.active_channel_act.signal_list = self.installation_class.get_signal_list(self.name, self.active_channel_act)
+                    self.active_channel_act.signal_list = self.message_broker.get_subscribe_list(object = self.active_channel_act)
+
+                    self.setting_window.sourse_act_enter.addItems(self.active_channel_act.signal_list)
+                    if buf in self.active_channel_act.signal_list:
+                        self.setting_window.sourse_act_enter.setCurrentText(buf)
+                    self.setting_window.sourse_act_label.setText("Источник сигнала")
+                current_style = self.setting_window.sourse_act_enter.styleSheet()
+                self.setting_window.sourse_act_enter.setStyleSheet(current_style + "background-color: rgb(70, 70, 70);" )
+
+            if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
+                self.active_channel_meas.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_meas_enter.currentText()
+                if self.setting_window.triger_meas_enter.currentText() == "Таймер":
+                    try:
+                        buf = int(self.active_channel_meas.dict_buf_parameters["sourse/time"])
+                        #print(f"{buf=}")
+                    except:
+                        buf = 5
+                    self.setting_window.sourse_meas_enter.clear()
+                    self.setting_window.sourse_meas_enter.setEditable(True)
+                    self.setting_window.sourse_meas_enter.addItems([str(buf), "10", "30", "60", "120"])
+                    self.setting_window.sourse_meas_enter.setCurrentText(str(buf))
+                    self.setting_window.sourse_meas_label.setText("Время(с)")
+                else:
+                    buf = self.active_channel_meas.dict_buf_parameters["sourse/time"]
+                    self.setting_window.sourse_meas_enter.clear()
+                    self.setting_window.sourse_meas_enter.setEditable(False)
+                    # предоставьте список сигналов, я прибор под именем self.name канал self.active_channel.number
+                    print(f"{self.message_broker.get_subscribe_list(object = self.active_channel_meas)=}")
+                    #self.active_channel_meas.signal_list = self.installation_class.get_signal_list(self.name, self.active_channel_meas)
+                    self.active_channel_meas.signal_list = self.message_broker.get_subscribe_list(object = self.active_channel_meas)
+
+
+                    self.setting_window.sourse_meas_enter.addItems(self.active_channel_meas.signal_list)
+                    if buf in self.active_channel_meas.signal_list:
+                        self.setting_window.sourse_meas_enter.setCurrentText(buf)
+                    self.setting_window.sourse_meas_label.setText("Источник сигнала")
+                current_style = self.setting_window.sourse_meas_enter.styleSheet()
+                self.setting_window.sourse_meas_enter.setStyleSheet(current_style + "background-color: rgb(70, 70, 70);" )
 
     def set_test_mode(self):
         self.is_test = True
@@ -317,49 +603,118 @@ class base_device():
     def reset_test_mode(self):
         self.is_test = False
 
+    def action_end_experiment(self, ch) -> bool:
+        '''плавное выключение прибора, возват к исходному состоянию'''
+        self.switch_channel(ch_name=ch.get_name())
+        status = True
+        if ch.get_type() == "act":
+            #===Действия по окончании работы прибора для канала действий===
+            #self.active_channel.do_something()
+            pass
+            #==========end==========
+        elif ch.get_type() == "meas":
+            #===Действия по окончании работы прибора для канала измерений===
+            pass
+            #==========end==========
+
+        return status
+
     def open_port(self):
         if self.client.is_open == False:
             self.client.open()
 
-    def set_parameters(self,number_of_channel, parameters):
-        """функция необходима для настройки параметров прибора в установке при добавлении прибора извне или при открытии сохраненной установки, передаваемый словарь гарантированно должен содержать параметры именно для данного прибора"""
-        self.switch_channel(number_of_channel)
+    def set_parameters(self, channel_name, parameters):
+        """функция необходима для настройки параметров канала в установке при добавлении прибора извне или при открытии сохраненной установки, передаваемый словарь гарантированно должен содержать параметры именно для данного канала"""
+        self.switch_channel(ch_name = channel_name)
         status = True
         for param in parameters.keys():
             if param == "Не настроено":
                 self.active_channel.set_active(True)
                 status = False
-                break
+                continue
             elif param == "not active":
                 status = False
                 self.active_channel.set_active(False)
                 break
             else:
                 self.active_channel.set_active(True)
-                
-            if param == "COM" or param == "baudrate":
-                self.dict_buf_parameters[param] = parameters[param]
-                self.dict_settable_parameters[param] = parameters[param]
-            else:
-                self.active_channel.dict_buf_parameters[param] = parameters[param]
-                self.active_channel.dict_settable_parameters[param] = parameters[param]
+                if parameters[param] == "False":
+                    self.active_channel.dict_buf_parameters[param] = False
+                elif parameters[param] == "True":
+                    self.active_channel.dict_buf_parameters[param] = True
+                else:
+                    self.active_channel.dict_buf_parameters[param] = parameters[param]
 
-        self.installation_class.message_from_device_settings(
-            self.name,self.active_channel.number, status, {**self.dict_settable_parameters, **self.active_channel.dict_settable_parameters})
+
+                self.active_channel.dict_settable_parameters = self.active_channel.dict_buf_parameters
+        if self.part_ch == which_part_in_ch.bouth:
+            self.installation_class.message_from_device_settings(
+                name_device = self.name,
+                num_channel = self.active_channel.number,
+                status_parameters = status,
+                list_parameters_device = self.dict_settable_parameters,
+                list_parameters_act = self.active_channel_act.dict_settable_parameters,
+                list_parameters_meas = self.active_channel_meas.dict_settable_parameters
+            )
+        elif self.part_ch == which_part_in_ch.only_meas:
+            self.installation_class.message_from_device_settings(
+                name_device = self.name,
+                num_channel = self.active_channel.number,
+                status_parameters = status,
+                list_parameters_device = self.dict_settable_parameters,
+                list_parameters_meas = self.active_channel_meas.dict_settable_parameters
+            )
+        elif self.part_ch == which_part_in_ch.only_act:
+            self.installation_class.message_from_device_settings(
+                name_device = self.name,
+                num_channel = self.active_channel.number,
+                status_parameters = status,
+                list_parameters_device = self.dict_settable_parameters,
+                list_parameters_act = self.active_channel_act.dict_settable_parameters,
+            )
+        else:
+            logger.warning("Неопределенный тип канала устройства" + self.get_name())
+
+    def get_number_channels(self) -> int:
+        return len(self.channels)
         
 class base_ch(control_in_experiment):
     '''базовый класс канала устройства'''
-    def __init__(self, number) -> None:
+    def __init__(self, number, ch_type, device_class) -> None:
         super().__init__()
+        self.device_class = device_class
+        self.ch_type = ch_type
         self.number = number
+        self.ch_name = f"ch-{self.number}_{self.ch_type}"
         self.i_am_seted = False
         self.is_active = False#канал включен или выключен(используется или нет)
         self.signal_list = []
+        self.dict_settable_parameters = {}  # текущие параметры канала действий
         self.dict_buf_parameters = {"trigger": "Таймер",
                                     "sourse/time": str(10),  # секунды
-                                    "num steps": 0,
-                                    } 
-        self.dict_settable_parameters = {}  # текущие параметры канала
+                                    "num steps": "1",
+                                    }
+
+        self.message_broker = device_class.message_broker
+        self.do_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} do_operation"
+        self.end_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} end_work"
+        self.start_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} start_work"
+        self.message_broker.create_subscribe(name_subscribe = self.do_operation_trigger, publisher = self, description = "Канал прибора сделал какое-то действие или измерение")
+        self.message_broker.create_subscribe(name_subscribe = self.end_operation_trigger, publisher = self, description = "Канал прибора закончил работу в эксперименте")
+        #self.message_broker.create_subscribe(name_subscribe = self.start_operation_trigger, publisher = self, description = "Канал прибора начал работу в эксперименте")
+        print(self.message_broker.get_subscribe_list(object = self))
+
+
+    def get_name(self):
+        return self.ch_name
+    
+    def receive_message(self, message):
+        '''функция приема сигнала от издателя, в данный момент по приему сообщения выставляется готовность сделать действие'''
+        print(message)
+        self.am_i_should_do_step = True
+
+    def get_settings(self):
+        return self.dict_settable_parameters
 
     def set_active(self, state):
         self.is_active = state
@@ -369,4 +724,12 @@ class base_ch(control_in_experiment):
     
     def is_ch_seted(self) -> bool:
         return (self.i_am_seted == True)
+    
+    def get_number(self):
+        return self.number
+    
+    def get_type(self):
+        return self.ch_type
+    
+
     

@@ -37,18 +37,24 @@ class experimentControl(analyse):
             self.installation_window.label_time.setText("")
 
             if not self.pause_flag:
-                if self.exp_th_connect.is_update_pbar == True:
-                    self.pbar_percent = (((time.time() - self.start_exp_time)/self.max_exp_time))*100
+                if self.is_experiment_endless:
+                    self.pbar_percent = 50
+                    self.installation_window.label_time.setText("Бесконечный эксперимент")
+                    self.update_pbar()
                 else:
-                    self.pbar_percent = 0
-                if self.max_exp_time - (time.time() - self.start_exp_time) > 0:
-                    min = int( (self.max_exp_time - (time.time() - self.start_exp_time))/60 )
-                    sec = int( (self.max_exp_time - (time.time() - self.start_exp_time))%60 )
-                else:
-                    min = 0
-                    sec = 0
-                self.installation_window.label_time.setText(f"Осталось {min}:{sec} мин")
-                self.update_pbar()
+
+                    if self.exp_th_connect.is_update_pbar == True:
+                        self.pbar_percent = (((time.time() - self.start_exp_time)/self.max_exp_time))*100
+                    else:
+                        self.pbar_percent = 0
+                    if self.max_exp_time - (time.time() - self.start_exp_time) > 0:
+                        min = int( (self.max_exp_time - (time.time() - self.start_exp_time))/60 )
+                        sec = int( (self.max_exp_time - (time.time() - self.start_exp_time))%60 )
+                    else:
+                        min = 0
+                        sec = 0
+                    self.installation_window.label_time.setText(f"Осталось {min}:{sec} мин")
+                    self.update_pbar()
             else:
                 self.installation_window.label_time.setText("Осталось -- мин")
             self.show_th_window()
@@ -102,14 +108,14 @@ class experimentControl(analyse):
             self.set_way_save()
             
     def calc_last_exp_time(self):
-        buf_time = []
+        buf_time = [0]
         for device, ch in self.get_active_ch_and_device():
             if ch.am_i_active_in_experiment == True:
-                trig = device.get_trigger(ch.number)
+                trig = device.get_trigger(ch)
                 if trig == "Таймер":
-                    steps = device.get_steps_number(ch.number) - ch.number_meas 
+                    steps = device.get_steps_number(ch) - ch.number_meas 
                     if steps is not False:
-                        t = steps * (device.get_trigger_value(ch.number) + ch.last_step_time)*float(self.installation_window.repeat_measurement_enter.currentText())                                                                                      
+                        t = steps * (device.get_trigger_value(ch) + ch.last_step_time)*float(self.installation_window.repeat_measurement_enter.currentText())                                                                                      
                         buf_time.append(t)
         self.max_exp_time = max(buf_time)+(time.time() - self.start_exp_time)
 
@@ -131,13 +137,13 @@ class experimentControl(analyse):
             for ch in device.channels:
                 buf_time = False
                 if ch.is_ch_active():
-                    trig = device.get_trigger(ch.number)
+                    trig = device.get_trigger(ch)
                     if trig == "Таймер":
-                        steps = device.get_steps_number(ch.number)
+                        steps = device.get_steps_number(ch)
                         if steps is not False:
                             buf_time = (steps * \
                                 (device.get_trigger_value(
-                                    ch.number) + ch.base_duration_step))*float(self.installation_window.repeat_measurement_enter.currentText())
+                                    ch) + ch.base_duration_step))*float(self.installation_window.repeat_measurement_enter.currentText())
 
                     elif trig == "Внешний сигнал":
                         # TODO: рассчитать время в случае срабатывания цепочек приборов. Найти корень цепочки и смотреть на его параметры, значение таймера и количество повторов, затем рассчитать длительность срабатывания цепочки и сравнить со значением таймера, вернуть наибольшее
@@ -172,7 +178,24 @@ class experimentControl(analyse):
 
         self.installation_window.pause_button.setStyleSheet(
             style)
-                 
+
+    def get_execute_part(self):
+        '''Возващает спсок из устройства и канала, которые должны сделать действие, отбор выполняется с учетом приоритета'''
+
+        target_execute = False
+        target_priority = self.min_priority+1
+        for device in self.dict_active_device_class.values():
+                        for ch in device.channels:
+                            if ch.is_ch_active():
+                                if ch.am_i_active_in_experiment:
+                                    if device.get_status_step(ch_name = ch.get_name()) == True:
+                                        if ch.get_priority() < target_priority:
+                                            target_execute = [device, ch]
+                                            target_priority = ch.get_priority()
+        if target_execute is not False:
+            print(f"{target_execute=}")
+        return target_execute
+    
     def exp_th(self):
         def update_parameters(data, entry, time):
             device, channel = entry[0].split()
@@ -205,10 +228,9 @@ class experimentControl(analyse):
                 data[device][channel]['time'].append(time)
             return status, data
 
-
         status = True
         self.start_exp_time = time.time()
-        self.max_exp_time = 10000
+        self.max_exp_time = 100
         self.installation_window.pbar.setMinimum(0)
         self.installation_window.pbar.setMaximum(100)
         self.add_text_to_log("настройка приборов.. ")
@@ -220,16 +242,15 @@ class experimentControl(analyse):
                     ans = dev.action_before_experiment(ch.number)
                     if ans == False:
                         logger.debug("ошибка при настройке " + dev.get_name() + " перед экспериментом")
-                        #print("ошибка при настройке " + dev.get_name() + " перед экспериментом")
-
+                        self.add_text_to_log("Ошибка настройки " + dev.get_name() + " ch-" + str(ch.number) + " перед экспериментом", "err" )
                         if not self.is_debug:
                             status = False
                             self.set_state_text("Остановка, ошибка")
-                            self.add_text_to_log("Ошибка настройки " + dev.get_name() + " ch-" + str(ch.number) + " перед экспериментом", "err" )
                             break
                         # --------------------------------------------------------
-                    self.add_text_to_log(
-                        dev.get_name() + " ch-" + str(ch.number) + " настроен")
+                    else:
+                        self.add_text_to_log(
+                            dev.get_name() + " ch-" + str(ch.number) + " настроен")
 
         error = not status  # флаг ошибки, будет поднят при ошибке во время эксперимента
         error_start_exp = not status 
@@ -243,14 +264,14 @@ class experimentControl(analyse):
                 self.max_exp_time = 100000
                 # не определено время
 
-            #print("общее время эксперимента", self.max_exp_time)
+            print("общее время эксперимента", self.max_exp_time)
             logger.debug("общее время эксперимента = "+ str(self.max_exp_time))
 
             self.start_exp_time = time.time()
             self.installation_window.pbar.setMinimum(0)
             self.installation_window.pbar.setMaximum(100)
 
-            min_priority = 0
+            self.min_priority = 0
             priority = 1
 
             for device in self.dict_active_device_class.values():
@@ -259,11 +280,10 @@ class experimentControl(analyse):
                         ch.am_i_active_in_experiment = True
                         ch.number_meas = 0
                         ch.previous_step_time = time.time()
-                        ch.pause_time = device.get_trigger_value(ch.number)
+                        ch.pause_time = device.get_trigger_value(ch)
                         priority += 1
-                        min_priority+=1
+                        self.min_priority+=1
 
-        number_active_device = 0
         target_execute = False
         sr = time.time()
         self.exp_th_connect.is_update_pbar = True
@@ -275,25 +295,24 @@ class experimentControl(analyse):
                     # TODO: пауза эксперимента. остановка таймеров
                 else:
                     self.set_state_text("Продолжение эксперимента")
-                    # ----------------------------
-                    if time.time() - sr > 2:
+
+                    if time.time() - sr > 3:
                         sr = time.time()
-                        #print("активных приборов - ", number_active_device)
-                    # -----------------------------------
+                        print(f"{number_active_device=}")
                     
                     number_active_device = 0
                     number_device_which_act_while = 0
 
                     for device, ch in self.get_active_ch_and_device():
-                        if device.get_steps_number(ch.number) == False:
+                        if device.get_steps_number(ch) == False:
                             number_device_which_act_while += 1
 
                         if ch.am_i_active_in_experiment:
                             number_active_device += 1
-                            if device.get_trigger(ch.number) == "Таймер":
+                            if device.get_trigger(ch) == "Таймер":
                                 if time.time() - ch.previous_step_time >= ch.pause_time:
                                     ch.previous_step_time = time.time()
-                                    device.set_status_step(ch.number, True)
+                                    device.set_status_step(ch.get_name(), True)
 
                     if number_active_device == 0:
                         '''остановка эксперимента, нет активных приборов'''
@@ -305,118 +324,121 @@ class experimentControl(analyse):
                         '''если активный прибор один и он работает, пока работают другие, то стоп'''
                         self.stop_experiment = True
 
-                    target_execute = False
-                    target_priority = min_priority+1
-                    for device in self.dict_active_device_class.values():
-                        for ch in device.channels:
-                            if ch.is_ch_active():
-                                if device.get_status_step(ch.number) == True:
-                                    if ch.get_priority() < target_priority:
-                                        target_execute = [device, ch]
-                                        target_priority = ch.get_priority()
+                    target_execute = self.get_execute_part()
 
                     if target_execute is not False:
                         device = target_execute[0]
                         ch = target_execute[1]
-                        self.set_state_text(
-                            "Выполняется действие " + device.get_name() + " ch-" + str(ch.number))
-                        logger.debug("Выполняется действие " + device.get_name() + " ch-" + str(ch.number))
-                        device.set_status_step(ch.number, False)
+                        device.set_status_step(ch_name = ch.get_name(), status = False)
                         t = time.time()
-                        ans, param, step_time = device.do_meas(ch.number)
-
-
-                        status, buffer_meas = update_parameters(data=self.measurement_parameters, entry=param, time=time.time() - self.start_exp_time)
-                        if status:
-                            self.measurement_parameters = buffer_meas
-                            self.exp_th_connect.is_measurement_data_updated = True
-
-
-                        if device.on_next_step(ch.number, repeat = 3) == ch_response_to_step.Step_done:
-                            ch.number_meas += 1
-                            repeat_counter = 0
+                        ans_device = device.on_next_step(ch, repeat = 3)
+                        if ans_device == ch_response_to_step.Step_done:
                             t = time.time() - t#вычисляем время, необходимое на выставление шага
-                            while repeat_counter < self.repeat_meas:
-                                repeat_counter += 1
-                                ans, param, step_time = device.do_meas(ch.number)
-                                status, buffer_meas = update_parameters(data=self.measurement_parameters, entry=param, time=time.time() - self.start_exp_time)
-                                if status:
-                                    self.measurement_parameters = buffer_meas
-                                    self.exp_th_connect.is_measurement_data_updated = True
-                                #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                                def print_data(data):
-                                    for device, channels in data.items():
-                                        print(f"Device: {device}")
-                                        for channel, parameters in channels.items():
-                                            print(f"Channel: {channel}")
-                                            for parameter, values in parameters.items():
-                                                if parameter == 'time':
-                                                    print(f"  {parameter}: {values}")
-                                                else:
-                                                    print(f"  {parameter}: {', '.join([str(value) for value in values])}")
-                                #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                                #print_data(self.measurement_parameters)
-                                
-
-                                ch.last_step_time = step_time + t
-
-                                self.write_data_to_buf_file("", addTime=True)
-                                for param in param:
-                                    self.write_data_to_buf_file(
-                                        message=str(param) + "\t")
-                                self.write_data_to_buf_file(message="\n")
-
-                                if ans == ch_response_to_step.Step_done:
-                                    self.add_text_to_log("шаг " + device.get_name() + " ch-" + str(ch.number) + " сделан за " + str(round(step_time)) + " сек" )
+                            ch.number_meas += 1
+                            if ch.get_type() == "act":
+                                self.set_state_text("Выполняется действие " + device.get_name() +  str(ch.get_name()))
+                                logger.debug("Выполняется действие " + device.get_name() +  str(ch.get_name()))
+                                ans, param, step_time = device.do_action(ch)
+                                if ans == ch_response_to_step.Incorrect_ch:
+                                    pass
+                                elif ans == ch_response_to_step.Step_done:
+                                    self.add_text_to_log("шаг " + device.get_name() + " " +  str(ch.get_name()) + " сделан за " + str(round(step_time)) + " сек" )
                                     self.calc_last_exp_time()
-                                if ans == ch_response_to_step.Step_fail:
+                                elif ans == ch_response_to_step.Step_fail:
                                     ch.am_i_active_in_experiment = False
+                                    self.add_text_to_log("Ошибка опроса " + device.get_name()  + str(ch.get_name()), "err" )
                                     if self.is_exp_run_anywhere == False:
                                         error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
-                                    else:
-                                        self.add_text_to_log("Ошибка опроса " + device.get_name() + " ch-" + str(ch.number), "err" )
-                                    break
-                        
+                                else:
+                                    pass
+
+                            elif ch.get_type() == "meas":
+                                self.set_state_text("Выполняется измерение " + device.get_name() +  str(ch.get_name()))
+                                logger.debug("Выполняется измерение " + device.get_name() +  str(ch.get_name()))
+                                repeat_counter = 0
+                                while repeat_counter < self.repeat_meas:
+                                    repeat_counter += 1
+                                    ans, param, step_time = device.do_meas(ch)
+                                    if ans == ch_response_to_step.Incorrect_ch:
+                                        break
+                                    status, buffer_meas = update_parameters(data=self.measurement_parameters, entry=param, time=time.time() - self.start_exp_time)
+                                    if status:
+                                        self.measurement_parameters = buffer_meas
+                                        self.exp_th_connect.is_measurement_data_updated = True
+                                    #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+                                    def print_data(data):
+                                        for device, channels in data.items():
+                                            print(f"Device: {device}")
+                                            for channel, parameters in channels.items():
+                                                print(f"Channel: {channel}")
+                                                for parameter, values in parameters.items():
+                                                    if parameter == 'time':
+                                                        print(f"  {parameter}: {values}")
+                                                    else:
+                                                        print(f"  {parameter}: {', '.join([str(value) for value in values])}")
+                                    #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+                                    #print_data(self.measurement_parameters)
+                                    
+                                    ch.last_step_time = step_time
+
+                                    self.write_data_to_buf_file("", addTime=True)
+                                    for param in param:
+                                        self.write_data_to_buf_file(message=str(param) + "\t")
+                                    self.write_data_to_buf_file(message="\n")
+
+                                    if ans == ch_response_to_step.Step_done:
+                                        self.add_text_to_log("шаг " + device.get_name() + " " + str(ch.get_name()) + " сделан за " + str(round(step_time)) + " сек" )
+                                        self.calc_last_exp_time()
+                                    if ans == ch_response_to_step.Step_fail:
+                                        ch.am_i_active_in_experiment = False
+                                        self.add_text_to_log("Ошибка опроса " + device.get_name() + " " + str(ch.get_name()), "err" )
+                                        if self.is_exp_run_anywhere == False:
+                                            error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
+                                        break
+                        elif ans_device == ch_response_to_step.End_list_of_steps:
+                            self.add_text_to_log(text = device.get_name() + " " + str(ch.get_name()) + " завершил " + "работу", status = "ok" )
+                            ch.am_i_active_in_experiment = False
                         else:
                             ch.am_i_active_in_experiment = False
 
-                        if device.get_steps_number(ch.number) is not False:
-                            if ch.number_meas >= device.get_steps_number(ch.number):
+                        if device.get_steps_number(ch) is not False:
+                            if ch.number_meas >= device.get_steps_number(ch) or "end_work" in str(device.get_trigger_value(ch)):
+                                self.add_text_to_log(text = device.get_name() + " " + str(ch.get_name()) + " завершил " + "работу", status = "ok" )
                                 ch.am_i_active_in_experiment = False
+ 
+                        subscribers = self.message_broker.get_subscribers(publisher = ch, name_subscribe = ch.do_operation_trigger)
 
-                        subscribers = self.get_subscribers([[device.get_name(), ch.number]], [
-                                                        device.get_name(), ch.number])
-
-                        #print(device.get_name(), "подписчики", subscribers)
+                        print(device.get_name(), "подписчики", subscribers)
 
                         if ch.am_i_active_in_experiment == False:
-                            '''останавливаем всех подписчиков'''
+                            '''останавливаем подписчиков, которые срабатывали по завершению операции'''
                             for subscriber in subscribers:
-                                dev = self.name_to_class(subscriber[0])
-                                for chann in dev.channels:
-                                    if chann.number == subscriber[1]:
-                                        chann.am_i_active_in_experiment = False
+                                dev = subscriber.device_class
+                                if "do_operation" in dev.get_trigger_value(subscriber):
+                                    self.add_text_to_log(text = dev.get_name() + " " + str(subscriber.get_name()) + " завершил " + "работу", status = "ok" )
+                                    subscriber.am_i_active_in_experiment = False
+                            #испускаем сигнал о том, что работа закончена
+                            self.message_broker.push_publish(name_subscribe = ch.end_operation_trigger, publisher = ch)
 
                         else:
-                            for subscriber in subscribers:
-                                '''передаем сигнал всем подписчикам'''
-                                self.name_to_class(
-                                    subscriber[0]).set_status_step(subscriber[1], True)
+                            '''передаем сигнал всем подписчикам о том, что операция произведена'''
+                            self.message_broker.push_publish(name_subscribe = ch.do_operation_trigger, publisher = ch)
+
 
                         for dev in self.dict_active_device_class.values():
                             for channel in dev.channels:
                                 if channel.is_ch_active():
-                                    #print(dev, channel.number, "приоритет = "+ str(channel.get_priority()))
-                                    if dev == device and ch.number == channel.number:
+                                    print(f"{dev.get_name()} {channel.get_name()} {channel.get_priority()=} {channel.am_i_should_do_step=}")
+                                    if dev == device and ch.get_name() == channel.get_name():
                                         continue
                                     else:
                                         if channel.get_priority() > ch.get_priority():
                                             channel.increment_priority()
-                        ch.set_priority(priority = min_priority)
+                        ch.set_priority(priority = self.min_priority)
 
    # -----------------------------------------------------------
         for dev, ch in self.get_active_ch_and_device():
-            ans = dev.action_end_experiment(ch.number)
+            ans = dev.action_end_experiment(ch)
             if ans == False:
                 pass
                 #print("ошибка при действии " + dev.get_name() + " после эксперимента")
@@ -456,6 +478,7 @@ class experimentControl(analyse):
         self.set_state_text("Подготовка к эксперименту")
 
         # ------------------подготовка к повторному началу эксперимента---------------------
+        self.message_broker.clear_all_subscribers()
         self.is_experiment_endless = False
         self.stop_experiment = False
         self.installation_window.start_button.setText("Старт")

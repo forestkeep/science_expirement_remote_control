@@ -2,42 +2,27 @@ from pymodbus.client import ModbusSerialClient
 from interface.set_power_supply_window import Ui_Set_power_supply
 from PyQt5.QtCore import QTimer, QDateTime
 from Classes import ch_response_to_step, base_device, ch_response_to_step, base_ch
-from power_supply_class import power_supply
+from power_supply_class import power_supply, chActPowerSupply, chMeasPowerSupply
 import time
 import logging
 import pyvisa
 logger = logging.getLogger(__name__)
 
-class ch_power_supply_class(base_ch):
-    def __init__(self, number, device_class, max_current, max_voltage, max_power, min_step_A = 0.001, min_step_V = 0.001, min_step_W = 1) -> None:
-        super().__init__(number)
-        self.base_duration_step = 10#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
-        self.steps_current = []
-        self.steps_voltage = []
-        self.max_current = max_current
-        self.max_voltage = max_voltage
-        self.max_power = max_power
-        self.min_step_V = min_step_V
-        self.min_step_A = min_step_A
-        self.min_step_W = min_step_W
-        self.dict_buf_parameters["type_of_work"] = "Стабилизация напряжения"
-        self.dict_buf_parameters["type_step"] = "Заданный шаг"
-        self.dict_buf_parameters["high_limit"] = str(10)
-        self.dict_buf_parameters["low_limit"] = str(self.min_step_V)
-        self.dict_buf_parameters["step"] = "2"
-        self.dict_buf_parameters["second_value"] = str(self.max_current)
-        self.dict_buf_parameters["repeat_reverse"] = False
-
 
 class rigolDp832aClass(power_supply):
     def __init__(self, name,installation_class) -> None:
         super().__init__(name, "serial", installation_class)
-        self.ch1 = ch_power_supply_class(1, self, 3, 30, 300)
-        self.ch2 = ch_power_supply_class(2, self, 3, 30, 300)
-        self.ch3 = ch_power_supply_class(3, self, 3, 5, 20)
-        self.channels = [self.ch1, self.ch2, self.ch3]
-        self.ch1.is_active = True#по умолчанию для каждого прибора включен первый канал
-        self.active_channel = self.ch1 #поле необходимо для записи параметров при настройке в нужный канал
+        self.ch1_act = chActPowerSupply(1, self, max_current=3, max_voltage=30, max_power=90,min_step_A = 0.001, min_step_V = 0.001, min_step_W = 1)
+        self.ch2_act = chActPowerSupply(2, self, max_current=3, max_voltage=30, max_power=90,min_step_A = 0.001, min_step_V = 0.001, min_step_W = 1)
+        self.ch3_act = chActPowerSupply(3, self, max_current=3, max_voltage=5, max_power=15,min_step_A = 0.001, min_step_V = 0.001, min_step_W = 1)
+        self.ch1_meas = chMeasPowerSupply(1, self)
+        self.ch2_meas = chMeasPowerSupply(2, self)
+        self.ch3_meas = chMeasPowerSupply(3, self)
+        self.channels = [self.ch1_act, self.ch2_act, self.ch3_act, self.ch1_meas, self.ch2_meas, self.ch3_meas]
+        self.ch1_act.is_active = True#по умолчанию для каждого прибора включен первый канал
+        self.ch1_meas.is_active = True#по умолчанию для каждого прибора включен первый канал
+        self.active_channel_act = self.ch1_act #поле необходимо для записи параметров при настройке в нужный канал
+        self.active_channel_meas = self.ch1_meas
 
     def _set_voltage(self,ch_num, voltage) -> bool:
         '''установить значение напряжения канала'''
@@ -172,10 +157,14 @@ if __name__ == "__main__":
     res = pyvisa.ResourceManager().list_resources()
     rm = pyvisa.ResourceManager()
 
-    client = rm.open_resource(res[0])
+    print(res)
+    print("Введите индекс ресурса")
 
-    client.write(f'*IDN?\n')
-    data = client.read_raw()
+    idx = int(input())
+
+    client = rm.open_resource(res[idx])
+
+    data = client.query_ascii_values(f'*IDN?\n')
     print(data)
 
     ax = client.query_ascii_values(f'CURSor:MANual:AXValue? \n')

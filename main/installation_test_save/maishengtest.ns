@@ -1,0 +1,2 @@
+1|Maisheng_1
+Настройки Maisheng_1baudrate|9600COM|COM3Настройки ch-1_acttrigger|Таймерsourse/time|1num steps|101type_of_work|Стабилизация напряженияtype_step|Заданный шагhigh_limit|50low_limit|0.01step|1second_value|15repeat_reverse|Truesoft_start|Truesoft_off|TrueНастройки ch-1_meastrigger|Таймерsourse/time|5num steps|15meas_cur|Truemeas_vol|Truemeas_set_cur|Truemeas_set_vol|True

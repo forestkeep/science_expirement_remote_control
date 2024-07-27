@@ -1,9 +1,9 @@
 from pymodbus.client import ModbusSerialClient
 from interface.set_power_supply_window import Ui_Set_power_supply
 from PyQt5.QtCore import QTimer, QDateTime
-from Classes import ch_response_to_step, base_device, ch_response_to_step, base_ch
+from Classes import ch_response_to_step, base_device, ch_response_to_step
 import time
-from power_supply_class import power_supply
+from power_supply_class import power_supply, chActPowerSupply, chMeasPowerSupply
 import logging
 logger = logging.getLogger(__name__)
 # 3Регулируемый блок питания MAISHENG WSD-20H15 (200В, 15А)
@@ -15,42 +15,20 @@ logger = logging.getLogger(__name__)
 # напряжении 200V, единица измерения 0,01 V)
 # Ответ конечного устройства: 01 10 00 40 00 02 40 1C
 
-# удаленная настройка выходного напряжения 0,01 В
-class ch_power_supply_class(base_ch):
-    def __init__(self, number, device_class) -> None:
-        super().__init__(number)
-        self.base_duration_step = 2#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
-        self.steps_current = []
-        self.steps_voltage = []
-        self.max_current = 15
-        self.max_voltage = 200
-        self.max_power = 2000
-        self.min_step_V = 0.01
-        self.min_step_A = 0.01
-        self.min_step_W = 1
-        self.dict_buf_parameters["type_of_work"] = "Стабилизация напряжения"
-        self.dict_buf_parameters["type_step"] = "Заданный шаг"
-        self.dict_buf_parameters["high_limit"] = str(10)
-        self.dict_buf_parameters["low_limit"] = str(self.min_step_V)
-        self.dict_buf_parameters["step"] = "2"
-        self.dict_buf_parameters["second_value"] = str(self.max_current)
-        self.dict_buf_parameters["repeat_reverse"] = False
 
 class maishengPowerClass(power_supply):
     def __init__(self, name, installation_class) -> None:
 
         super().__init__(name, "modbus", installation_class)
-        self.ch1 = ch_power_supply_class(1, self)
-        self.channels = [self.ch1]
-        self.ch1.is_active = (
-            True  # по умолчанию для каждого прибора включен первый канал
-        )
-        self.active_channel = (
-            self.ch1
-        )  # поле необходимо для записи параметров при настройке в нужный канал
+        self.ch1_act = chActPowerSupply(1, self, max_current=15, max_voltage=200, max_power=600,min_step_A = 0.01, min_step_V = 0.01, min_step_W = 1)
+        self.ch1_meas = chMeasPowerSupply(1, self)
+        self.channels = [self.ch1_act, self.ch1_meas ]
+        self.ch1_act.is_active = True#по умолчанию для каждого прибора включен первый канал
+        self.ch1_meas.is_active = True#по умолчанию для каждого прибора включен первый канал
+        self.active_channel_act = self.ch1_act #поле необходимо для записи параметров при настройке в нужный канал
+        self.active_channel_meas = self.ch1_meas
 
-
-    def _set_voltage(self,ch_num, voltage) -> bool:  # в сотых долях вольта 20000 - 200В
+    def _set_voltage(self, ch_num, voltage) -> bool:  # в сотых долях вольта 20000 - 200В
         voltage*=100
         response = self._write_reg(
             address=int("0040", 16), count=2, slave=1, values=[0, int(voltage)]

@@ -1,8 +1,0 @@
-Запущена установка 
-Список_приборов: Maisheng_1 АКИП-2404_2 PR_3 SR830_4 DP832A_5 E7-20MNIPI_6 
-Настройки Maisheng_1 ch-1baudrate - 9600COM - COM16trigger - Таймерsourse/time - 10num steps - 6type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 10low_limit - 0,01step - 2second_value - 15repeat_reverse - False--------------------
-Настройки АКИП-2404_2 ch-1baudrate - 9600COM - COM15trigger - Таймерsourse/time - 10num steps - 3type_meas - Напряжениеrange - Auto--------------------
-Настройки PR_3 ch-1baudrate - 9600COM - COM16trigger - Таймерsourse/time - 10num steps - 1mode - Смена полярности--------------------
-Настройки SR830_4 ch-1baudrate - 9600COM - COM15trigger - Таймерsourse/time - 10num steps - 3time_const - 1000,0filter_slope - 6,0SYNK_200_Hz - Onsensitivity - 1,0reserve - high reserveinput_channel - Ainput_type - ACinput_connect - groundfilters - linefrequency - 400,0amplitude - 1,0--------------------
-Настройки DP832A_5 ch-1baudrate - 9600COM - COM15trigger - Таймерsourse/time - 10num steps - 6type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 10low_limit - 0,001step - 2second_value - 3repeat_reverse - False--------------------
-Настройки E7-20MNIPI_6 ch-1baudrate - 9600COM - COM15trigger - Таймерsourse/time - 10num steps - 3meas L - Falsemeas R - Falsemeas I - Falsemeas C - Falsemeas Z - Truefrequency - 1000,0level - 1,0offset - 0,0--------------------

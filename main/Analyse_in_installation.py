@@ -12,7 +12,7 @@ class analyse(baseInstallation):
         '''возвращает массивы веток приборов, каждая ветка работает по своему таймеру. Веткой называется прибор, работающий по таймеру и все подписчики'''
         time_lines = []
         for device, ch in self.get_active_ch_and_device():
-                    if device.get_trigger(ch.number) == "Таймер":
+                    if device.get_trigger(ch) == "Таймер":
                         time_line = [[device.get_name(), ch.number]]
                         subscribers = self.get_subscribers([[device.get_name(), ch.number]], [device.get_name(), ch.number])
                         print(f"{subscribers=}")
@@ -56,8 +56,8 @@ class analyse(baseInstallation):
         experiment_endless = False
         mark_device_number = []
         for device, ch in self.get_active_ch_and_device():
-                    if device.get_trigger(ch.number) == "Таймер" and device.get_steps_number(ch.number) == False:
-                        mark_device_number.append(device.get_name() + str(ch.number))
+                    if device.get_trigger(ch) == "Таймер" and device.get_steps_number(ch) == False:
+                        mark_device_number.append(device.get_name() + str(ch.get_name()))
                         
                         if len(mark_device_number) >= 2:
                             message = "каналы "
@@ -74,19 +74,20 @@ class analyse(baseInstallation):
         sourses = self.cycle_analyse()
         if sourses:
             for sourse in sourses:
-                dev, ch = sourse.split()[0], sourse.split()[1]
-                first_ch = ch[3:4:1]
-                first_dev = self.name_to_class(name=dev)
+                dev, ch_name = sourse.split()[0], sourse.split()[1]
+                first_dev = self.name_to_class(name_device=dev)
+                first_ch = first_dev.get_object_ch(ch_name=ch_name)
                 branch = [sourse]
 
                 subscriber_dev = first_dev
                 subscriber_ch = first_ch
                 while True:
+                    
                     ans = subscriber_dev.get_trigger_value(subscriber_ch)
                     if ans is not False:
-                        dev, ch = ans.split()[0], ans.split()[1]
-                        subscriber_ch = ch[3:4:1]
-                        subscriber_dev = self.name_to_class(name=dev)
+                        dev, ch_name = ans.split()[0], ans.split()[1]
+                        subscriber_dev = self.name_to_class(name_device=dev)
+                        subscriber_ch = subscriber_dev.get_object_ch(ch_name=ch_name)
                         branch.append(ans)
                     else:
                         break
@@ -101,7 +102,7 @@ class analyse(baseInstallation):
                             message = message + n + " "
                         message += "эксперимент будет продолжаться бесконечно"
                         self.add_text_to_log(
-                            message, status="err")
+                            message, status="war")
                         logger.debug("бесконечный эксперимент, зацикливание с бесконечным количеством шагов")
                         break  # прошли круг
 
@@ -111,11 +112,11 @@ class analyse(baseInstallation):
         out = []
         for c in line:
             if c != False:
-                dev, ch = c.split()[0], c.split()[1]
-                ch_num = ch[3:4:1]
-                dev = self.name_to_class(name=dev)
-                if dev.get_trigger(ch_num) == "Внешний сигнал":
-                    s = dev.get_trigger_value(ch_num)
+                dev_name, ch_name, trg = c.split()[0], c.split()[1], c.split()[2]
+                dev = self.name_to_class(name_device=dev_name)
+                ch = dev.get_object_ch(ch_name=ch_name)
+                if dev.get_trigger(ch) == "Внешний сигнал" and trg == "do_operation":
+                    s = dev.get_trigger_value(ch)
                 else:
                     s = False
                 out.append(s)
@@ -130,10 +131,11 @@ class analyse(baseInstallation):
         i = 0
         sourse_lines = []
         array = names
-
+        logger.info("анализируем зацикливания приборов")
+        #формируем первую линию сигналов
         for dev, ch in self.get_active_ch_and_device():
-                    if dev.get_trigger(ch.number) == "Внешний сигнал":
-                        s = dev.get_trigger_value(ch.number)
+                    if dev.get_trigger(ch) == "Внешний сигнал":
+                        s = dev.get_trigger_value(ch)
                     else:
                         s = False
                     sourse.append(s)
@@ -141,11 +143,10 @@ class analyse(baseInstallation):
         while i < len(sourse):  # получаем матрицу источников сигналов с количеством столбцом равным количеству каналов в установке и количеством строк на 1 больше, чем столбцом
             matrix_sourse.append(self.get_sourse_line(matrix_sourse[i]))
             i += 1
-        #for m in matrix_sourse:
-        #    print(m)
 
         # ищем зацикливания, запоминаем первый элемент в столбце и идем по столбцу, если встретим такоц же элемент, то зацикливание обнаружено(кроме false)
         transposed_matrix = []
+
 
         for i in range(len(matrix_sourse[0])):
             transposed_row = []
@@ -153,37 +154,40 @@ class analyse(baseInstallation):
                 transposed_row.append(row[i])
             transposed_matrix.append(transposed_row)
 
+        i = 0
+        for row in transposed_matrix:
+            logger.info(f"{i} {row=}")
+            i+=1
+
         setted_dev = []  # массмив для хранения источников, которые уже были обнаружены в зацикливании и для которых установлена готовность шага
         for row in (transposed_matrix):
+            logger.info(f"{row=}")
             for i in range(1, len(row), 1):
                 if row[0] == False or row[i] in setted_dev:
                     break
                 if row[0] == row[i]:
-                    #print("зацикливание по строке ", row)
+                    print("зацикливание по строке ", row)
                     setted_dev.append(row[0])
-                    dev, ch = row[0].split()[0], row[0].split()[1]
-                    ch_num = ch[3:4:1]
-                    dev = self.name_to_class(name=dev)
+                    dev, ch_name = row[0].split()[0], row[0].split()[1]
+                    dev = self.name_to_class(name_device=dev)
 
-                    dev.set_status_step(ch_num, True)
+                    dev.set_status_step(ch_name=ch_name, status = True)
                     break
         return setted_dev
 
     def get_subscribers(self, signals, trig) -> list[list[str,str]]:
-        '''возвращает массив пар [имя прибора, номер канала] подписчиков данного сигнала-триггера и всех последующих подписчиков, рекурсивная функция'''
+        '''возвращает массив пар [имя прибора, имя канала] подписчиков данного сигнала-триггера и всех последующих подписчиков, рекурсивная функция'''
 
         subscribers = signals
         for device, ch in self.get_active_ch_and_device():
-                    if device.get_trigger(ch.number).lower() == "внешний сигнал":
-                        stroka = device.get_trigger_value(ch.number)
-                        sourse = [stroka.split()[0], int(
-                            stroka.split()[1][-1])]
-                        if [device.get_name(), ch.number] in signals:
+                    if device.get_trigger(ch).lower() == "внешний сигнал":
+                        stroka = device.get_trigger_value(ch)
+                        sourse = [stroka.split()[0], stroka.split()[1]]
+                        if [device.get_name(), ch.get_name()] in signals:
                             continue
                         for sig in signals:
                             if sourse == sig:
-                                subscribers.append(
-                                    [device.get_name(), ch.number])
+                                subscribers.append([device.get_name(), ch.get_name()])
                                 self.get_subscribers(subscribers, sourse)
         ret_sub = []
         for dev in subscribers:

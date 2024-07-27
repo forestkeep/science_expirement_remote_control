@@ -1,0 +1,2 @@
+1|PR_1
+Настройки PR_1baudrate|9600COM|COM3Настройки ch-1_acttrigger|Внешний сигналsourse/time|PR_1 ch-1_measnum steps|Пока активны другие приборыmode|Смена полярностиНастройки ch-1_meastrigger|Внешний сигналsourse/time|PR_1 ch-1_actnum steps|Пока активны другие приборыhall1|Falsehall2|Falsehall3|Truehall4|False

@@ -1,0 +1,4 @@
+Запущена установка 
+Список_приборов: DP832A_1 
+Настройки DP832A_1baudrate - 9600COM - COM10Настройки ch-1_acttrigger - Внешний сигналsourse/time - DP832A_1 ch-1_meas do_operationnum steps - 6type_of_work - Стабилизация напряженияtype_step - Заданный шагhigh_limit - 5low_limit - 0,001step - 1second_value - 3repeat_reverse - Falsesoft_start - Falsesoft_off - FalseНастройки ch-1_meastrigger - Внешний сигналsourse/time - DP832A_1 ch-1_act do_operationnum steps - Пока активны другие приборыmeas_cur - Falsemeas_vol - Falsemeas_set_cur - Truemeas_set_vol - False--------------------
+15:33:56 DP832A_1 ch-1_meas	['current_set=0,7257190584151856']	
