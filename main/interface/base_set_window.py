@@ -1,5 +1,7 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
 import logging
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
 logger = logging.getLogger(__name__)
 
 
@@ -8,7 +10,7 @@ class base_settings_window(QtWidgets.QDialog):
         super().__init__()
 
         self.font = QtGui.QFont()
-        self.font.setPointSize(12)
+        self.font.setPointSize(11)
         self.font.setBold(True)
 
         self.setModal(False)
@@ -16,7 +18,9 @@ class base_settings_window(QtWidgets.QDialog):
         self.buttonBox = QtWidgets.QDialogButtonBox()
         self.buttonBox.setGeometry(QtCore.QRect(80, 340, 191, 32))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStandardButtons(
+            QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok
+        )
         self.buttonBox.setObjectName("buttonBox")
 
         self.triger_act_enter = QtWidgets.QComboBox()
@@ -50,17 +54,25 @@ class base_settings_window(QtWidgets.QDialog):
 
         self.settings_act_in_exp = QtWidgets.QLabel("Set action in exp")
         self.settings_act_in_exp.setFont(self.font)
-        self.settings_act_in_exp.setMinimumWidth(250)
-        self.settings_act_in_exp.setSizePolicy( QtWidgets.QSizePolicy.Minimum , QtWidgets.QSizePolicy.Minimum)
+
+        self.settings_act_in_exp.setSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
+        )
 
         self.settings_meas_in_exp = QtWidgets.QLabel("Set meas in exp")
         self.settings_meas_in_exp.setFont(self.font)
-        self.settings_meas_in_exp.setMinimumWidth(250)
-        self.settings_meas_in_exp.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
 
-        self.verticalSpacerButtonact = QtWidgets.QSpacerItem(15, 15, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalSpacerButtonmeas = QtWidgets.QSpacerItem(15, 15, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        #===Create layout==
+        self.settings_meas_in_exp.setSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
+        )
+
+        self.verticalSpacerButtonact = QtWidgets.QSpacerItem(
+            15, 15, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding
+        )
+        self.verticalSpacerButtonmeas = QtWidgets.QSpacerItem(
+            15, 15, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding
+        )
+        # ===Create layout==
         self.baseLayout = QtWidgets.QVBoxLayout(self)
 
         self.Layout_set_dev_act = QtWidgets.QGridLayout()
@@ -80,7 +92,7 @@ class base_settings_window(QtWidgets.QDialog):
         self.vert_act_lay = QtWidgets.QVBoxLayout()
         self.vert_meas_lay = QtWidgets.QVBoxLayout()
 
-        #===Configuration layout===
+        # ===Configuration layout===
         self.vert_act_lay.addLayout(self.Layout_set_dev_act)
         self.vert_meas_lay.addLayout(self.Layout_set_dev_meas)
 
@@ -93,7 +105,6 @@ class base_settings_window(QtWidgets.QDialog):
         self.baseLayout.addLayout(self.one_line_lay)
         self.baseLayout.addLayout(self.two_line_lay)
         self.baseLayout.addLayout(self.Layout_set_connection)
-
 
         self.vert_act_lay.addItem(self.verticalSpacerButtonact)
         self.vert_meas_lay.addItem(self.verticalSpacerButtonmeas)
@@ -114,7 +125,6 @@ class base_settings_window(QtWidgets.QDialog):
         self.Layout_set_triger_meas.addWidget(self.num_meas_label, 4, 0, 1, 1)
         self.Layout_set_triger_meas.addWidget(self.num_meas_enter, 4, 1, 1, 2)
 
-
         self.Layout_set_connection.addWidget(self.label_connection, 0, 0, 1, 3)
         self.Layout_set_connection.addWidget(self.COM_label, 1, 0, 1, 1)
         self.Layout_set_connection.addWidget(self.comportslist, 1, 1, 1, 2)
@@ -122,27 +132,38 @@ class base_settings_window(QtWidgets.QDialog):
         self.Layout_set_connection.addWidget(self.boudrate, 2, 1, 1, 2)
         self.Layout_set_connection.addWidget(self.buttonBox, 3, 1, 2, 2)
 
-
-        self.buttonBox.accepted.connect(
-            self.accept)  # type: ignore
-        self.buttonBox.rejected.connect(
-            self.reject)  # type: ignore
+        self.buttonBox.accepted.connect(self.accept)  # type: ignore
+        self.buttonBox.rejected.connect(self.reject)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(self)
 
         self.rejected.connect(self.onReject)
 
+        self.triger_act_enter.setWhatsThis(
+            "Источник сигнала для проведения действия. Таймер - поведение действия через заданное количество секунд в поле ниже. Внешний сигнал - сигнал от дугих пиборов в установке "
+        )
+        self.num_act_enter.setWhatsThis(
+            "Количество действий, которое прибор выполнит в ходе эксперимента"
+        )
+        self.sourse_act_enter.setWhatsThis(
+            "Выберите источника сигнала или значение(в случае таймера в качестве триггера) для действия данного канала"
+        )
 
-        self.triger_act_enter.setWhatsThis("Источник сигнала для проведения действия. Таймер - поведение действия через заданное количество секунд в поле ниже. Внешний сигнал - сигнал от дугих пиборов в установке ")
-        self.num_act_enter.setWhatsThis("Количество действий, которое прибор выполнит в ходе эксперимента")
-        self.sourse_act_enter.setWhatsThis("Выберите источника сигнала или значение(в случае таймера в качестве триггера) для действия данного канала")
+        self.triger_meas_enter.setWhatsThis(
+            "Источник сигнала для проведения измерения. Таймер - поведение измерения через заданное количество секунд в поле ниже. Внешний сигнал - сигнал от дугих пиборов в установке "
+        )
+        self.num_meas_enter.setWhatsThis(
+            "Количество измерений, которое прибор выполнит в ходе эксперимента"
+        )
+        self.sourse_meas_enter.setWhatsThis(
+            "Выберите источника сигнала или значение(в случае таймера в качестве триггера)"
+        )
 
-        self.triger_meas_enter.setWhatsThis("Источник сигнала для проведения измерения. Таймер - поведение измерения через заданное количество секунд в поле ниже. Внешний сигнал - сигнал от дугих пиборов в установке ")
-        self.num_meas_enter.setWhatsThis("Количество измерений, которое прибор выполнит в ходе эксперимента")
-        self.sourse_meas_enter.setWhatsThis("Выберите источника сигнала или значение(в случае таймера в качестве триггера)")
-        
-        self.comportslist.setWhatsThis("Выберите интерфейс подключения, если нужный интерфейс(usb, com) не отображаются в списке для выбора, проверьте доступность этого интерфейса в диспетчере устройств вашей операционной системы.")
-        self.boudrate.setWhatsThis("Скорость обмена данными(bit per second) при выбранном интерфейсе COM-port. При другом выбранном интерфейсе данный параметр игнорируется.")
-
+        self.comportslist.setWhatsThis(
+            "Выберите интерфейс подключения, если нужный интерфейс(usb, com) не отображаются в списке для выбора, проверьте доступность этого интерфейса в диспетчере устройств вашей операционной системы."
+        )
+        self.boudrate.setWhatsThis(
+            "Скорость обмена данными(bit per second) при выбранном интерфейсе COM-port. При другом выбранном интерфейсе данный параметр игнорируется."
+        )
 
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна крестиком
         print("окно настройки закрыто крестиком")
@@ -162,9 +183,12 @@ class base_settings_window(QtWidgets.QDialog):
         for i in reversed(range(self.Layout_set_dev_act.count())):
             self.Layout_set_dev_act.itemAt(i).widget().setParent(None)
 
+
 if __name__ == "__main__":
-    import qdarktheme
     import sys
+
+    import qdarktheme
+
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
     a = base_settings_window()

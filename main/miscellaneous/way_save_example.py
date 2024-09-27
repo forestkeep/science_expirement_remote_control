@@ -28,11 +28,15 @@ def tkexample():
     tk.mainloop()
 
 
+
 class Notepad(QtWidgets.QMainWindow):
+
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle('New document - Notepad Alpha[*]')
         fileMenu = self.menuBar().addMenu('File')
+        
         saveAction = fileMenu.addAction('Save')
         saveAction.triggered.connect(self.save)
         saveAsAction = fileMenu.addAction('Save as...')

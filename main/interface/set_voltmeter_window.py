@@ -1,5 +1,7 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
 import logging
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
@@ -7,10 +9,10 @@ if __name__ == "__main__":
 else:
     from interface.base_set_window import base_settings_window
 
+
 class Ui_Set_voltmeter(base_settings_window):
     def __init__(self) -> None:
         super().__init__()
-
 
     def setupUi(self):
 
@@ -54,18 +56,22 @@ class Ui_Set_voltmeter(base_settings_window):
     def retranslateUi(self, Set_window):
         _translate = QtCore.QCoreApplication.translate
         Set_window.setWindowTitle(
-            _translate("Set_power_supply", "Настройка вольтметра"))
+            _translate("Set_power_supply", "Настройка вольтметра")
+        )
         self.range_label.setText(_translate("Set_power_supply", "Диапазон"))
-        self.mode_label.setText(_translate(
-            "Set_power_supply", "Что измеряем?"))
+        self.mode_label.setText(_translate("Set_power_supply", "Что измеряем?"))
         self.COM_label.setText(_translate("Set_power_supply", "COM"))
         self.baud_label.setText(_translate("Set_power_supply", "Baudrate"))
-        self.label_connection.setText(_translate(
-            "Set_power_supply", "Параметры подключения"))
+        self.label_connection.setText(
+            _translate("Set_power_supply", "Параметры подключения")
+        )
+
 
 if __name__ == "__main__":
-    import qdarktheme
     import sys
+
+    import qdarktheme
+
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
     a = Ui_Set_voltmeter()

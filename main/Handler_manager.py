@@ -1,116 +1,104 @@
-import enum
 import unittest
 
-#разработка управляющего событиями.
-#задачи: сбор информации о составе установки и анализ на возможные события
-#выдача по запросу списка событий
-#анализ состояния во время эксперимента и выдача наступивших событий
-#события срабатывания таймера включать или нет?
 
-'''
-события:
-	общие:
-		прибор произвел действие
-		прибор закончил измерения
-	
+class subscribe:
+    def __init__(self, name, publiser, description) -> None:
+        self.publisher = publiser
+        self.name = name
+        self.description = description
+        self.subscribers = []
 
-'''
-class expEvents(enum.Enum):
-	action_done = 1#сделано действие прибора
-	end_meas = 2#прибор закончил работу
-	half_meas_done = 3#половина измерений прибора произведена
-	action_after_half_meas_done = 4#сделано действие прибора при условии, что половина действий уже совершена
-	timer_expired = 5#истекло время таймера
+    def add_subscriber(self, sub):
+        self.subscribers.append(sub)
 
-class subscribe():
-	def __init__(self, name, publiser, description) -> None:
-		self.publisher = publiser
-		self.name = name
-		self.description = description
-		self.subscribers = []
+    def remove_all_subscribers(self):
+        self.subscribers = []
 
-	def add_subscriber(self, sub):
-		self.subscribers.append(sub)
+    def remove_subscriber(self, sub) -> bool:
+        index = 0
+        for sb in self.subscribers:
+            if sub == sb:
+                self.subscribers.pop(index)
+                return True
+            index += 1
+        return False
 
-	def remove_all_subscribers(self):
-		self.subscribers = []
+    def push_message(self):
+        for sub in self.subscribers:
+            try:
+                sub.receive_message(self.name)
+            except:
+                print(f"Ошибка при отправке сообщения от {self.name} подписчику {sub}")
 
-	def remove_subscriber(self, sub) -> bool:
-		index = 0
-		for sb in self.subscribers:
-			if sub == sb:
-				self.subscribers.pop(index)
-				return True
-			index+=1
-		return False
-	
-	def push_message(self):
-		for sub in self.subscribers:
-			try:
-				sub.receive_message(self.name)
-			except:
-				print(f"Ошибка при отправке сообщения от {self.name} подписчику {sub}")
+    def get_name(self):
+        return self.name
 
-	def get_name(self):
-		return self.name
 
-class messageBroker():
-	def __init__(self) -> None:
-		self.subscribe_list = []
+class messageBroker:
+    def __init__(self) -> None:
+        self.subscribe_list = []
 
-	def get_subscribe_list(self, object) -> list:
-		send_list = []
-		for sub in self.subscribe_list:
-			if sub.publisher != object:
-				if sub.publisher.is_active:
-					send_list.append(sub.get_name())
-		return send_list
+    def get_subscribe_list(self, object) -> list:
+        send_list = []
+        for sub in self.subscribe_list:
+            if sub.publisher != object:
+                if sub.publisher.is_active:
+                    send_list.append(sub.get_name())
+        return send_list
 
-	def subscribe(self, object, name_subscribe):
-		for subscribe in self.subscribe_list:
-			if name_subscribe == subscribe.get_name():
-				subscribe.add_subscriber(object)
-				return True
-		return False
-	
-	def remove_my_subscribe(self, object, name_subscribe = False):
-		if name_subscribe == False:
-			for subscribe in self.subscribe_list:
-				subscribe.remove_subscriber(object)
-		else:
-			for subscribe in self.subscribe_list:
-				if name_subscribe == subscribe.get_name():
-					subscribe.remove_subscriber(object)
-					break
+    def subscribe(self, object, name_subscribe):
+        for subscribe in self.subscribe_list:
+            if name_subscribe == subscribe.get_name():
+                subscribe.add_subscriber(object)
+                return True
+        return False
 
-	def clear_all_subscribers(self):
-		'''очистить все подписки от подписчиков'''
-		for subscribe in self.subscribe_list:
-			subscribe.remove_all_subscribers()
+    def remove_my_subscribe(self, object, name_subscribe=False):
+        if name_subscribe == False:
+            for subscribe in self.subscribe_list:
+                subscribe.remove_subscriber(object)
+        else:
+            for subscribe in self.subscribe_list:
+                if name_subscribe == subscribe.get_name():
+                    subscribe.remove_subscriber(object)
+                    break
 
-	def create_subscribe(self, name_subscribe, publisher, description = ""):
-		new_subscribe = subscribe(name=name_subscribe, publiser=publisher, description = description)
-		self.subscribe_list.append(new_subscribe)
+    def clear_all_subscribers(self):
+        """очистить все подписки от подписчиков"""
+        for subscribe in self.subscribe_list:
+            subscribe.remove_all_subscribers()
 
-	def push_publish(self, name_subscribe, publisher):
-		for sub in self.subscribe_list:
-			if sub.get_name() == name_subscribe:
-				if sub.publisher == publisher:
-					sub.push_message()
-					return True
-				else:
-					print("Ошибка, отправить публикацию может только создатель")
-					return False
-		return False
-	
-	def get_subscribers(self, publisher, name_subscribe):
-		for sub in self.subscribe_list:
-			if sub.get_name() == name_subscribe:
-				if sub.publisher == publisher:
-					return sub.subscribers
-				else:
-					print("Ошибка, отправить публикацию может только создатель")
-					return False
+    def clear_all(self):
+        """очистить все подписки"""
+        self.subscribe_list = []
+
+    def create_subscribe(self, name_subscribe, publisher, description=""):
+        new_subscribe = subscribe(
+            name=name_subscribe, publiser=publisher, description=description
+        )
+        self.subscribe_list.append(new_subscribe)
+
+    def push_publish(self, name_subscribe, publisher):
+        for sub in self.subscribe_list:
+            if sub.get_name() == name_subscribe:
+                if sub.publisher == publisher:
+                    sub.push_message()
+                    return True
+                else:
+                    print(
+                        f"Ошибка, отправить публикацию может только создатель {sub.publisher=} {publisher=}"
+                    )
+                    return False
+        return False
+
+    def get_subscribers(self, publisher, name_subscribe):
+        for sub in self.subscribe_list:
+            if sub.get_name() == name_subscribe:
+                if sub.publisher == publisher:
+                    return sub.subscribers
+                else:
+                    print("Ошибка, отправить публикацию может только создатель")
+                    return False
 
 
 class MockSubscriber:
@@ -121,13 +109,16 @@ class MockSubscriber:
     def receive_message(self, message):
         self.received_messages.append(message)
 
+
 class TestSubscribeAndMessageBroker(unittest.TestCase):
 
     def setUp(self):
         self.publisher_name = "Publisher1"
         self.subscriber_name = "Subscriber1"
         self.subscriber = MockSubscriber(self.subscriber_name)
-        self.subscribe_service = subscribe("Subscription1", self.publisher_name, "Description1")
+        self.subscribe_service = subscribe(
+            "Subscription1", self.publisher_name, "Description1"
+        )
         self.message_broker = messageBroker()
 
     def test_add_subscriber(self):
@@ -147,13 +138,17 @@ class TestSubscribeAndMessageBroker(unittest.TestCase):
     def test_create_subscribe(self):
         self.message_broker.create_subscribe("Subscription2", "Publisher2")
         self.assertEqual(len(self.message_broker.subscribe_list), 1)
-        self.assertEqual(self.message_broker.subscribe_list[0].get_name(), "Subscription2")
+        self.assertEqual(
+            self.message_broker.subscribe_list[0].get_name(), "Subscription2"
+        )
 
     def test_subscribe_to_existing(self):
         self.message_broker.create_subscribe("Subscription2", "Publisher2")
         result = self.message_broker.subscribe(self.subscriber, "Subscription2")
         self.assertTrue(result)
-        self.assertIn(self.subscriber, self.message_broker.subscribe_list[0].subscribers)
+        self.assertIn(
+            self.subscriber, self.message_broker.subscribe_list[0].subscribers
+        )
 
     def test_push_publish(self):
         self.message_broker.create_subscribe("Subscription2", self.publisher_name)
@@ -167,5 +162,6 @@ class TestSubscribeAndMessageBroker(unittest.TestCase):
         result = self.message_broker.push_publish("Subscription2", "WrongPublisher")
         self.assertFalse(result)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

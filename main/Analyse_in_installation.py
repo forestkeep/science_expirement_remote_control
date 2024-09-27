@@ -1,38 +1,42 @@
+import copy
+import logging
 
-import logging, copy
 logger = logging.getLogger(__name__)
-from base_installation import *
-from Adapter import Adapter, instrument
+from Adapter import Adapter
+from base_installation import baseInstallation
+from Classes import not_ready_style_border, ready_style_border, warning_style_border
+
 
 class analyse(baseInstallation):
     def __init__(self) -> None:
         super().__init__()
-        
+
     def get_time_line_devices(self):
-        '''возвращает массивы веток приборов, каждая ветка работает по своему таймеру. Веткой называется прибор, работающий по таймеру и все подписчики'''
+        """возвращает массивы веток приборов, каждая ветка работает по своему таймеру. Веткой называется прибор, работающий по таймеру и все подписчики"""
         time_lines = []
         for device, ch in self.get_active_ch_and_device():
-                    if device.get_trigger(ch) == "Таймер":
-                        time_line = [[device.get_name(), ch.number]]
-                        subscribers = self.get_subscribers([[device.get_name(), ch.number]], [device.get_name(), ch.number])
-                        print(f"{subscribers=}")
-                        for sub in subscribers:
-                              time_line.append([sub[0], sub[1]])
+            if device.get_trigger(ch) == "Таймер":
+                time_line = [[device.get_name(), ch.number]]
+                subscribers = self.get_subscribers(
+                    [[device.get_name(), ch.number]], [device.get_name(), ch.number]
+                )
+                print(f"{subscribers=}")
+                for sub in subscribers:
+                    time_line.append([sub[0], sub[1]])
 
-                        time_lines.append(time_line)
-
+                time_lines.append(time_line)
 
         print(time_lines)
         for line in time_lines:
             buf = []
             for lin in line:
-                  buf.append(lin[0] + " ch-" + str(lin[1]))
+                buf.append(lin[0] + " ch-" + str(lin[1]))
             print(buf)
 
         return time_lines
-                    
+
     def analyse_endless_exp(self) -> bool:
-        '''определяет зацикливания по сигналам и выдает предупреждение о бесконечном эксперименте'''
+        """определяет зацикливания по сигналам и выдает предупреждение о бесконечном эксперименте"""
 
         '''эксперимент будет бесконечен:
         - в случае, если есть минимум 2 канала с тригером таймером и количеством шагов, равном "пока активны другие приборы"
@@ -42,7 +46,8 @@ class analyse(baseInstallation):
             for sourse in sourses:
                 first = sourse
 
-        first_array = copy.deepcopy(self.current_installation_list)
+        first_array = copy.deepcopy(list(self.dict_active_device_class.keys()))
+
         name = []
         sourse = []
         for dev in first_array:
@@ -56,18 +61,20 @@ class analyse(baseInstallation):
         experiment_endless = False
         mark_device_number = []
         for device, ch in self.get_active_ch_and_device():
-                    if device.get_trigger(ch) == "Таймер" and device.get_steps_number(ch) == False:
-                        mark_device_number.append(device.get_name() + str(ch.get_name()))
-                        
-                        if len(mark_device_number) >= 2:
-                            message = "каналы "
-                            for n in mark_device_number:
-                                message = message + n + " "
-                            message = message + "будут работать бесконечно"
-                            self.add_text_to_log(
-                                message, status="err")
-                            experiment_endless = True
-                            break
+            if (
+                device.get_trigger(ch) == "Таймер"
+                and device.get_steps_number(ch) == False
+            ):
+                mark_device_number.append(device.get_name() + str(ch.get_name()))
+
+                if len(mark_device_number) >= 2:
+                    message = "каналы "
+                    for n in mark_device_number:
+                        message = message + n + " "
+                    message = message + "будут работать бесконечно"
+                    self.add_text_to_log(message, status="err")
+                    experiment_endless = True
+                    break
         # --------------------------------------------------
 
         # -----------------анализ других случаев------------
@@ -82,7 +89,7 @@ class analyse(baseInstallation):
                 subscriber_dev = first_dev
                 subscriber_ch = first_ch
                 while True:
-                    
+
                     ans = subscriber_dev.get_trigger_value(subscriber_ch)
                     if ans is not False:
                         dev, ch_name = ans.split()[0], ans.split()[1]
@@ -101,9 +108,10 @@ class analyse(baseInstallation):
                         for n in branch:
                             message = message + n + " "
                         message += "эксперимент будет продолжаться бесконечно"
-                        self.add_text_to_log(
-                            message, status="war")
-                        logger.debug("бесконечный эксперимент, зацикливание с бесконечным количеством шагов")
+                        self.add_text_to_log(message, status="war")
+                        logger.debug(
+                            "бесконечный эксперимент, зацикливание с бесконечным количеством шагов"
+                        )
                         break  # прошли круг
 
         return experiment_endless
@@ -125,28 +133,30 @@ class analyse(baseInstallation):
         return out
 
     def cycle_analyse(self):
-        '''проводим анализ на предмет зацикливания, если оно обнаружено, то необходимо установить флаг готовности одного прибора из цикла, чтобы цикл начался.'''
-        names = copy.deepcopy(self.current_installation_list)
+        """проводим анализ на предмет зацикливания, если оно обнаружено, то необходимо установить флаг готовности одного прибора из цикла, чтобы цикл начался."""
+        #names = copy.deepcopy(self.current_installation_list)
+
+        names = copy.deepcopy(list(self.dict_active_device_class.keys()))
         sourse = []
         i = 0
         sourse_lines = []
         array = names
-        logger.info("анализируем зацикливания приборов")
-        #формируем первую линию сигналов
+        logger.debug("анализируем зацикливания приборов")
+        # формируем первую линию сигналов
         for dev, ch in self.get_active_ch_and_device():
-                    if dev.get_trigger(ch) == "Внешний сигнал":
-                        s = dev.get_trigger_value(ch)
-                    else:
-                        s = False
-                    sourse.append(s)
+            if dev.get_trigger(ch) == "Внешний сигнал":
+                s = dev.get_trigger_value(ch)
+            else:
+                s = False
+            sourse.append(s)
         matrix_sourse = [copy.deepcopy(sourse)]
-        while i < len(sourse):  # получаем матрицу источников сигналов с количеством столбцом равным количеству каналов в установке и количеством строк на 1 больше, чем столбцом
+        while i < len(sourse):  
+            # получаем матрицу источников сигналов с количеством столбцом равным количеству каналов в установке и количеством строк на 1 больше, чем столбцом
             matrix_sourse.append(self.get_sourse_line(matrix_sourse[i]))
             i += 1
 
         # ищем зацикливания, запоминаем первый элемент в столбце и идем по столбцу, если встретим такоц же элемент, то зацикливание обнаружено(кроме false)
         transposed_matrix = []
-
 
         for i in range(len(matrix_sourse[0])):
             transposed_row = []
@@ -156,39 +166,42 @@ class analyse(baseInstallation):
 
         i = 0
         for row in transposed_matrix:
-            logger.info(f"{i} {row=}")
-            i+=1
+            logger.debug(f"{i} {row=}")
+            #print(f"{i} {row=}")
+            i += 1
 
-        setted_dev = []  # массмив для хранения источников, которые уже были обнаружены в зацикливании и для которых установлена готовность шага
-        for row in (transposed_matrix):
-            logger.info(f"{row=}")
+        setted_dev = (
+            []
+        )  # массмив для хранения источников, которые уже были обнаружены в зацикливании и для которых установлена готовность шага
+        for row in transposed_matrix:
+            logger.debug(f"{row=}")
             for i in range(1, len(row), 1):
                 if row[0] == False or row[i] in setted_dev:
                     break
                 if row[0] == row[i]:
-                    print("зацикливание по строке ", row)
+                    #print("зацикливание по строке ", row)
                     setted_dev.append(row[0])
                     dev, ch_name = row[0].split()[0], row[0].split()[1]
                     dev = self.name_to_class(name_device=dev)
 
-                    dev.set_status_step(ch_name=ch_name, status = True)
+                    dev.set_status_step(ch_name=ch_name, status=True)
                     break
         return setted_dev
 
-    def get_subscribers(self, signals, trig) -> list[list[str,str]]:
-        '''возвращает массив пар [имя прибора, имя канала] подписчиков данного сигнала-триггера и всех последующих подписчиков, рекурсивная функция'''
+    def get_subscribers(self, signals, trig) -> list[list[str, str]]:
+        """возвращает массив пар [имя прибора, имя канала] подписчиков данного сигнала-триггера и всех последующих подписчиков, рекурсивная функция"""
 
         subscribers = signals
         for device, ch in self.get_active_ch_and_device():
-                    if device.get_trigger(ch).lower() == "внешний сигнал":
-                        stroka = device.get_trigger_value(ch)
-                        sourse = [stroka.split()[0], stroka.split()[1]]
-                        if [device.get_name(), ch.get_name()] in signals:
-                            continue
-                        for sig in signals:
-                            if sourse == sig:
-                                subscribers.append([device.get_name(), ch.get_name()])
-                                self.get_subscribers(subscribers, sourse)
+            if device.get_trigger(ch).lower() == "внешний сигнал":
+                stroka = device.get_trigger_value(ch)
+                sourse = [stroka.split()[0], stroka.split()[1]]
+                if [device.get_name(), ch.get_name()] in signals:
+                    continue
+                for sig in signals:
+                    if sourse == sig:
+                        subscribers.append([device.get_name(), ch.get_name()])
+                        self.get_subscribers(subscribers, sourse)
         ret_sub = []
         for dev in subscribers:
             if trig == dev:
@@ -198,9 +211,11 @@ class analyse(baseInstallation):
         return ret_sub
 
     def analyse_com_ports(self) -> bool:
-        '''анализ конфликтов COM-портов и их доступности'''
+        """анализ конфликтов COM-портов и их доступности"""
+        logger.info(f"анализируем ком порты и их доступность")
+        self.is_search_resources = False#запрет на сканирование ресурсов
         status = True
-        
+
         if not self.is_all_device_settable():
             return False
 
@@ -217,27 +232,30 @@ class analyse(baseInstallation):
 
         for device in self.dict_active_device_class.values():
             is_dev_active = any(ch.is_ch_active() for ch in device.channels)
-            
+
             if not is_dev_active:
                 continue
-            
+
             com = device.get_COM()
             baud = device.get_baud()
             list_COMs.append(com)
             list_device_name.append(device.get_name())
 
             try:
-                #buf_client = serial.Serial(com, int(baud))
                 buf_client = Adapter(com, int(baud))
                 buf_client.close()
+                del buf_client
 
-            except:
-                self.set_border_color_device(device_name=device.get_name(), status_color = not_ready_style_border)
+            except Exception as e:
+                logger.warning(f"Не удалось открыть порт {com}\n {str(e)}")
+                self.set_border_color_device(
+                    device_name=device.get_name(), status_color=not_ready_style_border
+                )
                 self.add_text_to_log(f"Не удалось открыть порт {com}\n", "war")
-                logger.debug(f"Не удалось открыть порт {com}\n")
                 if com not in fail_ports_list:
                     fail_ports_list.append(com)
                 status = False
+
 
         marked_com_incorrect = []
         marked_baud_incorrect = []
@@ -247,41 +265,87 @@ class analyse(baseInstallation):
                     continue
 
                 if list_COMs[i] == list_COMs[j]:
-                    
-                    if self.dict_active_device_class[list_device_name[i]].get_type_connection() == "serial":
+
+                    if (
+                        self.dict_active_device_class[
+                            list_device_name[i]
+                        ].get_type_connection()
+                        == "serial"
+                    ):
 
                         for device_name in [list_device_name[i], list_device_name[j]]:
-                            self.set_border_color_device(device_name=device_name, status_color = warning_style_border)
+                            self.set_border_color_device(
+                                device_name=device_name,
+                                status_color=warning_style_border,
+                            )
 
                         is_show = True
                         for mark in marked_com_incorrect:
-                            if list_device_name[i] in mark and list_device_name[j] in mark:
+                            if (
+                                list_device_name[i] in mark
+                                and list_device_name[j] in mark
+                            ):
                                 is_show = False
                         if is_show:
-                                marked_com_incorrect.append([list_device_name[i],list_device_name[j]])
-                                self.add_text_to_log(f"{list_device_name[i]} и {list_device_name[j]} не могут иметь один COM порт", status="war")
+                            marked_com_incorrect.append(
+                                [list_device_name[i], list_device_name[j]]
+                            )
+                            self.add_text_to_log(
+                                f"{list_device_name[i]} и {list_device_name[j]} не могут иметь один COM порт",
+                                status="war",
+                            )
                         status = False
-                    elif self.dict_active_device_class[list_device_name[i]].get_type_connection() == "modbus" and \
-                         self.dict_active_device_class[list_device_name[j]].get_type_connection() == "modbus" and \
-                         self.dict_active_device_class[list_device_name[i]].get_baud() != self.dict_active_device_class[list_device_name[j]].get_baud():
-                        
+                    elif (
+                        self.dict_active_device_class[
+                            list_device_name[i]
+                        ].get_type_connection()
+                        == "modbus"
+                        and self.dict_active_device_class[
+                            list_device_name[j]
+                        ].get_type_connection()
+                        == "modbus"
+                        and self.dict_active_device_class[
+                            list_device_name[i]
+                        ].get_baud()
+                        != self.dict_active_device_class[list_device_name[j]].get_baud()
+                    ):
+
                         for device_name in [list_device_name[i], list_device_name[j]]:
-                            self.set_border_color_device(device_name=device_name, status_color = warning_style_border)
-                        
+                            self.set_border_color_device(
+                                device_name=device_name,
+                                status_color=warning_style_border,
+                            )
+
                         is_show = True
                         for mark in marked_baud_incorrect:
-                            if list_device_name[i] in mark and list_device_name[j] in mark:
+                            if (
+                                list_device_name[i] in mark
+                                and list_device_name[j] in mark
+                            ):
                                 is_show = False
-                        if is_show:  
+                        if is_show:
                             marked_baud_incorrect.append(list_device_name[i])
                             marked_baud_incorrect.append(list_device_name[j])
-                            self.add_text_to_log(f"{list_device_name[i]} и {list_device_name[j]} не могут иметь разную скорость подключения", status="war")
+                            self.add_text_to_log(
+                                f"{list_device_name[i]} и {list_device_name[j]} не могут иметь разную скорость подключения",
+                                status="war",
+                            )
                         status = False
+
+        for client in self.clients:
+            try:
+                client.close()
+            except:
+                pass
+        self.clients.clear()
 
         if self.is_debug:
             status = True
+
+        self.is_search_resources = True#разрешение на сканирование ресурсов
+        logger.info(f"ВЫход из функции analyse_com_port status={status}\n")
         return status
-    
+
     def is_all_device_settable(self) -> bool:
         status = True
         if len(self.dict_active_device_class.values()) == 0:
@@ -301,27 +365,39 @@ class analyse(baseInstallation):
                         break
                     else:
                         channels_count += 1
-                        self.set_border_color_device(device_name=dev.get_name(), status_color=ready_style_border, num_ch=ch.number)
+                        self.set_border_color_device(
+                            device_name=dev.get_name(),
+                            status_color=ready_style_border,
+                            num_ch=ch.number,
+                        )
                 else:
-                    self.set_border_color_device(device_name=dev.get_name(
-                    ), status_color=not_ready_style_border, num_ch=ch.number)
+                    self.set_border_color_device(
+                        device_name=dev.get_name(),
+                        status_color=not_ready_style_border,
+                        num_ch=ch.number,
+                    )
 
             if channels_count == 0:  # прибор активен, но нет включенных каналов
                 status_dev = False
 
             if status_dev:
-                # print("красим слой в зеленый")
-                self.set_border_color_device(device_name=dev.get_name(
-                ), status_color=ready_style_border, is_only_device_lay=True)
+                self.set_border_color_device(
+                    device_name=dev.get_name(),
+                    status_color=ready_style_border,
+                    is_only_device_lay=True,
+                )
             else:
-                # print("красим слой в красный")
-                self.set_border_color_device(device_name=dev.get_name(
-                ), status_color=not_ready_style_border, is_only_device_lay=True)
-            # установить для устройства зеленый лейбл
+                self.set_border_color_device(
+                    device_name=dev.get_name(),
+                    status_color=not_ready_style_border,
+                    is_only_device_lay=True,
+                )
+
         if active_channels == 0:
             status = False
 
         return status
+
 
 if __name__ == "__main__":
     pass

@@ -1,16 +1,0 @@
-Запущена установка 
-Список_приборов: SR830_1 SR830_2 
-Настройки SR830_1baudrate - 9600COM - COM10Настройки ch-1_meastrigger - Таймерsourse/time - 2num steps - 1time_const - 1000,0filter_slope - 6,0SYNK_200_Hz - Onsensitivity - 1,0reserve - high reserveinput_channel - Ainput_type - ACinput_connect - groundfilters - linefrequency - 400,0amplitude - 1,0--------------------
-Настройки SR830_2baudrate - 9600COM - COM10Настройки ch-1_meastrigger - Внешний сигналsourse/time - SR830_1 ch-1_meas end_worknum steps - 1time_const - 1000,0filter_slope - 6,0SYNK_200_Hz - Onsensitivity - 1,0reserve - high reserveinput_channel - Ainput_type - ACinput_connect - groundfilters - linefrequency - 400,0amplitude - 1,0--------------------
-16:37:05 SR830_1 ch-1_meas	['SIN=0,0']	['Ln=0,0']	['EXP=2,718281828459045']	['MULT=0']	['disp1=254']	['disp2=847']	['phase=777']	
-16:37:05 SR830_1 ch-1_meas	['SIN=0,06279051952931337']	['Ln=0,6931471805599453']	['EXP=7,38905609893065']	['MULT=1']	['disp1=254']	['disp2=847']	['phase=777']	
-16:37:05 SR830_1 ch-1_meas	['SIN=0,12533323356430426']	['Ln=1,0986122886681098']	['EXP=20,085536923187668']	['MULT=8']	['disp1=254']	['disp2=847']	['phase=777']	
-16:37:05 SR830_1 ch-1_meas	['SIN=0,1873813145857246']	['Ln=1,3862943611198906']	['EXP=54,598150033144236']	['MULT=27']	['disp1=254']	['disp2=847']	['phase=777']	
-16:37:05 SR830_1 ch-1_meas	['SIN=0,2486898871648548']	['Ln=1,6094379124341003']	['EXP=148,4131591025766']	['MULT=64']	['disp1=254']	['disp2=847']	['phase=777']	
-16:37:05 SR830_1 ch-1_meas	['SIN=0,3090169943749474']	['Ln=1,791759469228055']	['EXP=403,4287934927351']	['MULT=125']	['disp1=254']	['disp2=847']	['phase=777']	
-16:37:05 SR830_2 ch-1_meas	['SIN=0,0']	['Ln=0,0']	['EXP=2,718281828459045']	['MULT=0']	['disp1=254']	['disp2=847']	['phase=777']	
-16:37:05 SR830_2 ch-1_meas	['SIN=0,06279051952931337']	['Ln=0,6931471805599453']	['EXP=7,38905609893065']	['MULT=1']	['disp1=254']	['disp2=847']	['phase=777']	
-16:37:05 SR830_2 ch-1_meas	['SIN=0,12533323356430426']	['Ln=1,0986122886681098']	['EXP=20,085536923187668']	['MULT=8']	['disp1=254']	['disp2=847']	['phase=777']	
-16:37:05 SR830_2 ch-1_meas	['SIN=0,1873813145857246']	['Ln=1,3862943611198906']	['EXP=54,598150033144236']	['MULT=27']	['disp1=254']	['disp2=847']	['phase=777']	
-16:37:05 SR830_2 ch-1_meas	['SIN=0,2486898871648548']	['Ln=1,6094379124341003']	['EXP=148,4131591025766']	['MULT=64']	['disp1=254']	['disp2=847']	['phase=777']	
-16:37:05 SR830_2 ch-1_meas	['SIN=0,3090169943749474']	['Ln=1,791759469228055']	['EXP=403,4287934927351']	['MULT=125']	['disp1=254']	['disp2=847']	['phase=777']	

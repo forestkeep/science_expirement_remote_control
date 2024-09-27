@@ -39,6 +39,7 @@ def plot_multiple_series(*lists, step=1, label1 = "", x, y, label2):
     x_values = x_values[:len(lists[0])]
     print(f"{len(lists[0])=} {len(lists[1])=} {len(x_values)=}")
     for i, lst in enumerate(lists):
+        pass
         axs[0].plot(x_values, lst, label=f'CH {i + 1}')
     
     axs[0].set_title(label1)
@@ -49,6 +50,10 @@ def plot_multiple_series(*lists, step=1, label1 = "", x, y, label2):
 
 
     axs[1].plot(x, y, marker='o', linestyle='-', color='b')  # Строим график
+
+
+    print(f"{x=}")
+    print(f"{y=}")
 
     axs[1].set_title(label2)  # Заголовок графика
     axs[1].set_xlabel('X')  # Подпись по оси X
@@ -75,7 +80,6 @@ def threshold_median(data):
     IQR = Q3 - Q1
     threshold = Q3 + 1.5 * IQR  # Порог устанавливается на уровне Q3 + 1.5 * IQR
     return threshold
-
 
 def calculate_results(C):
     Q2 = 1.67#сильно влияет на форму петли. уточнить влияние, для чего она введена?
@@ -119,8 +123,6 @@ def plot_arrays(x, y, label):
     #plt.axvline(0, color='black',linewidth=0.5, ls='--')  # Добавляем вертикальную линию на уровне 0
     plt.show()  # Отображаем график
 
-
-
 def test_calc(arr1, arr2, increment):
             # Выводим полученный словарь
             #print(data_dict)
@@ -131,19 +133,20 @@ def test_calc(arr1, arr2, increment):
             data_dict = {}
             data_dict['CH1'] = arr1
             data_dict['CH2'] = arr2
-            window_size = 50
-            weights = np.ones(window_size) / window_size
-            data_dict['CH2_mean'] = np.convolve(data_dict['CH2'], weights, mode='same')
+            #window_size = 50
+            #weights = np.ones(window_size) / window_size
+            #data_dict['CH2_mean'] = np.convolve(data_dict['CH2'], weights, mode='same')
 
 
-            integral = calc_integral(arr = data_dict['CH1'], step = increment)
-            derivative = derivative_at_each_point(x = data_dict['CH2_mean'], dx = increment)
-            interval_index = np.array(find_sign_change(data_dict['CH2_mean']))
+            #integral = calc_integral(arr = data_dict['CH1'], step = increment)
+            #derivative = derivative_at_each_point(x = data_dict['CH2_mean'], dx = increment)
+            interval_index = np.array(find_sign_change(data_dict['CH2']))
             interval_values = interval_index*increment
             #print(f"{integral=}")
             #print(f"{derivative=}")
             print(f"{interval_values=}")
             #plot_arrays(data_dict['CH1'], data_dict['CH2'], selected_file)
+
 
             start_point = input("начальная точка? ")
             if start_point.upper() == "AUTO":
@@ -159,8 +162,11 @@ def test_calc(arr1, arr2, increment):
             d = 14.2
             A = R*(3.1415*2*d/2*(10**(-12)))
             C = 16
+
+            print(data_dict['CH2'][start_index: stop_index], len(data_dict['CH2'][start_index: stop_index]))
             X =  data_dict['CH2'][start_index: stop_index]/A + C
             Y = calculate_results(data_dict['CH1'][start_index: stop_index])
+            print(f"{start_index=} {stop_index=}")
 
 
             size1 = len(X)
@@ -172,6 +178,9 @@ def test_calc(arr1, arr2, increment):
             elif size2 > size1:
                 Y = Y[:size1]
             #plot_arrays(X, Y, selected_file)
+
+            print(data_dict['CH1'][start_index: stop_index])
+            print(data_dict['CH2'][start_index: stop_index])
 
             plot_multiple_series(data_dict['CH1'][start_index: stop_index], 
                                 data_dict['CH2'][start_index: stop_index],
@@ -226,8 +235,9 @@ if __name__ == "__main__":
                 # Обновляем словарь с новыми списками значений
                 data_dict[key] = np.array(converted_values)
 
-
+            print(data_dict['CH1'])
             test_calc(arr1 = data_dict['CH1'], arr2 = data_dict['CH2'], increment=data_dict['Increment'][0] )
         
         else:
             print("Неверный номер файла.")
+

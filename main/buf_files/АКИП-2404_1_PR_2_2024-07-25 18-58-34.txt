@@ -1,6 +1,0 @@
-Запущена установка 
-Список_приборов: АКИП-2404_1 PR_2 
-Настройки АКИП-2404_1baudrate - 9600COM - COM10Настройки ch-1_meastrigger - Таймерsourse/time - 5num steps - 1type_meas - Напряжениеrange - Auto--------------------
-Настройки PR_2baudrate - 9600COM - COM10Настройки ch-1_acttrigger - Таймерsourse/time - 5num steps - 1mode - Смена полярностиНастройки ch-1_meastrigger - Таймерsourse/time - 5num steps - 1hall1 - Falsehall2 - Truehall3 - Truehall4 - False--------------------
-18:58:41 АКИП-2404_1 ch-1_meas	['voltage=254']	
-18:58:51 PR_2 ch-1_meas	['Полярность=1']	

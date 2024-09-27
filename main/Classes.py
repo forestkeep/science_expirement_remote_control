@@ -1,14 +1,15 @@
-from enum import Enum
-from PyQt5.QtCore import QTimer, QDateTime
-from PyQt5 import QtWidgets, QtCore
-import copy, time, math
 import logging
-from Adapter import instrument
-import threading
-import multiprocessing
+import math
+import time
+from enum import Enum
+
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import QTimer
+
+
 logger = logging.getLogger(__name__)
 
-not_ready_style_border = "border: 1px solid rgb(180, 0, 0); border-radius: 5px; QToolTip { color: #ffffff; background-color: rgb(180, 0, 0); border: 1px solid white;}"
+not_ready_style_border = "border: 1px solid rgb(180, 0, 0); border-radius: 5px; QToolTip { color: #ffffff; background-color: rgb(100, 50, 50); border: 1px solid white;}"
 not_ready_style_background = "background-color: rgb(100, 50, 50);  QToolTip { color: #ffffff; background-color: rgb(100, 50, 50); border: 1px solid white;}"
 
 ready_style_border = "border: 1px solid rgb(0, 150, 0); border-radius: 5px; QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white;}"
@@ -17,6 +18,35 @@ ready_style_background = "background-color: rgb(50, 100, 50); QToolTip { color: 
 warning_style_border = "border: 1px solid rgb(180, 180, 0); border-radius: 5px; QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white;}"
 warning_style_background = "background-color: rgb(150, 160, 0); QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white;}"
 
+not_ready_style_border_all_window = """
+            QComboBox {
+                border: 1px solid rgb(180, 0, 0);
+                border-radius: 5px;
+            }
+            QCheckBox {
+                border: 1px solid rgb(180, 0, 0);
+                border-radius: 5px;
+            }
+            QToolTip { 
+                color: #ffffff; 
+                background-color: rgb(100, 50, 50); 
+                border: 1px solid white;}
+            """
+
+ready_style_border_all_window = """
+            QComboBox {
+                border: 1px solid rgb(0, 150, 0);
+                border-radius: 5px;
+            }
+            QCheckBox {
+                border: 1px solid rgb(0, 150, 0);
+                border-radius: 5px;
+            }
+            QToolTip { 
+                color: #ffffff; 
+                background-color: rgb(100, 50, 50); 
+                border: 1px solid white;}
+            """
 
 class which_part_in_ch(Enum):
     bouth = 0
@@ -54,6 +84,7 @@ class control_in_experiment():
             self.priority = self.priority - 1
         else:
             self.priority = 1
+
     def get_status_step(self):
         return (self.am_i_should_do_step==True)
 
@@ -63,12 +94,12 @@ class base_device():
 
     def __init__(self, name, type_connection, installation_class) -> None:
         super().__init__()
+
+        self.device_type = None
         self.is_debug = False
         self.is_test = False #флаг переводит прибор в режим теста, выдаются сырые данные от функций передачи и приема
         self.timer_for_scan_com_port = QTimer()
         self.timer_for_scan_com_port.timeout.connect(lambda: self._scan_com_ports())
-        # показывает тип подключения устройства, нужно для анализа, какие устройства могут быть подключены к одному ком порту
-        #а так же для использования соответствуюшего модуля pyvisa или serial
         self.type_connection = type_connection
         self.installation_class = installation_class
         self.name = name
@@ -76,20 +107,17 @@ class base_device():
 
         self.message_broker = installation_class.message_broker
 
-        # показывает количество шагов, сюда же сохраняется параметр из окна считывания настроек. В случае источников питания это поле просто не используется. Количество шагов вычисляется по массиву токов или напряжений
         self.number_steps = "3"
 
         self.client = None
         self.dict_buf_parameters = {
                                     "baudrate": "9600",
                                     "COM": None
-                                    }  # потенциальные параметры прибора, вводятся когда выбираются значения в настройках, применяются только после подтверждения пользователем и прохождении проверок
-        self.dict_settable_parameters = {}  # текущие параметры прибора
-        # переменная хранит список доступных ком-портов
+                                    } 
+        self.dict_settable_parameters = {}
         self.active_ports = []
         self.channels = []
 
-        # разрешает исполнение кода в функциях, срабатывающих по сигналам
         self.key_to_signal_func = False
         logger.debug(f"класс {self.name} создан")
 
@@ -104,18 +132,27 @@ class base_device():
 
     def base_settings_window(self):
             '''установка базовых параметров для окна настройки прибора'''
-            self.setting_window.boudrate.addItems(["50","75","110","150","300","600","1200","2400","4800","9600","19200","38400","57600","115200",])
-            self.setting_window.boudrate.setStyleSheet(ready_style_border)
-            self.setting_window.comportslist.setStyleSheet(ready_style_border)
+            if self.device_type == "oscilloscope":
+                self.setting_window.setupUi(num_channels=self.total_number_of_channels)
+            else:
+                self.setting_window.setupUi()
 
-            self.setting_window.setupUi()
+            self.setting_window.boudrate.addItems(["50","75","110","150","300","600","1200","2400","4800","9600","19200","38400","57600","115200",])
+            self.setting_window.setStyleSheet(ready_style_border_all_window)
+
+            for combo in self.setting_window.findChildren(QtWidgets.QComboBox):
+                combo.currentIndexChanged.connect(lambda: self._is_correct_parameters())
+                combo.editTextChanged.connect(lambda: self._is_correct_parameters())
+                combo.currentTextChanged.connect(lambda: self._is_correct_parameters())
+
+            for check in self.setting_window.findChildren(QtWidgets.QCheckBox):
+                check.stateChanged.connect(lambda: self._is_correct_parameters())
 
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
                 self.setting_window.triger_meas_enter.addItems(["Таймер", "Внешний сигнал"])
                 self.setting_window.triger_meas_enter.setEnabled(True)
                 self.setting_window.triger_meas_enter.setStyleSheet(ready_style_border)
 
-                #self.setting_window.sourse_meas_enter.setStyleSheet(ready_style_border)
                 self.setting_window.sourse_meas_enter.setStyleSheet(ready_style_border + "background-color: rgb(0, 0, 0);" )
                 self.setting_window.num_meas_enter.setStyleSheet(ready_style_border)
                 self.setting_window.num_meas_enter.setEditable(True)
@@ -167,7 +204,7 @@ class base_device():
                 self.setting_window.sourse_act_enter.setCurrentText(str(self.active_channel_act.dict_buf_parameters["sourse/time"]))
                 try:
                     num_act_list = ["5","10","20","50"]
-                    if self.installation_class.get_signal_list(self.name, self.active_channel_act) != []:#если в списке сигналов пусто, то и других активных приборов нет, текущий прибор в установке один
+                    if self.installation_class.get_signal_list(self.name, self.active_channel_act) != []:
                         num_act_list.append("Пока активны другие приборы")
                     self.setting_window.num_act_enter.clear()
                     self.setting_window.num_act_enter.addItems(num_act_list)
@@ -179,7 +216,7 @@ class base_device():
                 self.setting_window.triger_meas_enter.setCurrentText(self.active_channel_meas.dict_buf_parameters["trigger"])
                 self.setting_window.sourse_meas_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["sourse/time"]))
                 num_meas_list = ["5","10","20","50"]
-                if self.installation_class.get_signal_list(self.name, self.active_channel_meas) != []:#если в списке сигналов пусто, то и других активных приборов нет, текущий прибор в установке один
+                if self.installation_class.get_signal_list(self.name, self.active_channel_meas) != []:
                     num_meas_list.append("Пока активны другие приборы")
                 self.setting_window.num_meas_enter.clear()
                 self.setting_window.num_meas_enter.addItems(num_meas_list)
@@ -228,7 +265,6 @@ class base_device():
                                 if int(self.setting_window.sourse_meas_enter.currentText()) < 1:
                                     self.active_channel_meas.is_time_meas_correct = False
                             except:
-                                print(f"{self.setting_window.sourse_meas_enter.currentText()=}")
                                 self.active_channel_meas.is_time_meas_correct = False
 
                     try:
@@ -249,7 +285,6 @@ class base_device():
                     self.setting_window.sourse_meas_enter.setStyleSheet(ready_style_border)
 
                     if not self.active_channel_meas.is_time_meas_correct:
-                            print(112121212121212121)
                             self.setting_window.sourse_meas_enter.setStyleSheet(not_ready_style_border)
                     try:
                         if not self.active_channel_meas.is_num_steps_meas_correct:
@@ -270,8 +305,6 @@ class base_device():
 
                     if True:
                         try:
-                            #print(f"{self.setting_window.num_act_enter.currentText()=}")
-                            #print(f"{type(self.setting_window.num_act_enter.currentText())=}")
                             if int(self.setting_window.num_act_enter.currentText()) < 1:
                                 self.active_channel_act.is_num_steps_act_correct = False
                         except:
@@ -299,10 +332,6 @@ class base_device():
                     self.setting_window.comportslist.setStyleSheet(ready_style_border)
 
                 if self.part_ch == which_part_in_ch.bouth:
-                    #print(f"{self.active_channel_act.is_num_steps_act_correct=}")
-                    #print(f"{self.active_channel_act.is_time_act_correct=}")
-                    #print(f"{self.active_channel_meas.is_num_steps_meas_correct=}")
-                    #print(f"{self.active_channel_meas.is_time_meas_correct=}")
                     return      self.active_channel_act.is_num_steps_act_correct \
                             and self.active_channel_act.is_time_act_correct \
                             and self.active_channel_meas.is_num_steps_meas_correct \
@@ -324,11 +353,55 @@ class base_device():
     def set_debug(self, state):
         self.is_debug = state
 
+    def create_channel_array(self):
+        channels = []
+        channels = self.create_act_channel_array(channels)
+        channels = self.create_meas_channel_array(channels)
+        return channels
+
+    def create_meas_channel_array(self, channels):
+        for i in range(1, 8): 
+            channel_attr = f'ch{i}_meas'
+            channel = getattr(self, channel_attr, None)
+            if channel:
+                channels.append(channel)
+        if len(channels) > 0:
+            self.ch1_meas.is_active = True#по умолчанию для каждого прибора включен первый канал
+            self.active_channel_meas = self.ch1_meas #поле необходимо для записи параметров при настройке в нужный канал
+        return channels
+    
+    def create_act_channel_array(self, channels):
+        for i in range(1, 8): 
+            channel_attr = f'ch{i}_act'
+            channel = getattr(self, channel_attr, None)
+            if channel:
+                channels.append(channel)
+        if len(channels) > 0:
+            self.ch1_act.is_active = True#по умолчанию для каждого прибора включен первый канал
+            self.active_channel_act = self.ch1_act #поле необходимо для записи параметров при настройке в нужный канал
+        return channels
+
     def set_status_step(self, ch_name, status):
         '''сообщаем каналу прибору статус шага, должен проводить измерение или нет'''
         self.switch_channel(ch_name=ch_name)
         self.active_channel.am_i_should_do_step = status
         return True
+    
+    def get_label_parameters(self, number_ch):
+        meas_param = None
+        act_param = None
+        if self.part_ch == which_part_in_ch.only_meas or self.part_ch == which_part_in_ch.bouth:
+            for ch in self.channels:
+                if ch.get_number() == number_ch:
+                    meas_param = ch.dict_settable_parameters
+                    break
+        if self.part_ch == which_part_in_ch.only_act or self.part_ch == which_part_in_ch.bouth:
+            for ch in self.channels:
+                if ch.get_number() == number_ch:
+                    act_param = ch.dict_settable_parameters
+                    break
+
+        return act_param, meas_param, self.dict_settable_parameters
     
     def get_status_step(self, ch_name):
         """возвращает ответ на вопрос, "должен ли канал сделать шаг?" """
@@ -404,14 +477,13 @@ class base_device():
 
     def exponential_function_generator(self):
         x = 1
-        while True:
-            try:
+        try:
+            while True:
                 yield str(math.exp(x))
-            except:
-                x = 1
-                yield str(math.exp(x))
-            x+=1
-
+                x += 1
+        except GeneratorExit:
+            return 1
+        
     def multiple_function_generator(self, degree):
         x = 0
         while True:
@@ -420,15 +492,6 @@ class base_device():
 
     def get_name(self) -> str:
         return str(self.name)
-
-    def time_decorator(func):
-        def wrapper(*args, **kwargs):
-            start_time = time.time()
-            result = func(*args, **kwargs)
-            end_time = time.time()
-            #print(f"Метод {func.__name__} - {end_time - start_time} с")
-            return result
-        return wrapper
 
     def _scan_com_ports(self):
         '''проверяет наличие ком портов в системе'''
@@ -452,6 +515,8 @@ class base_device():
                 self.setting_window.comportslist.clear()
                 self.setting_window.comportslist.addItems(local_list_com_ports)
                 self.setting_window.comportslist.setStyleSheet(ready_style_border)
+                self.setting_window.comportslist.setStyleSheet(ready_style_border)
+                self.setting_window.comportslist.setCurrentText(current_val)
             except:
                 stop = True
         try:
@@ -525,6 +590,7 @@ class base_device():
         return answer
 
     def set_client(self, client):
+        logger.info(f"установка клиента {self.name=} {client=}")
         self.client = client
 
     def get_steps_number(self, ch):
@@ -585,7 +651,7 @@ class base_device():
                     self.setting_window.sourse_meas_enter.clear()
                     self.setting_window.sourse_meas_enter.setEditable(False)
                     # предоставьте список сигналов, я прибор под именем self.name канал self.active_channel.number
-                    print(f"{self.message_broker.get_subscribe_list(object = self.active_channel_meas)=}")
+                    #print(f"{self.message_broker.get_subscribe_list(object = self.active_channel_meas)=}")
                     #self.active_channel_meas.signal_list = self.installation_class.get_signal_list(self.name, self.active_channel_meas)
                     self.active_channel_meas.signal_list = self.message_broker.get_subscribe_list(object = self.active_channel_meas)
 
@@ -620,8 +686,7 @@ class base_device():
         return status
 
     def open_port(self):
-        if self.client.is_open == False:
-            self.client.open()
+        self.client.open()
 
     def set_parameters(self, channel_name, parameters):
         """функция необходима для настройки параметров канала в установке при добавлении прибора извне или при открытии сохраненной установки, передаваемый словарь гарантированно должен содержать параметры именно для данного канала"""
@@ -680,7 +745,7 @@ class base_device():
         
 class base_ch(control_in_experiment):
     '''базовый класс канала устройства'''
-    def __init__(self, number, ch_type, device_class) -> None:
+    def __init__(self, number, ch_type, device_class, is_activate_standart_publish = True) -> None:
         super().__init__()
         self.device_class = device_class
         self.ch_type = ch_type
@@ -696,13 +761,12 @@ class base_ch(control_in_experiment):
                                     }
 
         self.message_broker = device_class.message_broker
-        self.do_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} do_operation"
-        self.end_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} end_work"
-        self.start_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} start_work"
-        self.message_broker.create_subscribe(name_subscribe = self.do_operation_trigger, publisher = self, description = "Канал прибора сделал какое-то действие или измерение")
-        self.message_broker.create_subscribe(name_subscribe = self.end_operation_trigger, publisher = self, description = "Канал прибора закончил работу в эксперименте")
-        #self.message_broker.create_subscribe(name_subscribe = self.start_operation_trigger, publisher = self, description = "Канал прибора начал работу в эксперименте")
-        print(self.message_broker.get_subscribe_list(object = self))
+        if is_activate_standart_publish:
+            self.do_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} do_operation"
+            self.end_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} end_work"
+            self.message_broker.create_subscribe(name_subscribe = self.do_operation_trigger, publisher = self, description = "Канал прибора сделал какое-то действие или измерение")
+            self.message_broker.create_subscribe(name_subscribe = self.end_operation_trigger, publisher = self, description = "Канал прибора закончил работу в эксперименте")
+
 
 
     def get_name(self):
@@ -710,7 +774,7 @@ class base_ch(control_in_experiment):
     
     def receive_message(self, message):
         '''функция приема сигнала от издателя, в данный момент по приему сообщения выставляется готовность сделать действие'''
-        print(message)
+        #print(message)
         self.am_i_should_do_step = True
 
     def get_settings(self):
@@ -731,5 +795,14 @@ class base_ch(control_in_experiment):
     def get_type(self):
         return self.ch_type
     
+
+def time_decorator(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"Метод {func.__name__} - {end_time - start_time} с")
+        return result
+    return wrapper
 
     

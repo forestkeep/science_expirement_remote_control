@@ -1,30 +1,40 @@
+import enum
+import logging
+import time
+
 import pyvisa
 import serial
 from serial import Serial
-import enum
-import logging
+from serial.tools import list_ports
 
 logger = logging.getLogger(__name__)
+
 
 class resourse(enum.Enum):
     serial = 1
     pyvisa = 2
 
-class Adapter():
-    def __init__(self, sourse, baud = 9600, timeout: float = 1) -> None:
+class Adapter:
+
+    def __init__(self, sourse, baud=9600, timeout: float = 2000) -> None:
+
+        logger.info(f"создаем адаптер {sourse=}")
         self.client = None
         self.baudrate = baud
         self.which_resourse = None
         self.is_open = False
         self.timeout = timeout
+        self.name = sourse
 
         if "COM" in sourse:
-            self.client = Serial(sourse, self.baudrate, timeout=self.timeout)
+            self.client = Serial(sourse, self.baudrate, timeout=self.timeout / 1000)
+            logger.info(f"client создан {self.client=}")
             self.which_resourse = resourse.serial
             self.is_open = self.client.is_open
         else:
             rm = pyvisa.ResourceManager()
             self.client = rm.open_resource(sourse)
+            self.client.timeout = self.timeout
             self.which_resourse = resourse.pyvisa
 
     def __del__(self):
@@ -32,6 +42,17 @@ class Adapter():
             self.close()
         except:
             pass
+
+    def set_timeout(self, timeout: float):
+        if isinstance(timeout, (float, int)) and timeout > 0:
+            if self.which_resourse == resourse.serial:
+                self.client.timeout = timeout / 1000
+            elif self.which_resourse == resourse.pyvisa:
+                self.client.timeout = timeout
+            else:
+                raise AdapterException("unknown resource")
+        else:
+            raise ValueError("Таймаут должен быть положительным числом.")
 
     def close(self):
         if self.which_resourse == resourse.serial:
@@ -50,6 +71,9 @@ class Adapter():
                 ans = self.client.write(data.encode())
             return ans
         elif self.which_resourse == resourse.pyvisa:
+            if self.client.write_termination in data:
+                logger.debug(f"удаляем {self.client.write_termination=} из {data=}")
+                data = data.replace(self.client.write_termination, "")
             ans = self.client.write(data)
             return ans
         else:
@@ -57,14 +81,17 @@ class Adapter():
 
     def open(self):
         if self.which_resourse == resourse.serial:
-            self.client.open()
+            try:
+                self.client.open()
+            except serial.SerialException as e:
+                pass
             self.is_open = self.client.is_open
         elif self.which_resourse == resourse.pyvisa:
             self.client.open()
         else:
             raise AdapterException("unknown resource")
 
-    def read(self, num_bytes):
+    def read(self, num_bytes=10):
         if self.which_resourse == resourse.serial:
             return self.client.read(size=num_bytes)
         elif self.which_resourse == resourse.pyvisa:
@@ -79,39 +106,80 @@ class Adapter():
             return self.client.read_raw()
         else:
             raise AdapterException("unknown resource")
-        
 
-class instrument():
+    def query(self, command, timeout=False):
+        if self.which_resourse == resourse.serial:
+            try:
+                self.client.write(command)
+            except:
+                self.client.write(command.encode())
+
+            if timeout:
+                time.sleep(int(timeout) / 1000)
+            else:
+                time.sleep(0.1)
+
+            return self.client.readline()
+        elif self.which_resourse == resourse.pyvisa:
+            if timeout:
+                self.client.timeout = timeout
+
+            if self.client.write_termination in command:
+                pass
+                logger.debug(f"удаляем {self.client.write_termination=} из {command=}")
+                command = command.replace(self.client.write_termination, "")
+            return self.client.query(command)
+        else:
+            raise AdapterException("unknown resource")
+
+    def query_ascii_values(self, command):
+        if self.which_resourse == resourse.serial:
+            return False
+        elif self.which_resourse == resourse.pyvisa:
+            return self.client.query_ascii_values(command)
+        else:
+            raise AdapterException("unknown resource")
+
+    def read_raw(self):
+        if self.which_resourse == resourse.serial:
+            return self.client.readline()
+        elif self.which_resourse == resourse.pyvisa:
+            return self.client.read_raw()
+        else:
+            raise AdapterException("unknown resource")
+
+
+class instrument:
 
     @staticmethod
     def get_com_ports() -> list:
         tr = 9
         ports = []
-        for port in serial.tools.list_ports.comports():
-                ports.append(port.device)
-        tr+=10
+        for port in list_ports.comports():
+            ports.append(port.device)
+        tr += 10
         return ports, tr
-    
+
     @staticmethod
     def get_available_com_ports() -> list:
         ports = []
-        for port in serial.tools.list_ports.comports():
+        for port in list_ports.comports():
             try:
                 ser = serial.Serial(port.device)
                 ports.append(port.device)
                 ser.close()
-            except (OSError, serial.SerialException):
+            except :
                 pass
         return ports
-    
+
     @staticmethod
     def get_visa_resourses() -> list:
-        res = pyvisa.ResourceManager('@py').list_resources()
+        res = pyvisa.ResourceManager().list_resources()
         return res
-    
+
     @staticmethod
     def get_resourses() -> list:
-        '''return all available resourses'''
+        """return all available resourses"""
         ports = instrument.get_available_com_ports()
         res_vis = instrument.get_visa_resourses()
         for res in res_vis:
@@ -119,16 +187,18 @@ class instrument():
                 pass
             else:
                 ports.append(res)
+
         return ports
-    
+
+
 class AdapterException(Exception):
     def __init__(self, message):
         super().__init__(message)
 
 
 if __name__ == "__main__":
-    adapter = Adapter("COM7", 9600)
-    adapter.write()
-    print()
     print(instrument.get_resourses())
+    client = Serial(instrument.get_resourses()[0], 9600, timeout=1000)
+    client2 = Serial("COM8", 9600, timeout=1000)
+    client.write(1254)
     pass

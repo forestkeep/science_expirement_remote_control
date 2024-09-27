@@ -1,39 +1,61 @@
-from pymodbus.client import ModbusSerialClient
-from interface.set_power_supply_window import Ui_Set_power_supply
-from PyQt5.QtCore import QTimer, QDateTime
-from Classes import ch_response_to_step, base_device, ch_response_to_step, base_ch
-from power_supply_class import power_supply, chActPowerSupply, chMeasPowerSupply
-import time
 import logging
+import time
+
 import pyvisa
+
+from power_supply_class import chActPowerSupply, chMeasPowerSupply, power_supply
+
 logger = logging.getLogger(__name__)
 
 
 class rigolDp832aClass(power_supply):
-    def __init__(self, name,installation_class) -> None:
+    def __init__(self, name, installation_class) -> None:
         super().__init__(name, "serial", installation_class)
-        self.ch1_act = chActPowerSupply(1, self, max_current=3, max_voltage=30, max_power=90,min_step_A = 0.001, min_step_V = 0.001, min_step_W = 1)
-        self.ch2_act = chActPowerSupply(2, self, max_current=3, max_voltage=30, max_power=90,min_step_A = 0.001, min_step_V = 0.001, min_step_W = 1)
-        self.ch3_act = chActPowerSupply(3, self, max_current=3, max_voltage=5, max_power=15,min_step_A = 0.001, min_step_V = 0.001, min_step_W = 1)
+        self.ch1_act = chActPowerSupply(
+            1,
+            self,
+            max_current=3,
+            max_voltage=30,
+            max_power=90,
+            min_step_A=0.001,
+            min_step_V=0.001,
+            min_step_W=1,
+        )
+        self.ch2_act = chActPowerSupply(
+            2,
+            self,
+            max_current=3,
+            max_voltage=30,
+            max_power=90,
+            min_step_A=0.001,
+            min_step_V=0.001,
+            min_step_W=1,
+        )
+        self.ch3_act = chActPowerSupply(
+            3,
+            self,
+            max_current=3,
+            max_voltage=5,
+            max_power=15,
+            min_step_A=0.001,
+            min_step_V=0.001,
+            min_step_W=1,
+        )
         self.ch1_meas = chMeasPowerSupply(1, self)
         self.ch2_meas = chMeasPowerSupply(2, self)
         self.ch3_meas = chMeasPowerSupply(3, self)
-        self.channels = [self.ch1_act, self.ch2_act, self.ch3_act, self.ch1_meas, self.ch2_meas, self.ch3_meas]
-        self.ch1_act.is_active = True#по умолчанию для каждого прибора включен первый канал
-        self.ch1_meas.is_active = True#по умолчанию для каждого прибора включен первый канал
-        self.active_channel_act = self.ch1_act #поле необходимо для записи параметров при настройке в нужный канал
-        self.active_channel_meas = self.ch1_meas
+        self.channels = self.create_channel_array()
 
-    def _set_voltage(self,ch_num, voltage) -> bool:
-        '''установить значение напряжения канала'''
+    def _set_voltage(self, ch_num, voltage) -> bool:
+        """установить значение напряжения канала"""
         logger.debug(f"устанавливаем напряжение {voltage} канала {ch_num}")
         self.open_port()
         self.select_channel(ch_num)
-        #self.client.write(f'VOLT {voltage}\n'.encode())
-        self.client.write(f'VOLT {voltage}\n')
+        # self.client.write(f'VOLT {voltage}\n'.encode())
+        self.client.write(f"VOLT {voltage}\n")
         time.sleep(0.2)
-        #self.client.write(f'VOLT?\n'.encode())
-        self.client.write(f'VOLT?\n')
+        # self.client.write(f'VOLT?\n'.encode())
+        self.client.write(f"VOLT?\n")
         time.sleep(0.2)
         try:
             response = self.client.readline().decode().strip()
@@ -42,18 +64,18 @@ class rigolDp832aClass(power_supply):
             response = False
         self.client.close()
         logger.debug(f"статус {response == voltage}")
-        return  response == voltage
+        return response == voltage
 
-    def _set_current(self,ch_num, current) -> bool: 
-        '''установить значение тока канала'''
+    def _set_current(self, ch_num, current) -> bool:
+        """установить значение тока канала"""
         logger.debug(f"устанавливаем ток {current} канала {ch_num}")
         self.open_port()
         self.select_channel(ch_num)
-        #self.client.write(f'CURR {current}\n'.encode())
-        self.client.write(f'CURR {current}\n')
+        # self.client.write(f'CURR {current}\n'.encode())
+        self.client.write(f"CURR {current}\n")
         time.sleep(0.2)
-        #self.client.write(f'CURR?\n'.encode())
-        self.client.write(f'CURR?\n')
+        # self.client.write(f'CURR?\n'.encode())
+        self.client.write(f"CURR?\n")
         time.sleep(0.2)
         try:
             response = self.client.readline().decode().strip()
@@ -62,28 +84,28 @@ class rigolDp832aClass(power_supply):
             response = False
         self.client.close()
         logger.debug(f"статус {response == current}")
-        return  response == current
+        return response == current
 
     def _output_switching_on(self, ch_num) -> bool:
-        '''включить канал'''
+        """включить канал"""
         self.open_port()
-        #self.client.write(f'OUTP CH{ch_num},ON\n'.encode())
-        self.client.write(f'OUTP CH{ch_num},ON\n')
+        # self.client.write(f'OUTP CH{ch_num},ON\n'.encode())
+        self.client.write(f"OUTP CH{ch_num},ON\n")
         self.client.close()
 
     def _output_switching_off(self, ch_num) -> bool:
-        '''выключить канал'''
+        """выключить канал"""
         self.open_port()
-        #self.client.write(f'OUTP CH{ch_num},OFF\n'.encode())
-        self.client.write(f'OUTP CH{ch_num},OFF\n')
+        # self.client.write(f'OUTP CH{ch_num},OFF\n'.encode())
+        self.client.write(f"OUTP CH{ch_num},OFF\n")
         self.client.close()
 
     def _get_current_voltage(self, ch_num) -> float:
-        '''возвращает значение установленного напряжения канала'''
+        """возвращает значение установленного напряжения канала"""
         self.open_port()
         self.select_channel(ch_num)
-        #self.client.write(f'MEAS:VOLT?\n'.encode())
-        self.client.write(f'MEAS:VOLT?\n')
+        # self.client.write(f'MEAS:VOLT?\n'.encode())
+        self.client.write(f"MEAS:VOLT?\n")
         time.sleep(0.2)
         try:
             response = self.client.readline().decode().strip()
@@ -91,14 +113,14 @@ class rigolDp832aClass(power_supply):
         except:
             response = False
         self.client.close()
-        return  response
+        return response
 
     def _get_current_current(self, ch_num) -> float:
-        '''возвращает значение измеренного тока канала'''
+        """возвращает значение измеренного тока канала"""
         self.open_port()
         self.select_channel(ch_num)
-        #self.client.write(f'MEAS:CURR?\n'.encode())
-        self.client.write(f'MEAS:CURR?\n')
+        # self.client.write(f'MEAS:CURR?\n'.encode())
+        self.client.write(f"MEAS:CURR?\n")
         time.sleep(0.2)
         try:
             response = self.client.readline().decode().strip()
@@ -106,14 +128,14 @@ class rigolDp832aClass(power_supply):
         except:
             response = False
         self.client.close()
-        return  response
+        return response
 
     def _get_setting_voltage(self, ch_num) -> float:
-        '''возвращает значение установленного напряжения канала'''
+        """возвращает значение установленного напряжения канала"""
         self.open_port()
         self.select_channel(ch_num)
-        #self.client.write(f'VOLT?\n'.encode())
-        self.client.write(f'VOLT?\n')
+        # self.client.write(f'VOLT?\n'.encode())
+        self.client.write(f"VOLT?\n")
         time.sleep(0.2)
         try:
             response = self.client.readline().decode().strip()
@@ -121,14 +143,14 @@ class rigolDp832aClass(power_supply):
         except:
             response = False
         self.client.close()
-        return  response
+        return response
 
     def _get_setting_current(self, ch_num) -> float:
-        '''возвращает значение установленного тока канала'''
+        """возвращает значение установленного тока канала"""
         self.open_port()
         self.select_channel(ch_num)
-        #self.client.write(f'CURR?\n'.encode())
-        self.client.write(f'CURR?\n')
+        # self.client.write(f'CURR?\n'.encode())
+        self.client.write(f"CURR?\n")
         time.sleep(0.2)
         try:
             response = self.client.readline().decode().strip()
@@ -136,23 +158,24 @@ class rigolDp832aClass(power_supply):
         except:
             response = False
         self.client.close()
-        return   response
+        return response
 
     def _get_setting_state(self, ch_num) -> bool:
-        '''возвращает состояние канала вкл(true) или выкл(false)'''
+        """возвращает состояние канала вкл(true) или выкл(false)"""
         pass
 
     def select_channel(self, channel):
         self.open_port()
-        #self.client.write(f'INST CH{channel}\n'.encode())
-        self.client.write(f'INST CH{channel}\n')
-        
-if __name__ == "__main__":
-    #print("тестирование ригола")
-    #rt = 0
+        # self.client.write(f'INST CH{channel}\n'.encode())
+        self.client.write(f"INST CH{channel}\n")
 
-    #rigol = rigolDp832aClass("rigol", rt)
-    #rigol.show_setting_window(rt)
+
+if __name__ == "__main__":
+    # print("тестирование ригола")
+    # rt = 0
+
+    # rigol = rigolDp832aClass("rigol", rt)
+    # rigol.show_setting_window(rt)
 
     res = pyvisa.ResourceManager().list_resources()
     rm = pyvisa.ResourceManager()
@@ -164,29 +187,22 @@ if __name__ == "__main__":
 
     client = rm.open_resource(res[idx])
 
-    data = client.query_ascii_values(f'*IDN?\n')
+    data = client.query_ascii_values(f"*IDN?\n")
     print(data)
 
-    ax = client.query_ascii_values(f'CURSor:MANual:AXValue? \n')
+    ax = client.query_ascii_values(f"CURSor:MANual:AXValue? \n")
     print(f"{ax=}")
 
-    bx = client.query_ascii_values(f'CURSor:MANual:BXValue? \n')
+    bx = client.query_ascii_values(f"CURSor:MANual:BXValue? \n")
     print(f"{bx=}")
 
-    ay = client.query_ascii_values(f'CURSor:MANual:AYValue? \n')
+    ay = client.query_ascii_values(f"CURSor:MANual:AYValue? \n")
     print(f"{ay=}")
 
-    by = client.query_ascii_values(f'CURSor:MANual:BYValue? \n')
+    by = client.query_ascii_values(f"CURSor:MANual:BYValue? \n")
     print(f"{by=}")
 
-    vpp = client.query_ascii_values(f'MEASure:CHANnel1:ITEM? RMS\n' )
+    vpp = client.query_ascii_values(f"MEASure:CHANnel1:ITEM? RMS\n")
     print(f"{vpp=}")
 
-    #MAX,VMIN,VPP,VTOP,VBASe,VAMP,VAVG,VRMS,OVERshoot,PREShoot,MARea,MP ARea,PERiod,FREQuency,RTIMe,FTIMe,PWIDth,NWIDth,PDUTy,NDUTy,RDELay,FDE Lay,RPHase,FPHase,TVMAX,TVMIN,PSLEWrate,NSLEWrate,VUPper, VMID,VLOWer,VARIance,PVRMS,PPULses,NPULses,PEDGes,NEDGes>
-    
-
-
-
-
-
- 
+    # MAX,VMIN,VPP,VTOP,VBASe,VAMP,VAVG,VRMS,OVERshoot,PREShoot,MARea,MP ARea,PERiod,FREQuency,RTIMe,FTIMe,PWIDth,NWIDth,PDUTy,NDUTy,RDELay,FDE Lay,RPHase,FPHase,TVMAX,TVMIN,PSLEWrate,NSLEWrate,VUPper, VMID,VLOWer,VARIance,PVRMS,PPULses,NPULses,PEDGes,NEDGes>

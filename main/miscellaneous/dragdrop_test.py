@@ -125,7 +125,7 @@ class WidgetWithComboBoxes(QWidget):
 class Example(QWidget):
     def __init__(self):
         super().__init__()
-        '''
+        
         label1 = DraggableLabel('Label 1', self)
         label1.setStyleSheet("background-color: lightblue;")
 
@@ -143,7 +143,7 @@ class Example(QWidget):
         widget2.move(150, 100)
         widget3 = WidgetWithComboBoxes('Widget 3', self)
         widget3.move(300, 100)
-
+        '''
         self.setGeometry(300, 300, 400, 200)
         self.setWindowTitle('Перемещение и копирование лейблов')
         self.show()

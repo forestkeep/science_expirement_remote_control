@@ -1,15 +1,17 @@
-import math
-from interface.Set_immitance_window import Ui_Set_immitans
-from PyQt5 import QtCore, QtWidgets
-import PyQt5.sip
-import serial.tools.list_ports
-from PyQt5.QtCore import QTimer, QDateTime
-import serial
 import copy
-import time
-from Classes import ch_response_to_step, base_device, ch_response_to_step, base_ch, which_part_in_ch
-from Classes import not_ready_style_border, not_ready_style_background, ready_style_border, ready_style_background, warning_style_border, warning_style_background
 import logging
+import math
+import time
+
+import serial
+import serial.tools.list_ports
+
+from Classes import (base_ch, base_device, ch_response_to_step,
+                     not_ready_style_border,
+                     ready_style_border,
+                     which_part_in_ch)
+from interface.Set_immitance_window import Ui_Set_immitans
+
 logger = logging.getLogger(__name__)
 
 class CommandsMNIPI:
@@ -46,31 +48,12 @@ class mnipiE720Class(base_device):
         self.setting_window.shift_enter.setEditable(True)
         self.setting_window.shift_enter.addItems(["0"])
 
-        self.setting_window.shift_enter.setStyleSheet(ready_style_border)
-        self.setting_window.frequency_enter.setStyleSheet(ready_style_border)
-        self.setting_window.level_enter.setStyleSheet(ready_style_border)
-
-        self.setting_window.shift_enter.currentIndexChanged.connect(lambda: self._is_correct_parameters())
-        self.setting_window.level_enter.currentIndexChanged.connect(lambda: self._is_correct_parameters())
-        self.setting_window.frequency_enter.currentIndexChanged.connect(lambda: self._is_correct_parameters())
-            
-        self.setting_window.level_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
-        self.setting_window.frequency_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
-        self.setting_window.shift_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
-            
-        self.setting_window.check_capacitance.toggled.connect(lambda: self._is_correct_parameters())
-        self.setting_window.check_resistance.toggled.connect(lambda: self._is_correct_parameters())
-        self.setting_window.check_impedance.toggled.connect(lambda: self._is_correct_parameters())
-        self.setting_window.check_inductor.toggled.connect(lambda: self._is_correct_parameters())
-        self.setting_window.check_current.toggled.connect(lambda: self._is_correct_parameters())
             
         self.commands = CommandsMNIPI()
         self.ch1_meas = ch_mnipi_class(1, self)
-        self.channels=[self.ch1_meas]
-        self.ch1_meas.is_active = True # по умолчанию для каждого прибора включен первый канал
-        self.active_channel_meas = self.ch1_meas #поле необходимо для записи параметров при настройке в нужный канал
+        self.channels = self.create_channel_array()
         self.device = None  # класс прибора будет создан при подтверждении параметров,
-        # переменная хранит все возможные источники сигналов , сделать функцию, формирующую этот список в зависимости от структуры установки
+
         self.counter = 0
         self.dict_meas_param = {'|Z|':self.commands.PUSH_Z,
                                 "Rp" :self.commands.PUSH_R,

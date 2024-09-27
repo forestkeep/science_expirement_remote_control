@@ -1,44 +1,42 @@
 import time
 
-class commandsSR830():
+
+class commandsSR830:
     def __init__(self, device) -> None:
-        self.COMM_ID = '*IDN'
-        self.COMM_TIME_CONSTANT = 'OFLT'
-        self.COMM_GARMONIC = 'HARM'
-        self.COMM_FREQUENCY = 'FREQ'
-        self.PHASE = 'PHAS'
-        self.SET_INT_FREQUENCY_SOURCE = 'FMOD'
+        self.COMM_ID = "*IDN"
+        self.COMM_TIME_CONSTANT = "OFLT"
+        self.COMM_GARMONIC = "HARM"
+        self.COMM_FREQUENCY = "FREQ"
+        self.PHASE = "PHAS"
+        self.SET_INT_FREQUENCY_SOURCE = "FMOD"
         self.STR_SET_SIN_OUT = "SLVL{}\r\n"
-        self.COMM_AUTO_GAIN = 'AGAN'
-        self.COMM_AUTO_APHS = 'APHS'
-        self.COMM_DISPLAY = 'OUTR'  # запрос значения с дисплея
-        self.COMM_SERIAL_PULL_STATUS_BYTE = '*STB?\r\n'
+        self.COMM_AUTO_GAIN = "AGAN"
+        self.COMM_AUTO_APHS = "APHS"
+        self.COMM_DISPLAY = "OUTR"  # запрос значения с дисплея
+        self.COMM_SERIAL_PULL_STATUS_BYTE = "*STB?\r\n"
         self.device = device
-        
+
     def push_autogain(self):
-        #print(bytes(self.COMM_AUTO_GAIN, "ascii") + b'\r\n')
-        self.device.client.write(bytes(self.COMM_AUTO_GAIN, "ascii") + b'\r\n')
+        self.device.client.write(bytes(self.COMM_AUTO_GAIN, "ascii") + b"\r\n")
 
     def push_autophase(self):
-        #print(bytes(self.COMM_AUTO_APHS, "ascii") + b'\r\n')
-        self.device.client.write(bytes(self.COMM_AUTO_APHS, "ascii") + b'\r\n')
+        self.device.client.write(bytes(self.COMM_AUTO_APHS, "ascii") + b"\r\n")
 
-    def get_parameter(self, command, timeout = 1, param=False):
+    def get_parameter(self, command, timeout=1, param=False):
         if param == False:
-            self.device.client.write(bytes(command, "ascii") + b'?\r\n')
+            self.device.client.write(bytes(command, "ascii") + b"?\r\n")
         else:
             param = str(param)
-            self.device.client.write(bytes(command, "ascii") +
-                              b'? ' + bytes(param, "ascii") + b'\r\n')
+            self.device.client.write(
+                bytes(command, "ascii") + b"? " + bytes(param, "ascii") + b"\r\n"
+            )
 
         start_time = time.time()
         while time.time() - start_time < timeout:
             line = self.device.client.readline().decode().strip()
             if line:
-                #print("Received:", line)
                 return line
         return False
-# SLVL (?) {x} 5-4 Установите (запросите) амплитуду синусоидального выходного сигнала на x Vrms. 0.004 £ x £5.000.
 
     def _set_amplitude(self, ampl):
         try:
@@ -47,12 +45,11 @@ class commandsSR830():
             return False
         if ampl < 0.004 or ampl > 5:
             return False
-        #print(bytes("SLVL", "ascii") + bytes(str(ampl), "ascii") + b'\r\n')
-        self.device.client.write(bytes("SLVL", "ascii") +
-                          bytes(str(ampl), "ascii") + b'\r\n')
+        self.device.client.write(
+            bytes("SLVL", "ascii") + bytes(str(ampl), "ascii") + b"\r\n"
+        )
         return True
 
-# FREQ (?) {f} 5-4 Установка (запрос) опорной частоты на f Гц. Устанавливается только в режиме внутренней ссылки.
     def _set_frequency(self, freq):
         try:
             freq = int(freq)
@@ -60,49 +57,40 @@ class commandsSR830():
             return False
         if freq > 102000 or freq < 2:
             return False
-        #print(bytes("FREQ", "ascii") + bytes(str(freq), "ascii") + b'\r\n')
-        self.device.client.write(bytes("FREQ", "ascii") +
-                          bytes(str(freq), "ascii") + b'\r\n')
+        self.device.client.write(
+            bytes("FREQ", "ascii") + bytes(str(freq), "ascii") + b"\r\n"
+        )
         return True
 
-
-# FMOD (?) {i} 5-4 Установка (запрос) источника опорного сигнала на внешний (0) или внутренний (1).
-
     def _set_sourse_base_signal(self, sourse="in"):
-        dict_filter_slope = {0: "out",
-                             1: "in"
-                             }
-        return self._set_something(dict_filter_slope, 'FMOD', sourse)
-
-
-# OFLT (?) {i} 5-6 Установка (запрос) постоянной времени от 10 мкс (0) до 30 кс (19).
-
+        dict_filter_slope = {0: "out", 1: "in"}
+        return self._set_something(dict_filter_slope, "FMOD", sourse)
 
     def _set_time_const(self, time_constant):
-        dict_time_code = {0: 10/1000000,
-                          1: 30/1000000,
-                          2: 100/1000000,
-                          3: 300/1000000,
-                          4: 1/1000,
-                          5: 3/1000,
-                          6: 10/1000,
-                          7: 30/1000,
-                          8: 100/1000,
-                          9: 300/1000,
-                          10: 1,
-                          11: 3,
-                          12: 10,
-                          13: 30,
-                          14: 100,
-                          15: 300,
-                          16: 1000,
-                          17: 3000,
-                          18: 10000,
-                          19: 30000
-                          }
-        return self._set_something(dict_time_code, 'OFLT', time_constant)
-    # ---------------------------------
-    # SENS (?) {i} 5-6 Установка (запрос) чувствительности в диапазоне от 2 нВ (0) до 1 В (26) среднеквадратичных значений полной шкалы.
+        dict_time_code = {
+            0: 10 / 1000000,
+            1: 30 / 1000000,
+            2: 100 / 1000000,
+            3: 300 / 1000000,
+            4: 1 / 1000,
+            5: 3 / 1000,
+            6: 10 / 1000,
+            7: 30 / 1000,
+            8: 100 / 1000,
+            9: 300 / 1000,
+            10: 1,
+            11: 3,
+            12: 10,
+            13: 30,
+            14: 100,
+            15: 300,
+            16: 1000,
+            17: 3000,
+            18: 10000,
+            19: 30000,
+        }
+        return self._set_something(dict_time_code, "OFLT", time_constant)
+
     """
 			i=0(≙2 nV/fA), i=1(≙5 nV/fA), i=2(≙10 nV/fA), i=3(≙20 nV/fA), i=4(≙50 nV/fA), i=5(≙100 nV/fA), i=6(≙200 nV/fA), 
 			i=7(≙500 nV/fA), i=8(≙1 μV/pA), i=9(≙2 μV/pA), i=10(≙5 μV/pA), i=11(≙10 μV/pA), i=12(≙20 μV/pA), i=13(≙50 μV/pA),
@@ -110,87 +98,71 @@ class commandsSR830():
 			i=21(≙20 mV/nA), i=22(≙50 mV/nA), i=23(≙100 mV/nA), i=24(≙200 mV/nA), i=25(≙500 mV/nA), i=26(≙1 V/μA)
 	"""
 
-    def _set_sens(self, sens=2/1000000000):
+    def _set_sens(self, sens=2 / 1000000000):
         dict_sens_code = {
-            0: 2/1000000000,
-            1: 5/1000000000,
-            2: 10/1000000000,
-            3: 20/1000000000,
-            4: 50/1000000000,
-            5: 100/1000000000,
-            6: 200/1000000000,
-            7: 500/1000000000,
-            8: 1/1000000,
-            9: 2/1000000,
-            10: 5/1000000,
-            11: 10/1000000,
-            12: 20/1000000,
-            13: 50/1000000,
-            14: 100/1000000,
-            15: 200/1000000,
-            16: 500/1000000,
-            17: 1/1000,
-            18: 2/1000,
-            19: 5/1000,
-            20: 10/1000,
-            21: 20/1000,
-            22: 50/1000,
-            23: 100/1000,
-            24: 200/1000,
-            25: 500/1000,
+            0: 2 / 1000000000,
+            1: 5 / 1000000000,
+            2: 10 / 1000000000,
+            3: 20 / 1000000000,
+            4: 50 / 1000000000,
+            5: 100 / 1000000000,
+            6: 200 / 1000000000,
+            7: 500 / 1000000000,
+            8: 1 / 1000000,
+            9: 2 / 1000000,
+            10: 5 / 1000000,
+            11: 10 / 1000000,
+            12: 20 / 1000000,
+            13: 50 / 1000000,
+            14: 100 / 1000000,
+            15: 200 / 1000000,
+            16: 500 / 1000000,
+            17: 1 / 1000,
+            18: 2 / 1000,
+            19: 5 / 1000,
+            20: 10 / 1000,
+            21: 20 / 1000,
+            22: 50 / 1000,
+            23: 100 / 1000,
+            24: 200 / 1000,
+            25: 500 / 1000,
             26: 1,
         }
-        return self._set_something(dict_sens_code, 'SENS', sens)
-    # ---------------------------------
-    # OFSL (?) {i} 5-6 Установите (запрос) крутизну фильтра нижних частот на 6 (0), 12 (1), 18 (2) или 24 (3) дБ/окт.
+        return self._set_something(dict_sens_code, "SENS", sens)
 
     def _set_filter_slope(self, slope):
-        dict_filter_slope = {0: 6,
-                             1: 12,
-                             2: 18,
-                             3: 24
-                             }
-        return self._set_something(dict_filter_slope, 'OFSL', slope)
+        dict_filter_slope = {0: 6, 1: 12, 2: 18, 3: 24}
+        return self._set_something(dict_filter_slope, "OFSL", slope)
 
-    # RMOD (?) {i} 5-6 Установите (запросите) режим динамического резерва на HighReserve (0), Normal (1) или Low Noise (2).
     def _set_reserve(self, reserve="high reserve"):
-        dict_reserve = {0: "high reserve",
-                        1: "normal",
-                        2: "low noise",
-                        }
-        return self._set_something(dict_reserve, 'RMOD', reserve)
+        dict_reserve = {
+            0: "high reserve",
+            1: "normal",
+            2: "low noise",
+        }
+        return self._set_something(dict_reserve, "RMOD", reserve)
 
-    # ISRC (?) {i} 5-5 Установите (запросите) конфигурацию входа на A (0), A-B (1) , I (1 МВт) (2) или I (100 МВт) (3).
     def _set_input_conf(self, conf="A"):
-        dict_input_conf = {0: "A",
-                           1: "A - B",
-                           2: "I (10^6)",
-                           3: "I (10^8)"
-                           }
-        return self._set_something(dict_input_conf, 'ISRC', conf)
+        dict_input_conf = {0: "A", 1: "A - B", 2: "I (10^6)", 3: "I (10^8)"}
+        return self._set_something(dict_input_conf, "ISRC", conf)
 
-    # ICPL (?) {i} 5-5 Установка (запрос) входной связи на переменный (0) или постоянный (1) ток.
     def _set_input_type_conf(self, type_conf="AC"):
-        dict_input_type_conf = {0: "AC",
-                                1: "DC",
-                                }
-        return self._set_something(dict_input_type_conf, 'ICPL', type_conf)
+        dict_input_type_conf = {
+            0: "AC",
+            1: "DC",
+        }
+        return self._set_something(dict_input_type_conf, "ICPL", type_conf)
 
-    # IGND (?) {i} 5-5 Установите (запрос) для заземления входного экрана значение Float (0) или Ground (1).
     def _set_input_type_connect(self, input_ground="float"):
-        dict_input_type_conn = {0: "float",
-                                1: "ground",
-                                }
-        return self._set_something(dict_input_type_conn, 'IGND', input_ground)
+        dict_input_type_conn = {
+            0: "float",
+            1: "ground",
+        }
+        return self._set_something(dict_input_type_conn, "IGND", input_ground)
 
-    # ILIN (?) {i} 5-5 Установите (запрос) для фильтров линейных засечек значения Out (0), Line In (1) , 2xLine In (2) или Both In (3).
     def _set_line_filters(self, type="out"):
-        dict_line = {0: "out",
-                     1: "line",
-                     2: "2X line",
-                     3: "both"
-                     }
-        return self._set_something(dict_line, 'ILIN', type)
+        dict_line = {0: "out", 1: "line", 2: "2X line", 3: "both"}
+        return self._set_something(dict_line, "ILIN", type)
 
     def _set_something(self, dict_some, command, value):
         code = False
@@ -199,38 +171,30 @@ class commandsSR830():
                 code = key
                 break
         if code is not False:
-            #print(bytes(command, "ascii") + bytes(str(code), "ascii") + b'\r\n')
-            self.device.client.write(bytes(command, "ascii") +
-                              bytes(str(code), "ascii") + b'\r\n')
+            self.device.client.write(
+                bytes(command, "ascii") + bytes(str(code), "ascii") + b"\r\n"
+            )
             return True
         return False
 
     def _set_phase(self, x):
         if x < -360 or x > 730:
             return False
-        self.device.client.write(b'PHAS' + str(x) + b'\r\n')
-        b'PHAS' + str(x) + b'\r\n'  # -360.00 ≤ x ≤ 729.99
+        self.device.client.write(b"PHAS" + str(x) + b"\r\n")
+        b"PHAS" + str(x) + b"\r\n"  # -360.00 ≤ x ≤ 729.99
         return True
 
     def _set_reference_sourse(self, x):
         if x == "ext":
-            self.device.client.write(b'FMOD 0\r\n')
+            self.device.client.write(b"FMOD 0\r\n")
         else:
-            self.device.client.write(b'FMOD 1\r\n')
-
+            self.device.client.write(b"FMOD 1\r\n")
 
 if __name__ == "__main__":
     sr = commandsSR830(125)
-    #print(100 * 0.000001)
-    sr._set_sens(10/1000000)
+    sr._set_sens(10 / 1000000)
 
-'''
-		device = SR830(SerialAdapter("COM10"))
-		device.auto_phase()
-		print(device.ask("open 1"))
-		print("stop")
-'''
-'''
+"""
 	b'FMOD \r\n'
 	b'FREQ \r\n'
 	b'RSLP \r\n'
@@ -421,4 +385,4 @@ if __name__ == "__main__":
 	5 GPIB Error Устанавливается при прерывании передачи двоичных данных по GPIB
 	6 DSP Error Устанавливается, когда тест DSP обнаруживает ошибку
 	7 Math Error Устанавливается при возникновении внутренней математической ошибки
-'''
+"""

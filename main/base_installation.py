@@ -1,28 +1,34 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QTimer, Qt
 import logging
-import time
-from datetime import datetime
-from Parse_data import process_and_export, type_save_file
-from interface.experiment_settings_window import settigsDialog
-from Classes import ch_response_to_step
-from Classes import not_ready_style_border, not_ready_style_background, ready_style_border, ready_style_background, warning_style_border, warning_style_background
-from interface.Message import messageDialog
-from online_graph import GraphWindow
-from interface.installation_check_devices import installation_Ui_Dialog
-from Adapter import Adapter, AdapterException, instrument
-from pymodbus.client import ModbusSerialClient
 import threading
+from datetime import datetime
+
+from pymodbus.client import ModbusSerialClient
+from PyQt5 import QtGui, QtWidgets
+from PyQt5.QtCore import Qt
+
+from Adapter import Adapter, instrument
+from Classes import (
+    not_ready_style_background,
+    not_ready_style_border,
+    ready_style_border,
+    time_decorator,
+)
+from graph.online_graph import GraphWindow
+from interface.experiment_settings_window import settigsDialog
+from interface.installation_check_devices import installation_Ui_Dialog
+from interface.Message import messageDialog
+from Parse_data import process_and_export, type_save_file
+from available_devices import dict_device_class
 
 logger = logging.getLogger(__name__)
 
-class baseInstallation():
+
+class baseInstallation:
     def __init__(self) -> None:
-        self.is_exp_run_anywhere = True
-        self.is_delete_buf_file = False
 
         self.way_to_save_installation_file = None
         self.save_results_now = False
+        self.is_search_resources = True
 
         self.is_window_save_dialog_showing = False
         self.is_debug = False
@@ -33,20 +39,21 @@ class baseInstallation():
         self.pbar_percent = 0
         self.way_to_save_file = False
         self.type_file_for_result = type_save_file.txt
-        
+
         self.dict_active_device_class = {}
-        self.clients = [] 
+        self.clients = []
         self.key_to_start_installation = False
-    
+
         self.repeat_experiment = 1
         self.repeat_meas = 1
         self.way_to_save_fail = None
 
         self.list_resources = []
         self.thread_scan_resources = threading.Thread(target=self._search_resources)
-        self.thread_scan_resources.daemon = True 
+        self.thread_scan_resources.daemon = True
+        self.stop_scan_thread = False
         self.thread_scan_resources.start()
-        
+
     def show_information_window(self, message):
         msg = QtWidgets.QMessageBox()
         msg.setWindowTitle("Info")
@@ -67,16 +74,16 @@ class baseInstallation():
         msg.setText(message)
         msg.setIcon(QtWidgets.QMessageBox.Critical)
         msg.exec_()
-        
+
     def get_channel_widget(self, name_device, num_channel):
         return self.installation_window.devices_lay[name_device].channels[num_channel]
-    
+
     def get_device_widget(self, name_device):
         return self.installation_window.devices_lay[name_device]
 
     def clear_log(self):
         self.installation_window.log.clear()
-        
+
     def get_signal_list(self, name_device, ch) -> tuple:
         buf_list = []
         for dev in self.dict_active_device_class.values():
@@ -87,69 +94,76 @@ class baseInstallation():
                     elif chan.get_name() != ch.get_name():
                         buf_list.append(dev.name + " " + chan.get_name())
         return buf_list
-    
+
     def name_to_class(self, name_device):
-        '''возвращает экземпляр класса прибора'''
+        """возвращает экземпляр класса прибора"""
         for dev in self.dict_active_device_class.keys():
             if name_device == dev:
                 return self.dict_active_device_class[dev]
         return False
-    
+
     def set_priorities(self):
-        '''устанавливает приоритеты в эксперименте всем активным каналам во всех приборах'''
+        """устанавливает приоритеты в эксперименте всем активным каналам во всех приборах"""
         priority = 1
         for dev, ch in self.get_active_ch_and_device():
-            ch.set_priority(priority = priority)
+            ch.set_priority(priority=priority)
             priority += 1
-                    
+
     def get_active_ch_and_device(self):
         for device in self.dict_active_device_class.values():
             for channel in device.channels:
                 if channel.is_ch_active():
                     yield device, channel
-                    
+
     def add_text_to_log(self, text, status=None):
         if status == "err":
-            self.installation_window.log.setTextColor(QtGui.QColor('red'))
+            self.installation_window.log.setTextColor(QtGui.QColor("red"))
         elif status == "war":
-            self.installation_window.log.setTextColor(QtGui.QColor('orange'))
+            self.installation_window.log.setTextColor(QtGui.QColor("orange"))
         elif status == "ok":
-            self.installation_window.log.setTextColor(QtGui.QColor('green'))
+            self.installation_window.log.setTextColor(QtGui.QColor("green"))
         else:
-            self.installation_window.log.setTextColor(QtGui.QColor('white'))
+            self.installation_window.log.setTextColor(QtGui.QColor("white"))
 
         self.installation_window.log.append(
-            (str(datetime.now().strftime("%H:%M:%S")) + " : " + str(text)))
+            (str(datetime.now().strftime("%H:%M:%S")) + " : " + str(text))
+        )
         self.installation_window.log.ensureCursorVisible()
-        
+
     def set_state_text(self, text):
         self.installation_window.label_state.setText(text)
-        
+
     def show_window_installation(self):
         logger.debug(f"вызвана функция показать окно установки")
         self.installation_window.show()
-        
+
     def close_window_installation(self):
         try:
             self.installation_window.close()
             self.installation_window.setParent(None)
-            logger.info("окно установки закрыто")
-        except:
-            pass
+            logger.debug("окно установки закрыто")
+        except Exception as e:
+            logger.warning(f"ошибка: {str(e)}")
 
     def _search_resources(self):
-        while True:
-            self.list_resources = instrument.get_resourses()
+        while  not self.stop_scan_thread:
+            if self.is_search_resources:
+                self.list_resources = instrument.get_resourses()
 
     def get_list_resources(self) -> list:
         return self.list_resources
-        
+
     def set_way_save(self):
         self.is_window_save_dialog_showing = True
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
-        fileName, ans = QtWidgets.QFileDialog.getSaveFileName(self.installation_window,
-                                                              "укажите путь сохранения результатов", "", "Text Files(*.txt);; Книга Excel (*.xlsx);;Origin (*.opju)", options=options)
+        fileName, ans = QtWidgets.QFileDialog.getSaveFileName(
+            self.installation_window,
+            "укажите путь сохранения результатов",
+            "",
+            "Text Files(*.txt);; Книга Excel (*.xlsx);;Origin (*.opju)",
+            options=options,
+        )
         if fileName:
             if ans == "Origin (*.opju)":
                 if fileName.find(".opju") == -1:
@@ -170,23 +184,40 @@ class baseInstallation():
             self.way_to_save_file = fileName
             self.installation_window.way_save_text.setText(str(self.way_to_save_file))
             if self.save_results_now == True:
-                status, self.way_to_save_file = process_and_export(self.buf_file, self.way_to_save_file, self.type_file_for_result, self.is_delete_buf_file)
-                self.installation_window.way_save_text.setText(str(self.way_to_save_file))
+                status, self.way_to_save_file = process_and_export(
+                    self.buf_file,
+                    self.way_to_save_file,
+                    self.type_file_for_result,
+                    self.is_delete_buf_file,
+                )
+                self.installation_window.way_save_text.setText(
+                    str(self.way_to_save_file)
+                )
                 self.save_results_now = False
                 if status == True:
-                    if self.is_delete_buf_file== True:
-                        self.add_text_to_log(text=f"Результаты сохранены в {self.way_to_save_file}, файл {self.buf_file} был удален,", status= "ok")
+                    if self.is_delete_buf_file == True:
+                        self.add_text_to_log(
+                            text=f"Результаты сохранены в {self.way_to_save_file}, файл {self.buf_file} был удален,",
+                            status="ok",
+                        )
                     else:
-                        self.add_text_to_log(text=f"Результаты сохранены в {self.way_to_save_file}", status= "ok")
+                        self.add_text_to_log(
+                            text=f"Результаты сохранены в {self.way_to_save_file}",
+                            status="ok",
+                        )
                 else:
-                    self.add_text_to_log(text=f"Не удалось сохранить результаты", status= "err")
+                    self.add_text_to_log(
+                        text=f"Не удалось сохранить результаты", status="err"
+                    )
 
         else:
             self.type_file_for_result = False
         self.is_window_save_dialog_showing = False
-        
+
     def save_results(self):
-        if self.way_to_save_file != False:  # если выбран путь для сохранения результатов
+        if (
+            self.way_to_save_file != False
+        ):  # если выбран путь для сохранения результатов
 
             if self.type_file_for_result == type_save_file.origin:
                 pass
@@ -197,15 +228,28 @@ class baseInstallation():
             else:
                 self.type_file_for_result = type_save_file.txt
 
-            status , self.way_to_save_file = process_and_export(self.buf_file, self.way_to_save_file, self.type_file_for_result, self.is_delete_buf_file)
+            status, self.way_to_save_file = process_and_export(
+                self.buf_file,
+                self.way_to_save_file,
+                self.type_file_for_result,
+                self.is_delete_buf_file,
+            )
             self.installation_window.way_save_text.setText(str(self.way_to_save_file))
             if status == True:
-                if self.is_delete_buf_file== True:
-                    self.add_text_to_log(text=f"Результаты сохранены в {self.way_to_save_file}, файл {self.buf_file} был удален,", status= "ok")
+                if self.is_delete_buf_file == True:
+                    self.add_text_to_log(
+                        text=f"Результаты сохранены в {self.way_to_save_file}, файл {self.buf_file} был удален,",
+                        status="ok",
+                    )
                 else:
-                    self.add_text_to_log(text=f"Результаты сохранены в {self.way_to_save_file}", status= "ok")
+                    self.add_text_to_log(
+                        text=f"Результаты сохранены в {self.way_to_save_file}",
+                        status="ok",
+                    )
             else:
-                self.add_text_to_log(text=f"Не удалось сохранить результаты", status= "err")
+                self.add_text_to_log(
+                    text=f"Не удалось сохранить результаты", status="err"
+                )
 
         else:
             self.exp_th_connect.ask_save_the_results = True
@@ -215,60 +259,140 @@ class baseInstallation():
 
     def show_about_autors(self):
         text = """
-        Авторы:
+        Автор:
 
         - Захидов Дмитрий
 
         Если у вас есть вопросы, замечания, или предложения по улучшению приложения, 
-        пожалуйста, свяжитесь с нами по электронной почте zakhidov.dim@yandex.ru
+        пожалуйста, свяжитесь с мной по почте zakhidov.dim@yandex.ru
 
-        Благодарим вас за использование нашего приложения!
+        Благодарю вас за использование приложения!
         """
-        dialog = messageDialog(text = text, title="Информация об авторах")
+        dialog = messageDialog(text=text, title="Информация об авторах")
         dialog.exec_()
-        
+
+    def show_basic_instruction(self):
+        if (
+            self.is_show_basic_instruction_again == "true"
+            or self.is_show_basic_instruction_again == True
+        ):
+            text = """
+                Настройте каждый прибор, нажав кнопку "Настроить" под его каналом. 
+                Открывайте (кнопка +) и закрывайте каналы, а также добавляйте и удаляйте приборы по необходимости.
+
+                После настройки всех приборов система проверяет конфликты интерфейсов. 
+                Если конфликты обнаружены, вы получите сообщение желтым цветом в 
+                логе под полем приборов. Чтобы устранить конфликты, заново внесите
+                настройки интерфейсов в указанные приборы. Система также проверяет,
+                имеет ли эксперимент окончание или будет продолжаться бесконечно,
+                и выдаст соответствующее сообщение. После успешного завершения 
+                всех проверок кнопка "Старт" подсветится зеленым цветом.
+
+                Установите количество измерений в каждой точке и количество повторов 
+                эксперимента в поле справа от приборов. Количество измерений больше 1 
+                поможет усреднить результаты, а количество повторов больше 1 позволит 
+                проверить их повторяемость.
+
+                Контроллер установки покажет текущий прогресс в процентах и оставшееся 
+                время работы. В логе будут отображаться информационные сообщения о 
+                текущих действиях и их результатах. По завершении эксперимента 
+                программа предложит выбрать файл для сохранения результатов, 
+                если вы не сделали этого заранее.
+
+                В ходе эксперимента или после его завершения вы можете нажать кнопку 
+                "Показать график". График отображает зависимость измеряемого параметра
+                от времени или других параметров. Вы можете масштабировать графики,
+                менять цвета и фон, сохранять их в виде картинок и производить 
+                несложную цифровую обработку.
+
+                Для подробной инструкции по использованию приложения нажмите кнопку "Инфо" -> "Инструкция".
+            """
+
+            dialog = messageDialog(
+                text=text, title="Инструкция по настройке", are_show_again=True
+            )
+
+            if dialog.exec_() == QtWidgets.QDialog.Accepted:
+                self.is_show_basic_instruction_again = (
+                    not dialog.check_not_show.isChecked()
+                )
+                self.settings.setValue(
+                    "is_show_basic_instruction_again",
+                    self.is_show_basic_instruction_again,
+                )
+
     def open_graph_in_exp(self):
         if self.graph_window is not None:
             pass
         else:
             self.graph_window = GraphWindow()
             self.graph_window.graph_win_close_signal.connect(self.graph_win_closed)
-            self.graph_window.update_dict_param(self.measurement_parameters)
+            self.graph_window.update_graphics(self.measurement_parameters)
         self.graph_window.show()
-        
+
     def add_new_device(self):
         logger.debug("нажата кнопка добавления нового прибора")
         self.new_window = QtWidgets.QDialog()
         self.ui_window = installation_Ui_Dialog()
-        self.ui_window.setupUi(self.new_window, self)
+        self.ui_window.setupUi(self.new_window, self, dict_device_class)
         self.key_to_new_window_installation = True
         self.new_window.show()
-        
+
+    def message_from_new_installation(self, device_list):
+        print(self.dict_active_device_class.keys())
+
+        new_added_device = {}
+        if device_list:
+            number_device = len(self.dict_active_device_class.keys()) + 1
+            for key in device_list:  # создаем экземпляры классов переданных приборов
+                try:
+                    key_dev = key + "_" + str(number_device)
+                    dev = self.dict_device_class[key](
+                            name=key_dev, installation_class=self
+                        )
+                    self.dict_active_device_class[key_dev] = (dev)
+                    new_added_device[key_dev] = (dev)
+
+                    #self.current_installation_list.append(key_dev)
+                    number_device = number_device + 1
+                except:
+                    logger.debug("под прибор |" + key + "| не удалось создать экземпляр")
+                    
+            self.installation_window.add_new_devices(new_added_device)
+        print(self.dict_active_device_class.keys())
+
     def change_check_debug(self):
         if not self.is_experiment_running():
             if not self.is_debug:
                 self.is_debug = True
                 self.installation_window.develop_mode.setText("Выкл режим разработчика")
-                self.add_text_to_log("Режим разработчика включен. В этом режиме корректность показаний с приборов не гарантируется",status="war")
+                self.add_text_to_log(
+                    "Режим разработчика включен. В этом режиме корректность показаний с приборов не гарантируется",
+                    status="war",
+                )
             else:
                 self.installation_window.develop_mode.setText("Вкл режим разработчика")
                 self.add_text_to_log("Режим разработчика выключен")
                 self.is_debug = False
-            
+
             for dev in self.dict_active_device_class.values():
                 dev.set_debug(self.is_debug)
 
         self.preparation_experiment()
-        
+
     def open_general_settings(self):
         set_dialog = settigsDialog()
         is_exp_run_anywhere = [Qt.Checked]
-        set_dialog.check_boxes_1[0].setChecked(self.is_exp_run_anywhere == True)
-        set_dialog.check_boxes_1[0].stateChanged.connect(lambda state: is_exp_run_anywhere.__setitem__(0, state == Qt.Checked))
+        set_dialog.check_boxes_1[0].setChecked(self.is_exp_run_anywhere == "true")
+        set_dialog.check_boxes_1[0].stateChanged.connect(
+            lambda state: is_exp_run_anywhere.__setitem__(0, state == Qt.Checked)
+        )
 
         is_delete_buf_file = [Qt.Checked]
-        set_dialog.check_boxes_1[1].setChecked(self.is_delete_buf_file == True)
-        set_dialog.check_boxes_1[1].stateChanged.connect(lambda state: is_delete_buf_file.__setitem__(0, state == Qt.Checked))
+        set_dialog.check_boxes_1[1].setChecked(self.is_delete_buf_file == "true")
+        set_dialog.check_boxes_1[1].stateChanged.connect(
+            lambda state: is_delete_buf_file.__setitem__(0, state == Qt.Checked)
+        )
 
         answer = set_dialog.exec_()
         if answer:
@@ -281,16 +405,17 @@ class baseInstallation():
                 self.is_delete_buf_file = True
             else:
                 self.is_delete_buf_file = False
-            #print("сохранить настройки", self.is_exp_run_anywhere)
+
+            self.settings.setValue("is_exp_run_anywhere", self.is_exp_run_anywhere)
+            self.settings.setValue("is_delete_buf_file", self.is_delete_buf_file)
         else:
             pass
-            #print("не сохранять изменения")
+            # print("не сохранять изменения")
 
-
-########### devices class connect func #############
+    ########### devices class connect func #############
 
     def confirm_devices_parameters(self):
-        '''подтверждаем параметры приборам и передаем им настроенные и созданные клиенты для подключения'''
+        """подтверждаем параметры приборам и передаем им настроенные и созданные клиенты для подключения"""
         for device in self.dict_active_device_class.values():
             device.confirm_parameters()
 
@@ -301,15 +426,18 @@ class baseInstallation():
 
     def message_from_device_status_connect(self, answer, name_device):
         if answer == True:
-            self.add_text_to_log(
-                name_device + " - соединение установлено")
+            self.add_text_to_log(name_device + " - соединение установлено")
         else:
             self.add_text_to_log(
-                name_device + " - соединение не установлено, проверьте подлючение", status="err")
+                name_device + " - соединение не установлено, проверьте подлючение",
+                status="err",
+            )
             self.set_border_color_device(
-                device_name=name_device, status_color=not_ready_style_border)
+                device_name=name_device, status_color=not_ready_style_border
+            )
             self.installation_window.start_button.setStyleSheet(
-                not_ready_style_background)
+                not_ready_style_background
+            )
             self.installation_window.start_button.setText("Старт")
             # статус прибора ставим в не настроенный
             # self.dict_status_active_device_class[name_device] = False
@@ -320,29 +448,80 @@ class baseInstallation():
         with open(self.buf_file, "a") as file:
             file.write(str(message))
 
-    def message_from_device_settings(self, name_device, num_channel, status_parameters, list_parameters_device, list_parameters_act = None, list_parameters_meas = None ):
-        logger.debug(f"Настройки канала {num_channel}  прибора " + str(
-            name_device) + " переданы классу установка, статус - " + str(status_parameters))
+    def message_from_device_settings(
+        self,
+        name_device,
+        num_channel,
+        status_parameters,
+        list_parameters_device,
+        list_parameters_act=None,
+        list_parameters_meas=None,
+    ):
+        logger.debug(
+            f"Настройки канала {num_channel}  прибора "
+            + str(name_device)
+            + " переданы классу установка, статус - "
+            + str(status_parameters)
+        )
 
         if status_parameters == True:
             self.set_border_color_device(
-                device_name=name_device, status_color=ready_style_border, num_ch=num_channel)
+                device_name=name_device,
+                status_color=ready_style_border,
+                num_ch=num_channel,
+            )
             self.show_parameters_of_device_on_label(
-                name_device, num_channel, list_parameters_device, list_parameters_act, list_parameters_meas)
+                name_device,
+                num_channel,
+                list_parameters_device,
+                list_parameters_act,
+                list_parameters_meas,
+            )
+
+            # ---------------этот блок необходим лля того, чтобы обновлять параметры устройства на лейбле всех каналов----------------
+            device = self.name_to_class(name_device=name_device)
+            for ch in device.channels:
+                if ch.is_active == True:
+                    if (
+                        self.get_channel_widget(
+                            device.get_name(), ch.get_number()
+                        ).label_settings_channel.text
+                        != "Не настроено"
+                    ):
+                        act_param, meas_param, dev_param = device.get_label_parameters(
+                            ch.get_number()
+                        )
+                        self.show_parameters_of_device_on_label(
+                            device.get_name(),
+                            ch.get_number(),
+                            dev_param,
+                            act_param,
+                            meas_param,
+                        )
+            # -----------------------------------------------------------------------------------------------------------------
+
         else:
             self.set_border_color_device(
-                device_name=name_device, status_color=not_ready_style_border, num_ch=num_channel)
-
+                device_name=name_device,
+                status_color=not_ready_style_border,
+                num_ch=num_channel,
+            )
             self.get_channel_widget(
-                name_device, num_channel).label_settings_channel.setText("Не настроено")
+                name_device, num_channel
+            ).label_settings_channel.setText("Не настроено")
+
         self.dict_active_device_class[name_device].set_status_settings_ch(
-            num_channel, status_parameters)
+            num_channel, status_parameters
+        )
 
         self.preparation_experiment()
+        logger.info("передали настройки прибора установке")
 
-##############################################
+    ##############################################
     def create_clients(self) -> None:
+        self.is_search_resources = False
         """функция создает клиенты для приборов с учетом того, что несколько приборов могут быть подключены к одному порту."""
+        logger.info("создаем клиенты для приборов")
         list_type_connection = []
         list_COMs = []
         list_baud = []
@@ -351,6 +530,7 @@ class baseInstallation():
         for client in self.clients:
             try:
                 client.close()
+                del client
             except:
                 pass
         self.clients.clear()
@@ -371,7 +551,6 @@ class baseInstallation():
                 list_baud.append(False)
         for i in range(len(list_baud)):
 
-
             if list_type_connection[i] == False:
                 self.clients.append(False)
 
@@ -389,5 +568,15 @@ class baseInstallation():
                     self.clients.append(dict_modbus_clients[list_COMs[i]])
                 else:  # иначе создаем новый клиент и добавляем в список клиентов и список модбас клиентов
                     dict_modbus_clients[list_COMs[i]] = ModbusSerialClient(
-                        method='rtu', port=list_COMs[i], baudrate=int(list_baud[i]), stopbits=1, bytesize=8, parity='E', timeout=0.3, retries=1, retry_on_empty=True)
+                        method="rtu",
+                        port=list_COMs[i],
+                        baudrate=int(list_baud[i]),
+                        stopbits=1,
+                        bytesize=8,
+                        parity="E",
+                        timeout=0.3,
+                        retries=1,
+                        retry_on_empty=True,
+                    )
                     self.clients.append(dict_modbus_clients[list_COMs[i]])
+        self.is_search_resources = True

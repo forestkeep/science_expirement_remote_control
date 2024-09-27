@@ -1,5 +1,7 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
 import logging
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
@@ -7,14 +9,15 @@ if __name__ == "__main__":
 else:
     from interface.base_set_window import base_settings_window
 
+
 class Ui_Set_power_supply(base_settings_window):
     def __init__(self) -> None:
         super().__init__()
 
     def setupUi(self):
 
-        #self.remove_act()
-        #self.remove_meas()
+        # self.remove_act()
+        # self.remove_meas()
 
         self.label_3 = QtWidgets.QLabel()
         self.label_3.setObjectName("label_3")
@@ -78,40 +81,40 @@ class Ui_Set_power_supply(base_settings_window):
         self.acts_label = QtWidgets.QLabel()
         self.acts_label.setFont(self.font)
 
-        self.current_meas= QtWidgets.QCheckBox()
-        self.set_current_meas= QtWidgets.QCheckBox()
-        self.voltage_meas= QtWidgets.QCheckBox()
-        self.set_voltage_meas= QtWidgets.QCheckBox()
+        self.current_meas = QtWidgets.QCheckBox()
+        self.set_current_meas = QtWidgets.QCheckBox()
+        self.voltage_meas = QtWidgets.QCheckBox()
+        self.set_voltage_meas = QtWidgets.QCheckBox()
 
         self.meas_label = QtWidgets.QLabel()
         self.meas_label.setFont(self.font)
 
-        self.Layout_set_dev_act.addWidget(self.acts_label,0,0,1,1)
-        self.Layout_set_dev_act.addWidget(self.label_5,1,0,1,1)
-        self.Layout_set_dev_act.addWidget(self.type_work_enter,1,1,1,2)
+        self.Layout_set_dev_act.addWidget(self.acts_label, 0, 0, 1, 1)
+        self.Layout_set_dev_act.addWidget(self.label_5, 1, 0, 1, 1)
+        self.Layout_set_dev_act.addWidget(self.type_work_enter, 1, 1, 1, 2)
 
-        self.Layout_set_dev_act.addWidget(self.label_4,2,0,1,1)
-        self.Layout_set_dev_act.addWidget(self.type_step_enter,2,1,1,2)
+        self.Layout_set_dev_act.addWidget(self.label_4, 2, 0, 1, 1)
+        self.Layout_set_dev_act.addWidget(self.type_step_enter, 2, 1, 1, 2)
 
-        self.Layout_set_dev_act.addWidget(self.label,3,0,1,1)
-        self.Layout_set_dev_act.addWidget(self.start_enter,3,1,1,2)
+        self.Layout_set_dev_act.addWidget(self.label, 3, 0, 1, 1)
+        self.Layout_set_dev_act.addWidget(self.start_enter, 3, 1, 1, 2)
 
-        self.Layout_set_dev_act.addWidget(self.label_2,4,0,1,1)
-        self.Layout_set_dev_act.addWidget(self.stop_enter,4,1,1,2)
+        self.Layout_set_dev_act.addWidget(self.label_2, 4, 0, 1, 1)
+        self.Layout_set_dev_act.addWidget(self.stop_enter, 4, 1, 1, 2)
 
-        self.Layout_set_dev_act.addWidget(self.label_6,5,0,1,1)
-        self.Layout_set_dev_act.addWidget(self.step_enter,5,1,1,2)
+        self.Layout_set_dev_act.addWidget(self.label_6, 5, 0, 1, 1)
+        self.Layout_set_dev_act.addWidget(self.step_enter, 5, 1, 1, 2)
 
-        self.Layout_set_dev_act.addWidget(self.label_7,3,4,1,1)
-        self.Layout_set_dev_act.addWidget(self.label_8,4,4,1,1)
-        self.Layout_set_dev_act.addWidget(self.label_9,5,4,1,1)
+        self.Layout_set_dev_act.addWidget(self.label_7, 3, 4, 1, 1)
+        self.Layout_set_dev_act.addWidget(self.label_8, 4, 4, 1, 1)
+        self.Layout_set_dev_act.addWidget(self.label_9, 5, 4, 1, 1)
 
-        self.Layout_set_dev_act.addWidget(self.second_value_limit_label,6,0,1,1)
-        self.Layout_set_dev_act.addWidget(self.second_limit_enter,6,1,1,2)
+        self.Layout_set_dev_act.addWidget(self.second_value_limit_label, 6, 0, 1, 1)
+        self.Layout_set_dev_act.addWidget(self.second_limit_enter, 6, 1, 1, 2)
 
-        self.Layout_set_dev_act.addWidget(self.radioButton,7,1,1,1)
-        self.Layout_set_dev_act.addWidget(self.is_soft_start,8,1,1,1)
-        self.Layout_set_dev_act.addWidget(self.is_soft_stop,9,1,1,1)
+        self.Layout_set_dev_act.addWidget(self.radioButton, 7, 1, 1, 1)
+        self.Layout_set_dev_act.addWidget(self.is_soft_start, 8, 1, 1, 1)
+        self.Layout_set_dev_act.addWidget(self.is_soft_stop, 9, 1, 1, 1)
 
         self.Layout_set_dev_meas.addWidget(self.meas_label)
         self.Layout_set_dev_meas.addWidget(self.current_meas, 1, 0, 1, 1)
@@ -119,18 +122,20 @@ class Ui_Set_power_supply(base_settings_window):
         self.Layout_set_dev_meas.addWidget(self.voltage_meas, 3, 0, 1, 1)
         self.Layout_set_dev_meas.addWidget(self.set_voltage_meas, 4, 0, 1, 1)
 
-
         self.retranslateUi(self)
 
-        
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна крестиком
         pass
 
     def retranslateUi(self, Set_power_supply):
         _translate = QtCore.QCoreApplication.translate
-        Set_power_supply.setWindowTitle(_translate("Set_power_supply", "настройка источника питания"))
+        Set_power_supply.setWindowTitle(
+            _translate("Set_power_supply", "настройка источника питания")
+        )
         self.label_3.setText(_translate("Set_power_supply", "Триггер"))
-        self.second_value_limit_label.setText(_translate("Set_power_supply", "V/A не больше"))
+        self.second_value_limit_label.setText(
+            _translate("Set_power_supply", "V/A не больше")
+        )
         self.radioButton.setText(_translate("Set_power_supply", "Пройти туда-обратно?"))
         self.is_soft_start.setText(_translate("Set_power_supply", "Мягкий старт"))
         self.is_soft_stop.setText(_translate("Set_power_supply", "Плавное выключение"))
@@ -144,25 +149,22 @@ class Ui_Set_power_supply(base_settings_window):
         self.label_8.setText(_translate("Set_power_supply", "V"))
         self.label_9.setText(_translate("Set_power_supply", "V"))
 
-        self.meas_label.setText(_translate(
-            "Set_power_supply", "Измерения"))
-        self.current_meas.setText(_translate(
-            "Set_power_supply", "Ток"))
-        self.set_current_meas.setText(_translate(
-            "Set_power_supply", "Установка тока"))
-        self.voltage_meas.setText(_translate(
-            "Set_power_supply", "Напряжение"))
-        self.set_voltage_meas.setText(_translate(
-            "Set_power_supply", "Установка напряжения"))
-        
-        self.acts_label.setText(_translate(
-            "Set_power_supply", "Действия"))
+        self.meas_label.setText(_translate("Set_power_supply", "Измерения"))
+        self.current_meas.setText(_translate("Set_power_supply", "Ток"))
+        self.set_current_meas.setText(_translate("Set_power_supply", "Установка тока"))
+        self.voltage_meas.setText(_translate("Set_power_supply", "Напряжение"))
+        self.set_voltage_meas.setText(
+            _translate("Set_power_supply", "Установка напряжения")
+        )
 
+        self.acts_label.setText(_translate("Set_power_supply", "Действия"))
 
 
 if __name__ == "__main__":
-    import qdarktheme
     import sys
+
+    import qdarktheme
+
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
     a = Ui_Set_power_supply()

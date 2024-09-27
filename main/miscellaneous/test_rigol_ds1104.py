@@ -153,18 +153,6 @@ class A:
             return max_points_on_screen
         
         def set_scale(self, scale):#
-            '''
-            troka = str(scale)
-            print(f"{troka=} {scale=}")
-            result = ""
-            for x in troka:
-                if x != '0' and x != '.':
-                    result+=x
-            result = int(result)
-            print(f"{result=}")
-            if result != 1 and result != 2 and result != 5:
-                return False
-            '''
             self.client.write(f'TIM:MAIN:SCALe {scale}\n')
             is_ok = self.check_parameters(command=f'TIM:MAIN:SCALe?\n',  focus_answer=scale)
             return is_ok
@@ -306,7 +294,6 @@ def test():
 
 if __name__ == "__main__":
 
-    #test()
     res = pyvisa.ResourceManager().list_resources()
     rm = pyvisa.ResourceManager()
 
