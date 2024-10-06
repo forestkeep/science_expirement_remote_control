@@ -12,12 +12,11 @@ import logging
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QColor, QFont
-from PyQt5.QtWidgets import QToolTip
+from PyQt5.QtWidgets import QToolTip, QSizePolicy
 
 from Classes import (not_ready_style_background, not_ready_style_border,
                      ready_style_background, ready_style_border,
                      warning_style_background, warning_style_border)
-
 logger = logging.getLogger(__name__)
 
 class state_ch(enum.Enum):
@@ -254,7 +253,7 @@ class channel_page(QtWidgets.QWidget):
 class Ui_Installation(QtWidgets.QMainWindow):
     installation_close_signal = QtCore.pyqtSignal(int)
 
-    def setupUi(self, base_window, installation_class, class_of_devices):
+    def setupUi(self, base_window, installation_class, class_of_devices, exp_diagram):
         base_window.setObjectName("Installation")
         self.setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }")
         self.central_widget = QtWidgets.QWidget(base_window)
@@ -283,6 +282,8 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.lower_lay = QtWidgets.QHBoxLayout()
         self.base_lay.addLayout(self.upper_lay)
         self.base_lay.addLayout(self.lower_lay)
+        
+        self.exp_diagram = exp_diagram
 
         base_window.resize(self.N*120+10+270, 550)
 
@@ -405,7 +406,6 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
         self.verticalSpacer = QtWidgets.QSpacerItem(15, 15, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
 
-
         self.open_graph_button = QtWidgets.QPushButton("показать график")
         #self.open_graph_button.setEnabled(False)
 
@@ -413,12 +413,16 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.verticalLayout_2.addLayout(self.horizontalLayout)
         self.verticalLayout_2.addLayout(self.horizontalLayout_2)
         self.verticalLayout_2.addLayout(self.horizontalLayout_3)
-        self.verticalLayout_2.addItem(self.verticalSpacer)
+        
+        self.verticalLayout_2.addWidget(self.exp_diagram, stretch=10)
+        
+        
+        #self.verticalLayout_2.addItem(self.verticalSpacer)
         self.verticalLayout_2.addWidget(self.open_graph_button)
         # ================================================================
 
         self.upper_lay.addLayout(self.horLayout, stretch=1)
-        self.upper_lay.addLayout(self.verticalLayout_2)
+        self.upper_lay.addLayout(self.verticalLayout_2, stretch=2)
         self.lower_lay.addLayout(self.log_lay)
         self.lower_lay.addLayout(self.button_lay)
 
@@ -463,6 +467,8 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.info.addAction(self.instruction)
         self.info.addAction(self.about_autors)
         self.setAcceptDrops(True)
+        
+
         self.retranslateUi(base_window)
         QtCore.QMetaObject.connectSlotsByName(base_window)
 

@@ -20,6 +20,9 @@ class analyse(baseInstallation):
                 subscribers = self.get_subscribers(
                     [[device.get_name(), ch.number]], [device.get_name(), ch.number]
                 )
+                subscribers = self.get_subscribers(
+                    [[device.get_name(), ch.number]], [device.get_name(), ch.number]
+                )
                 print(f"{subscribers=}")
                 for sub in subscribers:
                     time_line.append([sub[0], sub[1]])
@@ -186,10 +189,13 @@ class analyse(baseInstallation):
 
                     dev.set_status_step(ch_name=ch_name, status=True)
                     break
+
+
         return setted_dev
 
     def get_subscribers(self, signals, trig) -> list[list[str, str]]:
         """возвращает массив пар [имя прибора, имя канала] подписчиков данного сигнала-триггера и всех последующих подписчиков, рекурсивная функция"""
+
 
         subscribers = signals
         for device, ch in self.get_active_ch_and_device():

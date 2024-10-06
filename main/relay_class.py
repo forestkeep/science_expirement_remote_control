@@ -2,6 +2,7 @@ import copy
 import enum
 import logging
 import time
+import struct
 
 from pymodbus.client import ModbusSerialClient
 from pymodbus.exceptions import (
@@ -173,6 +174,9 @@ class relayPr1Class(base_device):
             return False
         else:
             self.active_channel_act.state_output = out_state.on
+            
+        if not self.calibration():
+            return False
 
         return status
 
@@ -274,25 +278,49 @@ class relayPr1Class(base_device):
             parameters.append(val)
 
             hall_values = self.read_hall_sensors()
+            #print(f"{hall_values=}")
+            decoded_numbers = False
+            if hall_values != False:
+                raw_data = struct.pack('> ' + 'H' * len(hall_values.registers), *hall_values.registers)
+                #print(f"данные: {raw_data.hex()}")
+                decoded_numbers = self.decode_raw_data(raw_data)
+                #print(f"{decoded_numbers=}")
+                
             if self.active_channel_meas.dict_settable_parameters["hall1"] == True:
-                pass
+                if decoded_numbers:
+                    val = ["hall1=" + str(decoded_numbers[0])]
+                else:
+                    val = ["hall1=" + "fail"]
+                    is_correct = False
+                parameters.append(val)
+                    
             if self.active_channel_meas.dict_settable_parameters["hall2"] == True:
-                pass
+                if decoded_numbers:
+                    val = ["hall2=" + str(decoded_numbers[1])]
+                else:
+                    val = ["hall2=" + "fail"]
+                    is_correct = False
+                parameters.append(val)
             if self.active_channel_meas.dict_settable_parameters["hall3"] == True:
-                pass
+                if decoded_numbers:
+                    val = ["hall3=" + str(decoded_numbers[2])]
+                else:
+                    val = ["hall3=" + "fail"]
+                    is_correct = False
+                parameters.append(val)
             if self.active_channel_meas.dict_settable_parameters["hall4"] == True:
-                pass
-
-            # -----------------------------
-            if self.is_debug:
-                is_correct = True
-            # -----------------------------
-
+                if decoded_numbers:
+                    val = ["hall4=" + str(decoded_numbers[3])]
+                else:
+                    val = ["hall4=" + "fail"]
+                    is_correct = False
+                parameters.append(val)
+                
             if is_correct:
-                # print("сделан шаг", self.name + " ch " + str(self.active_channel.number))
+                #print("сделан шаг", self.name + " ch " + str(self.active_channel.number))
                 ans = ch_response_to_step.Step_done
             else:
-                # print("ошибка шага", self.name + " ch " + str(self.active_channel.number))
+                #print("ошибка шага", self.name + " ch " + str(self.active_channel.number))
                 ans = ch_response_to_step.Step_fail
 
             return ans, parameters, time.time() - start_time
@@ -300,15 +328,11 @@ class relayPr1Class(base_device):
 
     def check_connect(self) -> bool:
         return True
-
+    
     def read_hall_sensors(self):
         response = self._read_reg(adr=0x03F1, slave=0x0A, num_registers=0x0014)
-        hall_value = [4]
-        if response is not False:
-            hall_value[0], hall_value[1], hall_value[2], hall_value[3] = (
-                self.decode_hall_registers(data=response)
-            )
-            return hall_value
+
+        return response
 
     def decode_hall_registers(self, data):
         logger.info(f"response read hall sensors: {data}")
@@ -329,6 +353,31 @@ class relayPr1Class(base_device):
         self.switch_channel(number_of_channel)
         response = self._write_reg(address=0x03E7, value=0x0108, slave=0x0A)
         return response
+    
+    def calibration(self):
+        address = 0x03E9
+        slave = 0x0A
+        value = 0x0108
+        #калимбровка
+        ans = self._write_reg(address=address, slave=slave, value=value)
+        return ans
+    
+    def decode_raw_data(self, raw_data):
+        decoded_values = []
+        for i in range(0, len(raw_data), 5):
+            if i + 5 <= len(raw_data):
+                # Извлекаем 5 байтов
+                segment = raw_data[i:i + 5]
+                sign = segment[0]
+                integer_part = segment[1]
+                tenths = segment[2]
+                hundredths = segment[3]
+                thousandths = segment[4]
+                # Собираем число
+                decoded_number = (1 if sign == 1 else -1) * (integer_part + tenths / 10 + hundredths / 100 + thousandths / 1000)
+                decoded_values.append(decoded_number)
+    
+        return decoded_values
 
     def _output_switching_off(self, number_of_channel) -> bool:
         self.switch_channel(number_of_channel)
@@ -374,13 +423,10 @@ class relayPr1Class(base_device):
                 # print("ошибка записи в регистр реле", ans)
                 return False
 
-            ans = self.client.convert_from_registers(ans.registers(), int)
-
             return ans
         except:
             # print("Ошибка модбас модуля или клиента")
             return False
-        return True
 
 
 class chActPR(base_ch):
@@ -408,6 +454,23 @@ class chMeasPR(base_ch):
 
         self.dict_settable_parameters = self.dict_buf_parameters
 
+def decode_raw_data(raw_data):
+    decoded_values = []
+    for i in range(0, len(raw_data), 5):
+        if i + 5 <= len(raw_data):
+            # Извлекаем 5 байтов
+            segment = raw_data[i:i + 5]
+            sign = segment[0]
+            integer_part = segment[1]
+            tenths = segment[2]
+            hundredths = segment[3]
+            thousandths = segment[4]
+            # Собираем число
+            decoded_number = (1 if sign == 1 else -1) * (integer_part + tenths / 10 + hundredths / 100 + thousandths / 1000)
+            decoded_values.append(decoded_number)
+
+    return decoded_values
+
 
 """
 //0A 06 03 E9 01 08 - команда модбас для калибровки значений датчиков холла, датчики опрашиваются 50 раз, значение усредняется и затем это значение принимается за ноль
@@ -421,6 +484,9 @@ class chMeasPR(base_ch):
 //0A 06 03 E7 01 08 - команда модбас для включения реле
 //0A 06 03 E7 00 08 - команда модбас для выключения реле
 """
+
+
+
 # pyinstaller --onefile relay_class.py
 if __name__ == "__main__":
     from pymodbus.client import ModbusSerialClient
@@ -434,26 +500,34 @@ if __name__ == "__main__":
     )
     from pymodbus.pdu import ExceptionResponse, ModbusRequest, ModbusResponse
 
-    start = input()
     port = "COM4"
     client = ModbusSerialClient(
         port=port, baudrate=9600, bytesize=8, parity="N", stopbits=1
     )
-    adr = 0x03F1
-    num_registers = 0x0014
+    address = 0x03E9
     slave = 0x0A
-    ans = client.read_holding_registers(address=adr, count=num_registers, slave=slave)
+    value = 0x0108
+    #калимбровка
+    ans = client.write_register(address=address, slave=slave, value=value)
+    adr = 0x03F1
+    num_registers = 0x000B
+    slave = 0x0A
+    while True:
+        
+        ans = client.read_holding_registers(address=adr, count=num_registers, slave=slave)
 
-    if isinstance(ans, ExceptionResponse):
-        print("ошибка ExceptionResponse", ans)
+        if isinstance(ans, ExceptionResponse):
+            print("ошибка ExceptionResponse", ans)
 
-    if isinstance(ans, ModbusIOException):
-        print("ошибка ModbusIOException", ans)
-    print(f"{ans=}")
-    ans = client.convert_from_registers(ans.registers(), int)
-    print(f"{ans=}")
+        if isinstance(ans, ModbusIOException):
+            print("ошибка ModbusIOException", ans)
+        #ans = client.convert_from_registers(ans.registers, int)
+        raw_data = struct.pack('> ' + 'H' * len(ans.registers), *ans.registers)
+        print(f"данные: {raw_data.hex()}")  # Вывод в шестнадцатеричном формате для удобства
+        decoded_numbers = decode_raw_data(raw_data)
+        print(decoded_numbers)
+        time.sleep(10)
 
-    input()
 
     """
 

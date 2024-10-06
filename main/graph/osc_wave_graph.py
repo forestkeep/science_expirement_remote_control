@@ -28,7 +28,7 @@ def time_decorator(func):
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()
-        print(f"Метод {func.__name__} - {end_time - start_time} с")
+        #print(f"Метод {func.__name__} - {end_time - start_time} с")
         return result
 
     return wrapper
@@ -941,7 +941,6 @@ class X:
     def calc_loop(self, arr1, arr2):
 
         data_dict = {}
-        print(f"{type(arr1)=}")
         arr1 = np.array(arr1)
         arr2 = np.array(arr2)
         data_dict["CH1"] = arr1
@@ -954,7 +953,6 @@ class X:
         # d = 14.2
         d = float(self.square.text()) / 2 * (10 ** (-6))
         A = R * (3.1415 * 2 * d * 2)
-        print(f"{A=}")
         C = 16
         X = data_dict["CH2"] / A + C
         Y = self.calculate_results(data_dict["CH1"])
@@ -1035,7 +1033,6 @@ class X:
                 color = random.choice(self.contrast_colors)
 
             self.used_colors.add(color)
-            print(color)
             yield color
 
 

@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (
     QTabWidget,
     QVBoxLayout,
     QWidget,
+    QListWidgetItem
 )
 
 if __name__ == "__main__":
@@ -26,7 +27,7 @@ def time_decorator(func):
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()
-        print(f"Метод {func.__name__} - {end_time - start_time} с")
+        #print(f"Метод {func.__name__} - {end_time - start_time} с")
         return result
 
     return wrapper
@@ -170,9 +171,7 @@ class test_graph:
         # Берем первые list_size элементов
         time_dict = all_values[:list_size]
         time_dict.sort()
-        # print(f"{time_dict=}")
         return time_dict
-
 
 class GraphWindow(QMainWindow):
     graph_win_close_signal = pyqtSignal(int)
@@ -180,7 +179,7 @@ class GraphWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Online Graph")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1600, 900)
         self.initUI()
 
     def initUI(self):
@@ -207,6 +206,7 @@ class GraphWindow(QMainWindow):
         self.tabWidget.setCurrentIndex(0)  # Default to first tab
 
     def update_graphics(self, new_data: dict):
+        print(new_data)
         if new_data:
             self.graph_main.update_dict_param(new=new_data)
             self.graph_wave.update_dict_param(new=new_data)
@@ -216,7 +216,7 @@ class GraphWindow(QMainWindow):
         self.graph_wave.set_default()
 
     def gen_new_data(self):
-        """функция раз в секунду гененрирует словарь и обновляет данные"""
+        """функция раз в секунду генерирует словарь и обновляет данные"""
 
         self.update_graphics(next(self.gen))
         self.timer.start(10000)
@@ -236,7 +236,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     mainWindow = GraphWindow()
     mainWindow.show()
-    mainWindow.test_update()
+    #mainWindow.test_update()
 
     # mainWindow.update_param_in_comboxes()
     sys.exit(app.exec_())

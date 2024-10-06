@@ -1,133 +1,98 @@
-class connectObject:
-    def __init__(self, device, ch, type, value, num, color):
-        self.name = f"{device} {ch}"
-        self.type_trigger = type
-        self.value_trigger = value
-        self.number_meas = num
-        self.color = color
-
-def create_objects(main_dict):
-    objects = []
-    
-    # Список уникальных цветов
-    unique_colors = ["красный", "зеленый", "синий", "желтый", "фиолетовый", "оранжевый"]
-    color_map = {}
-    color_index = 0
-
-    for device, channels in main_dict.items():
-        # Присваиваем цвет, если еще не присвоили
-        if device not in color_map:
-            if color_index < len(unique_colors):
-                color_map[device] = unique_colors[color_index]
-                color_index += 1
-            else:
-                color_map[device] = "серый"  # цвет по умолчанию, если цветов не осталось
+    def update_draw(self):
+        for item in self.graphView.items():
+            if isinstance(item, pg.PlotDataItem):
+                self.graphView.removeItem(item)
+        self.p2.clear()
         
-        color = color_map[device]
+        self.legend.clear()
+        self.legend2.clear()
+
+        self.graphView.setLabel(
+            "left", self.y_main_axis_label, color=self.color_line_main
+        )
+        self.graphView.setLabel("bottom", self.x_axis_label, color="#ffffff")
         
-        for ch, params in channels.items():
-            obj = connectObject(
-                device=device,
-                ch=ch,
-                type=params["type_trigger"],
-                value=params["Value_trigger"],
-                num=params["Num_meas"],
-                color=color
+        
+        i = 0
+        for key, data in self.y.items():
+            pen = pg.mkPen(color=cold_colors[i], width=1, style=pg.QtCore.Qt.SolidLine)
+            self.curve1 = self.graphView.plot(
+            x=self.x,
+            y=data,
+            pen=pen,
+            symbol='o',             
+            symbolPen=cold_colors[i],
+            symbolBrush=cold_colors[i] 
             )
-            objects.append(obj)
-    
-    return objects
+            i+=1
+            self.legend.addItem(self.curve1, f"{key}")
+        
+        if self.second_check_box.isChecked():
+            self.p1.getAxis("right").setLabel(
+                self.y_second_axis_label, color=self.color_line_second
+            )
+            self.p1.getAxis("right").setStyle(showValues=True)
+            
+            i = 0
+            for key, data in self.y2.items():
+                pen = pg.mkPen(color=warm_colors[i], width=1, style=pg.QtCore.Qt.DashLine)
+                i+=1
+                self.curve2 = pg.PlotCurveItem(pen=pen, symbol='o')
+                self.p2.addItem(self.curve2)
+                self.curve2.setData(self.x2, data)
+                self.legend2.addItem(self.curve2, f"{key}")
+            
+        else:
+            self.p1.getAxis("right").setStyle(showValues=False)
+            self.p1.getAxis("right").setLabel("")
+            
+    def setupGraphView(self):
+        graphView = pg.PlotWidget(title="")
 
-# Пример использования
-main_dict = {
-    "device1": {
-        "ch_1": {
-            "type_trigger": "Таймер",
-            "Value_trigger": 30,
-            "Num_meas": "num",
-        },
-    },
-    "device2": {
-        "ch_1": {
-            "type_trigger": "Внешний сигнал",
-            "Value_trigger": "device2 ch_1 something",
-            "Num_meas": "Пока активны другие приборы",
-        },
-    },
-    "device3": {
-        "ch_1": {
-            "type_trigger": "Таймер",
-            "Value_trigger": 15,
-            "Num_meas": 5,
-        },
-        "ch_2": {
-            "type_trigger": "Таймер",
-            "Value_trigger": 10,
-            "Num_meas": "num",
-        },
-        "ch_8": {
-            "type_trigger": "Таймер",
-            "Value_trigger": 10,
-            "Num_meas": "num",
-        }
-    },
-    "device4": {
-        "ch_1": {
-            "type_trigger": "Внешний сигнал",
-            "Value_trigger": "device4 ch_1 something",
-            "Num_meas": "num",
-        },
-    },
-    "device5": {
-        "ch_1": {
-            "type_trigger": "Таймер",
-            "Value_trigger": 20,
-            "Num_meas": "num",
-        },
-    },
-}
+        self.color_line_main = "#55aa00"
+        self.color_line_second = "#ff0000"
 
-objects_list = create_objects(main_dict)
+        # Placeholder items for dropdown - this will be dynamically populated later
+        self.x_param_selector.addItems(["Select parameter"])
+        self.y_first_param_selector.addItems(["Select parameter"])
+        self.y_second_param_selector.addItems(["Select parameter"])
+        
+        item = self.x_param_selector.item(0)
+        
+        self.x_param_selector.setCurrentItem( item )
+        self.y_first_param_selector.setCurrentItem( item )
+        self.y_second_param_selector.setCurrentItem( item )
 
-for obj in objects_list:
-    print(obj.name, obj.type_trigger, obj.value_trigger, obj.number_meas, obj.color)
+        self.y_first_param_selector.currentItemChanged.connect(
+            lambda: self.update_plot()
+        )
+        self.y_second_param_selector.currentItemChanged.connect(
+            lambda: self.update_plot()
+        )
+        self.x_param_selector.currentItemChanged.connect(lambda: self.update_plot())
+        self.second_check_box.stateChanged.connect(lambda: self.update_plot())
 
-'''
-main_dict = {
-            "device1": {
-                "ch_1": {
-                    "type_trigger": "type",
-                    "Value_trigger": "value",
-                    "Num_meas": "num",
-                },
-            },
-            "device3": {
-                "ch_1": {
-                    "type_trigger": "type",
-                    "Value_trigger": "value",
-                    "Num_meas": "num",
-                },
-                "ch_2": {
-                    "type_trigger": "type",
-                    "Value_trigger": "value",
-                    "Num_meas": "num",
-                },
-                "ch_3": {
-                    "type_trigger": "type",
-                    "Value_trigger": "value",
-                    "Num_meas": "num",
-                }
-            },
-            "device4": {
-                "ch_1": {
-                    "type_trigger": "type",
-                    "Value_trigger": "value",
-                    "Num_meas": "num",
-                },
-            },
-        }
+        graphView.scene().sigMouseMoved.connect(self.showToolTip)
+        graphView.plotItem.getAxis("left").linkToView(graphView.plotItem.getViewBox())
+        graphView.plotItem.getAxis("bottom").linkToView(graphView.plotItem.getViewBox())
 
-"type" Может иметь значения "Таймер" или "Внешний сигнал"
-"Num meas" Может иметь в качестве значения число или "Пока активны другие приборы"
-"Value trigger" будет числом секунд, если "type" = "Таймер". Или строку такого формата f"{device_name} {ch_name} {something}". device_name - имя устройства, ch_name - имя канала из словаря
-'''
+        self.p1 = graphView.plotItem
+
+        self.p2 = pg.ViewBox()
+        self.p1.showAxis("right")
+        self.p1.scene().addItem(self.p2)
+        self.p1.getAxis("right").linkToView(self.p2)
+        self.p2.setXLink(self.p1)
+        self.p1.getAxis("right").setLabel("axis2", color="#000fff")
+
+        self.p1.vb.sigResized.connect(self.updateViews)
+        
+        self.legend.setParentItem(self.p1)
+        self.legend2.setParentItem(self.p2)
+
+        my_font = QFont("Times", 13)
+        self.p1.getAxis("right").label.setFont(my_font)
+        graphView.getAxis("bottom").label.setFont(my_font)
+        graphView.getAxis("left").label.setFont(my_font)
+
+        return graphView

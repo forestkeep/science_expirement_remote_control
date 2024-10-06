@@ -4,6 +4,7 @@ from PyQt5.QtGui import QPainter, QPen, QColor, QBrush
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QFrame, QSizePolicy
 import qdarktheme
 from enum import Enum
+import copy
 
 
 class Position(Enum):
@@ -220,6 +221,18 @@ class connection():
             else:
                 self.draw_line()
 
+class setBlock:
+    def __init__(self):
+        self.blocks = []
+        self.vertical_size = 1
+        self.horizontal_size = 1
+        self.x_offset = 0
+        self.y_offset = 0
+
+        self.current_x = 0
+        self.current_y = 0
+
+
 class blockDevice(QWidget):
     def __init__(self, ch_name, dev_name, parent=None):
         super().__init__(parent)
@@ -232,21 +245,29 @@ class blockDevice(QWidget):
         self.type_trigger = None
         self.value_trigger = None
         self.number_meas = None
+        self.master = None
+        self.slave = []
+
+        #координаты для автоасстановки, показывают смещение виджета внутри блока
+        self.x_offset = 0
+        self.y_offset = 0
         
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(1, 0, 0, 0)
 
         self.ch_name = ch_name
         self.dev_name = dev_name
 
         self.label_ch = QLabel(self.ch_name)
+        self.label_ch.setMaximumHeight(20)
         layout.addWidget(self.label_ch)
         
         self.label_dev = QLabel(self.dev_name)
+        self.label_dev.setMaximumHeight(20)
         layout.addWidget(self.label_dev)
 
         self.frame = QFrame(self)
         self.frame.setFrameShape(QFrame.Panel)
-        #self.frame.setStyleSheet("background-color: lightgreen;")
         self.frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         self.frame.setLayout(layout)
@@ -255,6 +276,9 @@ class blockDevice(QWidget):
         outer_layout.addWidget(self.frame)
 
         self.setLayout(outer_layout)
+
+        self.setMaximumHeight(3 * self.label_ch.height())
+        self.setMaximumWidth(max(self.label_ch.width(), self.label_dev.width()))
 
         self.label_ch.raise_()
         self.label_dev.raise_()
@@ -295,7 +319,7 @@ class blockDevice(QWidget):
                 self.is_check = True
 
     def create_copy(self):
-        new_device = blockDevice(self.ch_name + "(copy)",self.parentWidget())
+        new_device = blockDevice(self.ch_name + "(copy)", self.ch_name + "(copy)",self.parentWidget())
         new_device.frame.setStyleSheet(self.frame.styleSheet())
         new_device.move(self.pos() + QPoint(20, 20))
         new_device.show()
@@ -362,6 +386,11 @@ class expDiagram(QWidget):
                     con = connection(self, "do action")
                     con.set_units(label, self.labels[index])
                     self.connections.append(con)
+
+                    #перекрестные ссылки ведущий ведомый
+
+                    label.slave.append( self.labels[index] )
+                    self.labels[index].master = label
         self.auto_place(self.labels)
 
 
@@ -370,63 +399,125 @@ class expDiagram(QWidget):
         группа 1: компоненты работают по таймеру и от них не зависит ни один другой компонент
         группа 2: компоненты зависят от других компонентов и в цепочке есть компонент с таймером
         группа 3: компоненты зависят от других компонентов и в цепочке нет ни одного компонента с таймером'''
-        group3 = []
-        for com in components:
-            group3.append(com)
 
-        for obj in group3:
+        components = set(components)
+        for obj in components:
             obj.group = None
 
-        group1 = []
-        group2 = []
-        groups = [group1, group2, group3]
-        is_exit = False
-        while group3 and not is_exit:
-            for obj in group3:
-                if obj.group != None:
-                    continue
+        added_components = set()
+        groups1 = []
+        groups2 = []
+        groups3 = []
+        
+        for obj in components:
+            if obj.group == None:
                 if obj.type_trigger == "Таймер":
-                    is_checked = False
-                    for obj2 in group3:
-                        if isinstance(obj2.value_trigger, str):
-                            if obj.ch_name in obj2.value_trigger and obj.dev_name in obj2.value_trigger:
-                                p_group =  []
-                                p_group.append(obj)
-                                p_group.append(obj2)
-                                group2.append(p_group)
-                                group3.remove(obj)
-                                group3.remove(obj2)
-                                obj.group = 2
-                                obj2.group = 2
-                                is_checked = True
-                                is_exit = False
-                    if not is_checked:
-                        group1.append(obj)
-                        group3.remove(obj)
+                    if obj.slave  == []:
                         obj.group = 1
-                        is_exit = False
-                else:
-                    #здесь компонент может относится как к группе 2 так и к группе 3, но у них у всех в триггере стоят компоненты
-                    for group in group2:
-                        for obj2 in group:
-                            if isinstance(obj2.value_trigger, str):
-                                if obj.ch_name in obj2.value_trigger and obj.dev_name in obj2.value_trigger:
-                                    group.append(obj)
-                                    components.remove(obj)
-                                    obj.group = 2
-                                    is_exit = False
-                                    break
-                        if obj.group != None:
-                            break #условие необходимо для ускорения процесса, если элемент уже помещен в группу, то дальше итерироваться по группам не нужно
-            is_exit = True
+                        added_components.add(obj)
+                        buf = setBlock()
+                        buf.blocks.append(obj)
+                        height = int( obj.height()*1.5)
+                        width = int(obj.width()/2)
+                        obj.x_offset = buf.current_x
+                        obj.y_offset = buf.current_y
+                        buf.current_x+=width
+                        buf.current_y+=height
+                        groups1.append(buf)
+                    else:
+                        buf = setBlock()
+                        obj.group = 2
+                        added_components.add(obj)
+                        buf.blocks.append(obj)
+                        height = int( obj.height()*2 )
+                        width = int(obj.width()/1.2)
+                        obj.x_offset = buf.current_x
+                        obj.y_offset = buf.current_y
+                        buf.current_x+=width
+                        buf.current_y+=height
 
-        y = 0
-        for obj in group1:
-            obj.move(0, y)
-            y +=int( obj.height()*3.2 )
+                        current_level = obj.slave
+                        #поиск в ширину, послойно проходим по всем линиям дерева
 
-        print(group2)
-        print(group3)
+                        while current_level:
+                            next_level = []
+                            for node in current_level:
+                                if node not in added_components:
+                                    buf.blocks.append(node)
+                                    node.group = 2
+                                    height = node.height()
+                                    width = int(node.width()/2)
+                                    node.x_offset = buf.current_x
+                                    node.y_offset = buf.current_y
+                                    buf.current_x+=width
+                                    added_components.add(node)
+                                    for node in node.slave:
+                                        if node not in added_components:
+                                            next_level.append(node)
+                            buf.current_y+=height
+                            current_level = next_level
+                        groups2.append(buf)
+
+        for obj in components:
+            if obj.group == None:
+                        buf = setBlock()
+                        obj.group = 3
+                        added_components.add(obj)
+                        buf.blocks.append(obj)
+                        height = int( obj.height()*1.5)
+                        width = int(obj.width()/2)
+                        obj.x_offset = buf.current_x
+                        obj.y_offset = buf.current_y
+                        buf.current_x+=width
+                        buf.current_y+=height
+
+                        current_level = obj.slave
+                        #поиск в ширину, послойно проходим по всем линиям дерева
+
+                        while current_level:
+                            next_level = []
+                            for node in current_level:
+                                if node not in added_components:
+                                    buf.blocks.append(node)
+                                    node.group = 3
+                                    height = int(node.height()*1.5)
+                                    width = int(node.width()/2)
+                                    node.x_offset = buf.current_x
+                                    node.y_offset = buf.current_y
+                                    buf.current_x+=width
+                                    added_components.add(node)
+                                    for node in node.slave:
+                                        if node not in added_components:
+                                            next_level.append(node)
+                            buf.current_y+=height
+                            current_level = next_level
+                        groups3.append(buf)
+
+        print("группа 1")
+        for family in groups1:
+            for obj in family.blocks:
+                obj.move(obj.x_offset, obj.y_offset)
+                print(f"{obj.dev_name} {obj.ch_name} {obj.x_offset} {obj.y_offset}")
+            print("-------------")
+
+        print("группа 2")
+        for family in groups2:
+            for obj in family.blocks:
+                obj.move(obj.x_offset, obj.y_offset)
+                print(f"{obj.dev_name} {obj.ch_name} {obj.x_offset} {obj.y_offset}")
+            print("-------------")
+
+        print("группа 3")
+        for family in groups3:
+            for obj in family.blocks:
+                obj.move(obj.x_offset, obj.y_offset)
+                print(f"{obj.dev_name} {obj.ch_name} {obj.x_offset} {obj.y_offset}")
+            print("-------------")
+
+    def auto_place_group(self, groups):
+        current_x = 0
+        current_y = 0
+
 
 
     def delete_old_draw(self):
@@ -444,41 +535,47 @@ class expDiagram(QWidget):
         self.delete_old_draw()
         self.labels = []
         color_index = 0
+        color_map = {}
+
+
         for dev, ch in install_class.get_active_ch_and_device():
             y = install_class.message_broker.get_subscribers(publisher = ch, name_subscribe = ch.do_operation_trigger)
+            name_dev = dev.get_name()
+            if name_dev not in color_map:
+                if color_index < len(unique_colors):
+                    color_map[name_dev] = unique_colors[color_index]
+                    color_index += 1
+                else:
+                    color_map[name_dev] = "#ffffff"  # цвет по умолчанию, белый
+            
+            color = color_map[name_dev]
             
             
             lb = blockDevice(ch.get_name(), dev.get_name(), self)
             lb.show()
-            if color_index < len(unique_colors):
-                col = unique_colors[color_index]
-                color_index += 1
-            lb.setStyleSheet(f"background-color: {col};")
+            lb.setStyleSheet(f"background-color: {color};")
             self.labels.append(lb)
 
         self.connections = []
-        if False:
-            for index, obj in enumerate(objects):
+        index = -1
+        for dev, ch in install_class.get_active_ch_and_device():
+            index += 1
+            if dev.get_trigger(ch) == "Таймер":
+                con = connection(self, str(dev.get_trigger_value(ch)) + "сек")
+                con.set_units(self.labels[index], self.labels[index])
+                self.connections.append(con)
+                continue
 
-                if obj.type_trigger == "Таймер":
-                    con = connection(self, str(obj.value_trigger) + "сек")
-                    con.set_units(self.labels[index], self.labels[index])
+            try:
+                components = dev.get_trigger_value(ch).split()
+            except:
+                continue
+
+            for label in self.labels:
+                if components[1] == label.ch_name and components[0] == label.dev_name:
+                    con = connection(self, "do action")
+                    con.set_units(label, self.labels[index])
                     self.connections.append(con)
-                    continue
-
-                try:
-                    components = obj.value_trigger.split()
-                    name = components[0] + " " + components[1]
-                except:
-                    continue
-
-                for label in self.labels:
-                    if name == label.text():
-                        con = connection(self, "do action")
-                        con.set_units(label, self.labels[index])
-                        self.connections.append(con)
-
-                    
 
 
     def paintEvent(self, event):
@@ -582,7 +679,7 @@ main_dict1 = {
         },
         "ch_2": {
             "type_trigger": "Внешний сигнал",
-            "Value_trigger": "device4 ch_1 something",
+            "Value_trigger": "device3 ch_8 something",
             "Num_meas": "num",
         },
     },
@@ -590,6 +687,18 @@ main_dict1 = {
         "ch_1": {
             "type_trigger": "Таймер",
             "Value_trigger": 20,
+            "Num_meas": "num",
+        },
+    },
+    "device7": {
+        "ch_1": {
+            "type_trigger": "Внешний сигнал",
+            "Value_trigger": "device7 ch_2 something",
+            "Num_meas": "num",
+        },
+        "ch_2": {
+            "type_trigger": "Внешний сигнал",
+            "Value_trigger": "device7 ch_1 something",
             "Num_meas": "num",
         },
     },

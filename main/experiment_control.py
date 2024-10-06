@@ -310,6 +310,7 @@ class experimentControl(analyse):
                     ch.pause_time = device.get_trigger_value(ch)
                     priority += 1
                     self.min_priority += 1
+    
     def exp_th(self):
 
         status = True

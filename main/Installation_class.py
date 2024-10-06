@@ -5,18 +5,19 @@ import threading
 import time
 from datetime import datetime
 
-import qdarktheme
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QTimer
-
+import qdarktheme
 from Analyse_in_installation import analyse
 from Classes import (not_ready_style_background, not_ready_style_border,
                      ready_style_background)
 from experiment_control import experimentControl
 from Handler_manager import messageBroker
 from interface.installation_window import Ui_Installation
+from schematic_exp.construct_diagramexp import expDiagram, create_objects, main_dict1
 
 logger = logging.getLogger(__name__)
+
 
 
 class installation_class(experimentControl, analyse):
@@ -86,10 +87,12 @@ class installation_class(experimentControl, analyse):
                 self.dict_active_device_class[f"{device_name}_{i+1}"] = device
             except:
                 logger.error(f"Failed to create instance of {device_name}")
+                
+        self.exp_diagram = expDiagram()
 
         self.installation_window = Ui_Installation()
         self.installation_window.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-        self.installation_window.setupUi(self.installation_window, self, self.dict_active_device_class)
+        self.installation_window.setupUi(self.installation_window, self, self.dict_active_device_class, self.exp_diagram)
 
         self.installation_window.way_save_button.clicked.connect(self.set_way_save)
         self.installation_window.start_button.clicked.connect(self.push_button_start)
@@ -97,7 +100,7 @@ class installation_class(experimentControl, analyse):
             "Start experiment will be available after all devices are set up"
         )
         self.installation_window.start_button.setStyleSheet(not_ready_style_background)
-        self.installation_window.start_button.setText("Start")
+        self.installation_window.start_button.setText("Старт")
         self.installation_window.pause_button.clicked.connect(self.pause_exp)
         self.installation_window.pause_button.setStyleSheet(not_ready_style_background)
         self.installation_window.about_autors.triggered.connect(self.show_about_autors)
@@ -122,6 +125,7 @@ class installation_class(experimentControl, analyse):
         self.installation_window.clear_log_button.clicked.connect(self.clear_log)
         self.installation_window.clear_log_button.setToolTip("Очистить лог")
         self.set_state_text("Ожидание настройки приборов")
+        
         self.timer_for_open_base_instruction.start()
 
     def set_state_ch(self, device, num_ch, state):
@@ -133,6 +137,13 @@ class installation_class(experimentControl, analyse):
     def preparation_experiment(self):
         logger.debug("подготовка к эксперименту")
         self.key_to_start_installation = False
+        
+        self.message_broker.clear_all_subscribers()
+        status = self.set_depending()#setting subscribers
+        
+        
+        #Строим схему взаимодействия приборов
+        self.exp_diagram.rebuild_schematic(self, self.dict_active_device_class)
 
         if self.is_all_device_settable():
             ############################
@@ -155,7 +166,7 @@ class installation_class(experimentControl, analyse):
             self.installation_window.start_button.setStyleSheet(
                 not_ready_style_background
             )
-        self.installation_window.start_button.setText("Старт")
+        #self.installation_window.start_button.setText("Запуск")
 
     def add_new_channel(self, device, num_ch):
         if self.is_experiment_running() == False:
@@ -300,12 +311,15 @@ class installation_class(experimentControl, analyse):
 
     def set_depending(self) -> bool:
         """устанавливает зависимости одних приборов от других, добавляет подписчиков"""
+        status = True
         for device, ch in self.get_active_ch_and_device():
             trig = device.get_trigger(ch)
             if trig != "Таймер":
                 trig_val = device.get_trigger_value(ch)
-                self.message_broker.subscribe(object=ch, name_subscribe=trig_val)
-        return True
+                status = self.message_broker.subscribe(object=ch, name_subscribe=trig_val)
+                if status is False:
+                    logger.warning(f"Подписки {trig_val} не существует")
+        return status
     
     def action_stop_experiment(self):
             self.stoped_experiment()
@@ -334,7 +348,17 @@ class installation_class(experimentControl, analyse):
                     ready_style_background
                 )
                 self.installation_window.start_button.setText("Стоп")
-                status = self.set_depending()
+                
+                self.message_broker.clear_all_subscribers()
+                status = self.set_depending()#setting subscribers
+                print(f"{status=}")
+                
+                for dev, ch in self.get_active_ch_and_device():
+                    print(f"{dev.get_name()} {ch.get_name()} ")
+                    if dev.get_trigger(ch) == "Внешний сигнал":
+                        print(f"подписчики: {self.message_broker.get_subscribers(ch, ch.do_operation_trigger)}")
+                
+                
 
                 if status:
                     self.stop_experiment = False
@@ -674,8 +698,8 @@ if __name__ == "__main__":
 
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
-    lst = ["SR830", "SR830"]
-    lst5 = ["PR", "Maisheng"]
+    lst = ["SR830", "SR830", "DP832A"]
+    lst5 = ["PR"]
     lst4 = ["DP832A", "Maisheng"]
     lst11 = ["E7-20MNIPI", "АКИП-2404", "DP832A", "PR"]
     lst22 = ["SR830", "SR830", "DS1104Z"]
@@ -684,12 +708,14 @@ if __name__ == "__main__":
     lst55 = ["DS1104Z"]
 
     app = QtWidgets.QApplication(sys.argv)
-
+    qdarktheme.enable_hi_dpi()
+    
     qdarktheme.setup_theme(corner_shape="sharp")
+
     from available_devices import dict_device_class
 
     a = installation_class(settings=settings, dict_device_class=dict_device_class)
-    a.reconstruct_installation(lst)
+    a.reconstruct_installation(lst5)
     a.show_window_installation()
     sys.exit(app.exec_())
 
