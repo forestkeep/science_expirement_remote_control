@@ -25,6 +25,7 @@ def move_file_up_one_directory(filename='my.exe'):
     
     if os.path.exists(target_file_path):
         parent_dir = os.path.dirname(current_dir)
+        parent_dir = os.path.dirname(parent_dir)
         shutil.move(target_file_path, os.path.join(parent_dir, filename))
         print(f"Файл {filename} успешно перемещён в {parent_dir}.")
     else:
@@ -71,6 +72,7 @@ if __name__ == "__main__":
 
     if os.path.exists('dist'):
         shutil.rmtree('dist')
+        
 
     move_file_up_one_directory('installation_controller.exe')
 

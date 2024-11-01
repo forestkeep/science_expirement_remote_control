@@ -8,7 +8,7 @@ AppId={{2C15D3A9-D9EA-4BF6-97E5-3CAF33D0C0CC}
 AppName=Installation Controller
 AppVersion=1.0.0
 ;AppVerName=Installation Controller 1.0.0
-AppPublisher=Zakhidov
+AppPublisher=Publisher
 DefaultDirName={autopf}\Installation Controller
 ; "ArchitecturesAllowed=x64compatible" specifies that Setup cannot run
 ; on anything but x64 and Windows 11 on Arm.
@@ -21,7 +21,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 ChangesAssociations=yes
 DefaultGroupName=Installation Controller
 AllowNoIcons=yes
-LicenseFile=.\LICENSE.txt
+LicenseFile=..\LICENSE.txt
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
 OutputDir=.
