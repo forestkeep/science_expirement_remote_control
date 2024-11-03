@@ -63,6 +63,15 @@ class installation_class(experimentControl, analyse):
             messageBroker()
         )  # обработчик событий работает как хаб для подписчиков на сигналы и источников сигналов
 
+    def format_bool_settings(self, format_val):
+        if not isinstance(format_val, bool):
+            if format_val == "true":
+                format_val == True
+            elif format_val == "false":
+                format_val == False
+
+        return format_val
+
     def load_settings(self):
         self.is_exp_run_anywhere = self.settings.value(
             "is_exp_run_anywhere", defaultValue=False
@@ -74,6 +83,10 @@ class installation_class(experimentControl, analyse):
             "is_show_basic_instruction_again", defaultValue=True
         )
         # self.is_show_basic_instruction_again = True
+        self.is_exp_run_anywhere = self.format_bool_settings(self.is_exp_run_anywhere)
+        self.is_delete_buf_file = self.format_bool_settings(self.is_delete_buf_file)
+        self.is_show_basic_instruction_again = self.format_bool_settings(self.is_show_basic_instruction_again)
+
         logger.info("settings readed")
 
     def time_decorator(func):
@@ -110,7 +123,7 @@ class installation_class(experimentControl, analyse):
         self.installation_window.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
         self.installation_window.setupUi(self.installation_window, self, self.dict_active_device_class, self.exp_diagram)
 
-        self.installation_window.way_save_button.clicked.connect(self.set_way_save)
+        #self.installation_window.way_save_button.clicked.connect(self.set_way_save)
         self.installation_window.start_button.clicked.connect(self.push_button_start)
         self.installation_window.start_button.setToolTip(
             "Start experiment will be available after all devices are set up"
@@ -124,6 +137,7 @@ class installation_class(experimentControl, analyse):
         self.installation_window.open_graph_button.clicked.connect(self.open_graph_in_exp)
         self.installation_window.installation_close_signal.connect(self.close_other_windows)
         self.installation_window.general_settings.triggered.connect(self.open_general_settings)
+
 
         self.installation_window.save_installation_button.triggered.connect(
             self.push_button_save_installation
@@ -721,6 +735,8 @@ if __name__ == "__main__":
     # Печатаем все настройки
     for key in keys:
         value = settings.value(key)
+        print(key, value)
+
 
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
@@ -741,7 +757,7 @@ if __name__ == "__main__":
     from available_devices import dict_device_class
 
     a = installation_class(settings=settings, dict_device_class=dict_device_class, version="test")
-    a.reconstruct_installation(lst5)
+    a.reconstruct_installation(lst11)
     a.show_window_installation()
     sys.exit(app.exec_())
 

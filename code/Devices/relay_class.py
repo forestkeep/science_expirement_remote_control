@@ -68,6 +68,7 @@ class relayPr1Class(base_device):
 
         self.command = None
         self.setting_window = Ui_Set_relay()
+        self.setting_window.setGeometry(300, 300, 650, 400)
         self.base_settings_window()
 
     @base_device.base_show_window

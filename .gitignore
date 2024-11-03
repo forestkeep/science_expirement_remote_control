@@ -1,4 +1,5 @@
 dataset/
 log_files/
 miscellaneous/
+__pycache__/
 

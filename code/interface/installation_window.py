@@ -21,6 +21,8 @@ from Devices.Classes import (not_ready_style_background, not_ready_style_border,
                      warning_style_background, warning_style_border)
 logger = logging.getLogger(__name__)
 
+
+#not_ready_style_border = "border: 1px solid rgb(180, 0, 0); border-radius: 5px; QToolTip { color: #ffffff; background-color: rgb(100, 50, 50); border: 1px solid white;}"
 class state_ch(enum.Enum):
     closed = 0
     open = 1
@@ -174,6 +176,7 @@ class device_page(QtWidgets.QWidget):
 class CustomButton(QtWidgets.QPushButton):
     def __init__(self, text):
         super().__init__(text)
+        self.style_sheet = self.styleSheet()
 
     def enterEvent(self, event):
         self.style_sheet = self.styleSheet()
@@ -379,45 +382,63 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
         self.verticalLayout_2 = QtWidgets.QVBoxLayout()
 
-        self.as_save_result_label = QtWidgets.QLabel(self.central_widget)
-        self.as_save_result_label.setFont(font)
-        self.as_save_result_label.setSizePolicy(sizePolicy)
+        #self.as_save_result_label = QtWidgets.QLabel(self.central_widget)
+        #self.as_save_result_label.setFont(font)
+        #self.as_save_result_label.setSizePolicy(sizePolicy)
 
         self.horizontalLayout = QtWidgets.QHBoxLayout()
-        self.way_save_text = QtWidgets.QLineEdit(self.central_widget)
-        self.way_save_button = QtWidgets.QPushButton(self.central_widget)
-        self.horizontalLayout.addWidget(self.way_save_text)
-        self.horizontalLayout.addWidget(self.way_save_button)
+        #self.way_save_text = QtWidgets.QLineEdit(self.central_widget)
+        #self.way_save_button = QtWidgets.QPushButton(self.central_widget)
+        #self.horizontalLayout.addWidget(self.way_save_text)
+        #self.horizontalLayout.addWidget(self.way_save_button)
 
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
-        self.num_meas_label = QtWidgets.QLabel()
-        self.num_meas_label.setFont(font)
-        self.repeat_measurement_enter = QtWidgets.QComboBox(self.central_widget)
-        self.repeat_measurement_enter.setEditable(False)
-        self.repeat_measurement_enter.addItems(["1","2","3","4","5","6","7","8","9","10"])
-        self.horizontalLayout_3.addWidget(self.num_meas_label)
-        self.horizontalLayout_3.addWidget(self.repeat_measurement_enter)
+        #self.num_meas_label = QtWidgets.QLabel()
+        #self.num_meas_label.setFont(font)
+        #self.repeat_measurement_enter = QtWidgets.QComboBox(self.central_widget)
+        #self.repeat_measurement_enter.setEditable(False)
+        #self.repeat_measurement_enter.addItems(["1","2","3","4","5","6","7","8","9","10"])
+        #self.horizontalLayout_3.addWidget(self.num_meas_label)
+        #self.horizontalLayout_3.addWidget(self.repeat_measurement_enter)
 
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
+        '''
         self.num_repeat_exp_label = QtWidgets.QLabel(self.central_widget)
         self.num_repeat_exp_label.setFont(font)
         self.repeat_exp_enter = QtWidgets.QComboBox(self.central_widget)
         self.repeat_exp_enter.setEditable(False)
         self.repeat_exp_enter.addItems(["1","2","3","4","5","6","7","8","9","10"])
-        self.horizontalLayout_2.addWidget(self.num_repeat_exp_label)
-        self.horizontalLayout_2.addWidget(self.repeat_exp_enter)
+        #self.horizontalLayout_2.addWidget(self.num_repeat_exp_label)
+        #self.horizontalLayout_2.addWidget(self.repeat_exp_enter)
+        '''
+        #=======================
+
+
+        self.scroll_area = QtWidgets.QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        #self.scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.scroll_area.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+
+        # Устанавливаем содержимое в scroll_area
+        self.scroll_area.setWidget(self.exp_diagram)
+        #======================
 
         self.verticalSpacer = QtWidgets.QSpacerItem(15, 15, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
 
         self.open_graph_button = QtWidgets.QPushButton("показать график")
         #self.open_graph_button.setEnabled(False)
 
-        self.verticalLayout_2.addWidget(self.as_save_result_label)
-        self.verticalLayout_2.addLayout(self.horizontalLayout)
-        self.verticalLayout_2.addLayout(self.horizontalLayout_2)
-        self.verticalLayout_2.addLayout(self.horizontalLayout_3)
+        #self.verticalLayout_2.addWidget(self.as_save_result_label)
+        self.schematic_exp_name = QtWidgets.QLabel()
+        self.schematic_exp_name.setAlignment(QtCore.Qt.AlignCenter)
+        self.schematic_exp_name.setFont(font)
+        #self.verticalLayout_2.addLayout(self.horizontalLayout)
+        #self.verticalLayout_2.addLayout(self.horizontalLayout_2)
+        #self.verticalLayout_2.addLayout(self.horizontalLayout_3)
         
-        self.verticalLayout_2.addWidget(self.exp_diagram, stretch=10)
+
+        self.verticalLayout_2.addWidget(self.schematic_exp_name)
+        self.verticalLayout_2.addWidget(self.scroll_area, stretch=10)
         
         
         #self.verticalLayout_2.addItem(self.verticalSpacer)
@@ -476,6 +497,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
         self.retranslateUi(base_window)
         QtCore.QMetaObject.connectSlotsByName(base_window)
+
 
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна
         for dev_win in self.devices_lay.values():
@@ -548,13 +570,14 @@ class Ui_Installation(QtWidgets.QMainWindow):
         
 
 # =========================================================================================
-        self.as_save_result_label.setText(_translate(
-            "settings_save", "Как сохранить результаты?"))
+        self.schematic_exp_name.setText(_translate("settings_save", "Схема взаимодействия приборов"))
+        #self.as_save_result_label.setText(_translate("settings_save", "Как сохранить результаты?"))
         self.label_state.setText(_translate(
             "settings_save", "Состояние"))
         
         self.label_time.setText(_translate(
             "settings_save", ""))
+        '''
         self.way_save_button.setText(_translate("settings_save", "Путь"))
         self.num_meas_label.setText(_translate(
             "settings_save", "Кол-во измерений в точке"))
@@ -593,3 +616,4 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.repeat_exp_enter.setItemText(7, _translate("settings_save", "8"))
         self.repeat_exp_enter.setItemText(8, _translate("settings_save", "9"))
         self.repeat_exp_enter.setItemText(9, _translate("settings_save", "10"))
+        '''

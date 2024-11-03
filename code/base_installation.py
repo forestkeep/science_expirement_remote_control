@@ -28,7 +28,7 @@ from Devices.Classes import (
     time_decorator,
 )
 from graph.online_graph import GraphWindow
-from interface.experiment_settings_window import settigsDialog
+from interface.experiment_settings_window import settigsDialog, experimentSettings
 from interface.installation_check_devices import installation_Ui_Dialog
 from interface.Message import messageDialog
 from saving_data.Parse_data import process_and_export, type_save_file
@@ -60,12 +60,13 @@ class baseInstallation:
 
         self.repeat_experiment = 1
         self.repeat_meas = 1
-        self.way_to_save_fail = None
 
         self.list_resources = []
         self.thread_scan_resources = threading.Thread(target=self._search_resources)
         self.thread_scan_resources.daemon = True
         self.stop_scan_thread = False
+
+        self.gen_set_class = None
         self.thread_scan_resources.start()
 
     def show_information_window(self, message):
@@ -409,6 +410,28 @@ class baseInstallation:
         self.preparation_experiment()
 
     def open_general_settings(self):
+        if self.gen_set_class is None:
+            self.gen_set_class = experimentSettings()
+
+        (is_change,
+        self.is_exp_run_anywhere,
+        self.is_delete_buf_file,
+        self.way_to_save_file,
+        self.repeat_experiment,
+        self.repeat_meas) = self.gen_set_class.read_settings(
+                                                            self.is_exp_run_anywhere,
+                                                            self.is_delete_buf_file,
+                                                            self.way_to_save_file,
+                                                            self.repeat_experiment,
+                                                            self.repeat_meas
+                                                           )
+        if is_change:
+            self.settings.setValue("is_exp_run_anywhere", self.is_exp_run_anywhere)
+            self.settings.setValue("is_delete_buf_file", self.is_delete_buf_file)
+
+
+
+    def open_general_settings_old(self):
         set_dialog = settigsDialog()
 
         state = self.is_exp_run_anywhere == "true" or self.is_exp_run_anywhere == True

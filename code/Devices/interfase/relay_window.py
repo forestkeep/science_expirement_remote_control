@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class Relay_Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(808, 600)
+        MainWindow.resize(808, 800)
         MainWindow.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -174,6 +174,7 @@ class Relay_Ui_MainWindow(object):
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
+
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)

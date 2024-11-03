@@ -243,8 +243,6 @@ class setBlock:
         self.current_x = 0
         self.current_y = 0
 
-
-
 class Packing:
     def __init__(self, rectangles):
         self.rectangles = sorted(rectangles, key=lambda r: r.current_x, reverse=True)
@@ -286,14 +284,18 @@ class Packing:
                 
             self.current_level.append(rectangle)
 
+        current_x += max(r.current_x for r in self.current_level)
+        print(f"{current_x=}")
+        return current_x
+
     def pack_on_ceiling(self, rectangle, current_x):   
         rectangle.x_offset = current_x
         rectangle.y_offset = sum(r.current_y for r in self.current_level if r.x_offset == current_x)
 
-
 class blockDevice(QWidget):
     def __init__(self, ch_name, dev_name, parent=None):
         super().__init__(parent)
+        self.parent_wid = parent
         self.base_color = "background-color: rgba(250, 250, 250, 50);"
         self.setObjectName("device")
         self.is_ctrl_pressed = False
@@ -355,7 +357,15 @@ class blockDevice(QWidget):
 
     def mouseMoveEvent(self, event):
         if self.dragging and event.buttons() == Qt.LeftButton:
-            self.move(self.pos() + event.pos() - self.drag_start_position)
+            new_coord = self.pos() + event.pos() - self.drag_start_position
+            y = max( [new_coord.y(), 0] )
+            x = max( [new_coord.x(), 0] )
+            y = min( [y, self.parent_wid.height() - self.height() ] )
+            x = min( [x, self.parent_wid.width() - self.width() ] )
+            new_coord = QPoint(x, y)
+            
+            #print(f"{self.parent_wid.width()=} {x=}")
+            self.move(new_coord)
             self.parentWidget().update()
 
     def mouseReleaseEvent(self, event):
@@ -613,7 +623,9 @@ class expDiagram(QWidget):
 
     def auto_place_group(self, groups):
         packing = Packing(groups)
-        packing.pack_rectangles( width = self.height(), height= self.width())
+        focus_widht = packing.pack_rectangles( width = self.height(), height= self.width())
+        self.setMinimumSize(focus_widht, self.height())
+        print(f"{self.width()=} {self.height()=}")
 
     def delete_old_draw(self):
         all_child_widgets = self.findChildren(blockDevice)
