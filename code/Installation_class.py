@@ -63,14 +63,16 @@ class installation_class(experimentControl, analyse):
             messageBroker()
         )  # обработчик событий работает как хаб для подписчиков на сигналы и источников сигналов
 
-    def format_bool_settings(self, format_val):
-        if not isinstance(format_val, bool):
-            if format_val == "true":
-                format_val == True
-            elif format_val == "false":
-                format_val == False
+    def format_bool_settings(self, value):
 
-        return format_val
+        if isinstance(value, str ):
+            if value.lower() == "true":
+                value = True
+            elif value.lower() == "false":
+                value = False
+            else:
+                value = True
+        return value
 
     def load_settings(self):
         self.is_exp_run_anywhere = self.settings.value(
@@ -736,7 +738,6 @@ if __name__ == "__main__":
     for key in keys:
         value = settings.value(key)
         print(key, value)
-
 
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 

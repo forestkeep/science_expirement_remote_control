@@ -409,9 +409,24 @@ class baseInstallation:
 
         self.preparation_experiment()
 
+    def format_bool_settings(self, value):
+
+        if isinstance(value, str ):
+            if value.lower() == "true":
+                value = True
+            elif value.lower() == "false":
+                value = False
+            else:
+                value = True
+        return value
+
+
     def open_general_settings(self):
         if self.gen_set_class is None:
             self.gen_set_class = experimentSettings()
+
+        print(type(self.is_delete_buf_file))
+        print(type(self.is_delete_buf_file))
 
         (is_change,
         self.is_exp_run_anywhere,

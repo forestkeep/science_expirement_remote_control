@@ -135,14 +135,12 @@ class experimentSettings():
         self.repeat_exp = None
         self.repeat_meas = None
 
-
         self.window_dialog.repeat_measurement_enter.currentIndexChanged.connect(lambda: self._read_par())
         self.window_dialog.repeat_exp_enter.currentIndexChanged.connect(lambda: self._read_par())
         self.window_dialog.check_boxes_1[0].stateChanged.connect(lambda: self._read_par())
         self.window_dialog.check_boxes_1[1].stateChanged.connect(lambda: self._read_par())
         self.window_dialog.save_results_but.clicked.connect(lambda: self.set_way_save())
         self.window_dialog.place_save_res.textChanged.connect(lambda: self._read_par())
-
 
     def read_settings(self,
                     is_exp_run_anywhere,
@@ -151,6 +149,7 @@ class experimentSettings():
                     repeat_exp,
                     repeat_meas
                     ):
+
         self.window_dialog.repeat_measurement_enter.setCurrentText(str(repeat_meas))
         self.window_dialog.repeat_exp_enter.setCurrentText( str(repeat_exp) )
         self.window_dialog.check_boxes_1[0].setChecked( is_exp_run_anywhere == True )
