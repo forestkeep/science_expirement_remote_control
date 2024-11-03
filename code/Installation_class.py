@@ -70,8 +70,6 @@ class installation_class(experimentControl, analyse):
                 value = True
             elif value.lower() == "false":
                 value = False
-            else:
-                value = True
         return value
 
     def load_settings(self):
