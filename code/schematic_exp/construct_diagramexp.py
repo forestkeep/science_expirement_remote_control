@@ -15,7 +15,6 @@ from PyQt5.QtGui import QPainter, QPen, QColor, QBrush
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QFrame, QSizePolicy
 import qdarktheme
 from enum import Enum
-import copy
 
 
 class Position(Enum):
@@ -321,9 +320,10 @@ class blockDevice(QWidget):
         self.label_ch = QLabel(self.ch_name)
         self.label_ch.setMaximumHeight(20)
         
-        
         self.label_dev = QLabel(self.dev_name)
         self.label_dev.setMaximumHeight(20)
+
+
         layout.addWidget(self.label_dev)
         layout.addWidget(self.label_ch)
 

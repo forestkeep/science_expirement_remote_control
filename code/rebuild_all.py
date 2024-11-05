@@ -19,14 +19,21 @@ def build_python_app():
     '--noconfirm'
     ])
 
-def move_file_up_one_directory(filename='my.exe'):
+def move_file_up_one_directory(filename):
     current_dir = os.getcwd()
     target_file_path = os.path.join(current_dir, filename)
-    
+
     if os.path.exists(target_file_path):
         parent_dir = os.path.dirname(current_dir)
-        parent_dir = os.path.dirname(parent_dir)
-        shutil.move(target_file_path, os.path.join(parent_dir, filename))
+        target_path_in_parent = os.path.join(parent_dir, filename)
+
+        # Проверка на наличие файла в родительской директории
+        if os.path.exists(target_path_in_parent):
+            os.remove(target_path_in_parent)  # Удаление существующего файла
+            print(f"Существующий файл {filename} в родительской директории был удалён.")
+
+        # Перемещение файла
+        shutil.move(target_file_path, target_path_in_parent)
         print(f"Файл {filename} успешно перемещён в {parent_dir}.")
     else:
         print(f"Файл {filename} не найден в текущей директории.")
@@ -72,7 +79,7 @@ if __name__ == "__main__":
 
     if os.path.exists('dist'):
         shutil.rmtree('dist')
-        
+    
 
     move_file_up_one_directory('installation_controller.exe')
 
