@@ -198,9 +198,10 @@ class baseInstallation:
                 pass
 
             self.way_to_save_file = fileName
-            self.installation_window.way_save_text.setText(str(self.way_to_save_file))
+            #self.installation_window.way_save_text.setText(str(self.way_to_save_file))
             if self.save_results_now == True:
                 self.save_results_now = False
+                
                 process_and_export(
                     self.buf_file,
                     self.way_to_save_file,
@@ -215,13 +216,8 @@ class baseInstallation:
     def answer_save_results(self, status, output_file_path):
 
         self.way_to_save_file = output_file_path
-        self.installation_window.way_save_text.setText(
-            str(self.way_to_save_file)
-        )
 
         if status == True:
-            self.installation_window.way_save_text.setText(str(self.way_to_save_file))
-
             if self.is_delete_buf_file == True:
                 self.add_text_to_log(
                     text=f"Результаты сохранены в {self.way_to_save_file}, файл {self.buf_file} был удален,",
@@ -249,15 +245,16 @@ class baseInstallation:
             elif self.type_file_for_result == type_save_file.txt:
                 pass
             else:
-                self.type_file_for_result = type_save_file.txt
+                self.type_file_for_result = type_save_file.excel
 
-            status, self.way_to_save_file = process_and_export(
+            process_and_export(
                 self.buf_file,
                 self.way_to_save_file,
                 self.type_file_for_result,
                 self.is_delete_buf_file,
+                self.answer_save_results
             )
-            self.installation_window.way_save_text.setText(str(self.way_to_save_file))
+            '''
             if status == True:
                 if self.is_delete_buf_file == True:
                     self.add_text_to_log(
@@ -273,6 +270,7 @@ class baseInstallation:
                 self.add_text_to_log(
                     text=f"Не удалось сохранить результаты", status="err"
                 )
+            '''
 
         else:
             self.exp_th_connect.ask_save_the_results = True

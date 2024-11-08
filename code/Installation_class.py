@@ -123,7 +123,6 @@ class installation_class(experimentControl, analyse):
         self.installation_window.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
         self.installation_window.setupUi(self.installation_window, self, self.dict_active_device_class, self.exp_diagram)
 
-        #self.installation_window.way_save_button.clicked.connect(self.set_way_save)
         self.installation_window.start_button.clicked.connect(self.push_button_start)
         self.installation_window.start_button.setToolTip(
             "Start experiment will be available after all devices are set up"
@@ -384,10 +383,6 @@ class installation_class(experimentControl, analyse):
                 self.message_broker.clear_all_subscribers()
                 status = self.set_depending()#setting subscribers
                 
-                for dev, ch in self.get_active_ch_and_device():
-                    #print(f"{dev.get_name()} {ch.get_name()} ")
-                    if dev.get_trigger(ch) == "Внешний сигнал":
-                        print(f"подписчики: {self.message_broker.get_subscribers(ch, ch.do_operation_trigger)}")
                 
                 if status:
                     self.stop_experiment = False
@@ -408,8 +403,8 @@ class installation_class(experimentControl, analyse):
                     self.repeat_meas = int(
                         self.gen_set_class.repeat_meas
                     )
-                    print(f"repeat_experiment - {self.repeat_experiment}")
-                    print(f"repeat_meas - {self.repeat_meas}")
+                    #print(f"repeat_experiment - {self.repeat_experiment}")
+                    #print(f"repeat_meas - {self.repeat_meas}")
                     self.add_text_to_log("Создан файл " + self.buf_file)
                     logger.debug("Эксперимент начат" + "Создан файл " + self.buf_file)
                     self.measurement_parameters = {}
@@ -737,13 +732,13 @@ if __name__ == "__main__":
     # Печатаем все настройки
     for key in keys:
         value = settings.value(key)
-        print(key, value)
+        #print(key, value)
 
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
     lst = ["ATF20B"]
     lst5 = ["WPS300s", "DS1104Z"]
-    lst4 = ["АКИП-2404"]
+    lst4 = ["АКИП-2404", "SR830"]
     lst11 = ["E7-20MNIPI", "АКИП-2404", "DP832A", "PR"]
     lst22 = ["SR830", "SR830", "DS1104Z"]
     lst21 = ["Maisheng", "Maisheng", "Maisheng", "Maisheng", "Maisheng", "Maisheng"]

@@ -136,12 +136,11 @@ class akip2404Class(base_device):
         )
 
     def confirm_parameters(self):
-        if True:
+
             for ch in self.channels:
                 if ch.is_ch_active():
                     ch.step_index = -1
-        else:
-            pass
+
 
     def action_before_experiment(
         self, number_of_channel
@@ -172,7 +171,6 @@ class akip2404Class(base_device):
                 ans = self.set_parameter(
                     command=":SENSe:VOLTage:AC:RANGe:UPPer", timeout=1, param=val
                 )
-                print(f"{ans=}")
                 if ans == False:
                     status = False
             except ValueError as e:

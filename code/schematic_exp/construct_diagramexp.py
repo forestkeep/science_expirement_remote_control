@@ -285,7 +285,7 @@ class Packing:
 
         if self.current_level:
             current_x += max(r.current_x for r in self.current_level)
-        print(f"{current_x=}")
+        #print(f"{current_x=}")
         return current_x
 
     def pack_on_ceiling(self, rectangle, current_x):   
@@ -626,7 +626,7 @@ class expDiagram(QWidget):
         packing = Packing(groups)
         focus_widht = packing.pack_rectangles( width = self.height(), height= self.width())
         self.setMinimumSize(focus_widht, self.height())
-        print(f"{self.width()=} {self.height()=}")
+        #print(f"{self.width()=} {self.height()=}")
 
     def delete_old_draw(self):
         all_child_widgets = self.findChildren(blockDevice)

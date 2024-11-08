@@ -485,14 +485,15 @@ class base_device():
       
     def on_next_step(self, ch, repeat = 1):
         '''активирует следующий шаг канала прибора'''
+        print(f"{self.name=} {ch.step_index = }")
         answer = ch_response_to_step.Step_done
         if ch.dict_settable_parameters["num steps"] == "Пока активны другие приборы":
             return answer
         if int(ch.step_index) < int(ch.dict_settable_parameters["num steps"])-1:
             ch.step_index = ch.step_index + 1
         else:
+            print("конец списка шагов")
             answer = ch_response_to_step.End_list_of_steps  # след шага нет
-
         return answer
 
     def sin_wave(self, freq, amplitude, phase_shift, sample_rate):
