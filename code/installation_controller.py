@@ -29,7 +29,7 @@ from Devices.svps34_control import Ui_SVPS34_control
 from device_creator.dev_creator import deviceCreator
 
 
-version_app = "1.0.0"
+version_app = "1.0.1"
 logger = logging.getLogger(__name__)
 
 def tr(context, text):

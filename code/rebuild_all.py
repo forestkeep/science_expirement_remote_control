@@ -4,7 +4,8 @@ import shutil
 
 import PyInstaller.__main__
 
-import clear_dir
+from clear_dir import remove_pycaches
+from installation_controller import version_app
 
 def build_python_app():
     PyInstaller.__main__.run([
@@ -20,21 +21,33 @@ def build_python_app():
     ])
 
 def move_file_up_one_directory(filename):
+    global version_app
     current_dir = os.getcwd()
     target_file_path = os.path.join(current_dir, filename)
 
     if os.path.exists(target_file_path):
         parent_dir = os.path.dirname(current_dir)
-        target_path_in_parent = os.path.join(parent_dir, filename)
+
+        base_name, ext = os.path.splitext(filename)
+        new_filename = f"{base_name}_v{version_app}{ext}"
+        new_file_path = os.path.join(parent_dir, new_filename)
+
+        target_path_in_parent = os.path.join(parent_dir, new_filename)
+
 
         # Проверка на наличие файла в родительской директории
         if os.path.exists(target_path_in_parent):
             os.remove(target_path_in_parent)  # Удаление существующего файла
-            print(f"Существующий файл {filename} в родительской директории был удалён.")
+            print(f"Существующий файл {new_filename} в родительской директории {target_path_in_parent} был удалён.")
 
         # Перемещение файла
         shutil.move(target_file_path, target_path_in_parent)
         print(f"Файл {filename} успешно перемещён в {parent_dir}.")
+        
+
+        # Переименование файла
+        os.rename(target_path_in_parent, new_file_path)
+        print(f"Файл был переименован в {new_filename}.")
     else:
         print(f"Файл {filename} не найден в текущей директории.")
 
@@ -62,7 +75,7 @@ def build_inno_setup(script_path):
         print(e)
 
 if __name__ == "__main__":
-
+    
     if os.path.exists('dist'):
         shutil.rmtree('dist')
 
@@ -78,9 +91,12 @@ if __name__ == "__main__":
     build_inno_setup(inno_script_path)
 
     if os.path.exists('dist'):
-        shutil.rmtree('dist')
+        try:
+            shutil.rmtree('dist')
+        except Exception as e:
+            print(f"Error deleting dist folder: {e}")
     
-
+    
     move_file_up_one_directory('installation_controller.exe')
 
-    clear_dir.remove_pycaches(os.getcwd())
+    remove_pycaches(os.getcwd())

@@ -201,7 +201,7 @@ class baseInstallation:
             #self.installation_window.way_save_text.setText(str(self.way_to_save_file))
             if self.save_results_now == True:
                 self.save_results_now = False
-                
+
                 process_and_export(
                     self.buf_file,
                     self.way_to_save_file,
@@ -230,12 +230,14 @@ class baseInstallation:
                 )
         else:
             self.add_text_to_log(
-                text=f"Не удалось сохранить результаты", status="err"
+                text=f"Не удалось сохранить результаты в {self.way_to_save_file}", status="err"
             )
 
     def save_results(self):
         if (
             self.way_to_save_file != False
+            and self.way_to_save_file != None
+            and self.way_to_save_file != ''
         ):  # если выбран путь для сохранения результатов
 
             if self.type_file_for_result == type_save_file.origin:
@@ -254,23 +256,6 @@ class baseInstallation:
                 self.is_delete_buf_file,
                 self.answer_save_results
             )
-            '''
-            if status == True:
-                if self.is_delete_buf_file == True:
-                    self.add_text_to_log(
-                        text=f"Результаты сохранены в {self.way_to_save_file}, файл {self.buf_file} был удален,",
-                        status="ok",
-                    )
-                else:
-                    self.add_text_to_log(
-                        text=f"Результаты сохранены в {self.way_to_save_file}",
-                        status="ok",
-                    )
-            else:
-                self.add_text_to_log(
-                    text=f"Не удалось сохранить результаты", status="err"
-                )
-            '''
 
         else:
             self.exp_th_connect.ask_save_the_results = True
@@ -421,9 +406,6 @@ class baseInstallation:
 
     def open_general_settings(self):
 
-        print(type(self.is_delete_buf_file))
-        print(type(self.is_delete_buf_file))
-
         (is_change,
         self.is_exp_run_anywhere,
         self.is_delete_buf_file,
@@ -436,6 +418,8 @@ class baseInstallation:
                                                             self.repeat_experiment,
                                                             self.repeat_meas
                                                            )
+        print(f"{self.way_to_save_file=}")
+
         if is_change:
             self.settings.setValue("is_exp_run_anywhere", self.is_exp_run_anywhere)
             self.settings.setValue("is_delete_buf_file", self.is_delete_buf_file)
