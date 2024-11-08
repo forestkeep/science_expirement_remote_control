@@ -14,11 +14,14 @@ import logging
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QApplication
 
 logger = logging.getLogger(__name__)
 
+def tr(context, text):
+        return QApplication.translate(context, text)
 
-name_window = "Контроллер установки"
+name_window = tr("UI_MainWindow","Контроллер установки")
 class Ui_MainWindow(object):
 
     def __init__(self, version):
@@ -85,19 +88,18 @@ class Ui_MainWindow(object):
         self.is_design_mode = not self.is_design_mode
 
         if self.is_design_mode:
-            self.design_mode.setText("Выключить режим разработчика")
-            self.mother_class.setWindowTitle(name_window + "(режим разработчика)" + self.version_app)
+            self.design_mode.setText(tr("UI_MainWindow","Выключить режим разработчика"))
+            self.mother_class.setWindowTitle(name_window + tr("UI_MainWindow","(режим разработчика)") + self.version_app)
             self.menu.addAction(self.actionCreateNew)
         else:
             self.menu.removeAction(self.actionCreateNew)
-            self.design_mode.setText("Включить режим разработчика")
+            self.design_mode.setText(tr("UI_MainWindow","Включить режим разработчика"))
             self.mother_class.setWindowTitle(name_window + self.version_app)
 
     def retranslateUi(self, MainWindow):
-        _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", name_window + " " + self.version_app))
-        self.pushButton.setText(_translate("MainWindow", "Локальное управление приборами"))
-        self.pushButton_2.setText(_translate("MainWindow", "Создание экспериментальной установки"))
-        self.menu.setTitle(_translate("MainWindow", "Меню"))
-        self.actionCreateNew.setText(_translate("MainWindow", "Создать прибор"))
-        self.design_mode.setText(_translate("MainWindow", "Включить режим разработчика"))
+        MainWindow.setWindowTitle(name_window + " " + self.version_app)
+        self.pushButton.setText(tr("UI_MainWindow","Локальное управление приборами"))
+        self.pushButton_2.setText(tr("UI_MainWindow","Создание экспериментальной установки"))
+        self.menu.setTitle(tr("UI_MainWindow","Меню"))
+        self.actionCreateNew.setText(tr("UI_MainWindow","Создать прибор"))
+        self.design_mode.setText(tr("UI_MainWindow","Включить режим разработчика"))

@@ -162,9 +162,7 @@ class experimentControl(analyse):
                         t = (
                             steps
                             * (device.get_trigger_value(ch) + ch.last_step_time)
-                            * float(
-                                self.installation_window.repeat_measurement_enter.currentText()
-                            )
+                            * float(self.repeat_meas)
                         )
                         buf_time.append(t)
         self.max_exp_time = max(buf_time) + (time.time() - self.start_exp_time)
@@ -194,9 +192,7 @@ class experimentControl(analyse):
                             buf_time = (
                                 steps
                                 * (device.get_trigger_value(ch) + ch.base_duration_step)
-                            ) * float(
-                                self.installation_window.repeat_measurement_enter.currentText()
-                            )
+                            ) * float(self.repeat_meas)
 
                     elif trig == "Внешний сигнал":
                         # TODO: рассчитать время в случае срабатывания цепочек приборов. Найти корень цепочки и смотреть на его параметры, значение таймера и количество повторов, затем рассчитать длительность срабатывания цепочки и сравнить со значением таймера, вернуть наибольшее
@@ -363,7 +359,6 @@ class experimentControl(analyse):
                 )
         return status
 
-
     def check_connections(self):
         '''checking connection devices'''
         status = True
@@ -384,6 +379,10 @@ class experimentControl(analyse):
                     self.add_text_to_log(
                         "Ответ " + dev.get_name() + " " + str(is_connect)
                     )
+
+        if self.is_debug:
+            status = True
+
         return status
     
     def exp_th(self):
@@ -391,6 +390,8 @@ class experimentControl(analyse):
         logger.debug("запущен поток эксперимента")
         self.max_exp_time = 10
         self.start_exp_time = time.time()
+
+        print(f"{self.is_debug=}")
 
         #проверка соединения приборов
         status = self.check_connections()
@@ -750,7 +751,6 @@ class experimentControl(analyse):
         # self.installation_window.open_graph_button.setEnabled(False)
         self.set_state_text("Ожидание старта")
         self.is_search_resources = True#разрешение на сканирование ресурсов
-
 
 def print_data(data):
     for device, channels in data.items():

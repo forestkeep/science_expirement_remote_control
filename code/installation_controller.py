@@ -17,6 +17,7 @@ from logging.handlers import RotatingFileHandler
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QApplication
 import qdarktheme
 import interface.info_window_dialog
 from available_devices import dict_device_class
@@ -30,6 +31,9 @@ from device_creator.dev_creator import deviceCreator
 
 version_app = "1.0.0"
 logger = logging.getLogger(__name__)
+
+def tr(context, text):
+        return QApplication.translate(context, text)
 
 def is_admin():
     if os.name == 'nt':  # Windows
@@ -82,15 +86,15 @@ class MyWindow(QtWidgets.QMainWindow):
                     self.tray_menu = QtWidgets.QMenu()
 
                     # Добавляем пункты в меню
-                    self.show_action = self.tray_menu.addAction("Развернуть")
-                    self.quit_action = self.tray_menu.addAction("Закрыть приложение")
+                    self.show_action = self.tray_menu.addAction(tr("MyWindow", "Развернуть"))
+                    self.quit_action = self.tray_menu.addAction(tr("MyWindow","Закрыть приложение"))
 
                     self.show_action.triggered.connect(self.show)
                     self.quit_action.triggered.connect(self.quit_application)
 
                     self.tray_icon.setContextMenu(self.tray_menu)
 
-                    self.tray_icon.setToolTip("Управление экспериментальной установкой")
+                    self.tray_icon.setToolTip(tr("MyWindow","Управление экспериментальной установкой"))
                     self.tray_icon.show()
 
                     # Сигнал для закрытия окна
@@ -118,7 +122,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def open_installation_window(self):
         if self.key_to_new_window_installation:
-            self.info_window("установка уже собрана")
+            self.info_window(QApplication.translate( "MyWindow" , "установка уже собрана"))
         else:
             self.new_window = QtWidgets.QDialog()
             self.ui_window = installation_Ui_Dialog()
@@ -181,13 +185,11 @@ class MyWindow(QtWidgets.QMainWindow):
         event.accept()  # Закрытие окна
 
     def tray_icon_activated(self, reason):
-        """Сигнал при активации трей-иконки"""
         if reason == QtWidgets.QSystemTrayIcon.Trigger:
             self.show()  # Показываем окно при нажатии на трей-иконку
             self.activateWindow()
 
     def quit_application(self):
-        """Закрывает приложение."""
         QtWidgets.QApplication.quit()
 
 def get_installation_controller_path():

@@ -66,7 +66,7 @@ class baseInstallation:
         self.thread_scan_resources.daemon = True
         self.stop_scan_thread = False
 
-        self.gen_set_class = None
+        self.gen_set_class = experimentSettings()
         self.thread_scan_resources.start()
 
     def show_information_window(self, message):
@@ -422,8 +422,6 @@ class baseInstallation:
 
 
     def open_general_settings(self):
-        if self.gen_set_class is None:
-            self.gen_set_class = experimentSettings()
 
         print(type(self.is_delete_buf_file))
         print(type(self.is_delete_buf_file))

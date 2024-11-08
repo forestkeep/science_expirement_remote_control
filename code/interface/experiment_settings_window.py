@@ -132,8 +132,8 @@ class experimentSettings():
         self.is_exp_run_anywhere = False
         self.is_delete_buf_file = True
         self.way_to_save = None
-        self.repeat_exp = None
-        self.repeat_meas = None
+        self.repeat_exp = 1
+        self.repeat_meas = 1
 
         self.window_dialog.repeat_measurement_enter.currentIndexChanged.connect(lambda: self._read_par())
         self.window_dialog.repeat_exp_enter.currentIndexChanged.connect(lambda: self._read_par())

@@ -403,11 +403,13 @@ class installation_class(experimentControl, analyse):
                     self.write_settings_to_buf_file()
 
                     self.repeat_experiment = int(
-                        self.installation_window.repeat_exp_enter.currentText()
+                        self.gen_set_class.repeat_exp
                     )
                     self.repeat_meas = int(
-                        self.installation_window.repeat_measurement_enter.currentText()
+                        self.gen_set_class.repeat_meas
                     )
+                    print(f"repeat_experiment - {self.repeat_experiment}")
+                    print(f"repeat_meas - {self.repeat_meas}")
                     self.add_text_to_log("Создан файл " + self.buf_file)
                     logger.debug("Эксперимент начат" + "Создан файл " + self.buf_file)
                     self.measurement_parameters = {}
@@ -741,7 +743,7 @@ if __name__ == "__main__":
 
     lst = ["ATF20B"]
     lst5 = ["WPS300s", "DS1104Z"]
-    lst4 = ["DP832A"]
+    lst4 = ["АКИП-2404"]
     lst11 = ["E7-20MNIPI", "АКИП-2404", "DP832A", "PR"]
     lst22 = ["SR830", "SR830", "DS1104Z"]
     lst21 = ["Maisheng", "Maisheng", "Maisheng", "Maisheng", "Maisheng", "Maisheng"]
@@ -756,7 +758,7 @@ if __name__ == "__main__":
     from available_devices import dict_device_class
 
     a = installation_class(settings=settings, dict_device_class=dict_device_class, version="test")
-    a.reconstruct_installation(lst11)
+    a.reconstruct_installation(lst4)
     a.show_window_installation()
     sys.exit(app.exec_())
 

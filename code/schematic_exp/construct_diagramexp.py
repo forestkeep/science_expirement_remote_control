@@ -283,7 +283,8 @@ class Packing:
                 
             self.current_level.append(rectangle)
 
-        current_x += max(r.current_x for r in self.current_level)
+        if self.current_level:
+            current_x += max(r.current_x for r in self.current_level)
         print(f"{current_x=}")
         return current_x
 
