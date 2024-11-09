@@ -617,10 +617,12 @@ class base_device():
 
     def get_trigger(self, ch):
         '''возвращает тип триггера, таймер или внешний сигнал'''
-        try:
+        #try:
+        answer = None
+        if "trigger" in ch.dict_settable_parameters.keys():
             answer = ch.dict_settable_parameters["trigger"]
-        except:
-            answer = False
+        #except:
+            #answer = None
         return answer
 
     def set_client(self, client):

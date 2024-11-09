@@ -683,13 +683,16 @@ class expDiagram(QWidget):
             except:
                 continue
 
+            #print(f"{components=}")
+
             for label in self.labels:
-                if components[1] == label.ch_name and components[0] == label.dev_name:
-                    con = connection(self, "do action")
-                    con.set_units(label, self.labels[index])
-                    label.slave.append( self.labels[index] )
-                    self.labels[index].master = label
-                    self.connections.append(con)
+                if len(components) >= 2:
+                    if components[1] == label.ch_name and components[0] == label.dev_name:
+                        con = connection(self, "do action")
+                        con.set_units(label, self.labels[index])
+                        label.slave.append( self.labels[index] )
+                        self.labels[index].master = label
+                        self.connections.append(con)
 
 
         self.auto_place(self.labels)  

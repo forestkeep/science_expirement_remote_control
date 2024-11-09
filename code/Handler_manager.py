@@ -83,6 +83,21 @@ class messageBroker:
         """очистить все подписки"""
         self.subscribe_list = []
 
+    def clear_my_topicks(self, publisher):
+        #print(self.subscribe_list)
+        buf_list = []
+        for ind, subscribe in enumerate(self.subscribe_list):
+                #print(f"{publisher=} {subscribe.publisher=}")
+                if publisher != subscribe.publisher:
+                    buf_list.append(subscribe)
+                else:
+                    del subscribe
+
+        self.subscribe_list = buf_list
+        #print(self.subscribe_list)
+                    
+        
+
     def create_subscribe(self, name_subscribe, publisher, description=""):
         new_subscribe = subscribe(
             name=name_subscribe, publiser=publisher, description=description

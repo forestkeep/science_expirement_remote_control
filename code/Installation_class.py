@@ -162,7 +162,6 @@ class installation_class(experimentControl, analyse):
         logger.info(f"передаем состояние {state} канала {num_ch} прибору {device}")
         self.dict_active_device_class[device].set_state_ch(num_ch, state)
         self.preparation_experiment()
-        logger.warning(f"set_state_ch\n")
 
     def preparation_experiment(self):
         logger.debug("подготовка к эксперименту")
@@ -298,6 +297,9 @@ class installation_class(experimentControl, analyse):
 
     def delete_device(self, device):
         if self.is_experiment_running() == False:
+            for ch in self.dict_active_device_class[device].channels:
+                self.message_broker.clear_my_topicks(publisher=ch)
+
             del self.dict_active_device_class[device]
 
             buf_dev = {}
