@@ -598,8 +598,8 @@ class base_device():
     def get_trigger_value(self, ch):
         '''возвращает источник сигнала или время в секундах, если в качестве триггера выбран таймер, в случае ошибки возвращает False'''
         trigger = self.get_trigger(ch)
-        if trigger == False:
-            logger.warning(f"Ошибка при воозвате типа трриггера {trigger=}")
+        if trigger is None:
+            logger.info(f"Ошибка при воозвате типа трриггера {trigger=}")
             answer = False
 
         elif trigger.lower() == "таймер":

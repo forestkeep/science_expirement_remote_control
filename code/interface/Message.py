@@ -23,8 +23,7 @@ from PyQt5.QtWidgets import (
 
 class messageDialog(QDialog):
     def __init__(
-        self, title="Сообщение", text="Отлично выглядите!", are_show_again=False
-    ):
+        self, title ,text, are_show_again):
         super().__init__()
         self.setMinimumSize(400, 200)  # устанавливаем минимальный размер окна
 
@@ -41,7 +40,7 @@ class messageDialog(QDialog):
             self.accept
         )  # закрываем окно при нажатии на кнопку Ok
         if are_show_again:
-            self.check_not_show = QCheckBox("Не показывать снова")
+            self.check_not_show = QCheckBox( QApplication.translate( "message_win", "Не показывать снова" ) )
             layout.addWidget(self.check_not_show)
         layout.addWidget(ok_button)
         self.setLayout(layout)

@@ -20,6 +20,7 @@ import os
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QApplication
 import qdarktheme
 from Analyse_in_installation import analyse
 from Devices.Classes import (not_ready_style_background, not_ready_style_border,
@@ -128,7 +129,7 @@ class installation_class(experimentControl, analyse):
             "Start experiment will be available after all devices are set up"
         )
         self.installation_window.start_button.setStyleSheet(not_ready_style_background)
-        self.installation_window.start_button.setText("Старт")
+        self.installation_window.start_button.setText(QApplication.translate('main install',"Старт"))
         self.installation_window.pause_button.clicked.connect(self.pause_exp)
         self.installation_window.pause_button.setStyleSheet(not_ready_style_background)
         self.installation_window.about_autors.triggered.connect(self.show_about_autors)
@@ -153,8 +154,8 @@ class installation_class(experimentControl, analyse):
         self.installation_window.develop_mode.triggered.connect(self.change_check_debug)
 
         self.installation_window.clear_log_button.clicked.connect(self.clear_log)
-        self.installation_window.clear_log_button.setToolTip("Очистить лог")
-        self.set_state_text("Ожидание настройки приборов")
+        self.installation_window.clear_log_button.setToolTip(QApplication.translate('main install',"Очистить лог"))
+        self.set_state_text(QApplication.translate('main install',"Ожидание настройки приборов"))
         
         self.timer_for_open_base_instruction.start()
 
@@ -211,7 +212,7 @@ class installation_class(experimentControl, analyse):
                         )
         else:
             self.add_text_to_log(
-                "Запрещено добавлять или отключать канал во время эксперимента",
+                QApplication.translate('main install',"Запрещено добавлять или отключать канал во время эксперимента"),
                 status="war",
             )
 
@@ -322,7 +323,7 @@ class installation_class(experimentControl, analyse):
             logger.info("выход из функции удаления прибора")
         else:
             self.add_text_to_log(
-                "Запрещено удалять прибор во время эксперимента", status="war"
+                QApplication.translate('main install',"Запрещено удалять прибор во время эксперимента"), status="war"
             )
 
     def click_set(self, device, num_ch):
@@ -339,7 +340,7 @@ class installation_class(experimentControl, analyse):
             self.dict_active_device_class[device].show_setting_window(num_ch)
         else:
             self.add_text_to_log(
-                "Запрещено менять параметры во время эксперимента", status="war"
+                QApplication.translate('main install',"Запрещено менять параметры во время эксперимента"), status="war"
             )
 
     def set_depending(self) -> bool:
@@ -350,7 +351,11 @@ class installation_class(experimentControl, analyse):
             if trig != "Таймер":
                 trig_val = device.get_trigger_value(ch)
                 status = self.message_broker.subscribe(object=ch, name_subscribe=trig_val)
+                text=QApplication.translate('main install',"{device_name} {ch_name} не имеет источника сигнала, проверьте его настройки")
+                text = text.format(device_name = device.get_name(), ch_name = ch.get_name())
+
                 if status is False:
+                    self.add_text_to_log(text=text, status='war')
                     logger.warning(f"Подписки {trig_val} не существует")
         return status
     
@@ -361,7 +366,7 @@ class installation_class(experimentControl, analyse):
             self.installation_window.pause_button.setStyleSheet(
                 not_ready_style_background
             )
-            self.installation_window.start_button.setText("Остановка...")
+            self.installation_window.start_button.setText(QApplication.translate('main install',"Остановка") + "...")
 
     def push_button_start(self):
         if self.is_experiment_running():
@@ -372,7 +377,7 @@ class installation_class(experimentControl, analyse):
                 self.stop_experiment = True
                 self.create_clients()
                 self.set_clients_for_device()
-                self.set_state_text("Старт эксперимента")
+                self.set_state_text(QApplication.translate('main install',"Старт эксперимента"))
                 self.installation_window.pause_button.setStyleSheet(
                     ready_style_background
                 )
@@ -380,7 +385,7 @@ class installation_class(experimentControl, analyse):
                 self.installation_window.start_button.setStyleSheet(
                     ready_style_background
                 )
-                self.installation_window.start_button.setText("Стоп")
+                self.installation_window.start_button.setText(QApplication.translate('main install',"Стоп"))
                 
                 self.message_broker.clear_all_subscribers()
                 status = self.set_depending()#setting subscribers
@@ -407,7 +412,7 @@ class installation_class(experimentControl, analyse):
                     )
                     #print(f"repeat_experiment - {self.repeat_experiment}")
                     #print(f"repeat_meas - {self.repeat_meas}")
-                    self.add_text_to_log("Создан файл " + self.buf_file)
+                    self.add_text_to_log(QApplication.translate('main install',"Создан файл") + " " + self.buf_file)
                     logger.debug("Эксперимент начат" + "Создан файл " + self.buf_file)
                     self.measurement_parameters = {}
                     if self.graph_window is not None:
@@ -415,7 +420,7 @@ class installation_class(experimentControl, analyse):
                     self.experiment_thread = threading.Thread(
                         target=self.exp_th, daemon=True
                     )
-                    self.add_text_to_log("настройка приборов.. ")
+                    self.add_text_to_log(QApplication.translate('main install',"настройка приборов")) + ".. "
                     self.experiment_thread.start()
                     self.timer_for_connection_main_exp_thread.start(1000)
     
@@ -541,7 +546,7 @@ class installation_class(experimentControl, analyse):
                             self.get_channel_widget(
                                 device_class.get_name(), ch.get_number()
                             ).label_settings_channel.text()
-                            == "Не настроено"
+                            == QApplication.translate('main install',"Не настроено")
                         ):
                             file.write("Не настроено" + "\n")
                         else:
@@ -567,12 +572,14 @@ class installation_class(experimentControl, analyse):
                 logger.warning(
                     rf"ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку"
                 )
+                text = QApplication.translate('main install', "ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку")
+                text = text.format(device = device)
                 self.add_text_to_log(
-                    rf"ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку",
+                    text = text,
                     status="err",
                 )
                 self.show_critical_window(
-                    message="Ошибка при открытии сохраненной установки.\n Вероятно, содержимое файла имеет не верный формат."
+                    message=QApplication.translate('main install',"Ошибка при открытии сохраненной установки.\n Вероятно, содержимое файла имеет не верный формат.")
                 )
                 raise ValueError(
                     rf"ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку"
@@ -626,7 +633,7 @@ class installation_class(experimentControl, analyse):
                             + str(buffer[i])
                         )
                         self.show_critical_window(
-                            message="Ошибка при открытии сохраненной установки.\n Вероятно, содержимое файла имеет не верный формат."
+                            message=QApplication.translate('main install',"Ошибка при открытии сохраненной установки.\n Вероятно, содержимое файла имеет не верный формат.")
                         )
                         raise ValueError(
                             "Ошибка определения ключа и значение параметра"
@@ -675,7 +682,7 @@ class installation_class(experimentControl, analyse):
                                             device.get_name()
                                         ).set_state_ch_widget(chann.number, False)
                                         # self.get_device_widget(device.get_name()).click_change_ch(num = chann.number, is_open = False)
-                                elif param == "Не настроено":
+                                elif param == QApplication.translate('main install',"Не настроено"):
                                     parameters[param] = ""
                                     if set_open:
                                         set_open = False
@@ -701,6 +708,7 @@ if __name__ == "__main__":
     import logging
     import os
     from logging.handlers import RotatingFileHandler
+    from PyQt5.QtCore import QTranslator, QLocale
 
     logger = logging.getLogger(__name__)
     FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
@@ -749,6 +757,14 @@ if __name__ == "__main__":
 
     qdarktheme.enable_hi_dpi()
     app = QtWidgets.QApplication(sys.argv)
+    
+    #----------------------------------
+    translator = QTranslator()
+    
+    translator.load("translations/translation_en.qm")
+    
+    app.installTranslator(translator)
+    #----------------------------------
 
     qdarktheme.setup_theme(corner_shape="sharp")
 

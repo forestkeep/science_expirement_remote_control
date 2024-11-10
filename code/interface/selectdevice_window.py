@@ -47,7 +47,7 @@ class Ui_Selectdevice(QtWidgets.QDialog):
     def retranslateUi(self, Selectdevice):
         _translate = QtCore.QCoreApplication.translate
         Selectdevice.setWindowTitle(_translate("Selectdevice", "Выбор прибора"))
-        self.pushButton.setText(_translate("Selectdevice", "SVPS34"))
+        self.pushButton.setText("SVPS34")
 
     def set_color(self, mother_window):
         if "SVPS34" in mother_window.dict_active_local_devices:

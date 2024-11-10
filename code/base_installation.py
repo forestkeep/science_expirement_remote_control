@@ -19,6 +19,7 @@ import os
 from pymodbus.client import ModbusSerialClient
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication
 
 from Adapter import Adapter, instrument
 from Devices.Classes import (
@@ -140,10 +141,13 @@ class baseInstallation:
         else:
             self.installation_window.log.setTextColor(QtGui.QColor("white"))
 
+
         self.installation_window.log.append(
             (str(datetime.now().strftime("%H:%M:%S")) + " : " + str(text))
         )
         self.installation_window.log.ensureCursorVisible()
+
+        #cur_text = self.installation_window.log.toPlainText().split("\n")
 
     def set_state_text(self, text):
         self.installation_window.label_state.setText(text)
@@ -174,7 +178,7 @@ class baseInstallation:
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         fileName, ans = QtWidgets.QFileDialog.getSaveFileName(
             self.installation_window,
-            "укажите путь сохранения результатов",
+            QApplication.translate('base_install',"укажите путь сохранения результатов"),
             "",
             "Книга Excel (*.xlsx)",
             #"Text Files(*.txt);; Книга Excel (*.xlsx);;Origin (*.opju)",
@@ -219,18 +223,25 @@ class baseInstallation:
 
         if status == True:
             if self.is_delete_buf_file == True:
+                text=QApplication.translate('base_install',"Результаты сохранены в {way}, файл {file} был удален")
+                text = text.format(way = self.way_to_save_file, file = self.buf_file)
                 self.add_text_to_log(
-                    text=f"Результаты сохранены в {self.way_to_save_file}, файл {self.buf_file} был удален,",
+                    text=text,
                     status="ok",
                 )
             else:
+                text = QApplication.translate('base_install',"Результаты сохранены в {file}")
+                text = text.format(file = self.way_to_save_file)
                 self.add_text_to_log(
-                    text=f"Результаты сохранены в {self.way_to_save_file}",
+                    text=text,
                     status="ok",
                 )
         else:
+            text = QApplication.translate('base_install',"Не удалось сохранить результаты в {file}")
+            text = text.format(file = self.way_to_save_file)
             self.add_text_to_log(
-                text=f"Не удалось сохранить результаты в {self.way_to_save_file}", status="err"
+                text=text,
+                status="err"
             )
 
     def save_results(self):
@@ -264,7 +275,7 @@ class baseInstallation:
                 pass
 
     def show_about_autors(self):
-        text = """
+        text = QApplication.translate('base_install',"""
         Автор:
 
         - Захидов Дмитрий
@@ -273,15 +284,14 @@ class baseInstallation:
         пожалуйста, свяжитесь с мной по почте zakhidov.dim@yandex.ru
 
         Благодарю вас за использование приложения!
-        """
-        dialog = messageDialog(text=text, title="Информация об авторах")
+        """)
+        dialog = messageDialog(text=text, title=QApplication.translate('base_install',"Информация об авторах"))
         dialog.exec_()
 
     def show_version(self):
-        text = f"""
-        Текущая версия - {self.version_app}
-        """
-        dialog = messageDialog(text=text, title="Версия приложения")
+        text = QApplication.translate('base_install',"Текущая версия - {version}")
+        text = text.format(version = self.version_app)
+        dialog = messageDialog(text=text, title=QApplication.translate('base_install',"Версия приложения"))
         dialog.exec_()
 
     def show_basic_instruction(self):
@@ -289,7 +299,7 @@ class baseInstallation:
             self.is_show_basic_instruction_again == "true"
             or self.is_show_basic_instruction_again == True
         ):
-            text = """
+            text = QApplication.translate('base_install',"""
                 Настройте каждый прибор, нажав кнопку "Настроить" под его каналом. 
                 Открывайте (кнопка +) и закрывайте каналы, а также добавляйте и удаляйте приборы по необходимости.
 
@@ -319,10 +329,10 @@ class baseInstallation:
                 несложную цифровую обработку.
 
                 Для подробной инструкции по использованию приложения нажмите кнопку "Инфо" -> "Инструкция".
-            """
+            """)
 
             dialog = messageDialog(
-                text=text, title="Инструкция по настройке", are_show_again=True
+                text=text, title=QApplication.translate('base_install',"Инструкция по настройке"), are_show_again=True
             )
 
             if dialog.exec_() == QtWidgets.QDialog.Accepted:
@@ -377,14 +387,14 @@ class baseInstallation:
         if not self.is_experiment_running():
             if not self.is_debug:
                 self.is_debug = True
-                self.installation_window.develop_mode.setText("Выкл режим разработчика")
+                self.installation_window.develop_mode.setText(QApplication.translate('base_install',"Выкл режим разработчика"))
                 self.add_text_to_log(
-                    "Режим разработчика включен. В этом режиме корректность показаний с приборов не гарантируется",
+                    QApplication.translate('base_install',"Режим разработчика включен. В этом режиме корректность показаний с приборов не гарантируется"),
                     status="war",
                 )
             else:
-                self.installation_window.develop_mode.setText("Вкл режим разработчика")
-                self.add_text_to_log("Режим разработчика выключен")
+                self.installation_window.develop_mode.setText(QApplication.translate('base_install',"Вкл режим разработчика"))
+                self.add_text_to_log(QApplication.translate('base_install',"Режим разработчика выключен"))
                 self.is_debug = False
 
             for dev in self.dict_active_device_class.values():
@@ -482,10 +492,10 @@ class baseInstallation:
 
     def message_from_device_status_connect(self, answer, name_device):
         if answer == True:
-            self.add_text_to_log(name_device + " - соединение установлено")
+            self.add_text_to_log(name_device + " - " + QApplication.translate('base_install',"соединение установлено"))
         else:
             self.add_text_to_log(
-                name_device + " - соединение не установлено, проверьте подлючение",
+                name_device + " - " + QApplication.translate('base_install',"соединение не установлено, проверьте подлючение"),
                 status="err",
             )
             self.set_border_color_device(
@@ -494,7 +504,7 @@ class baseInstallation:
             self.installation_window.start_button.setStyleSheet(
                 not_ready_style_background
             )
-            self.installation_window.start_button.setText("Старт")
+            self.installation_window.start_button.setText(QApplication.translate('base_install',"Старт"))
             self.key_to_start_installation = False  # старт экспериепнта запрещаем
 
     def write_data_to_buf_file(self, message, addTime=False):
@@ -540,7 +550,7 @@ class baseInstallation:
                         self.get_channel_widget(
                             device.get_name(), ch.get_number()
                         ).label_settings_channel.text
-                        != "Не настроено"
+                        != QApplication.translate('base_install',"Не настроено")
                     ):
                         act_param, meas_param, dev_param = device.get_label_parameters(
                             ch.get_number()
@@ -562,7 +572,7 @@ class baseInstallation:
             )
             self.get_channel_widget(
                 name_device, num_channel
-            ).label_settings_channel.setText("Не настроено")
+            ).label_settings_channel.setText(QApplication.translate('base_install',"Не настроено"))
 
         self.dict_active_device_class[name_device].set_status_settings_ch(
             num_channel, status_parameters

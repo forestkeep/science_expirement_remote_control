@@ -190,7 +190,6 @@ class channel_page(QtWidgets.QWidget):
         self.installation_class = installation_class
         self.name_device = name_device
         self.number = num
-        self.set_text = "Не настроено"
         self.layout = QtWidgets.QGridLayout(self)
         self.layout.setSpacing(0)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -202,7 +201,6 @@ class channel_page(QtWidgets.QWidget):
         font.setWeight(80)
         self.label_settings_channel = QtWidgets.QLabel()
         self.label_settings_channel.setObjectName("labelchset" + str(num))
-        self.label_settings_channel.setText(self.set_text)
         self.label_settings_channel.setStyleSheet(not_ready_style_border)
         self.label_settings_channel.setAlignment(QtCore.Qt.AlignCenter)
         self.label_settings_channel.setWordWrap(True)
@@ -236,6 +234,8 @@ class channel_page(QtWidgets.QWidget):
         self.layout.addWidget(self.state_Button, 0, 0)
         self.layout.addWidget(scroll_area, 2, 0, 9, 1)
         self.layout.addWidget(self.pushButton, 11, 0)
+        
+        self.retranslateUi()
 
     def click_set(self):
         self.installation_class.click_set(self.name_device, self.number)
@@ -253,6 +253,14 @@ class channel_page(QtWidgets.QWidget):
 
     def leaveEvent(self, event):
         pass
+    
+    def retranslateUi(self):
+        _translate = QtCore.QCoreApplication.translate
+        self.pushButton.setText(_translate("channel page",'Настройка') )
+        if self.is_standart_device == True:
+            self.state_Button.setToolTip(_translate("channel page","Закрыть") + f"ch {self.number}")
+        else:
+            self.state_Button.setToolTip(_translate("channel page","Закрыть") + f"{self.name_device[:-2:]}")
 
 
 class Ui_Installation(QtWidgets.QMainWindow):
@@ -382,66 +390,34 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
         self.verticalLayout_2 = QtWidgets.QVBoxLayout()
 
-        #self.as_save_result_label = QtWidgets.QLabel(self.central_widget)
-        #self.as_save_result_label.setFont(font)
-        #self.as_save_result_label.setSizePolicy(sizePolicy)
-
         self.horizontalLayout = QtWidgets.QHBoxLayout()
-        #self.way_save_text = QtWidgets.QLineEdit(self.central_widget)
-        #self.way_save_button = QtWidgets.QPushButton(self.central_widget)
-        #self.horizontalLayout.addWidget(self.way_save_text)
-        #self.horizontalLayout.addWidget(self.way_save_button)
 
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
-        #self.num_meas_label = QtWidgets.QLabel()
-        #self.num_meas_label.setFont(font)
-        #self.repeat_measurement_enter = QtWidgets.QComboBox(self.central_widget)
-        #self.repeat_measurement_enter.setEditable(False)
-        #self.repeat_measurement_enter.addItems(["1","2","3","4","5","6","7","8","9","10"])
-        #self.horizontalLayout_3.addWidget(self.num_meas_label)
-        #self.horizontalLayout_3.addWidget(self.repeat_measurement_enter)
 
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
-        '''
-        self.num_repeat_exp_label = QtWidgets.QLabel(self.central_widget)
-        self.num_repeat_exp_label.setFont(font)
-        self.repeat_exp_enter = QtWidgets.QComboBox(self.central_widget)
-        self.repeat_exp_enter.setEditable(False)
-        self.repeat_exp_enter.addItems(["1","2","3","4","5","6","7","8","9","10"])
-        #self.horizontalLayout_2.addWidget(self.num_repeat_exp_label)
-        #self.horizontalLayout_2.addWidget(self.repeat_exp_enter)
-        '''
+
         #=======================
 
 
         self.scroll_area = QtWidgets.QScrollArea()
         self.scroll_area.setWidgetResizable(True)
-        #self.scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.scroll_area.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
 
-        # Устанавливаем содержимое в scroll_area
         self.scroll_area.setWidget(self.exp_diagram)
         #======================
 
         self.verticalSpacer = QtWidgets.QSpacerItem(15, 15, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
 
-        self.open_graph_button = QtWidgets.QPushButton("показать график")
-        #self.open_graph_button.setEnabled(False)
+        self.open_graph_button = QtWidgets.QPushButton()
 
-        #self.verticalLayout_2.addWidget(self.as_save_result_label)
+
         self.schematic_exp_name = QtWidgets.QLabel()
         self.schematic_exp_name.setAlignment(QtCore.Qt.AlignCenter)
         self.schematic_exp_name.setFont(font)
-        #self.verticalLayout_2.addLayout(self.horizontalLayout)
-        #self.verticalLayout_2.addLayout(self.horizontalLayout_2)
-        #self.verticalLayout_2.addLayout(self.horizontalLayout_3)
-        
 
         self.verticalLayout_2.addWidget(self.schematic_exp_name)
         self.verticalLayout_2.addWidget(self.scroll_area, stretch=10)
         
-        
-        #self.verticalLayout_2.addItem(self.verticalSpacer)
         self.verticalLayout_2.addWidget(self.open_graph_button)
         # ================================================================
 
@@ -475,14 +451,12 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.menu.addAction(self.add_device_button)
         self.menubar.addAction(self.menu.menuAction())
 
-
         self.set = QtWidgets.QMenu(self.menubar)
         self.menubar.addAction(self.set.menuAction())
         self.develop_mode = QtWidgets.QAction(base_window)
         self.general_settings = QtWidgets.QAction(base_window)
         self.set.addAction(self.develop_mode)
         self.set.addAction(self.general_settings)
-
 
         self.info = QtWidgets.QMenu(self.menubar)
         self.menubar.addAction(self.info.menuAction())
@@ -499,7 +473,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
         QtCore.QMetaObject.connectSlotsByName(base_window)
 
 
-    def closeEvent(self, event):  # эта функция вызывается при закрытии окна
+    def closeEvent(self, event):
         for dev_win in self.devices_lay.values():
             dev_win.setParent(None)
         self.installation_close_signal.emit(1)
@@ -541,7 +515,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
     def retranslateUi(self, Installation):
         _translate = QtCore.QCoreApplication.translate
-        #Installation.setWindowTitle(_translate("Installation", "Experiment control"))
+        self.open_graph_button.setText(_translate("Installation","показать график"))
         self.start_button.setText(_translate("Installation", "Запуск"))
         self.pause_button.setText(_translate("Installation", "Пауза"))
 
@@ -568,52 +542,9 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.version.setText(
             _translate("Installation", "Версия приложения"))
         
-
-# =========================================================================================
         self.schematic_exp_name.setText(_translate("settings_save", "Схема взаимодействия приборов"))
-        #self.as_save_result_label.setText(_translate("settings_save", "Как сохранить результаты?"))
         self.label_state.setText(_translate(
             "settings_save", "Состояние"))
         
         self.label_time.setText(_translate(
             "settings_save", ""))
-        '''
-        self.way_save_button.setText(_translate("settings_save", "Путь"))
-        self.num_meas_label.setText(_translate(
-            "settings_save", "Кол-во измерений в точке"))
-        self.repeat_measurement_enter.setCurrentText(
-            _translate("settings_save", "1"))
-        self.repeat_measurement_enter.setItemText(
-            0, _translate("settings_save", "1"))
-        self.repeat_measurement_enter.setItemText(
-            1, _translate("settings_save", "2"))
-        self.repeat_measurement_enter.setItemText(
-            2, _translate("settings_save", "3"))
-        self.repeat_measurement_enter.setItemText(
-            3, _translate("settings_save", "4"))
-        self.repeat_measurement_enter.setItemText(
-            4, _translate("settings_save", "5"))
-        self.repeat_measurement_enter.setItemText(
-            5, _translate("settings_save", "6"))
-        self.repeat_measurement_enter.setItemText(
-            6, _translate("settings_save", "7"))
-        self.repeat_measurement_enter.setItemText(
-            7, _translate("settings_save", "8"))
-        self.repeat_measurement_enter.setItemText(
-            8, _translate("settings_save", "9"))
-        self.repeat_measurement_enter.setItemText(
-            9, _translate("settings_save", "10"))
-        self.num_repeat_exp_label.setText(_translate(
-            "settings_save", "Кол-во повторов эксперимента"))
-        self.repeat_exp_enter.setCurrentText(_translate("settings_save", "1"))
-        self.repeat_exp_enter.setItemText(0, _translate("settings_save", "1"))
-        self.repeat_exp_enter.setItemText(1, _translate("settings_save", "2"))
-        self.repeat_exp_enter.setItemText(2, _translate("settings_save", "3"))
-        self.repeat_exp_enter.setItemText(3, _translate("settings_save", "4"))
-        self.repeat_exp_enter.setItemText(4, _translate("settings_save", "5"))
-        self.repeat_exp_enter.setItemText(5, _translate("settings_save", "6"))
-        self.repeat_exp_enter.setItemText(6, _translate("settings_save", "7"))
-        self.repeat_exp_enter.setItemText(7, _translate("settings_save", "8"))
-        self.repeat_exp_enter.setItemText(8, _translate("settings_save", "9"))
-        self.repeat_exp_enter.setItemText(9, _translate("settings_save", "10"))
-        '''

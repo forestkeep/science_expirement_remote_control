@@ -1,26 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.1">
+<TS version="2.1" language="en">
 <context>
     <name>@default</name>
-    <message>
-        <location filename="../installation_controller.py" line="89"/>
-        <source>MyWindow</source>
-        <comment>Развернуть</comment>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../installation_controller.py" line="90"/>
-        <source>MyWindow</source>
-        <comment>Закрыть приложение</comment>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../installation_controller.py" line="97"/>
-        <source>MyWindow</source>
-        <comment>Управление экспериментальной установкой</comment>
-        <translation type="unfinished"></translation>
-    </message>
     <message>
         <location filename="../interface/main_window.py" line="24"/>
         <source>UI_MainWindow</source>
@@ -75,7 +57,7 @@
     <message>
         <location filename="../interface/info_window_dialog.py" line="60"/>
         <source>Установка уже создана. Закрыть текущую установку и создать новую?</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Installation was created. Do you want to create new installation?</translation>
     </message>
 </context>
 <context>
@@ -280,7 +262,7 @@
 <context>
     <name>MyWindow</name>
     <message>
-        <location filename="../installation_controller.py" line="125"/>
+        <location filename="../installation_controller.py" line="122"/>
         <source>установка уже собрана</source>
         <translation type="unfinished"></translation>
     </message>
@@ -876,6 +858,411 @@
     <message>
         <location filename="../Devices/interfase/set_wave_generator_window.py" line="132"/>
         <source>Установка амплитуды</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>analyse</name>
+    <message>
+        <location filename="../Analyse_in_installation.py" line="87"/>
+        <source>каналы </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Analyse_in_installation.py" line="90"/>
+        <source>будут работать бесконечно</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Analyse_in_installation.py" line="127"/>
+        <source>эксперимент будет продолжаться бесконечно</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Analyse_in_installation.py" line="123"/>
+        <source>зацикливание по ветке</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Analyse_in_installation.py" line="279"/>
+        <source>Не удалось открыть порт {com}</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>base_install</name>
+    <message>
+        <location filename="../base_installation.py" line="179"/>
+        <source>укажите путь сохранения результатов</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="278"/>
+        <source>
+        Автор:
+
+        - Захидов Дмитрий
+
+        Если у вас есть вопросы, замечания, или предложения по улучшению приложения, 
+        пожалуйста, свяжитесь с мной по почте zakhidov.dim@yandex.ru
+
+        Благодарю вас за использование приложения!
+        </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="288"/>
+        <source>Информация об авторах</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="294"/>
+        <source>Версия приложения</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="302"/>
+        <source>
+                Настройте каждый прибор, нажав кнопку &quot;Настроить&quot; под его каналом. 
+                Открывайте (кнопка +) и закрывайте каналы, а также добавляйте и удаляйте приборы по необходимости.
+
+                После настройки всех приборов система проверяет конфликты интерфейсов. 
+                Если конфликты обнаружены, вы получите сообщение желтым цветом в 
+                логе под полем приборов. Чтобы устранить конфликты, заново внесите
+                настройки интерфейсов в указанные приборы. Система также проверяет,
+                имеет ли эксперимент окончание или будет продолжаться бесконечно,
+                и выдаст соответствующее сообщение. После успешного завершения 
+                всех проверок кнопка &quot;Старт&quot; подсветится зеленым цветом.
+
+                Установите количество измерений в каждой точке и количество повторов 
+                эксперимента в поле справа от приборов. Количество измерений больше 1 
+                поможет усреднить результаты, а количество повторов больше 1 позволит 
+                проверить их повторяемость.
+
+                Контроллер установки покажет текущий прогресс в процентах и оставшееся 
+                время работы. В логе будут отображаться информационные сообщения о 
+                текущих действиях и их результатах. По завершении эксперимента 
+                программа предложит выбрать файл для сохранения результатов, 
+                если вы не сделали этого заранее.
+
+                В ходе эксперимента или после его завершения вы можете нажать кнопку 
+                &quot;Показать график&quot;. График отображает зависимость измеряемого параметра
+                от времени или других параметров. Вы можете масштабировать графики,
+                менять цвета и фон, сохранять их в виде картинок и производить 
+                несложную цифровую обработку.
+
+                Для подробной инструкции по использованию приложения нажмите кнопку &quot;Инфо&quot; -&gt; &quot;Инструкция&quot;.
+            </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="334"/>
+        <source>Инструкция по настройке</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="390"/>
+        <source>Выкл режим разработчика</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="391"/>
+        <source>Режим разработчика включен. В этом режиме корректность показаний с приборов не гарантируется</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="396"/>
+        <source>Вкл режим разработчика</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="397"/>
+        <source>Режим разработчика выключен</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="507"/>
+        <source>Старт</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="575"/>
+        <source>Не настроено</source>
+        <translation type="unfinished">Not setting</translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="226"/>
+        <source>Результаты сохранены в {way}, файл {file} был удален</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="233"/>
+        <source>Результаты сохранены в {file}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="240"/>
+        <source>Не удалось сохранить результаты в {file}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="292"/>
+        <source>Текущая версия - {version}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="495"/>
+        <source>соединение установлено</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="497"/>
+        <source>соединение не установлено, проверьте подлючение</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>exp_flow</name>
+    <message>
+        <location filename="../experiment_control.py" line="69"/>
+        <source>Бесконечный эксперимент</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="93"/>
+        <source>Осталось {min}:{sec} мин</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="98"/>
+        <source>Осталось -- мин</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="121"/>
+        <source>Пауза</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="134"/>
+        <source>Возобновить</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="356"/>
+        <source>Остановка, ошибка</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="360"/>
+        <source> настроен</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="436"/>
+        <source>Продолжение эксперимента</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="716"/>
+        <source>Эксперимент прерван из-за ошибки</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="720"/>
+        <source>Эксперимент прерван из-за ошибки при настройке прибора</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="724"/>
+        <source>Эксперимент прерван из-за ошибки при опросе прибора</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="732"/>
+        <source>Эксперимент завершен</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="739"/>
+        <source>Сохранение результатов</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="748"/>
+        <source>Подготовка к эксперименту</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="752"/>
+        <source>Старт</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="760"/>
+        <source>Ожидание старта</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="115"/>
+        <source>Остановка</source>
+        <translation type="unfinished">Stopping</translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="136"/>
+        <source>Ожидание продолжения</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="344"/>
+        <source>Ошибка настройки</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="344"/>
+        <source>перед экспериментом</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="374"/>
+        <source>Прибор</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="374"/>
+        <source>не отвечает</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="382"/>
+        <source>Ответ</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="455"/>
+        <source>Остановка эксперимента</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="532"/>
+        <source>завершил работу</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="567"/>
+        <source>Выполняется действие</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="683"/>
+        <source>шаг</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="683"/>
+        <source>сделан за</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="695"/>
+        <source>Ошибка опроса</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="610"/>
+        <source>Выполняется измерение</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>main</name>
+    <message>
+        <location filename="../installation_controller.py" line="86"/>
+        <source>Развернуть</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../installation_controller.py" line="87"/>
+        <source>Закрыть приложение</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../installation_controller.py" line="94"/>
+        <source>Управление экспериментальной установкой</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>main install</name>
+    <message>
+        <location filename="../Installation_class.py" line="157"/>
+        <source>Очистить лог</source>
+        <translation>Clear log</translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="158"/>
+        <source>Ожидание настройки приборов</source>
+        <translation>Waiting setting devices</translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="214"/>
+        <source>Запрещено добавлять или отключать канал во время эксперимента</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="325"/>
+        <source>Запрещено удалять прибор во время эксперимента</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="342"/>
+        <source>Запрещено менять параметры во время эксперимента</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="354"/>
+        <source>{device_name} {ch_name} не имеет источника сигнала, проверьте его настройки</source>
+        <translation>{device_name} {ch_name} don't has sourse signal, check it</translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="369"/>
+        <source>Остановка</source>
+        <translation>Stopping</translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="380"/>
+        <source>Старт эксперимента</source>
+        <translation>Experiment is starting</translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="388"/>
+        <source>Стоп</source>
+        <translation>Stop</translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="415"/>
+        <source>Создан файл</source>
+        <translation>File was created</translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="423"/>
+        <source>настройка приборов</source>
+        <translation type="unfinished">settings devices</translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="685"/>
+        <source>Не настроено</source>
+        <translation>Not setting</translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="575"/>
+        <source>ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку</source>
+        <translation>error</translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="635"/>
+        <source>Ошибка при открытии сохраненной установки.
+ Вероятно, содержимое файла имеет не верный формат.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 from Adapter import Adapter
 from base_installation import baseInstallation
 from Devices.Classes import not_ready_style_border, ready_style_border, warning_style_border
-
+from PyQt5.QtWidgets import QApplication
 
 class analyse(baseInstallation):
     def __init__(self) -> None:
@@ -39,18 +39,15 @@ class analyse(baseInstallation):
                 subscribers = self.get_subscribers(
                     [[device.get_name(), ch.number]], [device.get_name(), ch.number]
                 )
-                print(f"{subscribers=}")
                 for sub in subscribers:
                     time_line.append([sub[0], sub[1]])
 
                 time_lines.append(time_line)
 
-        print(time_lines)
         for line in time_lines:
             buf = []
             for lin in line:
                 buf.append(lin[0] + " ch-" + str(lin[1]))
-            print(buf)
 
         return time_lines
 
@@ -87,10 +84,10 @@ class analyse(baseInstallation):
                 mark_device_number.append(device.get_name() + str(ch.get_name()))
 
                 if len(mark_device_number) >= 2:
-                    message = "каналы "
+                    message = QApplication.translate('analyse',"каналы ")
                     for n in mark_device_number:
                         message = message + n + " "
-                    message = message + "будут работать бесконечно"
+                    message = message + QApplication.translate('analyse',"будут работать бесконечно")
                     self.add_text_to_log(message, status="err")
                     experiment_endless = True
                     break
@@ -123,10 +120,11 @@ class analyse(baseInstallation):
 
                     elif subscriber_dev == first_dev and subscriber_ch == first_ch:
                         experiment_endless = True
-                        message = "зацикливание по ветке "
+                        message = QApplication.translate('analyse',"зацикливание по ветке")
+                        message+=" "
                         for n in branch:
                             message = message + n + " "
-                        message += "эксперимент будет продолжаться бесконечно"
+                        message += QApplication.translate('analyse',"эксперимент будет продолжаться бесконечно")
                         self.add_text_to_log(message, status="war")
                         logger.debug(
                             "бесконечный эксперимент, зацикливание с бесконечным количеством шагов"
@@ -278,7 +276,9 @@ class analyse(baseInstallation):
                     self.set_border_color_device(
                         device_name=device.get_name(), status_color=not_ready_style_border
                     )
-                    self.add_text_to_log(f"Не удалось открыть порт {com}\n", "war")
+                    text = QApplication.translate('analyse',"Не удалось открыть порт {com}")
+                    text = text.format(com = com)
+                    self.add_text_to_log( text, "war" )
                     if com not in fail_ports_list:
                         fail_ports_list.append(com)
                     status = False
@@ -317,8 +317,10 @@ class analyse(baseInstallation):
                             marked_com_incorrect.append(
                                 [list_device_name[i], list_device_name[j]]
                             )
+                            text = QApplication.translate('analyse',"{device1} и {device2} не могут иметь один COM порт")
+                            text = text.format(device1 = list_device_name[i], device2 = list_device_name[j])
                             self.add_text_to_log(
-                                f"{list_device_name[i]} и {list_device_name[j]} не могут иметь один COM порт",
+                                text = text,
                                 status="war",
                             )
                         status = False
@@ -353,8 +355,11 @@ class analyse(baseInstallation):
                         if is_show:
                             marked_baud_incorrect.append(list_device_name[i])
                             marked_baud_incorrect.append(list_device_name[j])
+                            
+                            text = QApplication.translate('analyse',"{device1} и {device2} не могут иметь разную скорость подключения")
+                            text = text.format(device1 = list_device_name[i], device2 = list_device_name[j])
                             self.add_text_to_log(
-                                f"{list_device_name[i]} и {list_device_name[j]} не могут иметь разную скорость подключения",
+                                text = text,
                                 status="war",
                             )
                         status = False

@@ -28,7 +28,7 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout_2.setContentsMargins(5, 5, 5, 5)
         
-        self.label = QtWidgets.QLabel("Выберите приборы для установки")
+        self.label = QtWidgets.QLabel()
         font = QtGui.QFont()
         font.setPointSize(14)
         self.label.setFont(font)
@@ -69,6 +69,7 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Мастер создания установки"))
+        self.label.setText(_translate("Dialog", "Выберите приборы для установки"))
 
     def send_signal(self):
         device_list = []

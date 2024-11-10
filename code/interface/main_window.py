@@ -18,10 +18,8 @@ from PyQt5.QtWidgets import QApplication
 
 logger = logging.getLogger(__name__)
 
-def tr(context, text):
-        return QApplication.translate(context, text)
 
-name_window = tr("UI_MainWindow","Контроллер установки")
+
 class Ui_MainWindow(object):
 
     def __init__(self, version):
@@ -72,12 +70,12 @@ class Ui_MainWindow(object):
         self.actionCreateNew = QtWidgets.QAction(MainWindow)
         self.actionCreateNew.setObjectName("CreateNew")
 
-        self.design_mode = QtWidgets.QAction(MainWindow)
-        self.design_mode.setObjectName("CreateNew")
-        self.design_mode.triggered.connect(self.set_design_mode)
+        self.debug_mode = QtWidgets.QAction(MainWindow)
+        self.debug_mode.setObjectName("CreateNew")
+        self.debug_mode.triggered.connect(self.set_design_mode)
 
         self.menu.addSeparator()
-        self.menu.addAction(self.design_mode)
+        self.menu.addAction(self.debug_mode)
 
         self.menubar.addAction(self.menu.menuAction())
 
@@ -88,18 +86,30 @@ class Ui_MainWindow(object):
         self.is_design_mode = not self.is_design_mode
 
         if self.is_design_mode:
-            self.design_mode.setText(tr("UI_MainWindow","Выключить режим разработчика"))
-            self.mother_class.setWindowTitle(name_window + tr("UI_MainWindow","(режим разработчика)") + self.version_app)
+
+            self.debug_mode.setText(QApplication.translate("main","Выключить режим разработчика"))
+            self.mother_class.setWindowTitle( QApplication.translate("main","Контроллер установки (режим разработчика)") + self.version_app)
             self.menu.addAction(self.actionCreateNew)
         else:
             self.menu.removeAction(self.actionCreateNew)
-            self.design_mode.setText(tr("UI_MainWindow","Включить режим разработчика"))
-            self.mother_class.setWindowTitle(name_window + self.version_app)
+            self.debug_mode.setText(QApplication.translate("main","Включить режим разработчика"))
+            self.mother_class.setWindowTitle(QApplication.translate("main","Контроллер установки") + self.version_app)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(name_window + " " + self.version_app)
-        self.pushButton.setText(tr("UI_MainWindow","Локальное управление приборами"))
-        self.pushButton_2.setText(tr("UI_MainWindow","Создание экспериментальной установки"))
-        self.menu.setTitle(tr("UI_MainWindow","Меню"))
-        self.actionCreateNew.setText(tr("UI_MainWindow","Создать прибор"))
-        self.design_mode.setText(tr("UI_MainWindow","Включить режим разработчика"))
+        _translate = QtCore.QCoreApplication.translate
+        MainWindow.setWindowTitle(_translate("main", "Контроллер установки") + " " + self.version_app)
+        
+        if self.is_design_mode:
+            self.debug_mode.setText(_translate("main","Выключить режим разработчика"))
+            self.mother_class.setWindowTitle(_translate("main","Контроллер установки" + "(режим разработчика)") + self.version_app)
+            self.menu.addAction(self.actionCreateNew)
+        else:
+            self.menu.removeAction(self.actionCreateNew)
+            self.debug_mode.setText(_translate("main","Включить режим разработчика"))
+            self.mother_class.setWindowTitle(_translate("main","Контроллер установки") + self.version_app)
+        
+        self.pushButton.setText(_translate("main","Локальное управление приборами"))
+        self.pushButton_2.setText(_translate("main","Создание экспериментальной установки"))
+        self.menu.setTitle(_translate("main","Меню"))
+        self.actionCreateNew.setText(_translate("main","Создать прибор"))
+        self.debug_mode.setText(_translate("main","Включить режим разработчика"))

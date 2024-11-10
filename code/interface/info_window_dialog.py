@@ -23,7 +23,7 @@ class Ui_Dialog(QtWidgets.QDialog):
     def setupUi(self, Dialog, mother_window):
         self.signal_to_main_window.connect(mother_window.message_from_info_dialog)
 
-        Dialog.setObjectName("Ахтунг!")
+        Dialog.setObjectName("ahtung")
         Dialog.resize(210, 161)
         # Dialog.setStyleSheet("background-color: rgb(255, 200, 202);")
         self.buttonBox = QtWidgets.QDialogButtonBox(Dialog)
@@ -56,10 +56,10 @@ class Ui_Dialog(QtWidgets.QDialog):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        Dialog.setWindowTitle(_translate("Dialog", "Инфо"))
         self.labelinfo.setText(
             _translate(
-                "D", "Установка уже создана. Закрыть текущую установку и создать новую?"
+                "Dialog", "Установка уже создана. Закрыть текущую установку и создать новую?"
             )
         )
 

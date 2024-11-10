@@ -32,9 +32,6 @@ from device_creator.dev_creator import deviceCreator
 version_app = "1.0.1"
 logger = logging.getLogger(__name__)
 
-def tr(context, text):
-        return QApplication.translate(context, text)
-
 def is_admin():
     if os.name == 'nt':  # Windows
         return ctypes.windll.shell32.IsUserAnAdmin()
@@ -86,15 +83,15 @@ class MyWindow(QtWidgets.QMainWindow):
                     self.tray_menu = QtWidgets.QMenu()
 
                     # Добавляем пункты в меню
-                    self.show_action = self.tray_menu.addAction(tr("MyWindow", "Развернуть"))
-                    self.quit_action = self.tray_menu.addAction(tr("MyWindow","Закрыть приложение"))
+                    self.show_action = self.tray_menu.addAction(QApplication.translate('main', "Развернуть"))
+                    self.quit_action = self.tray_menu.addAction(QApplication.translate('main', "Закрыть приложение"))
 
                     self.show_action.triggered.connect(self.show)
                     self.quit_action.triggered.connect(self.quit_application)
 
                     self.tray_icon.setContextMenu(self.tray_menu)
 
-                    self.tray_icon.setToolTip(tr("MyWindow","Управление экспериментальной установкой"))
+                    self.tray_icon.setToolTip(QApplication.translate('main',"Управление экспериментальной установкой"))
                     self.tray_icon.show()
 
                     # Сигнал для закрытия окна

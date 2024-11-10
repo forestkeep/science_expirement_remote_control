@@ -22,6 +22,7 @@ from Devices.Classes import (
     not_ready_style_background,
     ready_style_background,
 )
+from PyQt5.QtWidgets import QApplication
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ class experimentControl(analyse):
                 if self.is_experiment_endless:
                     self.pbar_percent = 50
                     self.installation_window.label_time.setText(
-                        "Бесконечный эксперимент"
+                        QApplication.translate('exp_flow',"Бесконечный эксперимент")
                     )
                     self.update_pbar()
                 else:
@@ -90,11 +91,11 @@ class experimentControl(analyse):
                         min = 0
                         sec = 0
                     self.installation_window.label_time.setText(
-                        f"Осталось {min}:{sec} мин"
+                        QApplication.translate('exp_flow',f"Осталось {min}:{sec} мин")
                     )
                     self.update_pbar()
             else:
-                self.installation_window.label_time.setText("Осталось -- мин")
+                self.installation_window.label_time.setText(QApplication.translate('exp_flow',"Осталось -- мин"))
             self.show_th_window()
 
             if (
@@ -111,13 +112,13 @@ class experimentControl(analyse):
 
     def stoped_experiment(self):
         self.stop_experiment = True
-        self.set_state_text("Остановка...")
+        self.set_state_text(QApplication.translate('exp_flow',"Остановка") + "...")
 
     def pause_exp(self):
         if self.is_experiment_running():
             if self.pause_flag:
                 self.pause_flag = False
-                self.installation_window.pause_button.setText("Пауза")
+                self.installation_window.pause_button.setText(QApplication.translate('exp_flow',"Пауза"))
                 self.timer_for_pause_exp.stop()
                 self.installation_window.pause_button.setStyleSheet(
                     ready_style_background
@@ -130,9 +131,9 @@ class experimentControl(analyse):
                             ch.previous_step_time += time.time() - self.pause_start_time
 
             else:
-                self.installation_window.pause_button.setText("Возобновить")
+                self.installation_window.pause_button.setText(QApplication.translate('exp_flow',"Возобновить"))
                 self.pause_flag = True
-                self.set_state_text("Ожидание продолжения...")
+                self.set_state_text(QApplication.translate('exp_flow',"Ожидание продолжения") + "...")
                 self.timer_for_pause_exp.start(50)
                 self.pause_start_time = time.time()
 
@@ -341,21 +342,23 @@ class experimentControl(analyse):
                     "ошибка при настройке " + dev.get_name() + " перед экспериментом"
                 )
                 self.add_text_to_log(
-                    "Ошибка настройки "
+                    QApplication.translate('exp_flow',"Ошибка настройки")
+                    + " "
                     + dev.get_name()
                     + " ch-"
                     + str(ch.number)
-                    + " перед экспериментом",
+                    + " "
+                    + QApplication.translate('exp_flow',"перед экспериментом"),
                     "err",
                 )
                 if not self.is_debug:
                     status = False
-                    self.set_state_text("Остановка, ошибка")
+                    self.set_state_text(QApplication.translate('exp_flow',"Остановка, ошибка"))
                     break
                 # --------------------------------------------------------
             else:
                 self.add_text_to_log(
-                    dev.get_name() + " ch-" + str(ch.number) + " настроен"
+                    dev.get_name() + " ch-" + str(ch.number) + QApplication.translate('exp_flow'," настроен")
                 )
         return status
 
@@ -369,15 +372,15 @@ class experimentControl(analyse):
                 status = False
                 logger.warning(f"Нет ответа прибора {dev.get_name()}")
                 self.add_text_to_log(
-                    "Прибор "
-                    + dev.get_name()
-                    + " не отвечает",
+                    QApplication.translate('exp_flow',"Прибор")
+                    + " " + dev.get_name() + " "
+                    + QApplication.translate('exp_flow',"не отвечает"),
                     "err",
                 )
             else:
                 if is_connect != None:
                     self.add_text_to_log(
-                        "Ответ " + dev.get_name() + " " + str(is_connect)
+                        QApplication.translate('exp_flow',"Ответ") + " " + dev.get_name() + " " + str(is_connect)
                     )
 
         if self.is_debug:
@@ -430,7 +433,7 @@ class experimentControl(analyse):
                 while not self.stop_experiment and error == False:
 
                     if not self.pause_flag:
-                        self.set_state_text("Продолжение эксперимента")
+                        self.set_state_text(QApplication.translate('exp_flow',"Продолжение эксперимента"))
 
                         number_active_device = 0
                         number_device_which_act_while = 0
@@ -449,7 +452,7 @@ class experimentControl(analyse):
                         if number_active_device == 0:
                             """остановка эксперимента, нет активных приборов"""
                             logger.debug("остановка эксперимента, нет активных приборов")
-                            self.set_state_text("Остановка эксперимента...")
+                            self.set_state_text(QApplication.translate('exp_flow',"Остановка эксперимента") + "...")
                             self.stop_experiment = True
                         if (
                             number_device_which_act_while == number_active_device
@@ -484,9 +487,8 @@ class experimentControl(analyse):
                                 self.add_text_to_log(
                                     text=device.get_name()
                                     + " "
-                                    + str(ch.get_name())
-                                    + " завершил "
-                                    + "работу",
+                                    + str(ch.get_name()) + " "
+                                    + QApplication.translate('exp_flow',"завершил работу"),
                                     status="ok",
                                 )
                                 ch.am_i_active_in_experiment = False
@@ -501,9 +503,8 @@ class experimentControl(analyse):
                                     self.add_text_to_log(
                                         text=device.get_name()
                                         + " "
-                                        + str(ch.get_name())
-                                        + " завершил "
-                                        + "работу",
+                                        + str(ch.get_name()) + " "
+                                        + QApplication.translate('exp_flow',"завершил работу"),
                                         status="ok",
                                     )
                                     
@@ -531,14 +532,12 @@ class experimentControl(analyse):
                     self.add_text_to_log(
                         text=dev.get_name()
                         + " "
-                        + str(subscriber.get_name())
-                        + " завершил "
-                        + "работу",
+                        + str(subscriber.get_name()) + " "
+                        + QApplication.translate('exp_flow',"завершил работу"),
                         status="ok",
                     )
                     subscriber.am_i_active_in_experiment = False
             # испускаем сигнал о том, что работа закончена
-            print("испустили сигнал окончания")
             self.message_broker.push_publish(
                 name_subscribe=ch.end_operation_trigger, publisher=ch
             )
@@ -566,7 +565,7 @@ class experimentControl(analyse):
     def do_act(self, device, ch):
         error = False
         self.set_state_text(
-            "Выполняется действие "
+            QApplication.translate('exp_flow',"Выполняется действие") + " "
             + device.get_name()
             + str(ch.get_name())
         )
@@ -582,19 +581,19 @@ class experimentControl(analyse):
             pass
         elif ans == ch_response_to_step.Step_done:
             self.add_text_to_log(
-                "шаг "
+                QApplication.translate('exp_flow',"шаг") + " "
                 + device.get_name()
                 + " "
-                + str(ch.get_name())
-                + " сделан за "
+                + str(ch.get_name()) + " "
+                + QApplication.translate('exp_flow',"сделан за") + " "
                 + str(round(step_time))
-                + " сек"
+                + " s"
             )
             self.calc_last_exp_time()
         elif ans == ch_response_to_step.Step_fail:
             ch.am_i_active_in_experiment = False
             self.add_text_to_log(
-                "Ошибка опроса "
+                QApplication.translate('exp_flow',"Ошибка опроса") + " "
                 + device.get_name()
                 + str(ch.get_name()),
                 "err",
@@ -609,7 +608,7 @@ class experimentControl(analyse):
     def do_meas(self, device, ch):
         error = False
         self.set_state_text(
-            "Выполняется измерение "
+            QApplication.translate('exp_flow',"Выполняется измерение") + " "
             + device.get_name()
             + str(ch.get_name())
         )
@@ -682,26 +681,25 @@ class experimentControl(analyse):
 
                 if ans == ch_response_to_step.Step_done:
                     self.add_text_to_log(
-                        "шаг "
+                        QApplication.translate('exp_flow',"шаг") + " "
                         + device.get_name()
                         + " "
-                        + str(ch.get_name())
-                        + " сделан за "
+                        + str(ch.get_name()) + " "
+                        + QApplication.translate('exp_flow',"сделан за")+ " "
                         + str(round(step_time))
-                        + " сек"
+                        + " s"
                     )
                     self.calc_last_exp_time()
 
                 elif ans == ch_response_to_step.Step_fail:
                     self.add_text_to_log(
-                        "Ошибка опроса "
+                        QApplication.translate('exp_flow',"Ошибка опроса") + " "
                         + device.get_name()
                         + " "
                         + str(ch.get_name()),
                         "err",
                     )
                     if self.is_exp_run_anywhere == False:
-                        print(33333333333333333333333333333)
                         ch.am_i_active_in_experiment = False
                         error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
                     break
@@ -711,36 +709,34 @@ class experimentControl(analyse):
     def finalize_experiment(self, error=False, error_start_exp=False):
         for dev, ch in self.get_active_ch_and_device():
             ans = dev.action_end_experiment(ch)
-            if ans == False:
-                pass
-                print("ошибка при действии " + dev.get_name() + " после эксперимента")
+
         self.pbar_percent = 0  # сбрасываем прогресс бар
 
         if error:
-            self.add_text_to_log("Эксперимент прерван из-за ошибки", "err")
+            self.add_text_to_log(QApplication.translate('exp_flow',"Эксперимент прерван из-за ошибки"), "err")
             logger.debug("Эксперимент прерван из-за ошибки")
             # вывод окна с сообщением в другом потоке
             if error_start_exp == True:
                 self.exp_th_connect.message = (
-                    "Эксперимент прерван из-за ошибки при настройке прибора"
+                    QApplication.translate('exp_flow',"Эксперимент прерван из-за ошибки при настройке прибора")
                 )
             else:
                 self.exp_th_connect.message = (
-                    "Эксперимент прерван из-за ошибки при опросе прибора"
+                    QApplication.translate('exp_flow',"Эксперимент прерван из-за ошибки при опросе прибора")
                 )
             self.exp_th_connect.message_status = message_status.critical
 
         else:
-            self.add_text_to_log("Эксперимент завершен")
+            self.add_text_to_log(QApplication.translate('exp_flow',"Эксперимент завершен"))
             logger.debug("Эксперимент завершен")
-            self.exp_th_connect.message = "Эксперимент завершен"
+            self.exp_th_connect.message = QApplication.translate('exp_flow',"Эксперимент завершен")
             self.exp_th_connect.message_status = message_status.info
         # ждем, пока ббудет показано сообщение в основном потоке
         self.exp_th_connect.is_message_show = False
         self.exp_th_connect.flag_show_message = True
         while self.exp_th_connect.is_message_show == False:
             pass
-        self.set_state_text("Сохранение результатов")
+        self.set_state_text(QApplication.translate('exp_flow',"Сохранение результатов"))
         if error_start_exp == False:
             try:
                 self.save_results()
@@ -749,11 +745,11 @@ class experimentControl(analyse):
 
     def prepare_for_reexperiment(self):
         # ------------------подготовка к повторному началу эксперимента---------------------
-        self.set_state_text("Подготовка к эксперименту")
+        self.set_state_text(QApplication.translate('exp_flow',"Подготовка к эксперименту"))
         self.message_broker.clear_all_subscribers()
         self.is_experiment_endless = False
         self.stop_experiment = False
-        self.installation_window.start_button.setText("Старт")
+        self.installation_window.start_button.setText(QApplication.translate('exp_flow',"Старт"))
         self.pause_flag = True
         self.pause_exp()
         self.installation_window.pause_button.setStyleSheet(not_ready_style_background)
@@ -761,17 +757,15 @@ class experimentControl(analyse):
         #    device.am_i_active_in_experiment = True
         self.exp_th_connect.is_update_pbar = False
         # self.installation_window.open_graph_button.setEnabled(False)
-        self.set_state_text("Ожидание старта")
+        self.set_state_text(QApplication.translate('exp_flow',"Ожидание старта"))
         self.is_search_resources = True#разрешение на сканирование ресурсов
 
     def set_between_experiments(self):
-        print("set_between_experiments")
         for device in self.dict_active_device_class.values():
             for ch in device.channels:
                 if ch.is_ch_active():
                     ch.am_i_active_in_experiment = True
                     ch.number_meas = 0
-                    print(f"{device.get_name()=}{ch.dict_settable_parameters['num steps']=}")
             device.confirm_parameters()
 
 def print_data(data):

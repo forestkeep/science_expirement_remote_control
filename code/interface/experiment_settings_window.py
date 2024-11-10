@@ -38,7 +38,6 @@ class type_save_file(enum.Enum):
 class settigsDialog(QDialog):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Настройки эксперимента")
         self.setGeometry(100, 100, 400, 300)
 
         main_layout = QVBoxLayout()
@@ -46,27 +45,19 @@ class settigsDialog(QDialog):
 
         # Создание чекбоксов
         checkboxes_layout_1 = QVBoxLayout()
-        checkboxes_layout_2 = QVBoxLayout()
         self.check_boxes_1 = []
         for i in range(2):
-            checkbox = QCheckBox(f"Чекбокс {i+1}")
+            checkbox = QCheckBox(f"check {i+1}")
             checkbox.checkState()
             self.check_boxes_1.append(checkbox)
             checkboxes_layout_1.addWidget(checkbox)
         set_layout.addLayout(checkboxes_layout_1)
-        self.check_boxes_1[0].setText("Продолжать эксперимент при ошибке прибора")
-        self.check_boxes_1[0].setToolTip(
-            "При активации эксперимент будет продолжаться независимо от ответа прибора, \n\r если ответа от прибора не будет, в файл результатов будет записано слово fail"
-        )
+
         self.check_boxes_1[0].setChecked(True)
         self.check_boxes_1[0].setStyleSheet(
             "QToolTip { background-color: lightblue; color: black; border: 1px solid black; }"
         )
 
-        self.check_boxes_1[1].setText("Удалить буферный файл после эксперимента")
-        self.check_boxes_1[1].setToolTip(
-            "При каждом измерении значения записываются в буферный файл, \n\r после эксперимента файл вычитывается и переводится в удобочитаемый формат, \n\r в случае активации этого пункта буферный файл будет удаляться после удачного сохранения результатов."
-        )
         self.check_boxes_1[1].setChecked(True)
         self.check_boxes_1[1].setStyleSheet(
             "QToolTip { background-color: lightblue; color: black; border: 1px solid black; }"
@@ -77,37 +68,37 @@ class settigsDialog(QDialog):
 
         def_list = [str(i) for i in range(1, 11)]
         bufvlay1 = QVBoxLayout()
-        labelbuf1 = QLabel("Количество повторов эксперимента")
+        self.labelbuf1 = QLabel()
         self.repeat_exp_enter = QComboBox()
         self.repeat_exp_enter.addItems(def_list)
         self.repeat_exp_enter.setEditable(False)
         self.repeat_exp_enter.setMaximumWidth( int(self.height()/2))
 
-        bufvlay1.addWidget(labelbuf1)
+        bufvlay1.addWidget(self.labelbuf1)
         bufvlay1.addWidget(self.repeat_exp_enter)
         checkboxes_layout_1.addLayout(bufvlay1)
 
         bufvlay2 = QVBoxLayout()
-        labelbuf2 = QLabel("Количество измерений в точке")
+        self.labelbuf2 = QLabel()
         self.repeat_measurement_enter = QComboBox()
         self.repeat_measurement_enter.addItems(def_list)
         self.repeat_measurement_enter.setEditable(False)
         self.repeat_measurement_enter.setMaximumWidth( int(self.height()/2))
-        bufvlay2.addWidget(labelbuf2)
+        bufvlay2.addWidget(self.labelbuf2)
         bufvlay2.addWidget(self.repeat_measurement_enter)
         checkboxes_layout_1.addLayout(bufvlay2)
 
         bufvlay3 = QVBoxLayout()
         bufhlay3 = QHBoxLayout()
-        labelbuf3 = QLabel("Место сохранения результатов")
+        self.labelbuf3 = QLabel()
         self.place_save_res = QLineEdit()
-        self.save_results_but = QPushButton("путь")
+        self.save_results_but = QPushButton()
 
         bufhlay3.addWidget(self.place_save_res)
         bufhlay3.addWidget(self.save_results_but)
         bufhlay3.setStretch(0, 5)
         bufhlay3.setStretch(1, 1)
-        bufvlay3.addWidget(labelbuf3)
+        bufvlay3.addWidget(self.labelbuf3)
         bufvlay3.addLayout(bufhlay3)
         checkboxes_layout_1.addLayout(bufvlay3)
 
@@ -115,16 +106,41 @@ class settigsDialog(QDialog):
         self.buttonBox.setGeometry(QtCore.QRect(80, 340, 191, 32))
         self.buttonBox.setOrientation(Qt.Horizontal)
         self.buttonBox.setStandardButtons(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
-        self.buttonBox.accepted.connect(self.accept)  # type: ignore
-        self.buttonBox.rejected.connect(self.reject)  # type: ignore
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
 
         main_layout.addLayout(set_layout)
         main_layout.addWidget(self.buttonBox)
 
         self.setLayout(main_layout)
+        
+        self.retranslateUi(self)
 
     def closeEvent(self, event):
         pass
+    
+    def retranslateUi(self, Installation):
+        _translate = QtCore.QCoreApplication.translate
+        
+        self.setWindowTitle(_translate('set exp window',"Настройки эксперимента"))
+        self.check_boxes_1[0].setText(_translate('set exp window',"Продолжать эксперимент при ошибке прибора"))
+        self.check_boxes_1[0].setToolTip(
+            _translate('set exp window',"При активации эксперимент будет продолжаться независимо от ответа прибора, \n\r если ответа от прибора не будет, в файл результатов будет записано слово fail")
+        )
+
+        self.check_boxes_1[1].setText(_translate('set exp window',"Удалить буферный файл после эксперимента"))
+        self.check_boxes_1[1].setToolTip(
+            _translate('set exp window',"При каждом измерении значения записываются в буферный файл, \n\r после эксперимента файл вычитывается и переводится в удобочитаемый формат, \n\r в случае активации этого пункта буферный файл будет удаляться после удачного сохранения результатов.")
+        )
+        
+        self.labelbuf1.setText(_translate('set exp window',"Количество повторов эксперимента"))
+
+        self.labelbuf2.setText(_translate('set exp window',"Количество измерений в точке"))
+
+        self.labelbuf3.setText(_translate('set exp window',"Место сохранения результатов"))
+
+        self.save_results_but.setText(_translate('set exp window',"путь"))
+
 
 class experimentSettings():
     def __init__(self):
@@ -184,7 +200,7 @@ class experimentSettings():
         options |= QFileDialog.DontUseNativeDialog
         fileName, ans = QFileDialog.getSaveFileName(
             self.window_dialog,
-            "укажите путь сохранения результатов",
+            QApplication.translate('set exp window',"укажите путь сохранения результатов"),
             "",
             "Книга Excel (*.xlsx)",
             #"Text Files(*.txt);; Книга Excel (*.xlsx);;Origin (*.opju)",

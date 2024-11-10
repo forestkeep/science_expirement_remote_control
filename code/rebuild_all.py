@@ -52,7 +52,7 @@ def move_file_up_one_directory(filename):
         print(f"Файл {filename} не найден в текущей директории.")
 
 def find_inno_setup_compiler():
-    # Предположим, что Inno Setup установлен в этой стандартной директории
+
     possible_directories = [
         r"C:\Program Files (x86)\Inno Setup 6",
         r"C:\Program Files\Inno Setup 6"
