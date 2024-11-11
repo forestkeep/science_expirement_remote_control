@@ -16,11 +16,11 @@ from enum import Enum
 import sys
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QTimer
-
+from PyQt5.QtWidgets import QApplication
 
 logger = logging.getLogger(__name__)
 
@@ -175,7 +175,7 @@ class base_device():
                 check.stateChanged.connect(lambda: self._is_correct_parameters())
 
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
-                self.setting_window.triger_meas_enter.addItems(["Таймер", "Внешний сигнал"])
+                self.setting_window.triger_meas_enter.addItems([QApplication.translate("Device","Таймер"), QApplication.translate("Device","Внешний сигнал")])
                 self.setting_window.triger_meas_enter.setEnabled(True)
                 self.setting_window.triger_meas_enter.setStyleSheet(ready_style_border)
 
@@ -185,7 +185,7 @@ class base_device():
                 self.setting_window.num_meas_enter.addItems(["1"])
 
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
-                self.setting_window.triger_act_enter.addItems(["Таймер", "Внешний сигнал"])
+                self.setting_window.triger_act_enter.addItems([QApplication.translate("Device","Таймер"), QApplication.translate("Device","Внешний сигнал")])
                 self.setting_window.triger_act_enter.setEnabled(True)
                 self.setting_window.triger_act_enter.setStyleSheet(ready_style_border)
 
@@ -237,7 +237,7 @@ class base_device():
                 try:
                     num_act_list = ["5","10","20","50"]
                     if self.installation_class.get_signal_list(self.name, self.active_channel_act) != []:
-                        num_act_list.append("Пока активны другие приборы")
+                        num_act_list.append( QApplication.translate("Device","Пока активны другие приборы") )
                     self.setting_window.num_act_enter.clear()
                     self.setting_window.num_act_enter.addItems(num_act_list)
                     self.setting_window.num_act_enter.setCurrentText(str(self.active_channel_act.dict_buf_parameters["num steps"]))
@@ -249,7 +249,7 @@ class base_device():
                 self.setting_window.sourse_meas_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["sourse/time"]))
                 num_meas_list = ["5","10","20","50"]
                 if self.installation_class.get_signal_list(self.name, self.active_channel_meas) != []:
-                    num_meas_list.append("Пока активны другие приборы")
+                    num_meas_list.append( QApplication.translate("Device","Пока активны другие приборы") )
                 self.setting_window.num_meas_enter.clear()
                 self.setting_window.num_meas_enter.addItems(num_meas_list)
                 self.setting_window.num_meas_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["num steps"]))
@@ -286,13 +286,13 @@ class base_device():
                 func_result = func(self, *args, **kwargs)
                 connnecting_sourse_correct = True
 
-                if self.setting_window.comportslist.currentText() == "Нет подключенных портов":
+                if self.setting_window.comportslist.currentText() == QApplication.translate("Device","Нет подключенных портов"):
                     connnecting_sourse_correct = False
 
                 if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
                     self.active_channel_meas.is_num_steps_meas_correct = True
                     self.active_channel_meas.is_time_meas_correct = True
-                    if self.setting_window.triger_meas_enter.currentText() == "Таймер":
+                    if self.setting_window.triger_meas_enter.currentText() == QApplication.translate("Device","Таймер"):
                             try:
                                 if int(self.setting_window.sourse_meas_enter.currentText()) < 1:
                                     self.active_channel_meas.is_time_meas_correct = False
@@ -304,7 +304,7 @@ class base_device():
                             self.active_channel_meas.is_num_steps_meas_correct = False
                     except:
                             try:
-                                if self.setting_window.num_meas_enter.currentText() == "Пока активны другие приборы" \
+                                if self.setting_window.num_meas_enter.currentText() == QApplication.translate("Device","Пока активны другие приборы") \
                                     and self.installation_class.get_signal_list(self.name, self.active_channel_meas) != []:
                                     pass
                                 else:
@@ -328,7 +328,7 @@ class base_device():
                     self.active_channel_act.is_num_steps_act_correct = True
                     self.active_channel_act.is_time_act_correct = True
 
-                    if self.setting_window.triger_act_enter.currentText() == "Таймер":
+                    if self.setting_window.triger_act_enter.currentText() == QApplication.translate("Device","Таймер"):
                             try:
                                 if int(self.setting_window.sourse_act_enter.currentText()) < 1:
                                     self.active_channel_act.is_time_act_correct = False
@@ -340,7 +340,7 @@ class base_device():
                             if int(self.setting_window.num_act_enter.currentText()) < 1:
                                 self.active_channel_act.is_num_steps_act_correct = False
                         except:
-                                if self.setting_window.num_act_enter.currentText() == "Пока активны другие приборы" \
+                                if self.setting_window.num_act_enter.currentText() == QApplication.translate("Device","Пока активны другие приборы") \
                                 and self.installation_class.get_signal_list(self.name, self.active_channel_act) != []:
                                     pass
                                 else:
@@ -453,7 +453,7 @@ class base_device():
                 ch.i_am_seted = state
 
     def switch_channel(self, number = None, ch_name = None):
-            '''переключает активный канала либо по номеру, либо по имени. Если переключение по имени, то актвный канал будет доступен в 
+            '''переключает активный канала либо по номеру, либо по имени. Если переключение по имени, то активный канал будет доступен в 
             self.active_channel, если по номеру, то канала измерений будет в self.active_channel_meas, а канал действий в self.active_channel_act'''
             #print(f"{number=}")
             if number is not None:
@@ -487,12 +487,11 @@ class base_device():
         '''активирует следующий шаг канала прибора'''
         print(f"{self.name=} {ch.step_index = }")
         answer = ch_response_to_step.Step_done
-        if ch.dict_settable_parameters["num steps"] == "Пока активны другие приборы":
+        if ch.dict_settable_parameters["num steps"] == QApplication.translate("Device","Пока активны другие приборы"):
             return answer
         if int(ch.step_index) < int(ch.dict_settable_parameters["num steps"])-1:
             ch.step_index = ch.step_index + 1
         else:
-            print("конец списка шагов")
             answer = ch_response_to_step.End_list_of_steps  # след шага нет
         return answer
 
@@ -536,7 +535,7 @@ class base_device():
         stop = False
         if local_list_com_ports == []:
             try:
-                local_list_com_ports.append("Нет подключенных портов")
+                local_list_com_ports.append(QApplication.translate("Device","Нет подключенных портов"))
                 self.setting_window.comportslist.setStyleSheet(not_ready_style_border)
             except:
                 pass
@@ -562,7 +561,7 @@ class base_device():
         except:
             pass
 
-        if self.setting_window.comportslist.currentText() == "Нет подключенных портов" \
+        if self.setting_window.comportslist.currentText() == QApplication.translate("Device","Нет подключенных портов") \
             or self.setting_window.comportslist.currentText() == "":
                 self.setting_window.comportslist.setStyleSheet(not_ready_style_border)
         else:
@@ -602,12 +601,12 @@ class base_device():
             logger.info(f"Ошибка при воозвате типа трриггера {trigger=}")
             answer = False
 
-        elif trigger.lower() == "таймер":
+        elif trigger.lower() == QApplication.translate("Device","таймер", "low register"):
             try:
                 answer = int(ch.dict_settable_parameters["sourse/time"])
             except:
                 answer = False
-        elif trigger.lower() == "внешний сигнал":
+        elif trigger.lower() == QApplication.translate("Device","внешний сигнал", "low register"):
             answer = ch.dict_settable_parameters["sourse/time"]
             
         else:
@@ -644,7 +643,7 @@ class base_device():
         if self.key_to_signal_func:
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
                 self.active_channel_act.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_act_enter.currentText()
-                if self.setting_window.triger_act_enter.currentText() == "Таймер":
+                if self.setting_window.triger_act_enter.currentText() == QApplication.translate( "Device", "Таймер" ):
                     try:
                         buf = int(self.active_channel_act.dict_buf_parameters["sourse/time"])
                     except:
@@ -653,7 +652,7 @@ class base_device():
                     self.setting_window.sourse_act_enter.setEditable(True)
                     self.setting_window.sourse_act_enter.addItems([str(buf), "10", "30", "60", "120"])
                     self.setting_window.sourse_act_enter.setCurrentText(str(buf))
-                    self.setting_window.sourse_act_label.setText("Время(с)")
+                    self.setting_window.sourse_act_label.setText( QApplication.translate( "Device", "Время(с)" ) )
                 else:
                     buf = self.active_channel_act.dict_buf_parameters["sourse/time"]
                     self.setting_window.sourse_act_enter.clear()
@@ -665,13 +664,13 @@ class base_device():
                     self.setting_window.sourse_act_enter.addItems(self.active_channel_act.signal_list)
                     if buf in self.active_channel_act.signal_list:
                         self.setting_window.sourse_act_enter.setCurrentText(buf)
-                    self.setting_window.sourse_act_label.setText("Источник сигнала")
+                    self.setting_window.sourse_act_label.setText( QApplication.translate( "Device", "Источник сигнала" ) )
                 current_style = self.setting_window.sourse_act_enter.styleSheet()
                 self.setting_window.sourse_act_enter.setStyleSheet(current_style + "background-color: rgb(70, 70, 70);" )
 
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
                 self.active_channel_meas.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_meas_enter.currentText()
-                if self.setting_window.triger_meas_enter.currentText() == "Таймер":
+                if self.setting_window.triger_meas_enter.currentText() == QApplication.translate( "Device", "Таймер" ):
                     try:
                         buf = int(self.active_channel_meas.dict_buf_parameters["sourse/time"])
                         #print(f"{buf=}")
@@ -681,7 +680,7 @@ class base_device():
                     self.setting_window.sourse_meas_enter.setEditable(True)
                     self.setting_window.sourse_meas_enter.addItems([str(buf), "10", "30", "60", "120"])
                     self.setting_window.sourse_meas_enter.setCurrentText(str(buf))
-                    self.setting_window.sourse_meas_label.setText("Время(с)")
+                    self.setting_window.sourse_meas_label.setText( QApplication.translate( "Device", "Время(с)" ) )
                 else:
                     buf = self.active_channel_meas.dict_buf_parameters["sourse/time"]
                     self.setting_window.sourse_meas_enter.clear()
@@ -695,7 +694,7 @@ class base_device():
                     self.setting_window.sourse_meas_enter.addItems(self.active_channel_meas.signal_list)
                     if buf in self.active_channel_meas.signal_list:
                         self.setting_window.sourse_meas_enter.setCurrentText(buf)
-                    self.setting_window.sourse_meas_label.setText("Источник сигнала")
+                    self.setting_window.sourse_meas_label.setText( QApplication.translate( "Device", "Источник сигнала" ) )
                 current_style = self.setting_window.sourse_meas_enter.styleSheet()
                 self.setting_window.sourse_meas_enter.setStyleSheet(current_style + "background-color: rgb(70, 70, 70);" )
 
@@ -729,7 +728,7 @@ class base_device():
         self.switch_channel(ch_name = channel_name)
         status = True
         for param in parameters.keys():
-            if param == "Не настроено":
+            if param == QApplication.translate( "Device", "Не настроено" ):
                 self.active_channel.set_active(True)
                 status = False
                 continue
@@ -791,7 +790,7 @@ class base_ch(control_in_experiment):
         self.is_active = False#канал включен или выключен(используется или нет)
         self.signal_list = []
         self.dict_settable_parameters = {}  # текущие параметры канала действий
-        self.dict_buf_parameters = {"trigger": "Таймер",
+        self.dict_buf_parameters = {"trigger": QApplication.translate("Device","Таймер"),
                                     "sourse/time": str(10),  # секунды
                                     "num steps": "1",
                                     }
@@ -800,10 +799,8 @@ class base_ch(control_in_experiment):
         if is_activate_standart_publish:
             self.do_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} do_operation"
             self.end_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} end_work"
-            self.message_broker.create_subscribe(name_subscribe = self.do_operation_trigger, publisher = self, description = "Канал прибора сделал какое-то действие или измерение")
-            self.message_broker.create_subscribe(name_subscribe = self.end_operation_trigger, publisher = self, description = "Канал прибора закончил работу в эксперименте")
-
-
+            self.message_broker.create_subscribe(name_subscribe = self.do_operation_trigger, publisher = self, description = QApplication.translate("Device","Канал прибора сделал какое-то действие или измерение") )
+            self.message_broker.create_subscribe(name_subscribe = self.end_operation_trigger, publisher = self, description = QApplication.translate("Device","Канал прибора закончил работу в эксперименте") )
 
     def get_name(self):
         return self.ch_name

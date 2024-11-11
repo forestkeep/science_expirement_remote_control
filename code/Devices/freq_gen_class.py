@@ -16,8 +16,8 @@ import time
 import sys
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from PyQt5.QtWidgets import QApplication
 from Devices.Classes import (
     base_ch,
     base_device,
@@ -584,7 +584,6 @@ class FreqGen(base_device):
         status = True
         if ch.get_type() == "act":
             if self.active_channel_act.dict_buf_parameters["soft_start"] == True:
-                print("плавное выключение")
                 count = 3
                 is_voltage_read = False
 
@@ -615,13 +614,13 @@ class FreqGen(base_device):
 
         if (
             self.active_channel_act.dict_buf_parameters["type_of_work"]
-            == "Стабилизация напряжения"
+            == QApplication.translate("Device","Стабилизация напряжения")
         ):
             focus_funk = self._set_voltage
             step = int(self.active_channel_act.steps_voltage[0] / 5)
         elif (
             self.active_channel_act.dict_buf_parameters["type_of_work"]
-            == "Стабилизация тока"
+            == QApplication.translate("Device","Стабилизация тока")
         ):
             focus_funk = self._set_current
             step = int(self.active_channel_act.steps_current[0] / 5)
@@ -655,7 +654,6 @@ class FreqGen(base_device):
                     ch.step_index == 0
                     and ch.dict_settable_parameters["soft_start"] == True
                 ):
-                    print("плавны старт источника")
                     if (
                         self.soft_start(number_of_channel=ch.get_number(), repeat=3)
                         == False

@@ -14,13 +14,7 @@ import logging
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 logger = logging.getLogger(__name__)
-'''
-self.base_widget = QtWidgets.QWidget(self)
 
-self.scroll_area = QtWidgets.QScrollArea()
-self.scroll_area.setWidget(self.base_widget)
-self.scroll_area.setWidgetResizable(True)
-'''
 class base_settings_window(QtWidgets.QDialog):
     def __init__(self) -> None:
         super().__init__()
@@ -44,16 +38,16 @@ class base_settings_window(QtWidgets.QDialog):
         self.triger_act_enter = QtWidgets.QComboBox()
         self.triger_meas_enter = QtWidgets.QComboBox()
 
-        self.triger_act_label = QtWidgets.QLabel("Триг действия")
-        self.triger_meas_label = QtWidgets.QLabel("Триг измерения")
+        self.triger_act_label = QtWidgets.QLabel()
+        self.triger_meas_label = QtWidgets.QLabel()
 
-        self.COM_label = QtWidgets.QLabel("COM")
+        self.COM_label = QtWidgets.QLabel()
         self.comportslist = QtWidgets.QComboBox()
-        self.baud_label = QtWidgets.QLabel("Baudrate")
+        self.baud_label = QtWidgets.QLabel()
         self.boudrate = QtWidgets.QComboBox()
 
-        self.sourse_act_label = QtWidgets.QLabel("Время(с)")
-        self.sourse_meas_label = QtWidgets.QLabel("Время(с)")
+        self.sourse_act_label = QtWidgets.QLabel()
+        self.sourse_meas_label = QtWidgets.QLabel()
 
         self.sourse_act_enter = QtWidgets.QComboBox()
         self.sourse_meas_enter = QtWidgets.QComboBox()
@@ -61,23 +55,23 @@ class base_settings_window(QtWidgets.QDialog):
         self.num_meas_enter = QtWidgets.QComboBox()
         self.num_act_enter = QtWidgets.QComboBox()
 
-        self.num_meas_label = QtWidgets.QLabel("Кол-во измерений")
-        self.num_act_label = QtWidgets.QLabel("Кол-во действий")
+        self.num_meas_label = QtWidgets.QLabel()
+        self.num_act_label = QtWidgets.QLabel()
 
-        self.settings_dev = QtWidgets.QLabel("Настройки прибора")
+        self.settings_dev = QtWidgets.QLabel()
         self.settings_dev.setFont(self.font)
 
-        self.label_connection = QtWidgets.QLabel("Настройки подключения")
+        self.label_connection = QtWidgets.QLabel()
         self.label_connection.setFont(self.font)
 
-        self.settings_act_in_exp = QtWidgets.QLabel("Set action in exp")
+        self.settings_act_in_exp = QtWidgets.QLabel()
         self.settings_act_in_exp.setFont(self.font)
 
         self.settings_act_in_exp.setSizePolicy(
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
         )
 
-        self.settings_meas_in_exp = QtWidgets.QLabel("Set meas in exp")
+        self.settings_meas_in_exp = QtWidgets.QLabel()
         self.settings_meas_in_exp.setFont(self.font)
 
         self.settings_meas_in_exp.setSizePolicy(
@@ -144,7 +138,6 @@ class base_settings_window(QtWidgets.QDialog):
         # Добавляем scroll_area в основной макет
         self.baseLayout.addWidget(self.scroll_area)
 
-
         self.vert_act_lay.addItem(self.verticalSpacerButtonact)
         self.vert_meas_lay.addItem(self.verticalSpacerButtonmeas)
 
@@ -171,39 +164,13 @@ class base_settings_window(QtWidgets.QDialog):
         self.Layout_set_connection.addWidget(self.boudrate, 2, 1, 1, 2)
         self.Layout_set_connection.addWidget(self.buttonBox, 3, 1, 2, 2)
 
-
         self.buttonBox.accepted.connect(self.accept)  # type: ignore
         self.buttonBox.rejected.connect(self.reject)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(self)
 
         self.rejected.connect(self.onReject)
 
-        self.triger_act_enter.setWhatsThis(
-            "Источник сигнала для проведения действия. Таймер - поведение действия через заданное количество секунд в поле ниже. Внешний сигнал - сигнал от дугих пиборов в установке "
-        )
-        self.num_act_enter.setWhatsThis(
-            "Количество действий, которое прибор выполнит в ходе эксперимента"
-        )
-        self.sourse_act_enter.setWhatsThis(
-            "Выберите источника сигнала или значение(в случае таймера в качестве триггера) для действия данного канала"
-        )
-
-        self.triger_meas_enter.setWhatsThis(
-            "Источник сигнала для проведения измерения. Таймер - поведение измерения через заданное количество секунд в поле ниже. Внешний сигнал - сигнал от других пиборов в установке "
-        )
-        self.num_meas_enter.setWhatsThis(
-            "Количество измерений, которое прибор выполнит в ходе эксперимента"
-        )
-        self.sourse_meas_enter.setWhatsThis(
-            "Выберите источника сигнала или значение(в случае таймера в качестве триггера)"
-        )
-
-        self.comportslist.setWhatsThis(
-            "Выберите интерфейс подключения, если нужный интерфейс(usb, com) не отображаются в списке для выбора, проверьте доступность этого интерфейса в диспетчере устройств вашей операционной системы."
-        )
-        self.boudrate.setWhatsThis(
-            "Скорость обмена данными(bit per second) при выбранном интерфейсе COM-port. При другом выбранном интерфейсе данный параметр игнорируется."
-        )
+        self.retranslateUi(self)
 
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна крестиком
         print("окно настройки закрыто крестиком")
@@ -222,6 +189,55 @@ class base_settings_window(QtWidgets.QDialog):
             self.Layout_set_triger_act.itemAt(i).widget().setParent(None)
         for i in reversed(range(self.Layout_set_dev_act.count())):
             self.Layout_set_dev_act.itemAt(i).widget().setParent(None)
+
+    def retranslateUi(self, MainWindow):
+        _translate = QtCore.QCoreApplication.translate
+        self.triger_act_enter.setWhatsThis(
+            _translate( "device window", "Источник сигнала для проведения действия. Таймер - поведение действия через заданное количество секунд в поле ниже. Внешний сигнал - сигнал от дугих пиборов в установке")
+        )
+        self.num_act_enter.setWhatsThis(
+            _translate( "device window", "Количество действий, которое прибор выполнит в ходе эксперимента")
+        )
+        self.sourse_act_enter.setWhatsThis(
+            _translate( "device window", "Выберите источника сигнала или значение(в случае таймера в качестве триггера) для действия данного канала")
+        )
+
+        self.triger_meas_enter.setWhatsThis(
+            _translate( "device window", "Источник сигнала для проведения измерения. Таймер - поведение измерения через заданное количество секунд в поле ниже. Внешний сигнал - сигнал от других пиборов в установке")
+        )
+        self.num_meas_enter.setWhatsThis(
+            _translate( "device window", "Количество измерений, которое прибор выполнит в ходе эксперимента")
+        )
+        self.sourse_meas_enter.setWhatsThis(
+            _translate( "device window", "Выберите источника сигнала или значение(в случае таймера в качестве триггера)")
+        )
+
+        self.comportslist.setWhatsThis(
+            _translate( "device window", "Выберите интерфейс подключения, если нужный интерфейс(usb, com) не отображаются в списке для выбора, проверьте доступность этого интерфейса в диспетчере устройств вашей операционной системы.")
+        )
+        self.boudrate.setWhatsThis(
+            _translate( "device window", "Скорость обмена данными(bit per second) при выбранном интерфейсе COM-port. При другом выбранном интерфейсе данный параметр игнорируется.")
+        )
+
+        self.triger_act_label.setText( _translate( "device window","Триг действия") )
+        self.triger_meas_label = QtWidgets.QLabel("Триг измерения")
+
+        self.COM_label.setText( _translate( "device window","COM") )
+        self.baud_label.setText( _translate( "device window","Baudrate") )
+
+        self.sourse_act_label.setText( _translate( "device window","Время(с)") )
+        self.sourse_meas_label.setText( _translate( "device window","Время(с)") )
+
+        self.num_meas_label.setText( _translate( "device window","Кол-во измерений") )
+        self.num_act_label.setText( _translate( "device window","Кол-во действий") )
+
+        self.settings_dev.setText( _translate( "device window","Настройки прибора") )
+
+        self.label_connection.setText( _translate( "device window","Настройки подключения") )
+
+        self.settings_act_in_exp.setText( _translate( "device window","Настройки действий") )
+
+        self.settings_meas_in_exp.setText( _translate( "device window","Настройки измерений") )
 
 
 if __name__ == "__main__":

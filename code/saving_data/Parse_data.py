@@ -18,6 +18,7 @@ import threading
 
 import pandas
 from pandas.io.excel import ExcelWriter
+from PyQt5.QtWidgets import QApplication
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +72,10 @@ class saving_data:
         number_tab = []
         k = 0
         for i in range(len(self.devices)):
+            text = QApplication.translate("parse_data", "Прибор:{device} канал:{ch}")
+            text = text.format(device=self.devices[i].name_device, ch=self.devices[i].ch)
             data_frame[h].append(
-                f"Прибор:{self.devices[i].name_device} канал:{self.devices[i].ch}"
+                text
             )
             h += 1
 
@@ -133,7 +136,7 @@ class saving_data:
 
         waves_frames = []
         for dev in self.devices:
-            waves_dict = {" ": ["Время", "Шаг"]}
+            waves_dict = {" ": [QApplication.translate("parse_data","Время") , QApplication.translate("parse_data","Шаг")]}
 
             for wave in dev.osc_data:
                 key = wave.name
@@ -141,7 +144,7 @@ class saving_data:
                 for val in wave.data:
                     waves_dict[key].append(val)
 
-            if waves_dict != {" ": ["Время", "Шаг"]}:
+            if waves_dict != {" ": [QApplication.translate("parse_data","Время") , QApplication.translate("parse_data","Шаг")]}:
                 data = waves_dict
                 df = pandas.DataFrame(
                     dict([(k, pandas.Series(v)) for k, v in data.items()])
@@ -189,8 +192,11 @@ class saving_data:
             number_tab = []
             k = 0
             for i in range(len(self.devices)):
+                text = QApplication.translate("parse_data", "Прибор:{device} канал:{ch}")
+                text = text.format(device = self.devices[i].name_device, ch = self.devices[i].ch)
+                                              
                 file.write(
-                    f"Прибор:{self.devices[i].name_device} канал:{self.devices[i].ch}"
+                    text
                 )
                 """определяем, сколько знаков табуляции нужно поставить"""
                 if i < len(self.devices) - 1:
@@ -277,13 +283,13 @@ class saving_data:
             for line in lines:
                 if is_file_correct == False:
                     if (
-                        line.find("Запущена установка") != -1
+                        line.find(QApplication.translate("parse_data","Запущена установка")) != -1
                     ):  # нам подсунули нужный файл
                         is_file_correct = True
                         # print("файл определен как файл результатов")
                         continue
 
-                if line.find("Настройки") != -1 and line.find("ch-") == -1:
+                if line.find(QApplication.translate("parse_data","Настройки")) != -1 and line.find("ch-") == -1:
                     setting_reading_device = (
                         True  # здесь начало считывания настроек девайса
                     )
@@ -292,7 +298,7 @@ class saving_data:
                     continue
 
                 if setting_reading_device:
-                    if line.find("Настройки") != -1 and line.find("ch-") != -1:
+                    if line.find(QApplication.translate("parse_data","Настройки")) != -1 and line.find("ch-") != -1:
                         # отсюда начинается считывание настрроек для канала, переносим туда настройки девайса и формируем класс записи
                         setting_reading_device = False
                         setting_reading = True
@@ -308,7 +314,7 @@ class saving_data:
 
                 if setting_reading:
                     """читаем настройки канала до первой пустой строки или до начала настроек следующего канала"""
-                    if line.find("Настройки") != -1 and line.find("ch-") != -1:
+                    if line.find(QApplication.translate("parse_data","Настройки")) != -1 and line.find("ch-") != -1:
                         ch = line.split()[1]
                         buf = saved_data(dev, ch)
                         buf.settings = copy.deepcopy(self.buf_settings_device)

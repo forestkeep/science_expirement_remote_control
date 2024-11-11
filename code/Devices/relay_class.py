@@ -14,10 +14,6 @@ import enum
 import logging
 import time
 import struct
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from pymodbus.client import ModbusSerialClient
 from pymodbus.exceptions import (
@@ -80,7 +76,7 @@ class relayPr1Class(base_device):
 
         if (
             self.active_channel_act.dict_settable_parameters["mode"]
-            != "Включение - Выключение"
+            != QApplication.translate("Device","Включение - Выключение")
         ):
             self.setting_window.change_pol_button.setChecked(True)
             self.setting_window.radioButton.setEnabled(True)
@@ -116,10 +112,10 @@ class relayPr1Class(base_device):
         if self.key_to_signal_func:
             if self.setting_window.radioButton.isChecked():
                 self.active_channel_act.dict_buf_parameters["mode"] = (
-                    "Включение - Выключение"
+                    QApplication.translate("Device","Включение - Выключение")
                 )
             else:
-                self.active_channel_act.dict_buf_parameters["mode"] = "Смена полярности"
+                self.active_channel_act.dict_buf_parameters["mode"] = QApplication.translate("Device","Смена полярности")
 
             self.active_channel_meas.dict_buf_parameters["hall1"] = (
                 self.setting_window.hall1_meas.isChecked()
@@ -147,7 +143,7 @@ class relayPr1Class(base_device):
             self.active_channel_meas.dict_buf_parameters
         )
         is_parameters_correct = True
-        if self.dict_buf_parameters["COM"] == "Нет подключенных портов":
+        if self.dict_buf_parameters["COM"] == QApplication.translate("Device","Нет подключенных портов"):
             is_parameters_correct = False
         self.timer_for_scan_com_port.stop()
 
@@ -228,7 +224,7 @@ class relayPr1Class(base_device):
                     i += 1
                     if (
                         self.active_channel_act.dict_settable_parameters["mode"]
-                        == "Смена полярности"
+                        == QApplication.translate("Device","Смена полярности")
                     ):
                         if self.active_channel_act.polarity == current_polarity.pol_1:
                             if not self._set_polarity_2(self.active_channel_act.number):
@@ -280,17 +276,17 @@ class relayPr1Class(base_device):
 
             if (
                 self.active_channel_act.dict_settable_parameters["mode"]
-                == "Смена полярности"
+                == QApplication.translate("Device","Смена полярности")
             ):
                 if self.active_channel_act.polarity == current_polarity.pol_1:
-                    val = ["Полярность=" + str(1)]
+                    val = [QApplication.translate("Device","Полярность") + "=" + str(1)]
                 else:
-                    val = ["Полярность=" + str(2)]
+                    val = [QApplication.translate("Device","Полярность") + "=" + str(2)]
             else:
                 if self.active_channel_act.state_output == out_state.on:
-                    val = ["Выход=" + str(1)]
+                    val = [QApplication.translate("Device","Выход") + "=" + str(2)]
                 else:
-                    val = ["Выход=" + str(0)]
+                    val = [QApplication.translate("Device","Выход") + "=" + str(2)]
             parameters.append(val)
 
             hall_values = self.read_hall_sensors()
@@ -446,7 +442,7 @@ class chActPR(base_ch):
     def __init__(self, number, device_class) -> None:
         super().__init__(number, ch_type="act", device_class=device_class)
         self.base_duration_step = 0.1  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
-        self.dict_buf_parameters["mode"] = ("Смена полярности",)
+        self.dict_buf_parameters["mode"] = ( QApplication.translate("Device", "Смена полярности") )
         self.dict_buf_parameters["num steps"] = "1"
 
         self.dict_settable_parameters = self.dict_buf_parameters

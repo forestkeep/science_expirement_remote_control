@@ -113,27 +113,29 @@ class Ui_Set_wave_generator(base_settings_window):
     def retranslateUi(self, Set_power_supply):
         _translate = QtCore.QCoreApplication.translate
         Set_power_supply.setWindowTitle(
-            _translate("Set_power_supply", "Настройка генератора сигналов")
+            _translate("Set_wave_gen", "Настройка генератора сигналов")
         )
-        self.radioButton.setText(_translate("Set_power_supply", "Пройти туда-обратно?"))
-        # self.label_333.setText(_translate("Set_power_supply", "A"))
-        self.label_5.setText(_translate("Set_power_supply", "Режим работы"))
-        self.label_6.setText(_translate("Set_power_supply", "Шаг"))
-        self.label_2.setText(_translate("Set_power_supply", "Конечное значение"))
-        self.label.setText(_translate("Set_power_supply", "Начальное значение"))
-        self.label_7.setText(_translate("Set_power_supply", "Гц"))
-        self.label_8.setText(_translate("Set_power_supply", "Гц"))
-        self.label_9.setText(_translate("Set_power_supply", "Гц"))
+        self.radioButton.setText(_translate("Set_wave_gen", "Пройти туда-обратно?"))
+        self.label_5.setText(_translate("Set_wave_gen", "Режим работы"))
+        self.label_6.setText(_translate("Set_wave_gen", "Шаг"))
+        self.label_2.setText(_translate("Set_wave_gen", "Конечное значение"))
+        self.label.setText(_translate("Set_wave_gen", "Начальное значение"))
+        self.label_7.setText(_translate("Set_wave_gen", "Гц"))
+        self.label_8.setText(_translate("Set_wave_gen", "Гц"))
+        self.label_9.setText(_translate("Set_wave_gen", "Гц"))
 
-        self.meas_label.setText(_translate("Set_power_supply", "Измерения"))
-        self.current_meas.setText(_translate("Set_power_supply", "Частота"))
-        self.set_current_meas.setText(_translate("Set_power_supply", "Установка частоты"))
-        self.voltage_meas.setText(_translate("Set_power_supply", "Амплитуда"))
+        self.meas_label.setText(_translate("Set_wave_gen", "Измерения"))
+        self.current_meas.setText(_translate("Set_wave_gen", "Частота"))
+        self.set_current_meas.setText(_translate("Set_wave_gen", "Установка частоты"))
+        self.voltage_meas.setText(_translate("Set_wave_gen", "Амплитуда"))
         self.set_voltage_meas.setText(
-            _translate("Set_power_supply", "Установка амплитуды")
+            _translate("Set_wave_gen", "Установка амплитуды")
         )
 
-        self.acts_label.setText(_translate("Set_power_supply", "Действия"))
+        self.acts_label.setText(_translate("Set_wave_gen", "Действия"))
+
+        self.type_work_enter.addItems.setItemText(0, _translate("Set_wave_gen","Изменение частоты") )
+        self.type_work_enter.addItems.setItemText(1, _translate("Set_wave_gen","Изменение амплитуды") )
 
 
 if __name__ == "__main__":

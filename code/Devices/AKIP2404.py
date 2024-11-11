@@ -15,8 +15,7 @@ import time
 import sys
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
+from PyQt5.QtWidgets import QApplication
 from Devices.Classes import base_ch, base_device, ch_response_to_step, which_part_in_ch
 from Devices.interfase.set_voltmeter_window import Ui_Set_voltmeter
 
@@ -67,7 +66,7 @@ class akip2404Class(base_device):
         self.setting_window.range_enter.addItems(
             ["Auto", "3mV", "30mV", "300mV", "3V", "30V", "300V"]
         )
-        self.setting_window.type_work_enter.addItems(["Напряжение"])
+        self.setting_window.type_work_enter.addItems([QApplication.translate("Voltmeter","Напряжение")])
 
     @base_device.base_show_window
     def show_setting_window(self, number_of_channel):
@@ -120,7 +119,7 @@ class akip2404Class(base_device):
         )
 
         is_parameters_correct = True
-        if self.dict_buf_parameters["COM"] == "Нет подключенных портов":
+        if self.dict_buf_parameters["COM"] == QApplication.translate("Connection","Нет подключенных портов"):
             is_parameters_correct = False
         self.timer_for_scan_com_port.stop()
 
@@ -292,7 +291,7 @@ class ch_meas_akip_class(base_ch):
     def __init__(self, number, device_class) -> None:
         super().__init__(number, ch_type="meas", device_class=device_class)
         self.base_duration_step = 0.1  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
-        self.dict_buf_parameters["type_meas"] = "Напряжение"  # секунды
+        self.dict_buf_parameters["type_meas"] = QApplication.translate("Voltmeter","Напряжение")  # секунды
         self.dict_buf_parameters["range"] = "Auto"  # dB
         self.dict_buf_parameters["num steps"] = "1"
 

@@ -443,7 +443,7 @@ class expDiagram(QWidget):
         self.connections = []
         for index, obj in enumerate(objects):
 
-            if obj.type_trigger == "Таймер":
+            if obj.type_trigger == QApplication.translate("construct","Таймер"):
                 con = connection(self, str(obj.value_trigger) + "сек")
                 con.set_units(self.labels[index], self.labels[index])
                 self.connections.append(con)
@@ -484,7 +484,7 @@ class expDiagram(QWidget):
         
         for obj in components:
             if obj.group == None:
-                if obj.type_trigger == "Таймер":
+                if obj.type_trigger == QApplication.translate("construct","Таймер"):
                     if obj.slave  == []:
                         obj.group = 1
                         added_components.add(obj)
@@ -672,8 +672,8 @@ class expDiagram(QWidget):
         index = -1
         for dev, ch in install_class.get_active_ch_and_device():
             index += 1
-            if dev.get_trigger(ch) == "Таймер":
-                con = connection(self, str(dev.get_trigger_value(ch)) + "сек")
+            if dev.get_trigger(ch) == QApplication.translate("construct","Таймер"):
+                con = connection(self, str(dev.get_trigger_value(ch)) + "s")
                 con.set_units(self.labels[index], self.labels[index])
                 self.connections.append(con)
                 continue

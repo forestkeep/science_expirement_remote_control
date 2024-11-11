@@ -30,11 +30,11 @@ class Ui_Set_immitans(base_settings_window):
         font.setPointSize(12)
         font.setBold(True)
 
-        self.check_resistance = QtWidgets.QCheckBox("Сопротивление")
-        self.check_capacitance = QtWidgets.QCheckBox("Емкость")
-        self.check_inductor = QtWidgets.QCheckBox("Индуктивность")
-        self.check_impedance = QtWidgets.QCheckBox("Импеданс")
-        self.check_current = QtWidgets.QCheckBox("Ток утечки")
+        self.check_resistance = QtWidgets.QCheckBox()
+        self.check_capacitance = QtWidgets.QCheckBox()
+        self.check_inductor = QtWidgets.QCheckBox()
+        self.check_impedance = QtWidgets.QCheckBox()
+        self.check_current = QtWidgets.QCheckBox()
 
         self.shift_label = QtWidgets.QLabel()
         self.shift_enter = QtWidgets.QComboBox()
@@ -89,16 +89,27 @@ class Ui_Set_immitans(base_settings_window):
     def retranslateUi(self, Set_power_supply):
         _translate = QtCore.QCoreApplication.translate
         Set_power_supply.setWindowTitle(
-            _translate("Set_power_supply", "настройка измерителя иммитанса")
+            _translate("Device", "настройка измерителя иммитанса")
         )
-        self.level_label.setText(_translate("Set_power_supply", "Уровень"))
-        self.frequency_label.setText(_translate("Set_power_supply", "Частота"))
+        self.level_label.setText(_translate("Device", "Уровень"))
+        self.frequency_label.setText(_translate("Device", "Частота"))
 
-        self.settings_dev.setText(_translate("Set_power_supply", "Настройки прибора"))
-        self.shift_label.setText(_translate("Set_power_supply", "Смещение"))
+        self.settings_dev.setText(_translate("Device", "Настройки прибора"))
+        self.shift_label.setText(_translate("Device", "Смещение"))
         self.label_what_is_meas.setText(
-            _translate("Set_power_supply", "Параметры для измерения")
+            _translate("Device", "Параметры для измерения")
         )
+
+        self.check_resistance.setText(
+            _translate("Device","Сопротивление") )
+        self.check_capacitance.setText(
+            _translate("Device","Емкость") )
+        self.check_inductor.setText(
+            _translate("Device","Индуктивность") )
+        self.check_impedance.setText(
+            _translate("Device","Импеданс") )
+        self.check_current.setText(
+            _translate("Device","Ток утечки") )
 
 
 if __name__ == "__main__":

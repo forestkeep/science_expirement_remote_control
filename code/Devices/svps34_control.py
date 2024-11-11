@@ -17,6 +17,7 @@ import qdarktheme
 import serial
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QApplication
 
 
 class On_Off_state(Enum):
@@ -468,16 +469,16 @@ class Ui_SVPS34_control(QtWidgets.QMainWindow):
                     "background-color: rgb(206, 206, 206);"
                 )
                 self.label_2.setText(
-                    "Устройство SVPS34 подключено к порту "
-                    + str(self.connect_devices[0].ser.name)
-                    + " в режиме ручного управления"
+                    QApplication.translate("Device","Устройство SVPS34 подключено к порту") + " "
+                    + str(self.connect_devices[0].ser.name) + " "
+                    + QApplication.translate("Device","в режиме ручного управления")
                 )
             else:
                 self.remote_button.setStyleSheet("background-color: rgb(85, 255, 127);")
                 self.label_2.setText(
-                    "Устройство SVPS34 подключено к порту "
-                    + str(self.connect_devices[0].ser.name)
-                    + " в режиме удаленного управления"
+                    QApplication.translate("Device","Устройство SVPS34 подключено к порту") + " "
+                    + str(self.connect_devices[0].ser.name) + " "
+                    + QApplication.translate("Device","в режиме удаленного управления")
                 )
 
     def get_temperature(self):
@@ -497,15 +498,15 @@ class Ui_SVPS34_control(QtWidgets.QMainWindow):
                 )  # добавляем в массив подключенных устройств svps34
                 if self.connect_devices[0].status == state_device.Remote:
                     self.label_2.setText(
-                        "Устройство SVPS34 подключено к порту "
-                        + str(SVPS34.ser.name)
-                        + " в режиме удаленного управления"
+                    QApplication.translate("Device","Устройство SVPS34 подключено к порту") + " "
+                    + str(self.connect_devices[0].ser.name) + " "
+                    + QApplication.translate("Device","в режиме удаленного управления")
                     )
                 else:
                     self.label_2.setText(
-                        "Устройство SVPS34 подключено к порту "
-                        + str(SVPS34.ser.name)
-                        + " в режиме ручного управления"
+                    QApplication.translate("Device","Устройство SVPS34 подключено к порту") + " "
+                    + str(self.connect_devices[0].ser.name) + " "
+                    + QApplication.translate("Device","в режиме ручного управления")
                     )
                 # self.label_2.setStyleSheet("background-color: rgb(85, 255, 127);")
                 self.is_device_connect = True
@@ -625,7 +626,7 @@ class Ui_SVPS34_control(QtWidgets.QMainWindow):
         SVPS34_control.setWindowTitle(_translate("SVPS34_control", "SVPS34"))
         self.scan_button.setText(_translate("SVPS34_control", "Scan"))
         self.connect_button.setText(_translate("SVPS34_control", "Connect"))
-        self.label_2.setText(_translate("SVPS34_control", "Нет подключенных портов"))
+        self.label_2.setText(_translate("Device", "Нет подключенных портов"))
         self.label.setText(_translate("SVPS34_control", "Журнал"))
         self.common_button.setText(_translate("SVPS34_control", "Common"))
         self.ch1.setText(_translate("SVPS34_control", "+3.3V"))
@@ -648,7 +649,7 @@ class Ui_SVPS34_control(QtWidgets.QMainWindow):
 
 
 if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
     ui = Ui_SVPS34_control()
     ui.setupUi()

@@ -16,8 +16,7 @@ import time
 import sys
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
+from PyQt5.QtWidgets import QApplication
 from Devices.Classes import (
     base_ch,
     base_device,
@@ -89,9 +88,9 @@ class power_supply(base_device):
         self.base_settings_window()
 
         self.setting_window.type_work_enter.addItems(
-            ["Стабилизация напряжения", "Стабилизация тока"]
+            [ QApplication.translate("Device","Стабилизация напряжения"), QApplication.translate("Device","Стабилизация тока") ]
         )
-        self.setting_window.type_step_enter.addItems(["Заданный шаг"])
+        self.setting_window.type_step_enter.addItems([ QApplication.translate("Device","Заданный шаг") ])
 
         # =======================прием сигналов от окна==================
         self.setting_window.type_work_enter.currentIndexChanged.connect(
@@ -104,10 +103,10 @@ class power_supply(base_device):
             lambda: self._action_when_select_trigger()
         )
         self.setting_window.type_step_enter.setToolTip(
-            "Доступен фиксированный шаг. Адаптивный находится в разработке."
+            QApplication.translate("Device","Доступен фиксированный шаг. Адаптивный находится в разработке.")
         )
         self.setting_window.radioButton.setToolTip(
-            "При активации этого пункта источник питания пройдет по шагам от стартого значения до конечного и обратно."
+            QApplication.translate("Device","При активации этого пункта источник питания пройдет по шагам от стартого значения до конечного и обратно.")
         )
         self.setting_window.num_act_label.setParent(None)
         self.setting_window.num_act_enter.setParent(None)
@@ -158,16 +157,16 @@ class power_supply(base_device):
 
         if (
             self.active_channel_act.dict_buf_parameters["type_of_work"]
-            == "Стабилизация напряжения"
+            == QApplication.translate("Device","Стабилизация напряжения")
         ):
-            self.setting_window.second_value_limit_label.setText("Ток не выше (А)")
+            self.setting_window.second_value_limit_label.setText( QApplication.translate("Device","Ток не выше (А)") )
 
         elif (
             self.active_channel_act.dict_buf_parameters["type_of_work"]
-            == "Стабилизация тока"
+            == QApplication.translate("Device","Стабилизация тока")
         ):
             self.setting_window.second_value_limit_label.setText(
-                "Напряжение не выше (V)"
+                QApplication.translate("Device","Напряжение не выше (V)")
             )
         else:
             self.setting_window.second_value_limit_label.setText("---")
@@ -197,18 +196,18 @@ class power_supply(base_device):
         if self.key_to_signal_func:
             if (
                 self.setting_window.type_work_enter.currentText()
-                == "Стабилизация напряжения"
+                == QApplication.translate("Device","Стабилизация напряжения")
             ):
                 max = self.active_channel_act.max_voltage
                 min = self.active_channel_act.min_step_V
                 max_second_limit = self.active_channel_act.max_current
-            if self.setting_window.type_work_enter.currentText() == "Стабилизация тока":
+            if self.setting_window.type_work_enter.currentText() == QApplication.translate("Device","Стабилизация тока"):
                 max = self.active_channel_act.max_current
                 min = self.active_channel_act.min_step_A
                 max_second_limit = self.active_channel_act.max_voltage
             if (
                 self.setting_window.type_work_enter.currentText()
-                == "Стабилизация мощности"
+                == QApplication.translate("Device","Стабилизация мощности")
             ):
                 max = self.active_channel_act.max_power
                 min = self.active_channel_act.min_step_W
@@ -280,7 +279,7 @@ class power_supply(base_device):
             if self.active_channel_act.is_step_correct:
                 if (
                     self.setting_window.type_step_enter.currentText()
-                    == "Адаптивный шаг"
+                    == QApplication.translate("Device","Адаптивный шаг")
                 ):
                     self.setting_window.step_enter.setStyleSheet(
                         "background-color: rgb(180, 180, 180)"
@@ -290,7 +289,7 @@ class power_supply(base_device):
             else:
                 if (
                     self.setting_window.type_step_enter.currentText()
-                    == "Адаптивный шаг"
+                    == QApplication.translate("Device","Адаптивный шаг")
                 ):
                     self.setting_window.step_enter.setStyleSheet(
                         "background-color: rgb(180, 180, 180)"
@@ -303,7 +302,7 @@ class power_supply(base_device):
             else:
                 if (
                     self.setting_window.type_work_enter.currentText()
-                    != "Стабилизация мощности"
+                    != QApplication.translate("Device","Стабилизация мощности")
                 ):
                     self.setting_window.second_limit_enter.setStyleSheet(
                         not_ready_style_border
@@ -328,22 +327,22 @@ class power_supply(base_device):
             self.setting_window.second_limit_enter.setEnabled(True)
             if (
                 self.setting_window.type_work_enter.currentText()
-                == "Стабилизация напряжения"
+                == QApplication.translate("Device","Стабилизация напряжения")
             ):
                 self.setting_window.label_7.setText("V")
                 self.setting_window.label_8.setText("V")
                 self.setting_window.label_9.setText("V")
-                self.setting_window.second_value_limit_label.setText("Ток не выше (А)")
-            if self.setting_window.type_work_enter.currentText() == "Стабилизация тока":
+                self.setting_window.second_value_limit_label.setText( QApplication.translate("Device","Ток не выше (А)") )
+            if self.setting_window.type_work_enter.currentText() == QApplication.translate("Device","Стабилизация тока"):
                 self.setting_window.label_7.setText("A")
                 self.setting_window.label_8.setText("A")
                 self.setting_window.label_9.setText("A")
                 self.setting_window.second_value_limit_label.setText(
-                    "Напряжение не выше (V)"
+                    QApplication.translate("Device","Напряжение не выше (V)")
                 )
             if (
                 self.setting_window.type_work_enter.currentText()
-                == "Стабилизация мощности"
+                == QApplication.translate("Device","Стабилизация мощности")
             ):
                 self.setting_window.label_7.setText("W")
                 self.setting_window.label_8.setText("W")
@@ -356,16 +355,16 @@ class power_supply(base_device):
 
     def _action_when_select_step(self):
         if self.key_to_signal_func:
-            if self.setting_window.type_step_enter.currentText() == "Адаптивный шаг":
+            if self.setting_window.type_step_enter.currentText() == QApplication.translate("Device","Адаптивный шаг"):
                 self.setting_window.step_enter.setEnabled(False)
                 self.setting_window.step_enter.setStyleSheet(
                     "background-color: rgb(180, 180, 180)"
                 )
                 self.setting_window.triger_meas_enter.clear()
-                self.setting_window.triger_meas_enter.addItems(["Внешний сигнал"])
+                self.setting_window.triger_meas_enter.addItems([ QApplication.translate("Device","Внешний сигнал") ])
             else:
                 self.setting_window.step_enter.setEnabled(True)
-                self.setting_window.triger_meas_enter.addItems(["Таймер"])
+                self.setting_window.triger_meas_enter.addItems([ QApplication.translate("Device","Таймер") ])
 
     @base_device.base_add_parameters_from_window
     def add_parameters_from_window(self):  # менять для каждого прибора
@@ -426,7 +425,7 @@ class power_supply(base_device):
         self.active_channel_meas.dict_settable_parameters = copy.deepcopy(self.active_channel_meas.dict_buf_parameters)
         is_parameters_correct = True
 
-        if self.dict_buf_parameters["COM"] == "Нет подключенных портов":
+        if self.dict_buf_parameters["COM"] == QApplication.translate("Device","Нет подключенных портов") :
             is_parameters_correct = False
         self.timer_for_scan_com_port.stop()
 
@@ -468,12 +467,12 @@ class power_supply(base_device):
             self.active_channel_act.steps_current.clear()
             if (
                 self.active_channel_act.dict_settable_parameters["type_of_work"]
-                == "Стабилизация напряжения"
+                == QApplication.translate("Device","Стабилизация напряжения")
             ):
 
                 if (
                     self.active_channel_act.dict_settable_parameters["type_step"]
-                    == "Заданный шаг"
+                    == QApplication.translate("Device","Заданный шаг")
                 ):
                     (
                         self.active_channel_act.steps_current,
@@ -499,11 +498,11 @@ class power_supply(base_device):
 
             elif (
                 self.active_channel_act.dict_settable_parameters["type_of_work"]
-                == "Стабилизация тока"
+                == QApplication.translate("Device","Стабилизация тока")
             ):
                 if (
                     self.active_channel_act.dict_settable_parameters["type_step"]
-                    == "Заданный шаг"
+                    == QApplication.translate("Device","Заданный шаг")
                 ):
                     (
                         self.active_channel_act.steps_voltage,
@@ -529,11 +528,11 @@ class power_supply(base_device):
 
             elif (
                 self.active_channel_act.dict_settable_parameters["type_of_work"]
-                == "Стабилизация мощности"
+                == QApplication.translate("Device","Стабилизация мощности")
             ):
                 if (
                     self.active_channel_act.dict_settable_parameters["type_step"]
-                    == "Заданный шаг"
+                    == QApplication.translate("Device","Заданный шаг")
                 ):
                     pass
 
@@ -581,7 +580,6 @@ class power_supply(base_device):
         status = True
         if ch.get_type() == "act":
             if self.active_channel_act.dict_buf_parameters["soft_start"] == True:
-                print("плавное выключение")
                 count = 3
                 is_voltage_read = False
 
@@ -612,13 +610,13 @@ class power_supply(base_device):
 
         if (
             self.active_channel_act.dict_buf_parameters["type_of_work"]
-            == "Стабилизация напряжения"
+            == QApplication.translate("Device","Стабилизация напряжения")
         ):
             focus_funk = self._set_voltage
             step = int(self.active_channel_act.steps_voltage[0] / 5)
         elif (
             self.active_channel_act.dict_buf_parameters["type_of_work"]
-            == "Стабилизация тока"
+            == QApplication.translate("Device","Стабилизация тока")
         ):
             focus_funk = self._set_current
             step = int(self.active_channel_act.steps_current[0] / 5)
@@ -652,7 +650,6 @@ class power_supply(base_device):
                     ch.step_index == 0
                     and ch.dict_settable_parameters["soft_start"] == True
                 ):
-                    print("плавны старт источника")
                     if (
                         self.soft_start(number_of_channel=ch.get_number(), repeat=3)
                         == False

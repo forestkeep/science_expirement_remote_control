@@ -290,3 +290,15 @@ class ps_test(QtWidgets.QDialog):
         self.label_num_meas.setText(_translate("Set_power_supply", "Кол-во измерений"))
         self.boudrate.setItemText(0, _translate("Set_power_supply", "9600"))
         self.label_10.setText(_translate("Set_power_supply", "COM"))
+
+
+if __name__ == "__main__":
+    import sys
+
+    import qdarktheme
+
+    app = QtWidgets.QApplication(sys.argv)
+    qdarktheme.setup_theme(corner_shape="sharp")
+    a = ps_test()
+    a.show()
+    sys.exit(app.exec_())

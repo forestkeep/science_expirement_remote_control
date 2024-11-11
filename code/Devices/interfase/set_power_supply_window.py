@@ -155,9 +155,9 @@ class Ui_Set_power_supply(base_settings_window):
         self.label_6.setText(_translate("Set_power_supply", "Шаг"))
         self.label_2.setText(_translate("Set_power_supply", "Конечное значение"))
         self.label.setText(_translate("Set_power_supply", "Начальное значение"))
-        self.label_7.setText(_translate("Set_power_supply", "V"))
-        self.label_8.setText(_translate("Set_power_supply", "V"))
-        self.label_9.setText(_translate("Set_power_supply", "V"))
+        self.label_7.setText("V")
+        self.label_8.setText("V")
+        self.label_9.setText("V")
 
         self.meas_label.setText(_translate("Set_power_supply", "Измерения"))
         self.current_meas.setText(_translate("Set_power_supply", "Ток"))

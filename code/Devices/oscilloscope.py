@@ -16,11 +16,8 @@ import time
 import sys
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-
 from PyQt5.QtCore import pyqtSlot
-
+from PyQt5.QtWidgets import QApplication
 from Devices.Classes import (
     base_ch,
     base_device,
@@ -774,7 +771,7 @@ class oscilloscopeClass(base_device):
         )
 
         is_parameters_correct = True
-        if self.dict_buf_parameters["COM"] == "Нет подключенных портов":
+        if self.dict_buf_parameters["COM"] == QApplication.translate("Device","Нет подключенных портов"):
             is_parameters_correct = False
         self.timer_for_scan_com_port.stop()
 
@@ -1041,7 +1038,7 @@ class oscilloscopeClass(base_device):
                 time_stamp = time.time()
                 while self.command.get_status() != "STOP\n":
                     if time.time() - time_stamp > timeout:
-                        message = "Остановки по триггеру не произошло, останавливаем принудительно"
+                        message = QApplication.translate("Device","Остановки по триггеру не произошло, останавливаем принудительно")
                         self.command.stop()
             else:
                 pass

@@ -34,6 +34,7 @@ class setWinOscilloscope(base_settings_window):
         """
         self.remove_act()
         # self.remove_meas()
+        self.num_channels = num_channels
 
         self.resize(num_channels*270, 800)
 
@@ -79,16 +80,27 @@ class setWinOscilloscope(base_settings_window):
     def retranslateUi(self, Set_window):
         _translate = QtCore.QCoreApplication.translate
         Set_window.setWindowTitle(
-            _translate("Set_power_supply", "настройка осциллографа")
+            _translate("Device", "настройка осциллографа")
         )
+        self.title_auto_meas.setText(
+            _translate("Device", "Auto Measurement") )
+        self.title_act_channels.setText(
+            _translate("Device","Активировать каналы:") )
+        self.title_trig_menu.setText(
+            _translate("Device","Меню триггера") )
+        for i in range(1, self.num_channels + 1):
+            self.check_save_csv[i].setText(
+            _translate("Device", "загрузить csv") + f" Ch-{i}")
+
+        self.label_time_scale = QtWidgets.QLabel("Временная развертка:")
 
     def create_meas_check_section(self):
         # ==========Measurement elements==================
-        title = QtWidgets.QLabel("Auto Measurement")
-        title.setAlignment(QtCore.Qt.AlignCenter)
+        self.title_auto_meas = QtWidgets.QLabel()
+        self.title_auto_meas.setAlignment(QtCore.Qt.AlignCenter)
 
         meas_main_layout = QtWidgets.QVBoxLayout()
-        meas_main_layout.addWidget(title)
+        meas_main_layout.addWidget(self.title_auto_meas)
 
         # Сетка для чекбоксов (4 в строку)
         grid_layout = QtWidgets.QGridLayout()
@@ -179,9 +191,9 @@ class setWinOscilloscope(base_settings_window):
         layout = QtWidgets.QVBoxLayout()
 
         # Заголовок
-        title = QtWidgets.QLabel("Активировать каналы:")
-        title.setAlignment(QtCore.Qt.AlignCenter)
-        layout.addWidget(title)
+        self.title_act_channels = QtWidgets.QLabel()
+        self.title_act_channels.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(self.title_act_channels)
 
         # Создание горизонтального слоя (для чекбоксов)
         horizontal_layout = QtWidgets.QHBoxLayout()
@@ -210,9 +222,9 @@ class setWinOscilloscope(base_settings_window):
         layout = QtWidgets.QVBoxLayout()
 
         # Заголовок
-        title = QtWidgets.QLabel("Меню триггера")
-        title.setAlignment(QtCore.Qt.AlignCenter)
-        layout.addWidget(title)
+        self.title_trig_menu = QtWidgets.QLabel()
+        self.title_trig_menu.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(self.title_trig_menu)
 
         # Список названий для QComboBox
         labels = ["Sourse", "Type", "Slope", "Sweep", "Level"]
@@ -253,12 +265,6 @@ class setWinOscilloscope(base_settings_window):
         # Создание вертикального слоя
         layout = QtWidgets.QVBoxLayout()
 
-        # Заголовок
-        # title = QtWidgets.QLabel('Настройка каналов')
-        # title.setAlignment(QtCore.Qt.AlignCenter)
-        # layout.addWidget(title)
-
-        # Горизонтальный слой для добавления вертикальных слоев
         horizontal_layout = QtWidgets.QHBoxLayout()
         layout.addLayout(horizontal_layout)
         for i in range(1, num_channels + 1):
@@ -332,7 +338,7 @@ class setWinOscilloscope(base_settings_window):
         # Чекбоксы в зависимости от количества каналов
         self.check_save_csv = []
         for i in range(1, num_channels + 1):
-            checkbox = QtWidgets.QCheckBox(f"загрузить csv Ch-{i}")
+            checkbox = QtWidgets.QCheckBox()
             checkbox.setLayoutDirection(QtCore.Qt.RightToLeft)
             self.check_save_csv.append(checkbox)
             H_layer.addWidget(checkbox)
@@ -364,7 +370,7 @@ class setWinOscilloscope(base_settings_window):
     def create_set_time_scale_Layout(self):
         layout = QtWidgets.QHBoxLayout()
 
-        label1 = QtWidgets.QLabel("Временная развертка:")
+        self.label_time_scale = QtWidgets.QLabel()
 
         self.enter_scale_number = QtWidgets.QComboBox()
         self.enter_scale_number.addItems(
@@ -375,7 +381,7 @@ class setWinOscilloscope(base_settings_window):
         self.enter_scale_factor.addItems(["ns", "us", "ms", "s", "Hand control"])
 
         # Добавляем все элементы в горизонтальный слой
-        layout.addWidget(label1)
+        layout.addWidget(self.label_time_scale)
         layout.addWidget(self.enter_scale_number)
         layout.addWidget(self.enter_scale_factor)
         return layout

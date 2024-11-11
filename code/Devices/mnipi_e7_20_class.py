@@ -16,11 +16,10 @@ import time
 import sys
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import serial
 import serial.tools.list_ports
-
+from PyQt5.QtWidgets import QApplication
 from Devices.Classes import (base_ch, base_device, ch_response_to_step,
                      not_ready_style_border,
                      ready_style_border,
@@ -204,7 +203,7 @@ class mnipiE720Class(base_device):
         self.active_channel_meas.dict_settable_parameters = copy.deepcopy(self.active_channel_meas.dict_buf_parameters)
 
         is_parameters_correct = True
-        if self.dict_buf_parameters["COM"] == 'Нет подключенных портов':
+        if self.dict_buf_parameters["COM"] == QApplication.translate("Device",'Нет подключенных портов'):
             is_parameters_correct = False
         self.timer_for_scan_com_port.stop()
 
@@ -432,14 +431,7 @@ class mnipiE720Class(base_device):
 
         onchange = buffer[20]
         crc = buffer[21]
-        #print(buffer)
-        
-        #print(f"{offset=} mv")
-        #print(f"{level=} mv")
-        #print(f"{limit=}")
-        #print(f"{frequency=}")
-        #print(f"imparam {imparam} = {imparam_value}")
-        #print(f"secparam {secparam} = {secparam_value}")
+
 
         return [offset, level, frequency, flags, mode, limit, imparam, secparam, secparam_value, imparam_value, onchange, crc]
     
@@ -499,14 +491,6 @@ class ch_mnipi_class(base_ch):
         self.dict_buf_parameters["level"] = "1"
         self.dict_buf_parameters["offset"] = "0"
         
-#print(globals().keys())
-#print(dir(PyQt5.QtWidgets))
-
-#[170, 0, 0, 100, 1, 0, 3, 21, 1, 5, 0, 13, 91, 0, 0, 252, 163, 115, 1, 246, 8, 166]  9514.7nF D = 0.0091
-#[170, 22, 0, 94, 1, 0, 3, 21, 1, 5, 2, 6, 4, 0, 0, 252, 2, 59, 0, 254, 4, 132]  151.06 ом D = 0,0004
-
-
-## [163, 115, 1, 246] - это старший, средний, младший байты и байт множителя 10  в дополнительном коде. Чему равно результирующее число?
 if __name__ == "__main__":
         
         mnipi = mnipiE720Class(2112,4545)

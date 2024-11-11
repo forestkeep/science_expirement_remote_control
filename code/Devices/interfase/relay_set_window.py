@@ -58,20 +58,20 @@ class Ui_Set_relay(base_settings_window):
 
     def retranslateUi(self, Set_power_supply):
         _translate = QtCore.QCoreApplication.translate
-        Set_power_supply.setWindowTitle(_translate("Set_power_supply", "Relay_set"))
+        Set_power_supply.setWindowTitle(_translate("Device", "Relay_set"))
         self.radioButton.setText(
-            _translate("Set_power_supply", "Включение - Выключение")
+            _translate("Device", "Включение - Выключение")
         )
         self.change_pol_button.setText(
-            _translate("Set_power_supply", "Смена полярности")
+            _translate("Device", "Смена полярности")
         )
 
-        self.acts_label.setText(_translate("Set_power_supply", "Действия"))
-        self.meas_label.setText(_translate("Set_power_supply", "Измерения"))
-        self.hall1_meas.setText(_translate("Set_power_supply", "Датчик холла 1"))
-        self.hall2_meas.setText(_translate("Set_power_supply", "Датчик холла 2"))
-        self.hall3_meas.setText(_translate("Set_power_supply", "Датчик холла 3"))
-        self.hall4_meas.setText(_translate("Set_power_supply", "Датчик холла 4"))
+        self.acts_label.setText(_translate("Device", "Действия"))
+        self.meas_label.setText(_translate("Device", "Измерения"))
+        self.hall1_meas.setText(_translate("Device", "Датчик холла 1"))
+        self.hall2_meas.setText(_translate("Device", "Датчик холла 2"))
+        self.hall3_meas.setText(_translate("Device", "Датчик холла 3"))
+        self.hall4_meas.setText(_translate("Device", "Датчик холла 4"))
 
 
 # sourse_enter -> sourse_act_enter || sourse_meas_enter
