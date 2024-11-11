@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import (
 
 class messageDialog(QDialog):
     def __init__(
-        self, title ,text, are_show_again):
+        self, title ,text, are_show_again = None):
         super().__init__()
         self.setMinimumSize(400, 200)  # устанавливаем минимальный размер окна
 

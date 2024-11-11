@@ -107,13 +107,13 @@ class installation_class(experimentControl, analyse):
         self.measurement_parameters = {}
 
         for i, device_name in enumerate(installation_list):
-            try:
+            #try:
                 device = self.dict_device_class[device_name](
                     name=f"{device_name}_{i+1}", installation_class=self
                 )
                 self.dict_active_device_class[f"{device_name}_{i+1}"] = device
-            except:
-                logger.error(f"Failed to create instance of {device_name}")
+            #except Exception as e:
+            #    logger.error(f"Failed to create instance of {device_name} {e}")
                 
         self.exp_diagram = expDiagram()
 
@@ -755,15 +755,16 @@ if __name__ == "__main__":
     lst50 = ["E7-20MNIPI", "E7-20MNIPI"]
     lst55 = ["DS1104Z"]
 
+
     qdarktheme.enable_hi_dpi()
     app = QtWidgets.QApplication(sys.argv)
     
     #----------------------------------
-    translator = QTranslator()
+    #translator = QTranslator()
     
-    translator.load("translations/translation_en.qm")
+    #translator.load("translations/translation_en.qm")
     
-    app.installTranslator(translator)
+    #app.installTranslator(translator)
     #----------------------------------
 
     qdarktheme.setup_theme(corner_shape="sharp")

@@ -285,7 +285,7 @@ class baseInstallation:
 
         Благодарю вас за использование приложения!
         """)
-        dialog = messageDialog(text=text, title=QApplication.translate('base_install',"Информация об авторах"))
+        dialog = messageDialog(text=text, title=QApplication.translate('base_install',"Информация об авторах") )
         dialog.exec_()
 
     def show_version(self):

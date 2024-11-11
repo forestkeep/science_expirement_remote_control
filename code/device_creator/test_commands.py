@@ -41,7 +41,7 @@ class TestCommands(QMainWindow):
         self.setCentralWidget(self.main_widget)
         self.active_ports = []
         self.client = None
-        self.setWindowTitle("Тест команд")
+        self.setWindowTitle(QApplication.translate("create_dev_window", "Тест команд"))
         
         self.read_ans_thread = threading.Thread(target=self.read_answer_new)
         self.read_ans_thread.daemon = True
@@ -55,15 +55,17 @@ class TestCommands(QMainWindow):
         self._create_widgets(layout)
         self.main_widget.setLayout(layout)
 
+        self.retranslateuI(self)
+
     def _create_widgets(self, layout):
         self.entry = QLineEdit(self)
         layout.addWidget(self.entry, 0, 1)
 
-        self.send_button = QPushButton("Отправить", self)
+        self.send_button = QPushButton(QApplication.translate("create_dev_window", "Отправить"), self)
         self.send_button.clicked.connect(self.send_action)
         layout.addWidget(self.send_button, 0, 0)
 
-        self.answ_label = QLabel("Ответ:", self)
+        self.answ_label = QLabel(QApplication.translate("create_dev_window", "Ответ:"), self)
         layout.addWidget(self.answ_label, 1, 0)
         self.answer = QLineEdit(self)
         self.answer.setText("-------")
@@ -72,12 +74,12 @@ class TestCommands(QMainWindow):
 
         self.timeout_entry = QLineEdit(self)
         self.timeout_entry.setText(str(DEFAULT_TIMEOUT))
-        layout.addWidget(QLabel("Таймаут(мс)", self), 2, 0)
+        layout.addWidget(QLabel(QApplication.translate("create_dev_window", "Таймаут(мс)"), self), 2, 0)
         layout.addWidget(self.timeout_entry, 2, 1)
 
         self.source_combo = QComboBox(self)
-        self.source_combo.addItems(["Нет подключенных портов"])
-        layout.addWidget(QLabel("Порт", self), 3, 0)
+        self.source_combo.addItems([QApplication.translate("create_dev_window", "Нет подключенных портов")])
+        layout.addWidget(QLabel(QApplication.translate("create_dev_window", "Порт"), self), 3, 0)
         layout.addWidget(self.source_combo, 3, 1)
 
         self.speed_combo = QComboBox(self)
@@ -103,11 +105,11 @@ class TestCommands(QMainWindow):
             )
         )
         self.speed_combo.setCurrentText("9600")
-        layout.addWidget(QLabel("Скорость(бод)", self), 4, 0)
+        layout.addWidget(QLabel(QApplication.translate("create_dev_window", "Скорость(бод)"), self), 4, 0)
         layout.addWidget(self.speed_combo, 4, 1)
 
     def send_action(self):
-        if self.source_combo.currentText() == "Нет подключенных портов":
+        if self.source_combo.currentText() == QApplication.translate("create_dev_window", "Нет подключенных портов"):
             return
 
         self._update_client()
@@ -117,7 +119,7 @@ class TestCommands(QMainWindow):
                 self.timeout = float(self.timeout_entry.text())
                 self.client.timeout = self.timeout
                 self.client.baud_rate = int(self.speed_combo.currentText())
-                self.answ_label.setText("Принимаем")
+                self.answ_label.setText(QApplication.translate("create_dev_window", "Принимаем"))
                 self.entry.setEnabled(False)
                 self.send_button.setEnabled(False)
                 self.read_ans_thread = threading.Thread(target=self.read_answer_new)
@@ -129,7 +131,6 @@ class TestCommands(QMainWindow):
             except Exception as e:
                 logging.error(f"Error in send_action: {e}")
                 self._handle_client_error()
-
 
     def _update_client(self):
         current_port = self.source_combo.currentText()
@@ -144,7 +145,6 @@ class TestCommands(QMainWindow):
             if current_port not in rm:
                 self._handle_client_error()
                 
-
     def _handle_client_error(self):
         self.client = None
         self.source_combo.setStyleSheet(NOT_READY_STYLE_BORDER)
@@ -155,18 +155,21 @@ class TestCommands(QMainWindow):
             answer = self.client.read()
             self.answer.setStyleSheet(READY_STYLE_BORDER)
         except:
-            answer = "Истек таймаут"
+            answer = QApplication.translate("create_dev_window","Истек таймаут")
             self.answer.setStyleSheet(NOT_READY_STYLE_BORDER)
         if "..." in self.answ_label.text():
-            self.answ_label.setText("Принимаем")
+            self.answ_label.setText(QApplication.translate("create_dev_window", "Принимаем") )
         else:
             self.answ_label.setText(self.answ_label.text() + ".")
 
             self.answer.setText(answer)
         self.entry.setEnabled(True)
         self.send_button.setEnabled(True)
-        self.answ_label.setText("Ответ")
+        self.answ_label.setText(QApplication.translate("create_dev_window", "Ответ"))
         
+    def retranslateuI(self, creat_window):
+        _translate = QApplication.translate
+        creat_window.setWindowTitle(_translate("creat_dev_window", "Тест команд"))
 
     def _scan_com_ports(self):
         self.timer_for_scan_com_port.stop()

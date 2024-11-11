@@ -142,7 +142,7 @@ class graphMain:
         )
         
         import_lay = QHBoxLayout()
-        self.import_button = QPushButton("Импортировать..")
+        self.import_button = QPushButton()
         self.selector = QSpacerItem(
             15, 15, QSizePolicy.Expanding, QSizePolicy.Minimum
         )
@@ -151,7 +151,7 @@ class graphMain:
 
 
         data_name_layout = QHBoxLayout()
-        self.data_name_label = QLabel("Экспериментальные данные")
+        self.data_name_label = QLabel()
         data_name_layout.addWidget(self.data_name_label)
         data_name_layout.addItem(self.selector)
         # Add the layouts to the first tab
@@ -164,13 +164,15 @@ class graphMain:
         
         self.import_button.clicked.connect(self.import_data)
 
+        self.retranslateUi(self.page)
+
     @time_decorator
     def import_data(self, *args, **kwargs):
         
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         fileName, ans = QFileDialog.getOpenFileName(
-            caption="укажите путь импорта",
+            caption=QApplication.translate("GraphWindow","укажите путь импорта"),
             directory="",
             filter="Книга Excel (*.xlsx)",
             options=options,
@@ -207,9 +209,11 @@ class graphMain:
                     
                 if errors_col != []:
                     res = ', '.join(errors_col)
+                    text = QApplication.translate("GraphWindow", "В столбцах {res} обнаружены данные, которые не получается преобразовать в числа.\nПри построение эти точки будут пропущены.")
+                    text = text.format(res = res)
                     message = messageDialog(
-                        title="Сообщение",
-                        text=f"В столбцах {res} обнаружены данные, которые не получается преобразовать в числа.\nПри построение эти точки будут пропущены."
+                        title = QApplication.translate("GraphWindow","Сообщение"),
+                        text= text
                     )
                     message.exec_()
                     
@@ -315,7 +319,7 @@ class graphMain:
 
     def setupSettingsLayout(self):
         
-        self.multiple_checkbox = QCheckBox("Множественное построение")
+        self.multiple_checkbox = QCheckBox()
         self.line_graph_button = QPushButton("set color line main")
         self.line_graph_button.clicked.connect(lambda: self.push_line_color_graph("m"))
 
@@ -429,7 +433,6 @@ class graphMain:
             self.update_param_in_comboxes(new_param)
             self.update_plot()
 
-
     def set_default(self):
         self.key_to_update_plot = False
 
@@ -450,7 +453,6 @@ class graphMain:
         self.p2.clear()
 
         self.key_to_update_plot = True
-
 
     def remove_parameter(self, parameter, qlistwidget):
             for index in range(qlistwidget.count()):
@@ -700,9 +702,11 @@ class graphMain:
             points_num = 10000
             self.is_show_warning = False
             if len(self.x) > points_num:
+                text = QApplication.translate("GraphWindow", "Число точек превысило {points_num}, расчет зависимости одного параметра от другого может занимать некоторое время.\n Особенно, на слабых компьютерах. Рекомендуется выводить графики в зависимости от времени.")
+                text = text.format(points_num = points_num)
                 message = messageDialog(
-                    title="Сообщение",
-                    text=f"Число точек превысило {points_num}, расчет зависимости одного параметра от другого может занимать некоторое время.\n Особенно, на слабых компьютерах. Рекомендуется выводить графики в зависимости от времени.",
+                    title=QApplication.translate("GraphWindow","Сообщение"),
+                    text=text
                 )
                 message.exec_()
 
@@ -802,3 +806,10 @@ class graphMain:
 
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна
         self.graph_win_close_signal.emit(1)
+
+    def retranslateUi(self, GraphWindow):
+        _translate = QApplication.translate
+        self.import_button.setText( _translate("GraphWindow", "Импортировать..") )
+        self.data_name_label.setText( _translate("GraphWindow","Экспериментальные данные") )
+        self.multiple_checkbox.setText( _translate("GraphWindow","Множественное построение") )
+        

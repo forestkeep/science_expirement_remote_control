@@ -48,7 +48,6 @@ IDN?	                               Получить строку идентиф
 class akip2404Class(base_device):
     def __init__(self, name, installation_class) -> None:
         super().__init__(name, "serial", installation_class)
-
         self.ch1_meas = ch_meas_akip_class(1, self)
         self.ch2_meas = ch_meas_akip_class(2, self)
         self.channels = self.create_channel_array()

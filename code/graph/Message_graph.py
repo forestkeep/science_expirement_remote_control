@@ -41,7 +41,7 @@ class messageDialog(QDialog):
             self.accept
         )  # закрываем окно при нажатии на кнопку Ok
         if are_show_again:
-            self.check_not_show = QCheckBox("Не показывать снова")
+            self.check_not_show = QCheckBox(QApplication.translate("GraphWindow","Не показывать снова") )
             layout.addWidget(self.check_not_show)
         layout.addWidget(ok_button)
         self.setLayout(layout)

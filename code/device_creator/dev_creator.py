@@ -40,7 +40,7 @@ class deviceCreator(QDialog):
         self.setMinimumWidth(500)
 
         # Создание метки с сообщением
-        welcome_message = """Добро пожаловать в Конструктор нового прибора!
+        welcome_message = QApplication.translate('device_creator',"""Добро пожаловать в Конструктор нового прибора!
                         Здесь вы сможете добавить новый прибор для использования 
                         в автоматическом контроллере физического эксперимента. 
                         Вам будет предложено ввести информацию о приборе, выбрать тип подключения, 
@@ -48,14 +48,14 @@ class deviceCreator(QDialog):
                         Пожалуйста, следуйте инструкциям на экране для завершения процесса. 
                         Если Вы хотите прервать процесс, просто нажмите кнопку отмена или закройте окно.
                         Обратите внимание, что устройство должно поддерживать SCPI формат команд,
-                          в ином случае добавить его не получится."""
+                          в ином случае добавить его не получится.""" )
         self.main_label = QLabel(welcome_message, self)
         #self.main_label.setAlignment(Qt.AlignCenter)
         
         self.test_commands_window = None
 
         #Виджеты для диалога 
-        self.test_button = QPushButton("Протестировать команду")
+        self.test_button = QPushButton(QApplication.translate('device_creator',"Протестировать команду"))
         self.test_button.clicked.connect(self.test_function)
         self.input_field = QLineEdit()
         self.input_field.adjustSize()
@@ -110,7 +110,7 @@ class deviceCreator(QDialog):
         if self.commands :
             self.load_next_command()
         else:
-            QMessageBox.critical(self, "Ошибка", "Нет доступных команд для ввода.")
+            QMessageBox.critical(self, QApplication.translate('device_creator',"Ошибка"), QApplication.translate('device_creator',"Нет доступных команд для ввода."))
             self.close()
 
     def load_next_command(self):
@@ -147,15 +147,16 @@ class deviceCreator(QDialog):
                     self.focus_answer_label.setParent(None)
                     self.check_command_line = None
                     self.focus_answer_line = None
-
-            self.main_label.setText(f"Введите значение для команды:\n\r {command_template['description']}.\n\r Аргументы в фигурных скобках обязательно должны\n\r присутствовать в команде под теми же названиями,\n\r их обязательно обрамлять фигурными скобками.")
+            text = QApplication.translate('device_creator', "Введите значение для команды:\n\r {command_template}.\n\r Аргументы в фигурных скобках обязательно должны\n\r присутствовать в команде под теми же названиями,\n\r их обязательно обрамлять фигурными скобками.")
+            text = text.format(command_template=command_template['description'])
+            self.main_label.setText( text )
             self.input_field.setText(example_input)  # Устанавливаем шаблон в поле ввода
             self.transfer_command_to_test(example_input) # передаем команду окну с тестом
         else:
             self.finalize_commands()
 
     def create_check_command_line(self, command_template):
-        self.check_command_label = QLabel("Команда запроса настройки/значения:")
+        self.check_command_label = QLabel(QApplication.translate('device_creator',"Команда запроса настройки/значения:") )
         self.check_command_line = QLineEdit(command_template['check_command'])
         self.check_command_line.adjustSize()
         check_command_layout = QVBoxLayout()
@@ -164,7 +165,7 @@ class deviceCreator(QDialog):
         return check_command_layout
 
     def create_focus_answer_line(self, command_template):
-        self.focus_answer_label = QLabel("Возвращаемое значение:")
+        self.focus_answer_label = QLabel(QApplication.translate('device_creator',"Возвращаемое значение:"))
         self.focus_answer_line = QLineEdit(command_template['focus_answer'])
         self.focus_answer_line.adjustSize()
         focus_answer_layout = QVBoxLayout()
@@ -209,13 +210,16 @@ class deviceCreator(QDialog):
         with open(f"{file_name}.json", 'w') as outfile:
             json.dump(final_commands, outfile, indent=4)
 
-        QMessageBox.information(self, "Готово", f"Ваш прибор создан и записан в {file_name}. Расположите его в той же директории, где расположен файл запуска программы построения установки, и он будет доступен в списке выбора приборов. Успехов!")
+        text = QApplication.translate('device_creator', "Ваш прибор создан и записан в {file_name}. Расположите его в той же директории, где расположен файл запуска программы построения установки, и он будет доступен в списке выбора приборов. Успехов!")
+        text = text.format(file_name=file_name)
+
+        QMessageBox.information(self, QApplication.translate('device_creator',"Готово"), text)
         self.close()
 
     def get_type_device(self):
         self.ok_button.setParent(None)
         self.cancel_button.setParent(None)
-        self.main_label.setText("Выберите тип добавляемого прибора")
+        self.main_label.setText(QApplication.translate('device_creator',"Выберите тип добавляемого прибора"))
         type_devices = ['oscilloscope']
         self.buttons_type = []
         for tp in type_devices:
@@ -244,10 +248,10 @@ class deviceCreator(QDialog):
             status = True
 
         except KeyError:
-            QMessageBox.critical(None, "Ошибка", "Шаблон не найден.")
+            QMessageBox.critical(None, QApplication.translate('device_creator',"Ошибка"), QApplication.translate('device_creator',"Шаблон не найден."))
             self.close()
         except InvalidTemplate:
-            QMessageBox.critical(None, "Ошибка", "Шаблон найден, но не валиден.")
+            QMessageBox.critical(None, QApplication.translate('device_creator',"Ошибка"), QApplication.translate('device_creator',"Шаблон найден, но не валиден."))
             self.close()
 
         if status:
@@ -256,13 +260,13 @@ class deviceCreator(QDialog):
     def get_number_of_channels(self):
         status = False
         while status == False:
-            num_ch, ok = QInputDialog.getText(self, "Количество каналов", "Введите количество каналов в приборе:")
+            num_ch, ok = QInputDialog.getText(self, QApplication.translate('device_creator',"Количество каналов"), QApplication.translate('device_creator',"Введите количество каналов в приборе:"))
             
             if ok == False:#нажали отмену
                 return status
 
             if not num_ch.strip():
-                QMessageBox.critical(self, "Ошибка", "Количество каналов не должно быть пустым.")
+                QMessageBox.critical(self, QApplication.translate('device_creator',"Ошибка"), QApplication.translate('device_creator',"Количество каналов не должно быть пустым."))
             else:
                 status = True
 
@@ -270,21 +274,21 @@ class deviceCreator(QDialog):
                 try:
                     num_ch = float(num_ch)
                 except:
-                    QMessageBox.critical(self, "Ошибка", "Введите число")
+                    QMessageBox.critical(self, QApplication.translate('device_creator',"Ошибка"), QApplication.translate('device_creator',"Введите число"))
                     status = False
 
             if status:
                 max_num_ch = 8
                 if num_ch > max_num_ch:
-                    QMessageBox.critical(self, "Ошибка", f"Слишком много каналов, число не больше {max_num_ch}")
+                    QMessageBox.critical(self, QApplication.translate('device_creator',"Ошибка"), QApplication.translate('device_creator',"Слишком много каналов, число не больше") + f" {max_num_ch}")
                     status = False
                     
         return num_ch
 
     def add_ok_cancel_buttons(self):
         '''Создает кнопки окей и отмена и добавляет их в конец главного слоя'''
-        self.ok_button = QPushButton('Поехали!', self)
-        self.cancel_button = QPushButton('Отмена', self)
+        self.ok_button = QPushButton(QApplication.translate('device_creator','Поехали!'), self)
+        self.cancel_button = QPushButton(QApplication.translate('device_creator','Отмена'), self)
         buf_lay = QHBoxLayout()
         buf_lay.addWidget(self.cancel_button)
         buf_lay.addWidget(self.ok_button)
@@ -294,13 +298,13 @@ class deviceCreator(QDialog):
     def get_device_name(self):
         status = False
         while status == False:
-            device_name, ok = QInputDialog.getText(self, "Имя прибора", "Введите имя прибора латиницей:")
+            device_name, ok = QInputDialog.getText(self, QApplication.translate('device_creator',"Имя прибора"), QApplication.translate('device_creator',"Введите имя прибора латиницей:"))
 
             if ok == False:#нажали отмену
                 return status
             
             if not device_name.strip():
-                QMessageBox.critical(self, "Ошибка", "Имя прибора не должно быть пустым.")
+                QMessageBox.critical(self, QApplication.translate('device_creator',"Ошибка"), QApplication.translate('device_creator',"Имя прибора не должно быть пустым."))
             else:
                 status = True
         return device_name
@@ -322,7 +326,7 @@ class deviceCreator(QDialog):
         self.transfer_command_to_test(command=self.input_field.text())
 
         if self.is_first_test:
-            text = r'''
+            text = QApplication.translate('device_creator','''
             Введите настройки для подключения к прибору. 
             Затем введите команду, замените аргументы в {} на нужные значения и нажмите кнопку отправить. 
             Смотрите на реакцию прибора и на ответ. 
@@ -331,8 +335,8 @@ class deviceCreator(QDialog):
             Пример тестирования команды ":WAV:STARt {point}\r\n":
             {point} - этот аргумент мы меняем на какое-нибудь допустимое для прибора значение, пусть будет 125.
             Тогда наша команда в поле отправки будет выглядеть так: 
-            ":WAV:STARt 125\r\n"'''
-            QMessageBox.information(self, "Инструкция", text)
+            ":WAV:STARt 125\r\n"''')
+            QMessageBox.information(self, QApplication.translate('device_creator',"Инструкция"), text)
             self.is_first_test = False
 
     def transfer_command_to_test(self, command):
@@ -346,7 +350,7 @@ class deviceCreator(QDialog):
         #print(f"{self.actual_arguments=} {current_arguments=}")
         if set( self.actual_arguments ) != set( current_arguments ):
             '''если набор аргументов не одинаковый, то необходимо вывести сообщение с ошибкой'''
-            QMessageBox.critical(self, "Ошибка", f"Аргументы в фигурных скобках должны быть такими же как и в образце. Их количесто так же должно быть равно количеству аргументов в образце. Может быть вы забыли обрамить аргументы фигурными скобками. Аргументы: {self.actual_arguments}")
+            QMessageBox.critical(self, QApplication.translate('device_creator',"Ошибка"), QApplication.translate('device_creator',"Аргументы в фигурных скобках должны быть такими же как и в образце. Их количесто так же должно быть равно количеству аргументов в образце. Может быть вы забыли обрамить аргументы фигурными скобками. Аргументы:") + f" {self.actual_arguments}")
             return
         input_text = self.ensure_line_endings(input_text)
         command_template = self.commands[self.current_index]

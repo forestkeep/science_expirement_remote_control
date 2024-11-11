@@ -170,7 +170,8 @@ class base_settings_window(QtWidgets.QDialog):
 
         self.rejected.connect(self.onReject)
 
-        self.retranslateUi(self)
+        self.retranslateUi_base(self)
+        
 
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна крестиком
         print("окно настройки закрыто крестиком")
@@ -190,7 +191,7 @@ class base_settings_window(QtWidgets.QDialog):
         for i in reversed(range(self.Layout_set_dev_act.count())):
             self.Layout_set_dev_act.itemAt(i).widget().setParent(None)
 
-    def retranslateUi(self, MainWindow):
+    def retranslateUi_base(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         self.triger_act_enter.setWhatsThis(
             _translate( "device window", "Источник сигнала для проведения действия. Таймер - поведение действия через заданное количество секунд в поле ниже. Внешний сигнал - сигнал от дугих пиборов в установке")
@@ -220,7 +221,7 @@ class base_settings_window(QtWidgets.QDialog):
         )
 
         self.triger_act_label.setText( _translate( "device window","Триг действия") )
-        self.triger_meas_label = QtWidgets.QLabel("Триг измерения")
+        self.triger_meas_label.setText( _translate( "device window","Триг измерения") )
 
         self.COM_label.setText( _translate( "device window","COM") )
         self.baud_label.setText( _translate( "device window","Baudrate") )

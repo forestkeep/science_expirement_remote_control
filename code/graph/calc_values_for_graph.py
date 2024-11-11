@@ -141,10 +141,8 @@ class TestArrayProcessor(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(x, expected_x)
         np.testing.assert_array_almost_equal(y, expected_y)
-        # Исправленный метод для проверки expected_time
         np.testing.assert_array_equal(time, expected_time)
 
-        # Дополнительная проверка для того, чтобы увидеть подробности, если тест не пройдет
         self.assertEqual(
             len(time), len(expected_time), "Length of time array does not match"
         )

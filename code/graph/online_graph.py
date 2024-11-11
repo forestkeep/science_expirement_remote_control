@@ -211,8 +211,8 @@ class GraphWindow(QMainWindow):
         self.tab2 = QWidget()
 
         # Add tabs to the tab widget
-        self.tabWidget.addTab(self.tab1, "Графики")
-        self.tabWidget.addTab(self.tab2, "Осциллограммы")  # Placeholder for another tab
+        self.tabWidget.addTab(self.tab1, QApplication.translate("GraphWindow", "Графики") )
+        self.tabWidget.addTab(self.tab2, QApplication.translate("GraphWindow", "Осциллограммы") )  # Placeholder for another tab
 
         self.graph_main = graphMain(tablet_page=self.tab1)
         self.graph_wave = X(self.tab2)

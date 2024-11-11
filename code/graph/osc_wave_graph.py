@@ -30,6 +30,7 @@ from PyQt5.QtWidgets import (
     QSplitter,
     QVBoxLayout,
     QWidget,
+    QApplication
 )
 from pyqtgraph.opengl import GLAxisItem, GLLinePlotItem, GLScatterPlotItem, GLViewWidget
 
@@ -104,7 +105,7 @@ class X:
         self.ver_curve_left = None
         self.ver_curve_right = None
         self.tooltip = QLabel("X:0,Y:0")
-        self.build_hyst_loop_check = QCheckBox("Построение петель гистерезиса")
+        self.build_hyst_loop_check = QCheckBox()
         self.build_hyst_loop_check.stateChanged.connect(
             lambda: self.hyst_loop_activate()
         )
@@ -179,9 +180,9 @@ class X:
         # Add all data source selectors and graph area to tab1Layout
         self.hor_lay = QHBoxLayout()
         self.choice_device = QComboBox()
-        self.choice_device_default_text = "Выберите устройство"
+        self.choice_device_default_text = QApplication.translate('graph_win',"Выберите устройство" )
         self.choice_device.addItems(
-            [self.choice_device_default_text, "device1", "device2"]
+            ["device1", "device2"]
         )
 
         self.choice_device.setSizePolicy(
@@ -230,6 +231,8 @@ class X:
         self.hyst_loop_layer.hide()
         self.tab1Layout.addWidget(self.hyst_loop_layer)
         self.page.setLayout(self.tab1Layout)
+
+        self.retranslateUI(self.page)
 
     def setupGraphView(self):
         graphView = pg.PlotWidget(title="")
@@ -283,10 +286,10 @@ class X:
             # Создание лейбла для столбца, если он еще не добавлен
             if row == 1:  # Лейбл добавляется в первую строку
                 lay = QHBoxLayout()
-                label = QLabel("Отображаемый канал")  # Лейбл с именем канала
-                label2 = QLabel("Номер осциллограммы")  # Лейбл с именем канала
-                lay.addWidget(label)
-                lay.addWidget(label2)
+                self.label = QLabel()  # Лейбл с именем канала
+                self.label2 = QLabel()  # Лейбл с именем канала
+                lay.addWidget(self.label)
+                lay.addWidget(self.label2)
                 layout.addLayout(lay, 0, col)
 
             # Создание горизонтального лэйаута для чекбокса и комбобокса
@@ -323,14 +326,15 @@ class X:
         second_row_layout = QHBoxLayout()
 
         # Создаем чекбокс и добавляем его в левую часть второй строки
-        self.button_hyst_loop = QPushButton("Построить петлю")
+        self.button_hyst_loop = QPushButton()
         self.button_hyst_loop.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button_hyst_loop.setMaximumSize(
             100, 100
         )  # Ограничивает максимальный размер кнопки
         second_row_layout.addWidget(self.button_hyst_loop, alignment=Qt.AlignLeft)
 
-        self.button_hyst_loop_clear = QPushButton("Очистить петли")
+        self.button_hyst_loop_clear = QPushButton()
+        
         self.button_hyst_loop_clear.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button_hyst_loop_clear.setMaximumSize(
             100, 100
@@ -339,16 +343,17 @@ class X:
 
         # Создаем два комбобокса
         lay_field = QVBoxLayout()
-        name_field = QLabel("Поле")
+        self.name_field = QLabel("Поле")
         self.field_ch_choice = QComboBox()
-        lay_field.addWidget(name_field)
+        lay_field.addWidget(self.name_field)
         lay_field.addWidget(self.field_ch_choice)
         second_row_layout.addLayout(lay_field)
 
         lay_sig = QVBoxLayout()
-        name_sig = QLabel("Сигнал")
+        self.name_sig = QLabel("Сигнал")
+        
         self.sig_ch_choice = QComboBox()
-        lay_sig.addWidget(name_sig)
+        lay_sig.addWidget(self.name_sig)
         lay_sig.addWidget(self.sig_ch_choice)
         second_row_layout.addLayout(lay_sig)
 
@@ -389,6 +394,7 @@ class X:
 
         self.square = QLineEdit()
         self.square.setPlaceholderText("Площадь провода(мкм)")
+
         self.square.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.square.setMaximumSize(250, 40)
         right_layout.addWidget(self.square)
@@ -1046,6 +1052,21 @@ class X:
             self.used_colors.add(color)
             yield color
 
+    def retranslateUI(self, GraphWindow):
+        _translate = QApplication.translate
+        self.build_hyst_loop_check.setText(_translate("GraphWindow", "Построение петель гистерезиса") )
+        self.label.setText(_translate("GraphWindow", "Отображаемый канал") )
+        self.label2.setText(_translate("GraphWindow", "Номер осциллограммы") )
+        self.button_hyst_loop_clear.setText(_translate("GraphWindow", "Очистить петли") )
+        self.button_hyst_loop.setText(_translate("GraphWindow", "Построить петлю") )
+        self.resistance.setPlaceholderText(_translate("GraphWindow", "Сопротивление провода(Ом)") )
+        self.square.setPlaceholderText(_translate("GraphWindow", "Площадь провода(мкм)") )
+        self.right_coord.line_edit.setPlaceholderText(_translate("GraphWindow", "Координата справа") )
+        self.left_coord.line_edit.setPlaceholderText(_translate("GraphWindow", "Координата слева") )
+        self.auto_button.setText(_translate("GraphWindow", "Авто") )
+        self.name_sig.setText(_translate("GraphWindow", "Сигнал") )
+        self.name_field.setText(_translate("GraphWindow", "Поле") )
+        
 
 class verticals_lines:
 

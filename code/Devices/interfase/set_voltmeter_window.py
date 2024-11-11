@@ -38,7 +38,7 @@ class Ui_Set_voltmeter(base_settings_window):
         self.radioButton = QtWidgets.QRadioButton()
         self.radioButton.setObjectName("radioButton")
 
-        self.range_label = QtWidgets.QLabel()
+        self.range_label = QtWidgets.QLabel("")
         self.range_label.setObjectName("label_4")
 
         self.range_enter = QtWidgets.QComboBox()
