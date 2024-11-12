@@ -199,7 +199,7 @@ class channel_page(QtWidgets.QWidget):
         font.setPointSize(11)
         font.setBold(True)
         font.setWeight(80)
-        self.label_settings_channel = QtWidgets.QLabel()
+        self.label_settings_channel = QtWidgets.QLabel("Не настроено")
         self.label_settings_channel.setObjectName("labelchset" + str(num))
         self.label_settings_channel.setStyleSheet(not_ready_style_border)
         self.label_settings_channel.setAlignment(QtCore.Qt.AlignCenter)
@@ -256,7 +256,8 @@ class channel_page(QtWidgets.QWidget):
     
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
-        self.pushButton.setText(_translate("channel page",'Настройка') )
+        self.pushButton.setText( _translate("channel page",'Настройка') )
+        self.label_settings_channel.setText( _translate("channel page","Не настроено") )
         if self.is_standart_device == True:
             self.state_Button.setToolTip(_translate("channel page","Закрыть") + f"ch {self.number}")
         else:

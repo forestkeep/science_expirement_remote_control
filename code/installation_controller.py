@@ -27,7 +27,7 @@ from interface.main_window import Ui_MainWindow
 from interface.selectdevice_window import Ui_Selectdevice
 from Devices.svps34_control import Ui_SVPS34_control
 from device_creator.dev_creator import deviceCreator
-
+from PyQt5.QtCore import QTranslator, QLocale
 
 version_app = "1.0.1"
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ class MyWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.dict_device_class = dict_device_class
         self.available_dev = list(self.dict_device_class.keys())
-        self.ui = Ui_MainWindow(version = version_app)
+        self.ui = Ui_MainWindow(version = version_app, main_class=self)
         logger.debug("запуск программы")
         self.ui.setupUi(self)
         self.dict_active_local_devices = {}
@@ -70,6 +70,17 @@ class MyWindow(QtWidgets.QMainWindow):
             version = version_app
         )
         self.current_installation_list = []
+
+        #======================languages load==========================
+
+        self.translator = QTranslator()  # Создайте экземпляр переводчика
+        self.lang = None
+
+        lang = self.settings.value(
+            "language", defaultValue="ENG"
+        )
+
+        self.change_language(lang)
 
         if False:
             if os.path.isfile("picture/tray.png"):
@@ -101,6 +112,33 @@ class MyWindow(QtWidgets.QMainWindow):
                     self.close_event.activated.connect(self.close)
                 except:
                     logger.warning("Функционал сворачивания в трей не добавлен")
+
+    def change_language(self, lang):
+
+        if lang == self.lang:
+            return
+        
+        # Удаляем текущий переводчик
+        QtWidgets.QApplication.instance().removeTranslator(self.translator)
+        
+        self.lang = lang
+        self.load_language(lang)
+
+  
+        self.ui.retranslateUi(self)
+
+        self.settings.setValue(
+            "language",
+            self.lang,
+        )
+
+    def load_language(self, lang):
+        if lang == 'RUS':
+            self.translator.load("translations/translation_ru.qm")
+        else:  # По умолчанию ENG
+            self.translator.load("translations/translation_en.qm")
+        
+        QtWidgets.QApplication.instance().installTranslator(self.translator)
 
     def toggle_key_installation(self, answer_signal):
         self.key_to_new_window_installation = not self.key_to_new_window_installation
@@ -221,12 +259,18 @@ if __name__ == "__main__":
     # Общая настройка логгирования
     logging.basicConfig(handlers=[file_handler, console], level=logging.DEBUG)
 
-
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
 
     # Создаем экземпляр deviceCreator
     device_creator = deviceCreator()
+
+    translator = QTranslator()
+    
+    #translator.load("translations/translation_en.qm")
+    
+    #app.installTranslator(translator)
+    QtWidgets.QApplication.instance().installTranslator(translator)
 
     start_window = MyWindow(device_creator=device_creator)
     start_window.show()

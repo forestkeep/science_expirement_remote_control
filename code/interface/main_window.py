@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 class Ui_MainWindow(object):
-
-    def __init__(self, version):
+    def __init__(self, version, main_class):
+        self.main_class = main_class
         self.is_design_mode = False
         self.version_app = version
 
@@ -71,8 +71,24 @@ class Ui_MainWindow(object):
         self.actionCreateNew.setObjectName("CreateNew")
 
         self.debug_mode = QtWidgets.QAction(MainWindow)
-        self.debug_mode.setObjectName("CreateNew")
+        self.debug_mode.setObjectName("debug_mode")
         self.debug_mode.triggered.connect(self.set_design_mode)
+
+        # Создание подменю для выбора языка
+        self.language_menu = QtWidgets.QMenu(self.menu)
+        
+        # Добавление пунктов в подменю
+        self.actionEnglish = QtWidgets.QAction(MainWindow)
+        self.actionEnglish.triggered.connect(lambda: self.change_language('ENG'))
+        
+        self.actionRussian = QtWidgets.QAction(MainWindow)
+        self.actionRussian.triggered.connect(lambda: self.change_language('RUS'))
+        
+        self.language_menu.addAction(self.actionEnglish)
+        self.language_menu.addAction(self.actionRussian)
+        
+        # Добавление подменю в основное меню
+        self.menu.addAction(self.language_menu.menuAction())  # Добавляем действие подменю
 
         self.menu.addSeparator()
         self.menu.addAction(self.debug_mode)
@@ -81,6 +97,12 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def change_language(self, language):
+        self.main_class.change_language(language)
+
+    def set_design_mode(self):
+        print("Design mode activated")
 
     def set_design_mode(self):
         self.is_design_mode = not self.is_design_mode
@@ -102,9 +124,7 @@ class Ui_MainWindow(object):
         if self.is_design_mode:
             self.debug_mode.setText(_translate("main","Выключить режим разработчика"))
             self.mother_class.setWindowTitle(_translate("main","Контроллер установки" + "(режим разработчика)") + self.version_app)
-            self.menu.addAction(self.actionCreateNew)
         else:
-            self.menu.removeAction(self.actionCreateNew)
             self.debug_mode.setText(_translate("main","Включить режим разработчика"))
             self.mother_class.setWindowTitle(_translate("main","Контроллер установки") + self.version_app)
         
@@ -112,4 +132,7 @@ class Ui_MainWindow(object):
         self.pushButton_2.setText(_translate("main","Создание экспериментальной установки"))
         self.menu.setTitle(_translate("main","Меню"))
         self.actionCreateNew.setText(_translate("main","Создать прибор"))
-        self.debug_mode.setText(_translate("main","Включить режим разработчика"))
+
+        self.language_menu.setTitle(_translate("main","Выбрать язык"))
+        self.actionEnglish.setText("English")
+        self.actionRussian.setText("Русский")

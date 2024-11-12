@@ -162,134 +162,134 @@ class ps_test(QtWidgets.QDialog):
 
     def retranslateUi(self, Set_power_supply):
         _translate = QtCore.QCoreApplication.translate
-        Set_power_supply.setWindowTitle(_translate("Set_power_supply", "Dialog"))
+        Set_power_supply.setWindowTitle("Dialog")
         self.label_12.setText(_translate("Set_power_supply", "Параметры генератора"))
         self.label_5.setText(_translate("Set_power_supply", "Частота(Гц)"))
         self.label_4.setText(_translate("Set_power_supply", "Амплитуда(В)"))
         self.label.setText(_translate("Set_power_supply", "Временная константа"))
-        self.time_const_enter_number.setCurrentText(_translate("Set_power_supply", "1"))
-        self.time_const_enter_number.setItemText(0, _translate("Set_power_supply", "1"))
-        self.time_const_enter_number.setItemText(1, _translate("Set_power_supply", "3"))
+        self.time_const_enter_number.setCurrentText("1")
+        self.time_const_enter_number.setItemText(0, "1")
+        self.time_const_enter_number.setItemText(1, "3")
         self.time_const_enter_factor.setCurrentText(
-            _translate("Set_power_supply", "X1")
+            "X1"
         )
         self.time_const_enter_factor.setItemText(
-            0, _translate("Set_power_supply", "X1")
+            0, "X1"
         )
         self.time_const_enter_factor.setItemText(
-            1, _translate("Set_power_supply", "X10")
+            1, "X10"
         )
         self.time_const_enter_factor.setItemText(
-            2, _translate("Set_power_supply", "X100")
+            2,"X100"
         )
         self.time_const_enter_decimal_factor.setCurrentText(
-            _translate("Set_power_supply", "ks")
+            "ks"
         )
         self.time_const_enter_decimal_factor.setItemText(
-            0, _translate("Set_power_supply", "ks")
+            0, "ks"
         )
         self.time_const_enter_decimal_factor.setItemText(
-            1, _translate("Set_power_supply", "s")
+            1, "s"
         )
         self.time_const_enter_decimal_factor.setItemText(
-            2, _translate("Set_power_supply", "ms")
+            2, "ms"
         )
         self.time_const_enter_decimal_factor.setItemText(
-            3, _translate("Set_power_supply", "us")
+            3, "us"
         )
-        self.label_16.setText(_translate("Set_power_supply", "Filter slope"))
-        self.Filt_slope_enter_level.setCurrentText(_translate("Set_power_supply", "6"))
-        self.Filt_slope_enter_level.setItemText(0, _translate("Set_power_supply", "6"))
-        self.Filt_slope_enter_level.setItemText(1, _translate("Set_power_supply", "12"))
-        self.Filt_slope_enter_level.setItemText(2, _translate("Set_power_supply", "18"))
-        self.Filt_slope_enter_level.setItemText(3, _translate("Set_power_supply", "24"))
-        self.label_17.setText(_translate("Set_power_supply", "SYNK < 200 Hz"))
-        self.SYNK_enter.setCurrentText(_translate("Set_power_supply", "On"))
-        self.SYNK_enter.setItemText(0, _translate("Set_power_supply", "On"))
-        self.SYNK_enter.setItemText(1, _translate("Set_power_supply", "Off"))
+        self.label_16.setText("Filter slope")
+        self.Filt_slope_enter_level.setCurrentText("6")
+        self.Filt_slope_enter_level.setItemText(0, "6")
+        self.Filt_slope_enter_level.setItemText(1, "12")
+        self.Filt_slope_enter_level.setItemText(2, "18")
+        self.Filt_slope_enter_level.setItemText(3, "24")
+        self.label_17.setText("SYNK < 200 Hz")
+        self.SYNK_enter.setCurrentText("On")
+        self.SYNK_enter.setItemText(0, "On")
+        self.SYNK_enter.setItemText(1, "Off")
         self.label_13.setText(_translate("Set_power_supply", "Чувствительность"))
         self.sensitivity_enter_number.setCurrentText(
-            _translate("Set_power_supply", "1")
+            "1"
         )
         self.sensitivity_enter_number.setItemText(
-            0, _translate("Set_power_supply", "1")
+            0, "1"
         )
         self.sensitivity_enter_number.setItemText(
-            1, _translate("Set_power_supply", "2")
+            1, "2"
         )
         self.sensitivity_enter_number.setItemText(
-            2, _translate("Set_power_supply", "5")
+            2, "5"
         )
         self.sensitivity_enter_factor.setCurrentText(
-            _translate("Set_power_supply", "X1")
+            "X1"
         )
         self.sensitivity_enter_factor.setItemText(
-            0, _translate("Set_power_supply", "X1")
+            0, "X1"
         )
         self.sensitivity_enter_factor.setItemText(
-            1, _translate("Set_power_supply", "X10")
+            1, "X10"
         )
         self.sensitivity_enter_factor.setItemText(
-            2, _translate("Set_power_supply", "X100")
+            2, "X100"
         )
         self.sensitivity_enter_decimal_factor.setCurrentText(
-            _translate("Set_power_supply", "V/uA")
+            "V/uA"
         )
         self.sensitivity_enter_decimal_factor.setItemText(
-            0, _translate("Set_power_supply", "V/uA")
+            0, "V/uA"
         )
         self.sensitivity_enter_decimal_factor.setItemText(
-            1, _translate("Set_power_supply", "mV/nA")
+            1,"mV/nA"
         )
         self.sensitivity_enter_decimal_factor.setItemText(
-            2, _translate("Set_power_supply", "uV/pA")
+            2, "uV/pA"
         )
         self.sensitivity_enter_decimal_factor.setItemText(
-            3, _translate("Set_power_supply", "nV/fA")
+            3, "nV/fA"
         )
         self.label_14.setText(_translate("Set_power_supply", "Вход сигнала"))
-        self.input_channels_enter.setCurrentText(_translate("Set_power_supply", "A"))
-        self.input_channels_enter.setItemText(0, _translate("Set_power_supply", "A"))
+        self.input_channels_enter.setCurrentText("A")
+        self.input_channels_enter.setItemText(0, "A")
         self.input_channels_enter.setItemText(
-            1, _translate("Set_power_supply", "A - B")
+            1,"A - B"
         )
         self.input_channels_enter.setItemText(
-            2, _translate("Set_power_supply", "I (10^6)")
+            2, "I (10^6)"
         )
         self.input_channels_enter.setItemText(
-            3, _translate("Set_power_supply", "I (10^8)")
+            3, "I (10^8)"
         )
-        self.input_type_enter.setCurrentText(_translate("Set_power_supply", "AC"))
-        self.input_type_enter.setItemText(0, _translate("Set_power_supply", "AC"))
-        self.input_type_enter.setItemText(1, _translate("Set_power_supply", "DC"))
-        self.connect_ch_enter.setCurrentText(_translate("Set_power_supply", "float"))
-        self.connect_ch_enter.setItemText(0, _translate("Set_power_supply", "float"))
-        self.connect_ch_enter.setItemText(1, _translate("Set_power_supply", "ground"))
-        self.label_18.setText(_translate("Set_power_supply", "Reserve"))
+        self.input_type_enter.setCurrentText("AC")
+        self.input_type_enter.setItemText(0,"AC")
+        self.input_type_enter.setItemText(1, "DC")
+        self.connect_ch_enter.setCurrentText("float")
+        self.connect_ch_enter.setItemText(0, "float")
+        self.connect_ch_enter.setItemText(1, "ground")
+        self.label_18.setText("Reserve")
         self.reserve_enter.setCurrentText(
-            _translate("Set_power_supply", "high reserve")
+            "high reserve"
         )
         self.reserve_enter.setItemText(
-            0, _translate("Set_power_supply", "high reserve")
+            0, "high reserve"
         )
-        self.reserve_enter.setItemText(1, _translate("Set_power_supply", "normal"))
-        self.reserve_enter.setItemText(2, _translate("Set_power_supply", "low noise"))
-        self.label_19.setText(_translate("Set_power_supply", "Filters"))
-        self.filters_enter.setCurrentText(_translate("Set_power_supply", "line"))
-        self.filters_enter.setItemText(0, _translate("Set_power_supply", "line"))
-        self.filters_enter.setItemText(1, _translate("Set_power_supply", "2X line"))
-        self.filters_enter.setItemText(2, _translate("Set_power_supply", "both"))
-        self.filters_enter.setItemText(3, _translate("Set_power_supply", "out"))
+        self.reserve_enter.setItemText(1,"normal")
+        self.reserve_enter.setItemText(2, "low noise")
+        self.label_19.setText("Filters")
+        self.filters_enter.setCurrentText("line")
+        self.filters_enter.setItemText(0, "line")
+        self.filters_enter.setItemText(1, "2X line")
+        self.filters_enter.setItemText(2, "both")
+        self.filters_enter.setItemText(3, "out")
         self.label_15.setText(_translate("Set_power_supply", "Считывание параметров"))
         self.label_sourse.setText(_translate("Set_power_supply", "Время (сек)"))
         self.label_triger.setText(_translate("Set_power_supply", "Триггер"))
         self.triger_enter.setCurrentText(_translate("Set_power_supply", "Таймер"))
         self.triger_enter.setItemText(0, _translate("Set_power_supply", "Таймер"))
         self.label_2.setText(_translate("Set_power_supply", "Настройки подключения"))
-        self.label_11.setText(_translate("Set_power_supply", "Baudrate"))
+        self.label_11.setText("Baudrate")
         self.label_num_meas.setText(_translate("Set_power_supply", "Кол-во измерений"))
-        self.boudrate.setItemText(0, _translate("Set_power_supply", "9600"))
-        self.label_10.setText(_translate("Set_power_supply", "COM"))
+        self.boudrate.setItemText(0, "9600")
+        self.label_10.setText("COM")
 
 
 if __name__ == "__main__":

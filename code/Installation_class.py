@@ -760,11 +760,11 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     
     #----------------------------------
-    #translator = QTranslator()
+    translator = QTranslator()
     
-    #translator.load("translations/translation_en.qm")
+    translator.load("translations/translation_en.qm")
     
-    #app.installTranslator(translator)
+    app.installTranslator(translator)
     #----------------------------------
 
     qdarktheme.setup_theme(corner_shape="sharp")
@@ -773,6 +773,8 @@ if __name__ == "__main__":
 
     a = installation_class(settings=settings, dict_device_class=dict_device_class, version="test")
     a.reconstruct_installation(lst4)
+
+    QtWidgets.QApplication.instance().removeTranslator(translator)
     a.show_window_installation()
     sys.exit(app.exec_())
 

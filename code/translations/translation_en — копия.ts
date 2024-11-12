@@ -35,7 +35,7 @@
         <translation>While other devices are active</translation>
     </message>
     <message>
-        <location filename="../Devices/svps34_control.py" line="627"/>
+        <location filename="../Devices/svps34_control.py" line="629"/>
         <source>Нет подключенных портов</source>
         <translation>No connected ports</translation>
     </message>
@@ -496,14 +496,9 @@
 <context>
     <name>MyWindow</name>
     <message>
-        <location filename="../installation_controller.py" line="154"/>
+        <location filename="../installation_controller.py" line="122"/>
         <source>установка уже собрана</source>
         <translation>The setup is already assembled</translation>
-    </message>
-    <message>
-        <location filename="../test_translator.py" line="55"/>
-        <source>Изменить язык</source>
-        <translation>Change language</translation>
     </message>
 </context>
 <context>
@@ -547,14 +542,89 @@
 <context>
     <name>SVPS34_control</name>
     <message>
+        <location filename="../Devices/svps34_control.py" line="626"/>
+        <source>SVPS34</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/svps34_control.py" line="627"/>
+        <source>Scan</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../Devices/svps34_control.py" line="628"/>
+        <source>Connect</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/svps34_control.py" line="630"/>
         <source>Журнал</source>
         <translation>Log</translation>
     </message>
     <message>
+        <location filename="../Devices/svps34_control.py" line="631"/>
+        <source>Common</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/svps34_control.py" line="632"/>
+        <source>+3.3V</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/svps34_control.py" line="633"/>
+        <source>+5V</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/svps34_control.py" line="634"/>
+        <source>+12V</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/svps34_control.py" line="635"/>
+        <source>Ch4</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/svps34_control.py" line="636"/>
+        <source>Ch5</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/svps34_control.py" line="637"/>
+        <source>Ch6</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/svps34_control.py" line="638"/>
+        <source>Ch7</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/svps34_control.py" line="645"/>
+        <source>Rel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../Devices/svps34_control.py" line="646"/>
-        <source>Температура = </source>
-        <translation>Temperature = </translation>
+        <source>Common Rel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/svps34_control.py" line="647"/>
+        <source>Remote</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/SVPS34.py" line="216"/>
+        <source>Get temperature</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/svps34_control.py" line="648"/>
+        <source>Temperature = </source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -567,6 +637,11 @@
 </context>
 <context>
     <name>Set_power_supply</name>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="165"/>
+        <source>Dialog</source>
+        <translation type="unfinished"></translation>
+    </message>
     <message>
         <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="166"/>
         <source>Параметры генератора</source>
@@ -588,14 +663,214 @@
         <translation>Time constant</translation>
     </message>
     <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="214"/>
+        <source>1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="172"/>
+        <source>3</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="226"/>
+        <source>X1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="229"/>
+        <source>X10</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="232"/>
+        <source>X100</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="188"/>
+        <source>ks</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="191"/>
+        <source>s</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="194"/>
+        <source>ms</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="197"/>
+        <source>us</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="200"/>
+        <source>Filter slope</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="202"/>
+        <source>6</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="203"/>
+        <source>12</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="204"/>
+        <source>18</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="205"/>
+        <source>24</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="206"/>
+        <source>SYNK &lt; 200 Hz</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="208"/>
+        <source>On</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="209"/>
+        <source>Off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="210"/>
         <source>Чувствительность</source>
         <translation>Sensitivity</translation>
     </message>
     <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="217"/>
+        <source>2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="220"/>
+        <source>5</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="238"/>
+        <source>V/uA</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="241"/>
+        <source>mV/nA</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="244"/>
+        <source>uV/pA</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="247"/>
+        <source>nV/fA</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="250"/>
         <source>Вход сигнала</source>
         <translation>Signal input</translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="252"/>
+        <source>A</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="253"/>
+        <source>A - B</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="256"/>
+        <source>I (10^6)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="259"/>
+        <source>I (10^8)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="263"/>
+        <source>AC</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="264"/>
+        <source>DC</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="266"/>
+        <source>float</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="267"/>
+        <source>ground</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="268"/>
+        <source>Reserve</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="272"/>
+        <source>high reserve</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="275"/>
+        <source>normal</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="276"/>
+        <source>low noise</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="277"/>
+        <source>Filters</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="279"/>
+        <source>line</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="280"/>
+        <source>2X line</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="281"/>
+        <source>both</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="282"/>
+        <source>out</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="283"/>
@@ -623,9 +898,24 @@
         <translation>Connection settings</translation>
     </message>
     <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="289"/>
+        <source>Baudrate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="290"/>
         <source>Кол-во измерений</source>
         <translation>Number of measurements</translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="291"/>
+        <source>9600</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/power_suply_several_ch_window.py" line="292"/>
+        <source>COM</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../Devices/interfase/set_power_supply_window.py" line="170"/>
@@ -964,7 +1254,7 @@ For detailed instructions on using the application, click the &quot;Info&quot; -
     <message>
         <location filename="../base_installation.py" line="391"/>
         <source>Режим разработчика включен. В этом режиме корректность показаний с приборов не гарантируется</source>
-        <translation>Developer mode is enabled. In this mode, the accuracy of the readings from the devices is not guaranteed</translation>
+        <translation>Developer mode is enabled. In this mode, the accuracy of the readings from the devices is not guaranteed.</translation>
     </message>
     <message>
         <location filename="../base_installation.py" line="396"/>
@@ -1144,12 +1434,12 @@ For detailed instructions on using the application, click the &quot;Info&quot; -
     <message>
         <location filename="../Devices/interfase/base_set_window.py" line="219"/>
         <source>Скорость обмена данными(bit per second) при выбранном интерфейсе COM-port. При другом выбранном интерфейсе данный параметр игнорируется.</source>
-        <translation>Data exchange rate (bit per second) for the selected COM-port interface. For another selected interface, this parameter is ignored.</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../Devices/interfase/base_set_window.py" line="223"/>
         <source>Триг действия</source>
-        <translation>Action trigger</translation>
+        <translation type="unfinished">Action trigger</translation>
     </message>
     <message>
         <location filename="../Devices/interfase/base_set_window.py" line="226"/>
@@ -1169,37 +1459,37 @@ For detailed instructions on using the application, click the &quot;Info&quot; -
     <message>
         <location filename="../Devices/interfase/base_set_window.py" line="232"/>
         <source>Кол-во измерений</source>
-        <translation>Number of measurements</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../Devices/interfase/base_set_window.py" line="233"/>
         <source>Кол-во действий</source>
-        <translation>Number actions</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../Devices/interfase/base_set_window.py" line="235"/>
         <source>Настройки прибора</source>
-        <translation>Device settings</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../Devices/interfase/base_set_window.py" line="237"/>
         <source>Настройки подключения</source>
-        <translation>Connection settings</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../Devices/interfase/base_set_window.py" line="239"/>
         <source>Настройки действий</source>
-        <translation>Action settings</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../Devices/interfase/base_set_window.py" line="241"/>
         <source>Настройки измерений</source>
-        <translation>Measurement settings</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../Devices/interfase/base_set_window.py" line="224"/>
         <source>Триг измерения</source>
-        <translation>Measurement trigger</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1215,127 +1505,117 @@ For detailed instructions on using the application, click the &quot;Info&quot; -
                         Если Вы хотите прервать процесс, просто нажмите кнопку отмена или закройте окно.
                         Обратите внимание, что устройство должно поддерживать SCPI формат команд,
                           в ином случае добавить его не получится.</source>
-        <translation>Welcome to the New Device Constructor!
-
-Here, you will be able to add a new device for use in the automatic controller of a physical experiment.
-
-You will be prompted to enter information about the device, select the connection type, specify the number of channels, and set control commands.
-
-Please follow the on-screen instructions to complete the process.
-
-If you wish to cancel the process, simply press the cancel button or close the window.
-
-Please note that the device must support SCPI command format; otherwise, it cannot be added.</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="58"/>
         <source>Протестировать команду</source>
-        <translation>Command testing</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="353"/>
         <source>Ошибка</source>
-        <translation>Error</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="113"/>
         <source>Нет доступных команд для ввода.</source>
-        <translation>No available commands for input.</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="159"/>
         <source>Команда запроса настройки/значения:</source>
-        <translation>Command to request settings/values:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="168"/>
         <source>Возвращаемое значение:</source>
-        <translation>Returned value:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="213"/>
         <source>Ваш прибор создан и записан в {file_name}. Расположите его в той же директории, где расположен файл запуска программы построения установки, и он будет доступен в списке выбора приборов. Успехов!</source>
-        <translation>Your device has been created and saved in {file_name}. Place it in the same directory as the launch file of the setup builder program, and it will be available in the device selection list. Good luck!</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="216"/>
         <source>Готово</source>
-        <translation>Done</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="222"/>
         <source>Выберите тип добавляемого прибора</source>
-        <translation>Select the type of the device to be added</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="251"/>
         <source>Шаблон не найден.</source>
-        <translation>Template not found.</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="254"/>
         <source>Шаблон найден, но не валиден.</source>
-        <translation>Template found, but it is not valid.</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="263"/>
         <source>Количество каналов</source>
-        <translation>Channels number</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="263"/>
         <source>Введите количество каналов в приборе:</source>
-        <translation>Enter the number of channels in the device:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="269"/>
         <source>Количество каналов не должно быть пустым.</source>
-        <translation>The number of channels must not be empty.</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="277"/>
         <source>Введите число</source>
-        <translation>Enter number</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="283"/>
         <source>Слишком много каналов, число не больше</source>
-        <translation>Too many channels, the number must not exceed </translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="290"/>
         <source>Поехали!</source>
-        <translation>Run!</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="291"/>
         <source>Отмена</source>
-        <translation>Cancel</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="301"/>
         <source>Имя прибора</source>
-        <translation>Device name</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="301"/>
         <source>Введите имя прибора латиницей:</source>
-        <translation>Enter the device name in Latin characters:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="307"/>
         <source>Имя прибора не должно быть пустым.</source>
-        <translation>The device name must not be empty.</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="339"/>
         <source>Инструкция</source>
-        <translation>Instruction</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="353"/>
         <source>Аргументы в фигурных скобках должны быть такими же как и в образце. Их количесто так же должно быть равно количеству аргументов в образце. Может быть вы забыли обрамить аргументы фигурными скобками. Аргументы:</source>
-        <translation>Arguments in curly braces must match those in the sample. Their quantity must also be equal to the number of arguments in the sample. You may have forgotten to enclose the arguments in curly braces. Arguments:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="150"/>
@@ -1348,12 +1628,7 @@ Please note that the device must support SCPI command format; otherwise, it cann
  присутствовать в команде под теми же названиями,
 
  их обязательно обрамлять фигурными скобками.</source>
-        <translation type="obsolete">Enter the value for the command:
-
-{command_template}.
-
-Arguments in curly braces must be present in the command 
-with the same names and must be enclosed in curly braces.</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="329"/>
@@ -1369,23 +1644,7 @@ with the same names and must be enclosed in curly braces.</translation>
             Тогда наша команда в поле отправки будет выглядеть так: 
             &quot;:WAV:STARt 125
 &quot;</source>
-        <translation type="obsolete">
-Enter the settings for connecting to the device.
-
-Then enter the command, replace the arguments in {} with the desired values, and press the send button.
-
-Observe the device&apos;s response and the reply.
-
-Check all commands and the response format, then enter them into the corresponding fields and proceed to the next command.
-
-Example of testing the command &quot;:WAV:STARt {point}&quot;:
-
-{point} - this argument should be replaced with a valid value for the device, let’s say 125.
-
-Then our command in the sending field will look like:
-
-&quot;:WAV:STARt 125&quot;
- </translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1393,72 +1652,72 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../experiment_control.py" line="69"/>
         <source>Бесконечный эксперимент</source>
-        <translation>Infinite experiment</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="93"/>
         <source>Осталось {min}:{sec} мин</source>
-        <translation>{min}:{sec} minutes remaining</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="98"/>
         <source>Осталось -- мин</source>
-        <translation>-- minutes remaining</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="121"/>
         <source>Пауза</source>
-        <translation>Pause</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="134"/>
         <source>Возобновить</source>
-        <translation>Resume</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="356"/>
         <source>Остановка, ошибка</source>
-        <translation>Error, stopping</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="360"/>
         <source> настроен</source>
-        <translation> seted</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="436"/>
         <source>Продолжение эксперимента</source>
-        <translation>Continuation of the experiment</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="716"/>
         <source>Эксперимент прерван из-за ошибки</source>
-        <translation>The experiment was interrupted due to an  error</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="720"/>
         <source>Эксперимент прерван из-за ошибки при настройке прибора</source>
-        <translation>The experiment was interrupted due to a device setup error</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="724"/>
         <source>Эксперимент прерван из-за ошибки при опросе прибора</source>
-        <translation>The experiment was interrupted due to a device pollingl error</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="732"/>
         <source>Эксперимент завершен</source>
-        <translation>Finish experiment</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="739"/>
         <source>Сохранение результатов</source>
-        <translation>Saving results</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="748"/>
         <source>Подготовка к эксперименту</source>
-        <translation>Preparation for the experiment</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="752"/>
@@ -1468,7 +1727,7 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../experiment_control.py" line="760"/>
         <source>Ожидание старта</source>
-        <translation>Waiting start</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="115"/>
@@ -1478,17 +1737,17 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../experiment_control.py" line="136"/>
         <source>Ожидание продолжения</source>
-        <translation>Waiting for continuation</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="344"/>
         <source>Ошибка настройки</source>
-        <translation>Error settings</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="344"/>
         <source>перед экспериментом</source>
-        <translation>before experiment</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="374"/>
@@ -1498,7 +1757,7 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../experiment_control.py" line="374"/>
         <source>не отвечает</source>
-        <translation>don&apos;t answer</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="382"/>
@@ -1508,17 +1767,17 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../experiment_control.py" line="455"/>
         <source>Остановка эксперимента</source>
-        <translation>Experiment is stopping</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="532"/>
         <source>завершил работу</source>
-        <translation>finished work</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="567"/>
         <source>Выполняется действие</source>
-        <translation>Action is being executed</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="683"/>
@@ -1528,17 +1787,17 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../experiment_control.py" line="683"/>
         <source>сделан за</source>
-        <translation>completed in</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="695"/>
         <source>Ошибка опроса</source>
-        <translation>Polling error</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="610"/>
         <source>Выполняется измерение</source>
-        <translation>Measurement is doing</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1552,69 +1811,64 @@ Then our command in the sending field will look like:
 <context>
     <name>main</name>
     <message>
-        <location filename="../installation_controller.py" line="94"/>
+        <location filename="../installation_controller.py" line="86"/>
         <source>Развернуть</source>
-        <translation>Expand</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../installation_controller.py" line="95"/>
+        <location filename="../installation_controller.py" line="87"/>
         <source>Закрыть приложение</source>
-        <translation>Close application</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../installation_controller.py" line="102"/>
+        <location filename="../installation_controller.py" line="94"/>
         <source>Управление экспериментальной установкой</source>
-        <translation>Control of the experimental installation</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../interface/main_window.py" line="125"/>
+        <location filename="../interface/main_window.py" line="103"/>
         <source>Выключить режим разработчика</source>
-        <translation>Turn off developer mode</translation>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../interface/main_window.py" line="91"/>
+        <source>Контроллер установки (режим разработчика)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../interface/main_window.py" line="115"/>
+        <source>Включить режим разработчика</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../interface/main_window.py" line="109"/>
+        <source>Контроллер установки</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../interface/main_window.py" line="104"/>
+        <source>Контроллер установки(режим разработчика)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../interface/main_window.py" line="111"/>
+        <source>Локальное управление приборами</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../interface/main_window.py" line="112"/>
+        <source>Создание экспериментальной установки</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../interface/main_window.py" line="113"/>
-        <source>Контроллер установки (режим разработчика)</source>
-        <translation>Installation controller (debug mode)</translation>
-    </message>
-    <message>
-        <location filename="../interface/main_window.py" line="128"/>
-        <source>Включить режим разработчика</source>
-        <translation>Turn on debug mode</translation>
-    </message>
-    <message>
-        <location filename="../interface/main_window.py" line="129"/>
-        <source>Контроллер установки</source>
-        <translation>Installation controller</translation>
-    </message>
-    <message>
-        <location filename="../interface/main_window.py" line="126"/>
-        <source>Контроллер установки(режим разработчика)</source>
-        <translation>Installation controller(debug mode)</translation>
-    </message>
-    <message>
-        <location filename="../interface/main_window.py" line="131"/>
-        <source>Локальное управление приборами</source>
-        <translation>Local devices control</translation>
-    </message>
-    <message>
-        <location filename="../interface/main_window.py" line="132"/>
-        <source>Создание экспериментальной установки</source>
-        <translation>Creating the experimental installation</translation>
-    </message>
-    <message>
-        <location filename="../interface/main_window.py" line="133"/>
         <source>Меню</source>
-        <translation>Menu</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../interface/main_window.py" line="134"/>
+        <location filename="../interface/main_window.py" line="114"/>
         <source>Создать прибор</source>
-        <translation>Create device</translation>
-    </message>
-    <message>
-        <location filename="../interface/main_window.py" line="136"/>
-        <source>Выбрать язык</source>
-        <translation>Select language</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1632,17 +1886,17 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../Installation_class.py" line="214"/>
         <source>Запрещено добавлять или отключать канал во время эксперимента</source>
-        <translation>It is prohibited to add or disconnect the channel during the experiment</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../Installation_class.py" line="325"/>
         <source>Запрещено удалять прибор во время эксперимента</source>
-        <translation>It is prohibited to remove the device during the experiment</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../Installation_class.py" line="342"/>
         <source>Запрещено менять параметры во время эксперимента</source>
-        <translation>It is prohibited to change parameters during the experiment</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../Installation_class.py" line="354"/>
@@ -1672,7 +1926,7 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../Installation_class.py" line="423"/>
         <source>настройка приборов</source>
-        <translation>settings devices</translation>
+        <translation type="unfinished">settings devices</translation>
     </message>
     <message>
         <location filename="../Installation_class.py" line="685"/>
@@ -1688,12 +1942,12 @@ Then our command in the sending field will look like:
         <location filename="../Installation_class.py" line="635"/>
         <source>Ошибка при открытии сохраненной установки.
  Вероятно, содержимое файла имеет не верный формат.</source>
-        <translation>Error opening the saved installation. The file contents are likely in an incorrect format.</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../Installation_class.py" line="132"/>
         <source>Старт</source>
-        <translation>Start</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1709,12 +1963,12 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../saving_data/Parse_data.py" line="195"/>
         <source>Прибор:{device} канал:{ch}</source>
-        <translation>Device:{device} channel:{ch}</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../saving_data/Parse_data.py" line="147"/>
         <source>Время</source>
-        <translation>Time</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../saving_data/Parse_data.py" line="147"/>
@@ -1724,7 +1978,7 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../saving_data/Parse_data.py" line="285"/>
         <source>Запущена установка</source>
-        <translation>Installation has started</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../saving_data/Parse_data.py" line="317"/>
@@ -1742,27 +1996,27 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../interface/experiment_settings_window.py" line="126"/>
         <source>Продолжать эксперимент при ошибке прибора</source>
-        <translation>Continue the experiment in case of device error</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../interface/experiment_settings_window.py" line="131"/>
         <source>Удалить буферный файл после эксперимента</source>
-        <translation>Delete the buffer file after the experiment</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../interface/experiment_settings_window.py" line="136"/>
         <source>Количество повторов эксперимента</source>
-        <translation>Number of repetitions of the experiment</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../interface/experiment_settings_window.py" line="138"/>
         <source>Количество измерений в точке</source>
-        <translation>Number of measurements at the point</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../interface/experiment_settings_window.py" line="140"/>
         <source>Место сохранения результатов</source>
-        <translation>Path for saving results.</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../interface/experiment_settings_window.py" line="142"/>
@@ -1772,14 +2026,14 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../interface/experiment_settings_window.py" line="201"/>
         <source>укажите путь сохранения результатов</source>
-        <translation>Specify the results saving path</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../interface/experiment_settings_window.py" line="127"/>
         <source>При активации эксперимент будет продолжаться независимо от ответа прибора, 
 
  если ответа от прибора не будет, в файл результатов будет записано слово fail</source>
-        <translation type="obsolete">When activated, the experiment will continue regardless of the device&apos;s response; if there is no response from the device, the word &quot;fail&quot; will be recorded in the results file</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../interface/experiment_settings_window.py" line="132"/>
@@ -1788,9 +2042,7 @@ Then our command in the sending field will look like:
  после эксперимента файл вычитывается и переводится в удобочитаемый формат, 
 
  в случае активации этого пункта буферный файл будет удаляться после удачного сохранения результатов.</source>
-        <translation type="obsolete">At each measurement, values are recorded in the buffer file. 
-After the experiment, the file is read and converted into a readable format.
-If this option is activated, the buffer file will be deleted after successful saving of the results</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1798,30 +2050,45 @@ If this option is activated, the buffer file will be deleted after successful sa
     <message>
         <location filename="../interface/installation_window.py" line="546"/>
         <source>Схема взаимодействия приборов</source>
-        <translation>Diagram of device interaction</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../interface/installation_window.py" line="547"/>
         <source>Состояние</source>
-        <translation>State</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../interface/save_repeat_set_window.py" line="123"/>
         <source>Формат сохранения результатов</source>
-        <translation type="obsolete">Result-saving format</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../interface/save_repeat_set_window.py" line="105"/>
+        <location filename="../interface/save_repeat_set_window.py" line="126"/>
         <source>Excel</source>
         <translation>Excel</translation>
     </message>
     <message>
-        <location filename="../interface/save_repeat_set_window.py" line="109"/>
+        <location filename="../interface/save_repeat_set_window.py" line="130"/>
+        <source>Куда сохранить результаты?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../interface/save_repeat_set_window.py" line="131"/>
         <source>Путь</source>
         <translation>Path</translation>
     </message>
     <message>
-        <location filename="../interface/save_repeat_set_window.py" line="104"/>
+        <location filename="../interface/save_repeat_set_window.py" line="132"/>
+        <source>Сколько раз повторить эксперимент?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../interface/save_repeat_set_window.py" line="146"/>
+        <source>Сколько измерений делать в каждой точке?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../interface/save_repeat_set_window.py" line="122"/>
         <source>Сохранение</source>
         <translation>Save</translation>
     </message>

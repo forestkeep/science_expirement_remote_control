@@ -191,12 +191,12 @@ class Ui_SVPS34_control(object):
 
     def retranslateUi(self, SVPS34_control):
         _translate = QtCore.QCoreApplication.translate
-        SVPS34_control.setWindowTitle(_translate("SVPS34_control", "SVPS34"))
-        self.scan_button.setText(_translate("SVPS34_control", "Scan"))
-        self.connect_button.setText(_translate("SVPS34_control", "Connect"))
+        SVPS34_control.setWindowTitle("SVPS34")
+        self.scan_button.setText( "Scan")
+        self.connect_button.setText("Connect")
         self.label_2.setText(_translate("Device", "Нет подключенных портов"))
         self.label.setText(_translate("SVPS34_control", "Журнал"))
-        self.common_button.setText(_translate("SVPS34_control", "Common"))
+        self.common_button.setText("Common")
         self.ch1.setText("+3.3V")
         self.ch2.setText("+5V")
         self.ch3.setText("+12V")
@@ -211,7 +211,7 @@ class Ui_SVPS34_control(object):
         self.rel5.setText("Rel")
         self.rel6.setText("Rel")
         self.rel7.setText("Rel")
-        self.common_rel_button.setText(_translate("SVPS34_control", "Common Rel"))
-        self.remote_button.setText(_translate("SVPS34_control", "Remote"))
-        self.get_temp_button.setText(_translate("SVPS34_control", "Get temperature"))
-        self.temp_label.setText(_translate("SVPS34_control", "Temperature = "))
+        self.common_rel_button.setText("Common Rel")
+        self.remote_button.setText("Remote")
+        self.get_temp_button.setText("Get temperature")
+        self.temp_label.setText("Temperature = ")
