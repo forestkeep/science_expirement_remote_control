@@ -43,36 +43,36 @@
         <location filename="../Devices/Classes.py" line="605"/>
         <source>таймер</source>
         <comment>low register</comment>
-        <translation>timer</translation>
+        <translation type="obsolete">timer</translation>
     </message>
     <message>
         <location filename="../Devices/Classes.py" line="610"/>
         <source>внешний сигнал</source>
         <comment>low register</comment>
-        <translation>external signal</translation>
+        <translation type="obsolete">external signal</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="684"/>
+        <location filename="../Devices/Classes.py" line="685"/>
         <source>Время(с)</source>
         <translation>Time(sec)</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="698"/>
+        <location filename="../Devices/Classes.py" line="700"/>
         <source>Источник сигнала</source>
         <translation>Signal source</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="732"/>
+        <location filename="../Devices/Classes.py" line="734"/>
         <source>Не настроено</source>
         <translation>Not configured</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="803"/>
+        <location filename="../Devices/Classes.py" line="805"/>
         <source>Канал прибора сделал какое-то действие или измерение</source>
         <translation>The device channel performed some action or measurement</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="804"/>
+        <location filename="../Devices/Classes.py" line="806"/>
         <source>Канал прибора закончил работу в эксперименте</source>
         <translation>The device channel has completed its work in the experiment</translation>
     </message>
@@ -275,6 +275,18 @@
         <location filename="../Devices/interfase/Set_oscilloscope_window.py" line="92"/>
         <source>загрузить csv</source>
         <translation>download csv</translation>
+    </message>
+    <message>
+        <location filename="../Devices/Classes.py" line="609"/>
+        <source>Таймер</source>
+        <comment>low register</comment>
+        <translation type="obsolete">timer</translation>
+    </message>
+    <message>
+        <location filename="../Devices/Classes.py" line="615"/>
+        <source>Внешний сигнал</source>
+        <comment>low register</comment>
+        <translation type="obsolete">external signal</translation>
     </message>
 </context>
 <context>
@@ -1634,47 +1646,47 @@ with the same names and must be enclosed in curly braces.</translation>
         <translation>It is prohibited to change parameters during the experiment</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="354"/>
+        <location filename="../Installation_class.py" line="355"/>
         <source>{device_name} {ch_name} не имеет источника сигнала, проверьте его настройки</source>
         <translation>{device_name} {ch_name} don&apos;t has sourse signal, check it</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="369"/>
+        <location filename="../Installation_class.py" line="370"/>
         <source>Остановка</source>
         <translation>Stopping</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="380"/>
+        <location filename="../Installation_class.py" line="381"/>
         <source>Старт эксперимента</source>
         <translation>Experiment is starting</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="388"/>
+        <location filename="../Installation_class.py" line="389"/>
         <source>Стоп</source>
         <translation>Stop</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="415"/>
+        <location filename="../Installation_class.py" line="416"/>
         <source>Создан файл</source>
         <translation>File was created</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="423"/>
+        <location filename="../Installation_class.py" line="424"/>
         <source>настройка приборов</source>
         <translation>settings devices</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="685"/>
+        <location filename="../Installation_class.py" line="686"/>
         <source>Не настроено</source>
         <translation>Not setting</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="575"/>
+        <location filename="../Installation_class.py" line="576"/>
         <source>ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку</source>
         <translation>error</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="635"/>
+        <location filename="../Installation_class.py" line="636"/>
         <source>Ошибка при открытии сохраненной установки.
  Вероятно, содержимое файла имеет не верный формат.</source>
         <translation>Error opening the saved installation. The file contents are likely in an incorrect format.</translation>
@@ -1683,6 +1695,11 @@ with the same names and must be enclosed in curly braces.</translation>
         <location filename="../Installation_class.py" line="132"/>
         <source>Старт</source>
         <translation>Start</translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="351"/>
+        <source>Таймер</source>
+        <translation>Timer</translation>
     </message>
 </context>
 <context>

@@ -348,7 +348,8 @@ class installation_class(experimentControl, analyse):
         status = True
         for device, ch in self.get_active_ch_and_device():
             trig = device.get_trigger(ch)
-            if trig != "Таймер":
+            if trig != QApplication.translate('main install',"Таймер"):
+
                 trig_val = device.get_trigger_value(ch)
                 status = self.message_broker.subscribe(object=ch, name_subscribe=trig_val)
                 text=QApplication.translate('main install',"{device_name} {ch_name} не имеет источника сигнала, проверьте его настройки")

@@ -598,16 +598,17 @@ class base_device():
     def get_trigger_value(self, ch):
         '''возвращает источник сигнала или время в секундах, если в качестве триггера выбран таймер, в случае ошибки возвращает False'''
         trigger = self.get_trigger(ch)
+
         if trigger is None:
             logger.info(f"Ошибка при воозвате типа трриггера {trigger=}")
             answer = False
 
-        elif trigger.lower() == QApplication.translate("Device","таймер", "low register"):
+        elif trigger == QApplication.translate("Device","Таймер"):
             try:
                 answer = int(ch.dict_settable_parameters["sourse/time"])
             except:
                 answer = False
-        elif trigger.lower() == QApplication.translate("Device","внешний сигнал", "low register"):
+        elif trigger == QApplication.translate("Device","Внешний сигнал"):
             answer = ch.dict_settable_parameters["sourse/time"]
             
         else:
@@ -690,6 +691,7 @@ class base_device():
                     #print(f"{self.message_broker.get_subscribe_list(object = self.active_channel_meas)=}")
                     #self.active_channel_meas.signal_list = self.installation_class.get_signal_list(self.name, self.active_channel_meas)
                     self.active_channel_meas.signal_list = self.message_broker.get_subscribe_list(object = self.active_channel_meas)
+
 
 
                     self.setting_window.sourse_meas_enter.addItems(self.active_channel_meas.signal_list)
