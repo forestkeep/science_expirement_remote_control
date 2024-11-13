@@ -86,6 +86,7 @@ class control_in_experiment():
         self.time_of_action = 3# время, необходимое для совершения одного шага
         self.step_index = -1
         self.last_step_time = 5#хранит время, затраченное на последний сделанной шаг в эксперименте. Необходимо для подстройки продолжительности эксперимента
+        self.do_last_step = False# необходима в стом случае, когда устройство тригер завершило работу и данные устройство должно сделать последний шаг, при этом 
 
     def set_priority(self, priority: int) -> bool:
         self.priority = priority

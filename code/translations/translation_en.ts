@@ -30,7 +30,7 @@
         <translation>External signal</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="490"/>
+        <location filename="../Devices/Classes.py" line="491"/>
         <source>Пока активны другие приборы</source>
         <translation>While other devices are active</translation>
     </message>
@@ -40,39 +40,39 @@
         <translation>No connected ports</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="604"/>
+        <location filename="../Devices/Classes.py" line="605"/>
         <source>таймер</source>
         <comment>low register</comment>
         <translation>timer</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="609"/>
+        <location filename="../Devices/Classes.py" line="610"/>
         <source>внешний сигнал</source>
         <comment>low register</comment>
         <translation>external signal</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="683"/>
+        <location filename="../Devices/Classes.py" line="684"/>
         <source>Время(с)</source>
         <translation>Time(sec)</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="697"/>
+        <location filename="../Devices/Classes.py" line="698"/>
         <source>Источник сигнала</source>
         <translation>Signal source</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="731"/>
+        <location filename="../Devices/Classes.py" line="732"/>
         <source>Не настроено</source>
         <translation>Not configured</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="802"/>
+        <location filename="../Devices/Classes.py" line="803"/>
         <source>Канал прибора сделал какое-то действие или измерение</source>
         <translation>The device channel performed some action or measurement</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="803"/>
+        <location filename="../Devices/Classes.py" line="804"/>
         <source>Канал прибора закончил работу в эксперименте</source>
         <translation>The device channel has completed its work in the experiment</translation>
     </message>
@@ -496,14 +496,14 @@
 <context>
     <name>MyWindow</name>
     <message>
-        <location filename="../installation_controller.py" line="154"/>
+        <location filename="../installation_controller.py" line="160"/>
         <source>установка уже собрана</source>
         <translation>The setup is already assembled</translation>
     </message>
     <message>
         <location filename="../test_translator.py" line="55"/>
         <source>Изменить язык</source>
-        <translation>Change language</translation>
+        <translation type="obsolete">Change language</translation>
     </message>
 </context>
 <context>
@@ -1369,23 +1369,7 @@ with the same names and must be enclosed in curly braces.</translation>
             Тогда наша команда в поле отправки будет выглядеть так: 
             &quot;:WAV:STARt 125
 &quot;</source>
-        <translation type="obsolete">
-Enter the settings for connecting to the device.
-
-Then enter the command, replace the arguments in {} with the desired values, and press the send button.
-
-Observe the device&apos;s response and the reply.
-
-Check all commands and the response format, then enter them into the corresponding fields and proceed to the next command.
-
-Example of testing the command &quot;:WAV:STARt {point}&quot;:
-
-{point} - this argument should be replaced with a valid value for the device, let’s say 125.
-
-Then our command in the sending field will look like:
-
-&quot;:WAV:STARt 125&quot;
- </translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1416,57 +1400,57 @@ Then our command in the sending field will look like:
         <translation>Resume</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="356"/>
+        <location filename="../experiment_control.py" line="357"/>
         <source>Остановка, ошибка</source>
         <translation>Error, stopping</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="360"/>
+        <location filename="../experiment_control.py" line="361"/>
         <source> настроен</source>
         <translation> seted</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="436"/>
+        <location filename="../experiment_control.py" line="437"/>
         <source>Продолжение эксперимента</source>
         <translation>Continuation of the experiment</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="716"/>
+        <location filename="../experiment_control.py" line="721"/>
         <source>Эксперимент прерван из-за ошибки</source>
         <translation>The experiment was interrupted due to an  error</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="720"/>
+        <location filename="../experiment_control.py" line="725"/>
         <source>Эксперимент прерван из-за ошибки при настройке прибора</source>
         <translation>The experiment was interrupted due to a device setup error</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="724"/>
+        <location filename="../experiment_control.py" line="729"/>
         <source>Эксперимент прерван из-за ошибки при опросе прибора</source>
         <translation>The experiment was interrupted due to a device pollingl error</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="732"/>
+        <location filename="../experiment_control.py" line="737"/>
         <source>Эксперимент завершен</source>
         <translation>Finish experiment</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="739"/>
+        <location filename="../experiment_control.py" line="744"/>
         <source>Сохранение результатов</source>
         <translation>Saving results</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="748"/>
+        <location filename="../experiment_control.py" line="753"/>
         <source>Подготовка к эксперименту</source>
         <translation>Preparation for the experiment</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="752"/>
+        <location filename="../experiment_control.py" line="757"/>
         <source>Старт</source>
         <translation>Start</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="760"/>
+        <location filename="../experiment_control.py" line="765"/>
         <source>Ожидание старта</source>
         <translation>Waiting start</translation>
     </message>
@@ -1481,64 +1465,69 @@ Then our command in the sending field will look like:
         <translation>Waiting for continuation</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="344"/>
+        <location filename="../experiment_control.py" line="345"/>
         <source>Ошибка настройки</source>
         <translation>Error settings</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="344"/>
+        <location filename="../experiment_control.py" line="345"/>
         <source>перед экспериментом</source>
         <translation>before experiment</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="374"/>
+        <location filename="../experiment_control.py" line="375"/>
         <source>Прибор</source>
         <translation>Device</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="374"/>
+        <location filename="../experiment_control.py" line="375"/>
         <source>не отвечает</source>
         <translation>don&apos;t answer</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="382"/>
+        <location filename="../experiment_control.py" line="383"/>
         <source>Ответ</source>
         <translation>Answer</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="455"/>
+        <location filename="../experiment_control.py" line="457"/>
         <source>Остановка эксперимента</source>
         <translation>Experiment is stopping</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="532"/>
+        <location filename="../experiment_control.py" line="501"/>
         <source>завершил работу</source>
         <translation>finished work</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="567"/>
+        <location filename="../experiment_control.py" line="572"/>
         <source>Выполняется действие</source>
         <translation>Action is being executed</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="683"/>
+        <location filename="../experiment_control.py" line="688"/>
         <source>шаг</source>
         <translation>Step</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="683"/>
+        <location filename="../experiment_control.py" line="688"/>
         <source>сделан за</source>
         <translation>completed in</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="695"/>
+        <location filename="../experiment_control.py" line="700"/>
         <source>Ошибка опроса</source>
         <translation>Polling error</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="610"/>
+        <location filename="../experiment_control.py" line="615"/>
         <source>Выполняется измерение</source>
         <translation>Measurement is doing</translation>
+    </message>
+    <message>
+        <location filename="../experiment_control.py" line="529"/>
+        <source> завершил работу</source>
+        <translation>finished work</translation>
     </message>
 </context>
 <context>
@@ -1552,17 +1541,17 @@ Then our command in the sending field will look like:
 <context>
     <name>main</name>
     <message>
-        <location filename="../installation_controller.py" line="94"/>
+        <location filename="../installation_controller.py" line="97"/>
         <source>Развернуть</source>
         <translation>Expand</translation>
     </message>
     <message>
-        <location filename="../installation_controller.py" line="95"/>
+        <location filename="../installation_controller.py" line="98"/>
         <source>Закрыть приложение</source>
         <translation>Close application</translation>
     </message>
     <message>
-        <location filename="../installation_controller.py" line="102"/>
+        <location filename="../installation_controller.py" line="105"/>
         <source>Управление экспериментальной установкой</source>
         <translation>Control of the experimental installation</translation>
     </message>

@@ -420,7 +420,7 @@ class installation_class(experimentControl, analyse):
                     self.experiment_thread = threading.Thread(
                         target=self.exp_th, daemon=True
                     )
-                    self.add_text_to_log(QApplication.translate('main install',"настройка приборов")) + ".. "
+                    self.add_text_to_log(QApplication.translate('main install',"настройка приборов") + ".. ")
                     self.experiment_thread.start()
                     self.timer_for_connection_main_exp_thread.start(1000)
     

@@ -313,6 +313,7 @@ class experimentControl(analyse):
             for ch in device.channels:
                 if ch.is_ch_active():
                     ch.am_i_active_in_experiment = True
+                    ch.do_last_step = False
                     ch.number_meas = 0
                     ch.previous_step_time = time.time()
                     ch.pause_time = device.get_trigger_value(ch)
@@ -440,7 +441,8 @@ class experimentControl(analyse):
 
                         for device, ch in self.get_active_ch_and_device():
                             if device.get_steps_number(ch) == False:
-                                number_device_which_act_while += 1
+                                if not ch.do_last_step:
+                                    number_device_which_act_while += 1
 
                             if ch.am_i_active_in_experiment:
                                 number_active_device += 1
@@ -458,7 +460,7 @@ class experimentControl(analyse):
                             number_device_which_act_while == number_active_device
                             and number_active_device == 1
                         ):
-                            """если активный прибор один и он работает, пока работают другие, то стоп"""
+                            """если активный прибор один и он работает, пока работают другие, и у него не стоит флаг последнего шага то стоп"""
                             self.stop_experiment = True
 
                         target_execute = self.get_execute_part()
@@ -476,7 +478,6 @@ class experimentControl(analyse):
                                 )  # вычисляем время, необходимое на выставление шага
                                 ch.number_meas += 1
 
-
                                 if ch.get_type() == "act":
                                     error = self.do_act(device=device, ch=ch)
 
@@ -484,31 +485,26 @@ class experimentControl(analyse):
                                     error = self.do_meas(device=device, ch=ch)
 
                             elif ans_device == ch_response_to_step.End_list_of_steps:
-                                self.add_text_to_log(
-                                    text=device.get_name()
-                                    + " "
-                                    + str(ch.get_name()) + " "
-                                    + QApplication.translate('exp_flow',"завершил работу"),
-                                    status="ok",
-                                )
                                 ch.am_i_active_in_experiment = False
                             else:
-                                print(111111111111111111111)
-                                print(ans_device)
                                 ch.am_i_active_in_experiment = False
 
-                            if device.get_steps_number(ch) is not False:
+                            if device.get_steps_number(ch) is not False:#проверка останвки по количеству шагов
                                 if (ch.number_meas >= device.get_steps_number(ch) ):
-                                    
-                                    self.add_text_to_log(
+                                    ch.am_i_active_in_experiment = False
+
+                            if ch.do_last_step:#был сделан последний шаг
+                                ch.am_i_active_in_experiment = False
+                                ch.do_last_step = False
+
+                            if not ch.am_i_active_in_experiment:
+                                self.add_text_to_log(
                                         text=device.get_name()
                                         + " "
                                         + str(ch.get_name()) + " "
                                         + QApplication.translate('exp_flow',"завершил работу"),
                                         status="ok",
                                     )
-                                    
-                                    ch.am_i_active_in_experiment = False
 
                             self.manage_subscribers(ch = ch)
 
@@ -520,28 +516,37 @@ class experimentControl(analyse):
 
 
     def manage_subscribers(self, ch):
-        subscribers = self.message_broker.get_subscribers(
+        subscribers_do_operation = self.message_broker.get_subscribers(
             publisher=ch, name_subscribe=ch.do_operation_trigger
         )
 
         if ch.am_i_active_in_experiment == False:
             """останавливаем подписчиков, которые срабатывали по завершению операции"""
-            for subscriber in subscribers:
+
+            for subscriber in subscribers_do_operation:
                 dev = subscriber.device_class
                 if "do_operation" in dev.get_trigger_value(subscriber):
                     self.add_text_to_log(
                         text=dev.get_name()
                         + " "
                         + str(subscriber.get_name()) + " "
-                        + QApplication.translate('exp_flow',"завершил работу"),
+                        + QApplication.translate('exp_flow'," завершил работу"),
                         status="ok",
                     )
-                    subscriber.am_i_active_in_experiment = False
+                    #subscriber.am_i_active_in_experiment = False
+                    subscriber.do_last_step = True
+
+
             # испускаем сигнал о том, что работа закончена
             self.message_broker.push_publish(
                 name_subscribe=ch.end_operation_trigger, publisher=ch
             )
-
+            subscribers_end_operation = self.message_broker.get_subscribers(
+                publisher=ch, name_subscribe=ch.end_operation_trigger
+            )
+            for subscriber in subscribers_end_operation:
+                subscriber.do_last_step = True
+        
         else:
             """передаем сигнал всем подписчикам о том, что операция произведена"""
             self.message_broker.push_publish(
