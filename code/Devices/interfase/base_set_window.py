@@ -104,6 +104,9 @@ class base_settings_window(QtWidgets.QDialog):
         self.vert_act_lay = QtWidgets.QVBoxLayout()
         self.vert_meas_lay = QtWidgets.QVBoxLayout()
 
+        self.tooltip_label_act = QtWidgets.QLabel("..........")
+        self.tooltip_label_meas = QtWidgets.QLabel("..........")
+
         # ===Configuration layout===
         
         self.vert_act_lay.addLayout(self.Layout_set_dev_act)
@@ -144,18 +147,20 @@ class base_settings_window(QtWidgets.QDialog):
         self.Layout_set_triger_act.addWidget(self.settings_act_in_exp, 1, 0, 1, 3)
         self.Layout_set_triger_act.addWidget(self.triger_act_label, 2, 0, 1, 1)
         self.Layout_set_triger_act.addWidget(self.triger_act_enter, 2, 1, 1, 2)
-        self.Layout_set_triger_act.addWidget(self.sourse_act_label, 3, 0, 1, 1)
-        self.Layout_set_triger_act.addWidget(self.sourse_act_enter, 3, 1, 1, 2)
-        self.Layout_set_triger_act.addWidget(self.num_act_label, 4, 0, 1, 1)
-        self.Layout_set_triger_act.addWidget(self.num_act_enter, 4, 1, 1, 2)
+        self.Layout_set_triger_act.addWidget(self.tooltip_label_act, 3, 0, 2, 3)
+        self.Layout_set_triger_act.addWidget(self.sourse_act_label, 5, 0, 1, 1)
+        self.Layout_set_triger_act.addWidget(self.sourse_act_enter, 5, 1, 1, 2)
+        self.Layout_set_triger_act.addWidget(self.num_act_label, 6, 0, 1, 1)
+        self.Layout_set_triger_act.addWidget(self.num_act_enter, 6, 1, 1, 2)
 
         self.Layout_set_triger_meas.addWidget(self.settings_meas_in_exp, 1, 0, 1, 3)
         self.Layout_set_triger_meas.addWidget(self.triger_meas_label, 2, 0, 1, 1)
         self.Layout_set_triger_meas.addWidget(self.triger_meas_enter, 2, 1, 1, 2)
-        self.Layout_set_triger_meas.addWidget(self.sourse_meas_label, 3, 0, 1, 1)
-        self.Layout_set_triger_meas.addWidget(self.sourse_meas_enter, 3, 1, 1, 2)
-        self.Layout_set_triger_meas.addWidget(self.num_meas_label, 4, 0, 1, 1)
-        self.Layout_set_triger_meas.addWidget(self.num_meas_enter, 4, 1, 1, 2)
+        self.Layout_set_triger_meas.addWidget(self.tooltip_label_meas, 3, 0, 2, 3)
+        self.Layout_set_triger_meas.addWidget(self.sourse_meas_label, 5, 0, 1, 1)
+        self.Layout_set_triger_meas.addWidget(self.sourse_meas_enter, 5, 1, 1, 2)
+        self.Layout_set_triger_meas.addWidget(self.num_meas_label, 6, 0, 1, 1)
+        self.Layout_set_triger_meas.addWidget(self.num_meas_enter, 6, 1, 1, 2)
 
         self.Layout_set_connection.addWidget(self.label_connection, 0, 0, 1, 3)
         self.Layout_set_connection.addWidget(self.COM_label, 1, 0, 1, 1)

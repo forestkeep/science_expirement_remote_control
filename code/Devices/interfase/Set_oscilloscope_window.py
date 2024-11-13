@@ -88,9 +88,9 @@ class setWinOscilloscope(base_settings_window):
             _translate("Device","Активировать каналы:") )
         self.title_trig_menu.setText(
             _translate("Device","Меню триггера") )
-        for i in range(1, self.num_channels + 1):
+        for i in range(self.num_channels):
             self.check_save_csv[i].setText(
-            _translate("Device", "загрузить csv") + f" Ch-{i}")
+            _translate("Device", "загрузить csv") + f" Ch-{i+1}")
 
         self.label_time_scale = QtWidgets.QLabel("Временная развертка:")
 

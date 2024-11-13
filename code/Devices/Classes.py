@@ -205,6 +205,8 @@ class base_device():
                 self.setting_window.sourse_meas_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
                 self.setting_window.num_meas_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
 
+                self.setting_window.sourse_meas_enter.highlighted.connect(self.display_tooltip_meas)
+
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
                 self.setting_window.triger_act_enter.currentIndexChanged.connect(lambda: self._action_when_select_trigger())
                 self.setting_window.sourse_act_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
@@ -212,6 +214,9 @@ class base_device():
                     self.setting_window.num_act_enter.currentTextChanged.connect(lambda: self._is_correct_parameters())
                 except:
                     pass#такого поля в приборе не предусмотрено
+
+                self.setting_window.sourse_act_enter.highlighted.connect(self.display_tooltip_act)
+
             self.setting_window.comportslist.currentTextChanged.connect(lambda: self._is_correct_parameters())
             self.setting_window.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(self.send_signal_ok)
 
@@ -637,6 +642,24 @@ class base_device():
         except:
             answer = False
         return answer
+    
+    def display_tooltip_act(self, index):
+        # Обновляем текст подсказки в метке в зависимости от выделенного элемента
+        value = self.setting_window.sourse_act_enter.itemText(index)
+        text = self.message_broker.get_subscribe_description(subscribe_name=value)
+        self.setting_window.tooltip_label_act.setStyleSheet(""" 
+                color: #00FFCC;          /* Цвет текста */
+        """)
+        self.setting_window.tooltip_label_act.setText(text)
+
+    def display_tooltip_meas(self, index):
+        # Обновляем текст подсказки в метке в зависимости от выделенного элемента
+        value = self.setting_window.sourse_meas_enter.itemText(index)
+        text = self.message_broker.get_subscribe_description(subscribe_name=value)
+        self.setting_window.tooltip_label_meas.setStyleSheet(""" 
+                color: #00FFCC;          /* Цвет текста */
+        """)
+        self.setting_window.tooltip_label_meas.setText(text)
 
     def get_settings(self):
         return self.dict_settable_parameters
@@ -802,8 +825,8 @@ class base_ch(control_in_experiment):
         if is_activate_standart_publish:
             self.do_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} do_operation"
             self.end_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} end_work"
-            self.message_broker.create_subscribe(name_subscribe = self.do_operation_trigger, publisher = self, description = QApplication.translate("Device","Канал прибора сделал какое-то действие или измерение") )
-            self.message_broker.create_subscribe(name_subscribe = self.end_operation_trigger, publisher = self, description = QApplication.translate("Device","Канал прибора закончил работу в эксперименте") )
+            self.message_broker.create_subscribe(name_subscribe = self.do_operation_trigger, publisher = self, description = QApplication.translate("Device","Настраиваемый канал будет совершать действие всякий раз \r\n когда выбранный источник сделает какое-то действие или измерение.") )
+            self.message_broker.create_subscribe(name_subscribe = self.end_operation_trigger, publisher = self, description = QApplication.translate("Device","Настраиваемый канал будет совершать действие всякий раз \r\n когда выбранный источник завершит свою работу в эксперименте.") )
 
     def get_name(self):
         return self.ch_name

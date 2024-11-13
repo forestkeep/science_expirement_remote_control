@@ -56,6 +56,12 @@ class messageBroker:
                 if sub.publisher.is_active:
                     send_list.append(sub.get_name())
         return send_list
+    
+    def get_subscribe_description(self, subscribe_name) -> list:
+        for sub in self.subscribe_list:
+            if sub.get_name() == subscribe_name:
+                return sub.description
+        return ""
 
     def subscribe(self, object, name_subscribe):
         for subscribe in self.subscribe_list:

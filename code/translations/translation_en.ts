@@ -30,7 +30,7 @@
         <translation>External signal</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="491"/>
+        <location filename="../Devices/Classes.py" line="496"/>
         <source>Пока активны другие приборы</source>
         <translation>While other devices are active</translation>
     </message>
@@ -52,29 +52,29 @@
         <translation type="obsolete">external signal</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="685"/>
+        <location filename="../Devices/Classes.py" line="707"/>
         <source>Время(с)</source>
         <translation>Time(sec)</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="700"/>
+        <location filename="../Devices/Classes.py" line="722"/>
         <source>Источник сигнала</source>
         <translation>Signal source</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="734"/>
+        <location filename="../Devices/Classes.py" line="756"/>
         <source>Не настроено</source>
         <translation>Not configured</translation>
     </message>
     <message>
         <location filename="../Devices/Classes.py" line="805"/>
         <source>Канал прибора сделал какое-то действие или измерение</source>
-        <translation>The device channel performed some action or measurement</translation>
+        <translation type="obsolete">The device channel performed some action or measurement</translation>
     </message>
     <message>
         <location filename="../Devices/Classes.py" line="806"/>
         <source>Канал прибора закончил работу в эксперименте</source>
-        <translation>The device channel has completed its work in the experiment</translation>
+        <translation type="obsolete">The device channel has completed its work in the experiment</translation>
     </message>
     <message>
         <location filename="../Devices/power_supply_class.py" line="611"/>
@@ -287,6 +287,20 @@
         <source>Внешний сигнал</source>
         <comment>low register</comment>
         <translation type="obsolete">external signal</translation>
+    </message>
+    <message>
+        <location filename="../Devices/Classes.py" line="827"/>
+        <source>Настраиваемый канал будет совершать действие всякий раз 
+ когда выбранный источник сделает какое-то действие или измерение.</source>
+        <translation>The customizable channel will perform an action every time 
+the selected source takes some action or measurement.</translation>
+    </message>
+    <message>
+        <location filename="../Devices/Classes.py" line="828"/>
+        <source>Настраиваемый канал будет совершать действие всякий раз 
+ когда выбранный источник завершит свою работу в эксперименте.</source>
+        <translation>The customizable channel will perform an action every time 
+the selected source completes its work in the experiment.</translation>
     </message>
 </context>
 <context>
@@ -1119,97 +1133,97 @@ For detailed instructions on using the application, click the &quot;Info&quot; -
 <context>
     <name>device window</name>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="196"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="201"/>
         <source>Источник сигнала для проведения действия. Таймер - поведение действия через заданное количество секунд в поле ниже. Внешний сигнал - сигнал от дугих пиборов в установке</source>
         <translation>Signal source for the action. Timer - the behavior of the action after a specified number of seconds in the field below. External signal - a signal from other devices in the setup</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="199"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="204"/>
         <source>Количество действий, которое прибор выполнит в ходе эксперимента</source>
         <translation>The number of actions the device will perform during the experiment</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="202"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="207"/>
         <source>Выберите источника сигнала или значение(в случае таймера в качестве триггера) для действия данного канала</source>
         <translation>Select the signal source or value (in the case of a timer as a trigger) for the action of this channel</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="206"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="211"/>
         <source>Источник сигнала для проведения измерения. Таймер - поведение измерения через заданное количество секунд в поле ниже. Внешний сигнал - сигнал от других пиборов в установке</source>
         <translation>Signal source for taking measurements. Timer - the measurement behavior after a specified number of seconds in the field below. External signal - a signal from other devices in the setup</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="209"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="214"/>
         <source>Количество измерений, которое прибор выполнит в ходе эксперимента</source>
         <translation>The number of measurements the device will perform during the experiment</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="212"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="217"/>
         <source>Выберите источника сигнала или значение(в случае таймера в качестве триггера)</source>
         <translation>Select the signal source or value (in the case of a timer as a trigger)</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="216"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="221"/>
         <source>Выберите интерфейс подключения, если нужный интерфейс(usb, com) не отображаются в списке для выбора, проверьте доступность этого интерфейса в диспетчере устройств вашей операционной системы.</source>
         <translation>Select the connection interface. If the required interface (USB, COM) is not displayed in the selection list, check the availability of this interface in the device manager of your operating system.</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="219"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="224"/>
         <source>Скорость обмена данными(bit per second) при выбранном интерфейсе COM-port. При другом выбранном интерфейсе данный параметр игнорируется.</source>
         <translation>Data exchange rate (bit per second) for the selected COM-port interface. For another selected interface, this parameter is ignored.</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="223"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="228"/>
         <source>Триг действия</source>
         <translation>Action trigger</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="226"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="231"/>
         <source>COM</source>
         <translation>COM</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="227"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="232"/>
         <source>Baudrate</source>
         <translation>Baudrate</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="230"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="235"/>
         <source>Время(с)</source>
         <translation>Time(sec)</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="232"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="237"/>
         <source>Кол-во измерений</source>
         <translation>Number of measurements</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="233"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="238"/>
         <source>Кол-во действий</source>
         <translation>Number actions</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="235"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="240"/>
         <source>Настройки прибора</source>
         <translation>Device settings</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="237"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="242"/>
         <source>Настройки подключения</source>
         <translation>Connection settings</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="239"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="244"/>
         <source>Настройки действий</source>
         <translation>Action settings</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="241"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="246"/>
         <source>Настройки измерений</source>
         <translation>Measurement settings</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/base_set_window.py" line="224"/>
+        <location filename="../Devices/interfase/base_set_window.py" line="229"/>
         <source>Триг измерения</source>
         <translation>Measurement trigger</translation>
     </message>
