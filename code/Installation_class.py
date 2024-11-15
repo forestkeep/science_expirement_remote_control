@@ -177,7 +177,7 @@ class installation_class(experimentControl, analyse):
 
         if self.is_all_device_settable():
             ############################
-            #self.get_time_line_devices()
+            self.get_time_line_devices()
             ############################
 
             logger.debug("все каналы имеют статус настроен")

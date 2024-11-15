@@ -110,6 +110,9 @@ class X:
             lambda: self.hyst_loop_activate()
         )
 
+        self.label = QLabel()  # Лейбл с именем канала
+        self.label2 = QLabel()  # Лейбл с именем канала
+
         self.list_vert_curve = []
         self.initUI()
 

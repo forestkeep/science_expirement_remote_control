@@ -104,8 +104,8 @@ class base_settings_window(QtWidgets.QDialog):
         self.vert_act_lay = QtWidgets.QVBoxLayout()
         self.vert_meas_lay = QtWidgets.QVBoxLayout()
 
-        self.tooltip_label_act = QtWidgets.QLabel("..........")
-        self.tooltip_label_meas = QtWidgets.QLabel("..........")
+        self.tooltip_label_act = QtWidgets.QLabel("")
+        self.tooltip_label_meas = QtWidgets.QLabel("")
 
         # ===Configuration layout===
         

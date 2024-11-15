@@ -36,13 +36,13 @@ class analyse(baseInstallation):
                 subscribers = self.get_subscribers(
                     [[device.get_name(), ch.number]], [device.get_name(), ch.number]
                 )
-                subscribers = self.get_subscribers(
-                    [[device.get_name(), ch.number]], [device.get_name(), ch.number]
-                )
+
                 for sub in subscribers:
                     time_line.append([sub[0], sub[1]])
 
                 time_lines.append(time_line)
+                
+        print(time_lines)
 
         for line in time_lines:
             buf = []
@@ -77,17 +77,14 @@ class analyse(baseInstallation):
         experiment_endless = False
         mark_device_number = []
         for device, ch in self.get_active_ch_and_device():
-            if (
-                device.get_trigger(ch) == "Таймер"
-                and device.get_steps_number(ch) == False
-            ):
+            trigger = device.get_trigger(ch)
+            steps_number = device.get_steps_number(ch)
+
+            if trigger == QApplication.translate('analyse',"Таймер") and not steps_number:
                 mark_device_number.append(device.get_name() + str(ch.get_name()))
 
                 if len(mark_device_number) >= 2:
-                    message = QApplication.translate('analyse',"каналы ")
-                    for n in mark_device_number:
-                        message = message + n + " "
-                    message = message + QApplication.translate('analyse',"будут работать бесконечно")
+                    message = QApplication.translate('analyse', "каналы ") + " ".join(mark_device_number) + " " + QApplication.translate('analyse', "будут работать бесконечно")
                     self.add_text_to_log(message, status="err")
                     experiment_endless = True
                     break
