@@ -423,12 +423,14 @@ class graphMain:
                 if name not in old_name_parameters:
                     new_param.append(name)
 
+            '''
             for devices, channels in new.items():
                 for ch, values in channels.items():
                     for param, value in values.items():
                         if type(value) == list:
+                            print(f"{value=}")
                             value = np.array(value)
-
+            '''
             self.dict_param = new
             self.update_param_in_comboxes(new_param)
             self.update_plot()

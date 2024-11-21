@@ -245,9 +245,9 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     mainWindow = GraphWindow()
     mainWindow.show()
-    #mainWindow.test_update()
+    mainWindow.test_update()
 
-    # mainWindow.update_param_in_comboxes()
+    #mainWindow.update_param_in_comboxes()
     sys.exit(app.exec_())
 
     # py-spy record --native -o profile.svg -- python C:\Users\zahidovds\Desktop\virtual_for_uswindsens\main\graph\online_graph.py
