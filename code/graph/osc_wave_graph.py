@@ -15,6 +15,7 @@ import time
 
 import numpy as np
 import pyqtgraph as pg
+import pandas as pd
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
@@ -30,10 +31,20 @@ from PyQt5.QtWidgets import (
     QSplitter,
     QVBoxLayout,
     QWidget,
-    QApplication
+    QApplication,
+    QFileDialog,
+    QDialog
 )
 from pyqtgraph.opengl import GLAxisItem, GLLinePlotItem, GLScatterPlotItem, GLViewWidget
 
+try:
+    from calc_values_for_graph import ArrayProcessor
+    from Message_graph import messageDialog
+except:
+    from graph.calc_values_for_graph import ArrayProcessor
+    from graph.Message_graph import messageDialog
+
+from Link_data_import_win import Check_data_import_win
 
 def time_decorator(func):
     def wrapper(*args, **kwargs):
@@ -119,8 +130,10 @@ class X:
         if new:
             self.dict_param = new
             channel_keys = self.extract_wavech_devices(self.dict_param)
+            print(f"{channel_keys=}")
 
             devices, channels, wavechs = self.extract_data(channel_keys)
+            print(f"{devices=} {channels=} {wavechs=}")
             current_dev = self.choice_device.currentText()
             self.key = False
             devices = set(devices)
@@ -153,6 +166,7 @@ class X:
 
         for device, channels in main_dict.items():
             for channel, data in channels.items():
+                print(f"{channel=} {data=}")
                 wavech_keys = [key for key in data.keys() if "wavech" in key]
                 if wavech_keys:
                     wavech_devices.append(device)
@@ -175,6 +189,89 @@ class X:
                     channel_with_wave[device].append(channel)
         return channel_with_wave
 
+    def import_data(self, *args, **kwargs):
+        
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, ans = QFileDialog.getOpenFileName(
+            caption=QApplication.translate("GraphWindow","укажите путь импорта"),
+            directory="",
+            filter="Книга Excel (*.xlsx)",
+            options=options,
+        )
+        
+        if fileName:
+            if ans == "Книга Excel (*.xlsx)":
+                # Считываем все листы из книги Excel
+                #xls = pd.ExcelFile(fileName, engine='openpyxl')
+                #dfs = {sheet_name: xls.parse(sheet_name) for sheet_name in xls.sheet_names}
+
+
+                df = pd.read_excel(fileName, engine='openpyxl')
+                #for sheet_name, df in dfs.items():
+                #    if 'time' not in df.columns:
+                #       self.is_time_column = False
+                #       print(f"Отсутствует столбец 'time' в листе {sheet_name}")
+
+                if 'time' not in df.columns:
+                    self.is_time_column = False
+                    #raise ValueError("Отсутствует обязательный столбец 'time'")
+
+                df = df.dropna(axis=1, how='all')#удаление пустых столбцов
+
+                result = {}
+
+                window = Check_data_import_win([col for col in df.columns], self.update_dict_param)
+                ans = window.exec_()
+                if ans == QDialog.Accepted:  # проверяем, была ли нажата кнопка OK
+                    selected_step = window.step_combo.currentText()
+                    selected_channels = [cb.text() for cb in window.checkboxes if cb.isChecked()]
+                    print(f"Выбранный шаг: {selected_step}, Выбранные каналы: {selected_channels}")
+                else:
+                    return
+
+                selected_channels.append(selected_step)
+                errors_col = []
+
+                for col in selected_channels:
+                    try:
+                        df[col] = pd.to_numeric(df[col], errors='raise')
+                    except ValueError:
+                        errors_col.append(col)
+                        continue
+                    
+                if errors_col != []:
+                    res = ', '.join(errors_col)
+                    text = QApplication.translate("GraphWindow", "В столбцах {res} обнаружены данные, которые не получается преобразовать в числа.\nПри построение эти точки будут пропущены.")
+                    text = text.format(res = res)
+                    message = messageDialog(
+                        title = QApplication.translate("GraphWindow","Сообщение"),
+                        text= text
+                    )
+                    message.exec_()
+
+                selected_channels.pop(len(selected_channels) - 1)
+                    
+                dev = {'d': {}}
+                for col in selected_channels:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                    col_ = col.replace('(', '[').replace(')', ']') + ' wavech'
+                    result[col_] = np.array( df[col].tolist() )
+                    dev["d"][col] = {col_: np.array( df[col].tolist() ), "scale":5}
+
+                #dev = {'d': {'c': result}}
+
+                print(f"{df=}")
+                print(f"{result=}")
+                print(f"{dev=}")
+
+                #self.data_name_label.setText(fileName)
+
+                #self.set_default()
+
+                self.update_dict_param(dev)
+                return result
+            
     def initUI(self):
 
         self.tab1Layout = QVBoxLayout()
@@ -199,8 +296,14 @@ class X:
 
         self.graphView.scene().sigMouseMoved.connect(self.showToolTip_main)
 
+        self.import_data_button = QPushButton(
+            QApplication.translate('graph_win',"Импорт данных")
+        )
+        self.import_data_button.clicked.connect(self.import_data)
+
         self.tab1Layout.addLayout(self.hor_lay)
         self.tab1Layout.addWidget(self.build_hyst_loop_check)
+        self.tab1Layout.addWidget(self.import_data_button)
         # self.graphView.hide()
         # self.graphView.show()
 
@@ -1065,6 +1168,7 @@ class X:
         self.auto_button.setText(_translate("GraphWindow", "Авто") )
         self.name_sig.setText(_translate("GraphWindow", "Сигнал") )
         self.name_field.setText(_translate("GraphWindow", "Поле") )
+        self.import_data_button.setText(_translate("GraphWindow", "Импортировать...") )
         
 
 class verticals_lines:
