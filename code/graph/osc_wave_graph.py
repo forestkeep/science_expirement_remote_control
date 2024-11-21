@@ -40,7 +40,6 @@ def time_decorator(func):
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()
-        #print(f"Метод {func.__name__} - {end_time - start_time} с")
         return result
 
     return wrapper
@@ -117,7 +116,6 @@ class X:
         self.initUI()
 
     def update_dict_param(self, new: dict):
-        # print("osc")
         if new:
             self.dict_param = new
             channel_keys = self.extract_wavech_devices(self.dict_param)
@@ -814,7 +812,6 @@ class X:
             ):
                 sign_changes.append(i)
 
-        # print(f"{sign_changes}")
         return sign_changes
 
     def push_auto_button(self):
@@ -1045,7 +1042,6 @@ class X:
         while True:
             if len(self.used_colors) == len(self.contrast_colors):
                 # Сбросить использованные цвета
-                print("сброс цветов")
                 self.used_colors.clear()
 
             color = random.choice(self.contrast_colors)
@@ -1132,7 +1128,6 @@ class wheelLineEdit(QWidget):
         try:
             current_value = float(self.line_edit.text())
             current_sec_value = float(self.second_line.text())
-            # print(f"{current_value=} {current_sec_value=}")
             delta = event.angleDelta().y()
 
             step = np.abs((current_value - current_sec_value) * 0.01)

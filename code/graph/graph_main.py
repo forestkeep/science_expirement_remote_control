@@ -420,9 +420,7 @@ class graphMain:
             new_name_parameters = self.create_name_param(new)
             old_name_parameters = self.create_name_param(self.dict_param)
             for name in new_name_parameters:
-                print(1)
                 if name not in old_name_parameters:
-                    print(2)
                     new_param.append(name)
 
             for devices, channels in new.items():
@@ -468,7 +466,6 @@ class graphMain:
 
     def update_param_in_comboxes(self, new_param = None):
         self.key_to_update_plot = False
-        print(f"{new_param=}")
         if new_param is not None:
             self.x_param_selector.addItems(new_param)
             self.y_first_param_selector.addItems(new_param)

@@ -98,11 +98,9 @@ class test_graph:
         data_dict = {}
 
         # Считываем данные из DataFrame
-        # print(df.columns)
         for column in df.columns:
             # Конвертируем данные в float и помещаем в словарь
             data_dict[column] = df[column].astype(str).tolist()
-        # print(data_dict)
         for key, values in data_dict.items():
             # Новая переменная для хранения конвертированных значений
             converted_values = []
@@ -161,13 +159,11 @@ class test_graph:
                         or key == "wavech"
                     ):
                         # Если ключ содержит 'wave', добавляем случайное число в каждый вложенный список
-                        # print(key, value)
                         value.append(
                             self.generate_random_list(
                                 size=100, lower_bound=0, upper_bound=10
                             )
                         )
-        # print(main_dict)
         return main_dict
 
     def append_values(self):

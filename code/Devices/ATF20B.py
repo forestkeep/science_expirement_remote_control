@@ -45,11 +45,11 @@ class ATF20B(FreqGen):
         self.channels = self.create_channel_array()
 
 
-    def set_remote_control(self):
-        self.client.write("100RS232\r\n")
+    def set_remote_control(self, adr_dev):
+        self.client.write(f"{adr_dev}RS232\r\n")
 
-    def set_local_control(self):
-        self.client.write("100LOCAL\r\n")
+    def set_local_control(self, adr_dev):
+        self.client.write(f"{adr_dev}LOCAL\r\n")
 
     def set_freq(self, channel, frequency):
         status = True
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     import serial
     re = "rrererere"
     print(type(re))
-    client = serial.Serial("COM5", 9600, timeout=1)
+    client = serial.Serial("COM5", 19200, timeout=1)
     dev = ATF20B(client)
 
     dev.set_remote_control()
@@ -100,55 +100,105 @@ if __name__ == "__main__":
 
 
 """
-Remote command 1 Remote command 2 (without digit and unit) Inquiry command
-CHA:AFREQ:1.31:MHz CHA:SQUAR CHA:?AFREQ
-↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
- 1 5 2 5 3 5 4 1 5 2 1 6 2
-1: Function string 2: Option string 3: Data string 4: Unit string 5 Separate character 6: Question mark
-The remote command consists of the function string, the option string, the data string, the unit string, the separate character, and the
-question mark. Some commands do not include the data string and the unit string. 
-"""
+Таблица значений строки функции
+Опция Строка
+Частота сигнала в канале А CHA
+Частота сигнала в канале В CHB
+Свипирование частоты в канале А FSWP
+Свипирование частоты в канале В ASWP
+Частотная модуляция в канале А FM
+Измерение частоты внешнего сигнала COUNT
+Выход из режима дистанционного управления LOCAL
+Система SYS
+Пакетная генерация в канале А ABURST
+Пакетная генерация в канале В BBURST
+Частотная манипуляция в канале А FSK
+Амплитудная манипуляция в канале А ASK
+Фазовая манипуляция в канале А PSK
+Логический сигнал ТТЛ TTL
+Управление по интерфейсу RS232 RS232 
 
-"""The Table of Function Command
-Option String Option String
-Frequency of Channel A CHA Burst of Channel A ABURST
-Frequency of Channel B CHB Burst of Channel B BBURST
-Frequency Sweep of Channel A FSWP FSK of Channel A FSK
-Amplitude Sweep of Channel A ASWP ASK of Channel A ASK
-Frequency Modulation of Channel A FM PSK of Channel A PSK
-External Frequency Measurement COUNT TTL TTL
-Return to Local LOCAL RS232 control RS232
-System SYS
-The Table of the Option Command
-Option String Option String Option String
-CHA Waveform AWAVE Recall Parameter RECAL Hop Amplitude HOPA
-CHA Offset AOFFS Measuring Frequency MEASF Hop Frequency HOPF
-CHA Frequency AFREQ Software Version VER Hop Phase HOPP
-CHA Attenuation AATTE Burst Count NCYCL External Trigger EXTTR
-CHA Period APERD Burst Frequency BURSF External Modulation EXT
-CHA Duty Cycle ADUTY Single Trigger TRIGG System Reset RESET
-CHB Frequency BFREQ Single Burst ONCES Phase PHASE
-CHB Harmonic Wave BHARM FM Deviation DEVIA True RMS VRMS
-CHB Period BPERD Modulation Waveform MWAVE Language Setup LANG
-CHB Duty Cycle BDUTY Modulation Frequency MODUF Carrier Amplitude CARRA
-TTL_A Frequency TTLAF Peak-to-peak Value VPP Carrier Frequency CARRF
-TTL_A Duty Cycle TTLAD Beep Sound BEEP Gate Time STROBE
-TTL_B Frequency TTLBF Interval Time INTVL Stop Amplitude STOPA
-TTL_B Duty Cycle TTLBD Interface Address ADDR Stop Frequency STOPF
-TTL_A Trigger TTLTR Sweep Mode MODEL Auto Sweep AUTO
-Step Amplitude STEPA Start Amplitude STARA Store Parameter STORE
-Step Frequency STEPF Start Frequency STARF Output Switch SWITCH
-CHB Waveform BWAVE
-The Table of Data Command
-Data String Data String
-Digit 0 1 2 3 4 5 6 7 8 9 Decimal Point .
-Negative Sign -
-- 28 -
-The Table of Unit Command
-Unit String Unit String
-Frequency MHz, kHz, Hz, mHz, uHz Phase DEG
-Peak-to-peak Value Vpp, mVpp Attenuation dB
-Time s, ms, us, ns Index No.
-Harmonic TIME Percentage %
-Burst Count CYCL DC Offset Vdc, mVdc
-RMS Vrms, mVrms"""
+Таблица значений строки опции
+Опция Строка Опция Строка
+Форма сигнала (каналА) AWAVE Форма модулирующего сигнала MWAVE
+Смещение (канал А) AOFFS Частота модулирующего сигнала MODUF
+Частота (канал А) AFREQ Размах VPP
+Ослабление (канал А) AATTE Звуковой сигнал BEEP
+Период (канал А) APERD Временной интервал INTVL
+Коэффициент заполнения (канал А) ADUTY Адрес интерфейса ADDR
+Частота (канал В) BFREQ Режим свипирования MODEL
+Гармоническая волна(канал В) BHARM Начальная амплитуда STARA
+Период (канал В) BPERD Начальная частота STARF
+Коэффициент заполнения (канал В) BDUTY Скачок амплитуды HOPA
+Частота (TTL_A) TTLAF Скачок частоты HOPF
+Коэффициент заполнения (TTL_A) TTLAD Скачок фазы HOPP
+Частота (TTL_B) TTLBF Внешний запуск EXTTR
+Коэффициент заполнения (TTL_B) TTLBD Внешняя модуляция EXT
+Пусковой сигнал (TTL_A) TTLTR Сброс настроекmсистемы RESET
+Шаг амплитуды STEPA Фаза PHASE
+Шаг частоты STEPF Истинное среднеквадратичное значение (True RMS) VRMS
+Форма BWAVE Установка языка LANG
+Вызов параметра изпамяти RECAL Несущая амплитуда CARRA
+Измерение частоты MEASF Несущая частота CARRF
+Версия программы VER Время стробирования STROBE
+Число циклов в пакете NCYCL Конечная амплитуда STOPA
+Частота следованияпакетов BURSF Конечная частота STOPF
+Одиночный пусковой сигнал TRIGG Автоматическое свипирование AUTO
+Одиночный пакет ONCES Сохранение параметра STORE
+Девиация частоты при частотной модуляции DEVIA Переключение выходного канала SWITCH
+
+Таблица значений единиц измерения
+Величина Строка Величина Строка
+Частота MHz, kHz, Hz, mHz, uHz
+Фаза DEG
+Размах Vpp, mVpp 
+Ослабление dB
+Время s, ms, us, ns 
+Порядковый номер No.
+Гармоника TIME Процентное отношение %
+Число циклов CYCL 
+Смещение по напряжению Vdc, mVdc
+Среднеквадратичное значение Vrms, mVrms
+
+4.3.5. Строка данных
+Максимальная длина строки данных составляет 10 символов. 
+
+
+
+ПРИМЕР 1:
+Канал А, генерация в одном канале, синусоидальный сигнал,
+частота 1 МГц,
+режим RS232: 88CHA:AWAVE:0:No.
+ 88CHA:AFREQ:1:MHz
+ПРИМЕР 2:
+Канал В, генерация в одном канале, пилообразный сигнал, частота 1 кГц,
+режим RS232: 88CHB:BWAVE:2:No.
+ 88CHB:BTRIG:1:kHz
+ПРИМЕР 3:
+Канал А, генерация в одном канале, импульсный сигнал, коэффициент заполнения 25%,
+режим RS232: 88CHA:ADUTY:25:%
+ПРИМЕР 4:
+Сигнал со свипированием частоты, начальная частота 1 кГц,
+режим RS232: 88FSWP:STARF:1:kHz
+ПРИМЕР 5:
+Сигнал с частотной манипуляцией, несущая частота 25 кГц,
+режим RS232: 88FSK:CARRF:25:kHz
+ПРИМЕР 6:
+Запрос значения частоты сигнала в канале А
+режим RS232: 88CHA:?AFREQ
+ПРИМЕР 7:
+Возвращение в ручной режим управления и восстановление
+функций кнопок управления
+режим RS232: 88LOCAL
+
+
+4.3.8. Интерактивная работа с прибором
+В начале отправьте команды выбора интерфейса. Например,
+отправьте команду «адрес + RS232» для выбора интерфейса
+RS232. Прибор переключится в режим дистанционного управления через интерфейс RS232. Если адрес прибора – 88, то отправьте «88 RS232». Для выхода из режима дистанционного
+управления отправьте команду «88LOCAL» или нажмите кнопку
+[SYS] для возвращения прибора в обычный режим управления
+кнопками с передней панели. В противном случае невозможно
+будет использовать ни кнопки управления, ни дистанционное
+управление. 
+"""
