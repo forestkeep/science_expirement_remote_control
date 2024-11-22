@@ -12,6 +12,7 @@
 import copy
 import random
 import time
+import logging
 
 import numpy as np
 import pyqtgraph as pg
@@ -46,6 +47,7 @@ except:
     from graph.Message_graph import messageDialog
     from graph.Link_data_import_win import Check_data_import_win
 
+logger = logging.getLogger(__name__)
 
 def time_decorator(func):
     def wrapper(*args, **kwargs):
@@ -139,7 +141,8 @@ class X:
             self.key = False
             devices = set(devices)
             devices = list(devices)
-            devices.append(self.choice_device_default_text)
+            if not devices:
+                devices.append(self.choice_device_default_text)
             self.choice_device.clear()
             self.choice_device.addItems(devices)
             if current_dev in devices:
@@ -208,31 +211,18 @@ class X:
         
         if fileName:
             if ans == "Книга Excel (*.xlsx)":
-                # Считываем все листы из книги Excel
-                #xls = pd.ExcelFile(fileName, engine='openpyxl')
-                #dfs = {sheet_name: xls.parse(sheet_name) for sheet_name in xls.sheet_names}
-
-
                 df = pd.read_excel(fileName, engine='openpyxl')
-                #for sheet_name, df in dfs.items():
-                #    if 'time' not in df.columns:
-                #       self.is_time_column = False
-                #       print(f"Отсутствует столбец 'time' в листе {sheet_name}")
 
                 if 'time' not in df.columns:
                     self.is_time_column = False
-                    #raise ValueError("Отсутствует обязательный столбец 'time'")
 
                 df = df.dropna(axis=1, how='all')#удаление пустых столбцов
-
-                result = {}
 
                 window = Check_data_import_win([col for col in df.columns], self.update_dict_param)
                 ans = window.exec_()
                 if ans == QDialog.Accepted:  # проверяем, была ли нажата кнопка OK
                     selected_step = window.step_combo.currentText()
                     selected_channels = [cb.text() for cb in window.checkboxes if cb.isChecked()]
-                    #print(f"Выбранный шаг: {selected_step}, Выбранные каналы: {selected_channels}")
                 else:
                     return
 
@@ -259,33 +249,30 @@ class X:
                 selected_channels.pop(len(selected_channels) - 1)
 
                 import_time_scale_column = pd.to_numeric(df[selected_step], errors='coerce')
+
+                import_time_scale = None
                 for scale in import_time_scale_column:
                     if isinstance(scale, (float, int)) and scale > 0:
                         import_time_scale = scale
                         break
 
-                print(import_time_scale)
-                    
+                if import_time_scale is None:
+                    message = messageDialog(
+                        title = QApplication.translate("GraphWindow","Сообщение"),
+                        text= QApplication.translate("GraphWindow","Выбранный шаг не является числом или равен нулю, проверьте столбец с шагом времени")
+                    )
+                    return
+                             
                 dev = {'d': {}}
+                df = df.dropna(axis=1)
                 for col in selected_channels:
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                    df[col] = (pd.to_numeric(df[col], errors='coerce'))
                     col_ = col.replace('(', '[').replace(')', ']') + ' wavech'
                     volt_val = np.array( df[col].tolist() )
-                    result[col_] = volt_val
                     dev["d"][col] = {col_: {0 : volt_val}, "scale": [import_time_scale for i in range(len(volt_val))]}
 
-                #dev = {'d': {'c': result}}
-
-                #print(f"{df=}")
-                #print(f"{result=}")
-                #print(f"{dev=}")
-
-                #self.data_name_label.setText(fileName)
-
-                #self.set_default()
-
                 self.update_dict_param(dev)
-                return result
+                self.new_dev_checked()
             
     def initUI(self):
 
@@ -648,6 +635,7 @@ class X:
                     for key in self.dict_param[device][ch_name].keys():
                         if "wavech" in key:
                             key_wave = key
+                            break
                     self.y_values[ch_name] = self.dict_param[device][ch_name][key_wave][num_wave]
                     reere = self.dict_param[device][ch_name]["scale"]
                     self.scales[ch_name] = self.dict_param[device][ch_name]["scale"][num_wave]
@@ -689,7 +677,6 @@ class X:
         self.legend.setParentItem(self.graphView.plotItem)
 
         for i, key in enumerate(self.y_values.keys()):
-            print(self.y_values[key])
             if len(self.y_values[key]) > 0:
                 curve = self.graphView.plot(
                     [k * self.scales[key] for k in range(len(self.y_values[key]))],
@@ -942,15 +929,27 @@ class X:
             device = self.choice_device.currentText()
             ch_field = self.field_ch_choice.currentText()
             number_field = int(self.channels_wave_choice[ch_field].currentText()) - 1
-            y_val = self.dict_param[device][ch_field]["wavech"][number_field]
+
+            key_wave = None
+            for key in self.dict_param[device][ch_field].keys():
+                if "wavech" in key:
+                    key_wave = key
+                    break
+
+            if key_wave == None:
+                text = " ".join(self.dict_param[device][ch_field].keys())
+                logger.error("В выбранном канале нет осциллограммы" + text)
+                return
+
+            y_val = self.dict_param[device][ch_field][key_wave][number_field]
             scale_field = self.dict_param[device][ch_field]["scale"][number_field]
 
             interval_index = np.array(self.find_sign_change(y_val))
             interval_values = interval_index * scale_field
 
             ans = self.vertical_lines.set_data(
-                max_y_val=max(y_val),
-                min_y_val=min(y_val),
+                max_y_val=np.nanmax(y_val),
+                min_y_val=np.nanmin(y_val),
                 interval_values=interval_values,
             )
             if ans == False:
@@ -985,7 +984,12 @@ class X:
         ch_field = self.field_ch_choice.currentText()
         number_field = int(self.channels_wave_choice[ch_field].currentText()) - 1
         try:
-            y_val = self.dict_param[device][ch_field]["wavech"][number_field]
+            key_wave = None
+            for key in self.dict_param[device][ch_field].keys():
+                if "wavech" in key:
+                    key_wave = key
+                    break
+            y_val = self.dict_param[device][ch_field][key_wave][number_field]
         except:
             y_val = [5]
 
@@ -1002,7 +1006,7 @@ class X:
         except:
             pass
 
-        y_vert = [min(y_val), max(y_val)]
+        y_vert = [np.nanmin(y_val), np.nanmax(y_val)]
 
         if x_vert_1_ok:
             x_vert_1 = [x_vert_1, x_vert_1]
@@ -1048,13 +1052,25 @@ class X:
             ch_sig = self.sig_ch_choice.currentText()
             number_field = int(self.channels_wave_choice[ch_field].currentText()) - 1
             status = True
-            try:
-                field_arr = self.dict_param[device][ch_field]["wavech"][number_field]
-                sig_arr = self.dict_param[device][ch_sig]["wavech"][number_field]
-                sig_scale = self.dict_param[device][ch_sig]["scale"][number_field]
-                field_scale = self.dict_param[device][ch_field]["scale"][number_field]
-            except:
-                status = False
+
+            
+            key_wave_field = None
+            for key in self.dict_param[device][ch_field].keys():
+                if "wavech" in key:
+                    key_wave_field = key
+                    break
+
+            key_wave_sig = None
+            for key in self.dict_param[device][ch_sig].keys():
+                if "wavech" in key:
+                    key_wave_sig = key
+                    break
+
+            field_arr = self.dict_param[device][ch_field][key_wave_field][number_field]
+            sig_arr = self.dict_param[device][ch_sig][key_wave_sig][number_field]
+            sig_scale = self.dict_param[device][ch_sig]["scale"][number_field]
+            field_scale = self.dict_param[device][ch_field]["scale"][number_field]
+            
 
             if status:
                 if field_scale != sig_scale:
@@ -1068,12 +1084,25 @@ class X:
                     status = False
 
             if status:
+                print(434343)
                 left_ind = int(x_vert_1 / sig_scale)
                 right_ind = int(x_vert_2 / sig_scale)
 
-                self.calc_loop(
+                x, y = self.calc_loop(
                     arr1=sig_arr[left_ind:right_ind], arr2=field_arr[left_ind:right_ind]
                 )
+                self.graphView_loop.plot(
+                    x,
+                    y,
+                    pen={
+                        "color": next(self.color_gen),
+                        "width": 1,
+                        "antialias": True,
+                        "symbol": "o",
+                    },
+                )
+            else:
+                logger.warning("неверные данные для построения петли")
         else:
             pass
 
@@ -1105,16 +1134,9 @@ class X:
         elif size2 > size1:
             Y = Y[:size1]
 
-        self.graphView_loop.plot(
-            X,
-            Y,
-            pen={
-                "color": next(self.color_gen),
-                "width": 1,
-                "antialias": True,
-                "symbol": "o",
-            },
-        )
+
+        return X, Y
+
 
     def calculate_results(self, C):
         Q2 = 1.67  # сильно влияет на форму петли. уточнить влияние, для чего она введена?
@@ -1140,7 +1162,7 @@ class X:
         L2 = K2 + Q2
 
         # Нормировка
-        M = np.where(L2 <= 0, L2 / np.min(L2), L2 / -np.max(L2))
+        M = np.where(L2 <= 0, L2 / np.nanmin(L2), L2 / -np.nanmax(L2))
 
         return M
 
