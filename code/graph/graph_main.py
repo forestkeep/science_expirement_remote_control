@@ -611,6 +611,7 @@ class graphMain:
 
                 device_y, ch_y, parameter_y = self.decode_name_parameters(string_y)
                 device_x, ch_x, parameter_x = self.decode_name_parameters(string_x)
+                print(self.dict_param)
                 x_param = self.dict_param[device_x][ch_x][parameter_x]
                 y_param = self.dict_param[device_y][ch_y][parameter_y]
                 if self.is_time_column:

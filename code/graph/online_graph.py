@@ -245,7 +245,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     mainWindow = GraphWindow()
     mainWindow.show()
-    mainWindow.test_update()
+    #mainWindow.test_update()
 
     #mainWindow.update_param_in_comboxes()
     sys.exit(app.exec_())

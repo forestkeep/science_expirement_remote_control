@@ -122,6 +122,7 @@ class Adapter:
             raise AdapterException("unknown resource")
 
     def query(self, command, timeout=False):
+        '''timeout - ms'''
         if self.which_resourse == resourse.serial:
             try:
                 self.client.write(command)

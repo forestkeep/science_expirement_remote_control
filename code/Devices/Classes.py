@@ -148,13 +148,12 @@ class base_device():
     
     def check_connect(self) -> bool: 
         """проверяет подключение прибора, если прибор отвечает возвращает True, иначе False"""
-        response = "not defined"
+        response = "not defined check connect"
         try:
-            self.client.write(f"*IDN?\r\n")
-            response = self.client.read()
+            response = self.client.query(f"*IDN?\r\n", 1000)
         except:
             logger.info(f"у прибора {self.name} не определена функция проверки подключения")
-        print(f"{response=}")
+        print(f"{self.name=} {response=}")
         return response if response not in [b'', b'\r\n', None] else False
 
     def base_settings_window(self):

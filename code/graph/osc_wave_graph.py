@@ -40,11 +40,12 @@ from pyqtgraph.opengl import GLAxisItem, GLLinePlotItem, GLScatterPlotItem, GLVi
 try:
     from calc_values_for_graph import ArrayProcessor
     from Message_graph import messageDialog
+    from Link_data_import_win import Check_data_import_win
 except:
     from graph.calc_values_for_graph import ArrayProcessor
     from graph.Message_graph import messageDialog
+    from graph.Link_data_import_win import Check_data_import_win
 
-from Link_data_import_win import Check_data_import_win
 
 def time_decorator(func):
     def wrapper(*args, **kwargs):
@@ -130,10 +131,10 @@ class X:
         if new:
             self.dict_param = new
             channel_keys = self.extract_wavech_devices(self.dict_param)
-            print(f"{channel_keys=}")
+            #print(f"{channel_keys=}")
 
             devices, channels, wavechs = self.extract_data(channel_keys)
-            print(f"{devices=} {channels=} {wavechs=}")
+            #print(f"{devices=} {channels=} {wavechs=}")
             current_dev = self.choice_device.currentText()
             self.key = False
             devices = set(devices)
@@ -145,7 +146,12 @@ class X:
                 self.choice_device.setCurrentText(current_dev)
             self.key = True
             self.extract_ch_with_wave(self.dict_param)
-            self.update_num_waveforms()
+            try:
+                self.update_num_waveforms()
+            except Exception as e:
+                print(e)
+                self.new_dev_checked()
+                self.update_num_waveforms()
 
     def extract_data(self, input_dict):
         devices = []
@@ -166,7 +172,7 @@ class X:
 
         for device, channels in main_dict.items():
             for channel, data in channels.items():
-                print(f"{channel=} {data=}")
+                #print(f"{channel=} {data=}")
                 wavech_keys = [key for key in data.keys() if "wavech" in key]
                 if wavech_keys:
                     wavech_devices.append(device)
@@ -226,7 +232,7 @@ class X:
                 if ans == QDialog.Accepted:  # проверяем, была ли нажата кнопка OK
                     selected_step = window.step_combo.currentText()
                     selected_channels = [cb.text() for cb in window.checkboxes if cb.isChecked()]
-                    print(f"Выбранный шаг: {selected_step}, Выбранные каналы: {selected_channels}")
+                    #print(f"Выбранный шаг: {selected_step}, Выбранные каналы: {selected_channels}")
                 else:
                     return
 
@@ -261,9 +267,9 @@ class X:
 
                 #dev = {'d': {'c': result}}
 
-                print(f"{df=}")
-                print(f"{result=}")
-                print(f"{dev=}")
+                #print(f"{df=}")
+                #print(f"{result=}")
+                #print(f"{dev=}")
 
                 #self.data_name_label.setText(fileName)
 
@@ -289,6 +295,7 @@ class X:
         self.choice_device.setMaximumSize(150, 20)  # Ограничиваем максимальный размер
 
         self.choice_device.currentTextChanged.connect(lambda: self.new_dev_checked())
+        self.choice_device.currentIndexChanged.connect(lambda: self.new_dev_checked())
 
         self.hor_lay.addWidget(self.choice_device)
 
@@ -620,6 +627,7 @@ class X:
             self.legend_ch_names = [i * 0 for i in range(8)]
             for ch in self.ch_check:
                 ch_name = ch.text()
+                #print(f"{ch_name=}")
                 number = int(ch_name[3])
 
                 if ch.isChecked():
