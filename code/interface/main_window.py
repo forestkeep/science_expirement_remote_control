@@ -65,6 +65,15 @@ class Ui_MainWindow(object):
         self.menu = QtWidgets.QMenu(self.menubar)
         self.menu.setObjectName("menu")
 
+        self.services = QtWidgets.QMenu(self.menubar)
+        self.services.setObjectName("services")
+
+        self.open_graph = QtWidgets.QAction(MainWindow)
+        self.open_graph.setObjectName("debug_mode")
+        self.open_graph.triggered.connect(self.main_class.open_graph_in_exp)
+
+        self.services.addAction(self.open_graph)
+
         MainWindow.setMenuBar(self.menubar)
 
         self.actionCreateNew = QtWidgets.QAction(MainWindow)
@@ -94,6 +103,7 @@ class Ui_MainWindow(object):
         self.menu.addAction(self.debug_mode)
 
         self.menubar.addAction(self.menu.menuAction())
+        self.menubar.addAction(self.services.menuAction())
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -131,8 +141,10 @@ class Ui_MainWindow(object):
         self.pushButton.setText(_translate("main","Локальное управление приборами"))
         self.pushButton_2.setText(_translate("main","Создание экспериментальной установки"))
         self.menu.setTitle(_translate("main","Меню"))
+        self.services.setTitle( _translate("main","Сервисы") )
         self.actionCreateNew.setText(_translate("main","Создать прибор"))
 
         self.language_menu.setTitle(_translate("main","Выбрать язык"))
+        self.open_graph.setText(_translate("main","Анализ графиков"))
         self.actionEnglish.setText("English")
         self.actionRussian.setText("Русский")

@@ -20,6 +20,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication
 import qdarktheme
 import interface.info_window_dialog
+from graph.online_graph import GraphWindow
 from available_devices import dict_device_class
 from Installation_class import installation_class
 from interface.installation_check_devices import installation_Ui_Dialog
@@ -49,6 +50,7 @@ class MyWindow(QtWidgets.QMainWindow):
             "exp_control" + version_app,
         )
 
+        self.graph_window = None
         self.device_creator = device_creator
 
         logger.warning(f"Start Version {version_app}, Admin {is_admin()}")
@@ -131,6 +133,18 @@ class MyWindow(QtWidgets.QMainWindow):
             "language",
             self.lang,
         )
+
+    def open_graph_in_exp(self):
+        if self.graph_window is not None:
+            pass
+        else:
+            self.graph_window = GraphWindow()
+            #self.graph_window.graph_win_close_signal.connect(self.graph_win_closed)
+            #self.graph_window.update_graphics(self.measurement_parameters)
+        self.graph_window.show()
+        self.cur_install.stop_scan_thread = True#stop scanning thread
+        self.close()
+        del self
 
     def load_language(self, lang):
         if lang == 'RUS':

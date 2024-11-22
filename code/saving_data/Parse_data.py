@@ -149,13 +149,21 @@ class saving_data:
                 df = pandas.DataFrame(
                     dict([(k, pandas.Series(v)) for k, v in data.items()])
                 )
-                waves_frames.append(df)
+                waves_frames.append(df)#TODO: если строк в данном дата фрейме больше 1000000 то нужно дробить его на несколько
+
+        #========================
+        for frame in waves_frames:
+            if len(frame) > 1000000:
+                raise Exception("число строк больше одного миллиона, сохранение в эксель невозможно.")
+        #========================
 
         df = pandas.DataFrame(data_frame)
         waves_frames.insert(0, df)
         result_df = pandas.concat(waves_frames, axis=1)
 
         daytime = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+
+        print(df.columns)
 
         if os.path.exists(output_file_path):
             mode = "a"
@@ -389,14 +397,16 @@ class saving_data_processing:
         def run_saving(self):
             save = saving_data()
             status = True
+            message = ""
             try:
                 self.output_file_path = save.save_data(
                     self.input_file_path, self.output_file_path, self.output_type, self.is_delete_buf_file
                 )
-            except:
+            except Exception as e:
+                message = e
                 status = False
                 pass
-            self.adress_return(status, self.output_file_path)
+            self.adress_return(status, self.output_file_path, message)
         
 def process_and_export(
     input_file_path, output_file_path, output_type, is_delete_buf_file, func_result
@@ -411,15 +421,14 @@ def process_and_export(
     save.set_adress_return(func_result)
     save.saving_data.start()
     
-def func_answer_test(status, output_file_path):
+def func_answer_test(status, output_file_path, message):
     if status == True:  
         print(f"Результаты сохранены в {output_file_path}")
     else:
-        print("Ошибка сохранения")
+        print("Ошибка сохранения.", message)
 
 if __name__ == "__main__":
-    save = saving_data()
-    input_file = "buf_files/SR830_1_2024-10-09 16-27-22.txt"
+    input_file = "rig_test_data.txt"
     is_delete_buf_file = False
     output_file_path = "testData.xlsx"
 

@@ -257,13 +257,22 @@ class X:
                     message.exec_()
 
                 selected_channels.pop(len(selected_channels) - 1)
+
+                import_time_scale_column = pd.to_numeric(df[selected_step], errors='coerce')
+                for scale in import_time_scale_column:
+                    if isinstance(scale, (float, int)) and scale > 0:
+                        import_time_scale = scale
+                        break
+
+                print(import_time_scale)
                     
                 dev = {'d': {}}
                 for col in selected_channels:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
                     col_ = col.replace('(', '[').replace(')', ']') + ' wavech'
-                    result[col_] = np.array( df[col].tolist() )
-                    dev["d"][col] = {col_: np.array( df[col].tolist() ), "scale":5}
+                    volt_val = np.array( df[col].tolist() )
+                    result[col_] = volt_val
+                    dev["d"][col] = {col_: {0 : volt_val}, "scale": [import_time_scale for i in range(len(volt_val))]}
 
                 #dev = {'d': {'c': result}}
 
@@ -622,28 +631,29 @@ class X:
         """сканирует выбранные каналы и строит соответсвующие осциллограммы"""
         # self.ch_check, self.channels_wave_choice
         if self.key:
-            self.y_values = [[], [], [], [], [], [], [], []]
-            self.scales = [i * 0 for i in range(8)]
-            self.legend_ch_names = [i * 0 for i in range(8)]
+            #self.y_values = [[], [], [], [], [], [], [], []]
+            self.y_values = {}
+            self.scales = {}
+            self.legend_ch_names = {}
             for ch in self.ch_check:
                 ch_name = ch.text()
                 #print(f"{ch_name=}")
-                number = int(ch_name[3])
+                #number = int(ch_name[3])
 
                 if ch.isChecked():
                     device = self.choice_device.currentText()
                     num_wave = (
                         int(self.channels_wave_choice[ch.text()].currentText()) - 1
                     )
-                    self.y_values[number - 1] = self.dict_param[device][ch_name][
-                        "wavech"
-                    ][num_wave]
-                    self.scales[number - 1] = self.dict_param[device][ch_name]["scale"][
-                        num_wave
-                    ]
-                    self.legend_ch_names[number - 1] = ch_name
+                    for key in self.dict_param[device][ch_name].keys():
+                        if "wavech" in key:
+                            key_wave = key
+                    self.y_values[ch_name] = self.dict_param[device][ch_name][key_wave][num_wave]
+                    reere = self.dict_param[device][ch_name]["scale"]
+                    self.scales[ch_name] = self.dict_param[device][ch_name]["scale"][num_wave]
+                    self.legend_ch_names[ch_name] = ch_name
                 else:
-                    self.y_values[number - 1] = []
+                    self.y_values[ch_name] = []
 
             self.update_draw()
 
@@ -678,21 +688,22 @@ class X:
 
         self.legend.setParentItem(self.graphView.plotItem)
 
-        for i in range(len(self.y_values)):
-            if len(self.y_values[i]) > 0:
+        for i, key in enumerate(self.y_values.keys()):
+            print(self.y_values[key])
+            if len(self.y_values[key]) > 0:
                 curve = self.graphView.plot(
-                    [k * self.scales[i] for k in range(len(self.y_values[i]))],
-                    self.y_values[i],
+                    [k * self.scales[key] for k in range(len(self.y_values[key]))],
+                    self.y_values[key],
                     pen={
                         "color": self.contrast_colors[i],
                         "width": 1,
                         "antialias": True,
                         "symbol": "o",
                     },
-                    name=f"{self.legend_ch_names[i]}",  # Укажите имя для легенды
+                    name=f"{self.legend_ch_names[key]}",  # Укажите имя для легенды
                 )
                 self.legend.addItem(
-                    curve, f"{self.legend_ch_names[i]}"
+                    curve, f"{self.legend_ch_names[key]}"
                 )  # Добавление элемента в легенду
 
         self.graphView.getAxis("left").setGrid(True)
