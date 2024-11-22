@@ -171,6 +171,12 @@ class power_supply(base_device):
         else:
             self.setting_window.second_value_limit_label.setText("---")
             self.setting_window.second_limit_enter.setEnabled(False)
+            
+        self.setting_window.radioButton.setChecked(self.active_channel_act.dict_buf_parameters["repeat_reverse"] == True) 
+            
+        self.setting_window.is_soft_start.setChecked( self.active_channel_act.dict_buf_parameters["soft_start"]  == True)
+
+        self.setting_window.is_soft_stop.setChecked( self.active_channel_act.dict_buf_parameters["soft_off"] == True)
 
         self.setting_window.voltage_meas.setChecked(
             self.active_channel_meas.dict_buf_parameters["meas_vol"] == True

@@ -263,13 +263,13 @@ class X:
                     )
                     return
                              
-                dev = {'d': {}}
+                dev = {'import_data': {}}
                 df = df.dropna(axis=1)
                 for col in selected_channels:
                     df[col] = (pd.to_numeric(df[col], errors='coerce'))
                     col_ = col.replace('(', '[').replace(')', ']') + ' wavech'
                     volt_val = np.array( df[col].tolist() )
-                    dev["d"][col] = {col_: {0 : volt_val}, "scale": [import_time_scale for i in range(len(volt_val))]}
+                    dev["import_data"][col] = {col_: {0 : volt_val}, "scale": [import_time_scale for i in range(len(volt_val))]}
 
                 self.update_dict_param(dev)
                 self.new_dev_checked()
@@ -282,7 +282,7 @@ class X:
         self.choice_device = QComboBox()
         self.choice_device_default_text = QApplication.translate('graph_win',"Выберите устройство" )
         self.choice_device.addItems(
-            ["device1", "device2"]
+            [""]
         )
 
         self.choice_device.setSizePolicy(
@@ -450,14 +450,14 @@ class X:
 
         # Создаем два комбобокса
         lay_field = QVBoxLayout()
-        self.name_field = QLabel("Поле")
+        self.name_field = QLabel(QApplication.translate("GraphWindow","Поле"))
         self.field_ch_choice = QComboBox()
         lay_field.addWidget(self.name_field)
         lay_field.addWidget(self.field_ch_choice)
         second_row_layout.addLayout(lay_field)
 
         lay_sig = QVBoxLayout()
-        self.name_sig = QLabel("Сигнал")
+        self.name_sig = QLabel(QApplication.translate("GraphWindow","Сигнал"))
         
         self.sig_ch_choice = QComboBox()
         lay_sig.addWidget(self.name_sig)
@@ -479,19 +479,19 @@ class X:
         right_layout = QVBoxLayout()
 
         # Создаем кнопку
-        self.auto_button = QPushButton("Авто")
+        self.auto_button = QPushButton(QApplication.translate("GraphWindow","Авто"))
         third_row_layout.addWidget(self.auto_button, alignment=Qt.AlignLeft)
         self.auto_button.setMaximumSize(100, 100)
 
         # Создаем поля для ввода числа с названиями
         self.left_coord = wheelLineEdit()
-        self.left_coord.line_edit.setPlaceholderText("Координата слева")
+        self.left_coord.line_edit.setPlaceholderText(QApplication.translate("GraphWindow","Координата слева"))
         self.left_coord.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.left_coord.setMaximumSize(250, 40)
         left_layout.addWidget(self.left_coord)
 
         self.right_coord = wheelLineEdit()
-        self.right_coord.line_edit.setPlaceholderText("Координата справа")
+        self.right_coord.line_edit.setPlaceholderText(QApplication.translate("GraphWindow","Координата справа"))
         self.right_coord.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.right_coord.setMaximumSize(250, 40)
         right_layout.addWidget(self.right_coord)
@@ -500,14 +500,14 @@ class X:
         self.left_coord.set_second_line_widget(line=self.right_coord.line_edit)
 
         self.square = QLineEdit()
-        self.square.setPlaceholderText("Площадь провода(мкм)")
+        self.square.setPlaceholderText(QApplication.translate("GraphWindow","Площадь провода(мкм)"))
 
         self.square.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.square.setMaximumSize(250, 40)
         right_layout.addWidget(self.square)
 
         self.resistance = QLineEdit()
-        self.resistance.setPlaceholderText("Сопротивление провода(Ом)")
+        self.resistance.setPlaceholderText(QApplication.translate("GraphWindow","Сопротивление провода(Ом)"))
         self.resistance.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.resistance.setMaximumSize(250, 40)
         left_layout.addWidget(self.resistance)

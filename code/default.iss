@@ -42,6 +42,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: ".\dist\installation_controller\installation_controller.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\dist\installation_controller\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ".\picture\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ".\translations\translations\translation_en.qm"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Registry]

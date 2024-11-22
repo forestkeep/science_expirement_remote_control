@@ -30,7 +30,7 @@ from Devices.svps34_control import Ui_SVPS34_control
 from device_creator.dev_creator import deviceCreator
 from PyQt5.QtCore import QTranslator, QLocale
 
-version_app = "1.0.1"
+version_app = "1.0.2"
 logger = logging.getLogger(__name__)
 
 def is_admin():
