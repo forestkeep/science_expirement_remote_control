@@ -580,11 +580,11 @@ class experimentControl(analyse):
             for subscriber in subscribers_end_operation:
                 subscriber.do_last_step = True
         
-        else:
-            """передаем сигнал всем подписчикам о том, что операция произведена"""
-            self.message_broker.push_publish(
-                name_subscribe=ch.do_operation_trigger, publisher=ch
-            )
+
+        """передаем сигнал всем подписчикам о том, что операция произведена"""
+        self.message_broker.push_publish(
+            name_subscribe=ch.do_operation_trigger, publisher=ch
+        )
 
     def update_actors_priority(self, exclude_dev, exclude_ch):
         for dev in self.dict_active_device_class.values():
@@ -849,15 +849,17 @@ class metaDataExp():
         print(self.exp_queue)
         
         print(f"time exp = {self.exp_stop_time - self.exp_start_time} sec")
+        
+        max_chars = max(  len(act) for act in self.actors_names.values()  )
+        
+        for num_actor in self.actors_names.keys():
+            buf = []
+            name = self.actors_names[num_actor]
+            for act in self.exp_queue:
+                if num_actor == act:
+                    buf.append("###")
+                else:
+                    buf.append("...")
+            print(name.ljust(max_chars),  "".join(buf))
             
-
-if __name__ == "__main__":
-    # 11:09:02 DS1104Z_1 ch-1_meas	['VMAX1=3,0']	['VMAX2=3,08']	['VMAX3=3,16']	['VMAX4=0,08']	['VMIN1=-0,08']	['VMIN2=0,0']	['VMIN3=-0,2']	['VMIN4=-0,04']	['VPP1=3,08']	['VPP2=3,08']	['VPP3=3,36']	['VPP4=0,12']	['VTOP1=2,944615']	['VTOP2=2,975514']	['VTOP3=2,992146']	['VTOP4=9,9e+37']	['VBASE1=-0,04293274']	['VBASE2=0,05339111']	['VBASE3=-0,008302002']	['VBASE4=9,9e+37']	['VAMP1=2,9829']	['VAMP2=2,9166']	['VAMP3=2,9983']	['VAMP4=9,9e+37']	['VAVG1=1,412107']	['VAVG2=1,477559']	['VAVG3=1,440669']	['VAVG4=0,01140472']	['VRMS1=2,051022']	['VRMS2=2,071482']	['VRMS3=2,080493']	['VRMS4=0,05324268']	['OVERshoot1=0,01853845']	['OVERshoot2=0,0357567']	['OVERshoot3=0,05594298']	['OVERshoot4=9,9e+37']	['MPAREA1=0,00145112']	['MPAREA2=0,00151344']	['MPAREA3=0,00148976']	['MPAREA4=0,0']	['PERIOD1=0,001']	['PERIOD2=0,001']	['PERIOD3=0,001']	['PERIOD4=9,9e+37']	['FREQUENCY1=999,9999']	['FREQUENCY2=999,9999']	['FREQUENCY3=999,9999']	['FREQUENCY4=9,9e+37']	['PWIDth1=0,0005']	['PWIDth2=0,0005']	['PWIDth3=0,0005']	['PWIDth4=9,9e+37']	['NWIDth1=0,0005']	['NWIDth2=0,0005']	['NWIDth3=0,0005']	['NWIDth4=9,9e+37']	['NDUTy1=0,5']	['NDUTy2=0,5']	['NDUTy3=0,5']	['NDUTy4=9,9e+37']	['TVMAX1=-0,000558']	['TVMAX2=0,000118']	['TVMAX3=1,4e-05']	['TVMAX4=-0,00058']	['TVMIN1=-0,000494']	['TVMIN2=-0,000466']	['TVMIN3=-0,00048']	['TVMIN4=-0,000582']	['PSLEWrate1=478007,7']	['PSLEWrate2=467539,7']	['PSLEWrate3=480071,7']	['PSLEWrate4=9,9e+37']	['VMID1=1,450841']	['VMID2=1,514453']	['VMID3=1,491922']	['VMID4=9,9e+37']
-    names = "DS1104Z_1 ch-1_meas"
-
-    my_list = [3.2] * 5 + [0.15] * 5
-    val = [f"wavech{1}=" + "|".join(map(str, my_list))]
-
-    parameters = [names, ["VMAX1=3.0"], ["VMAX2=3.08"], ["VMAX3=3.16"], val]
-    data = {}
-    print_data(data)
+    
