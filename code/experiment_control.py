@@ -52,6 +52,9 @@ class experimentControl(analyse):
         self.experiment_thread = None
         self.stop_experiment = False
         self.pause_start_time = 0
+        
+        
+        self.meta_data_exp = metaDataExp()
 
     def is_experiment_running(self) -> bool:
         return self.experiment_thread is not None and self.experiment_thread.is_alive()
@@ -193,7 +196,7 @@ class experimentControl(analyse):
                             buf_time = (
                                 steps
                                 * (device.get_trigger_value(ch) + ch.base_duration_step)
-                            ) * float(self.repeat_meas)
+                            ) * float(self.repeat_meas) * float(self.repeat_experiment)
 
                     elif trig == "Внешний сигнал":
                         # TODO: рассчитать время в случае срабатывания цепочек приборов. Найти корень цепочки и смотреть на его параметры, значение таймера и количество повторов, затем рассчитать длительность срабатывания цепочки и сравнить со значением таймера, вернуть наибольшее
@@ -361,6 +364,7 @@ class experimentControl(analyse):
                 self.add_text_to_log(
                     dev.get_name() + " ch-" + str(ch.number) + QApplication.translate('exp_flow'," настроен")
                 )
+                
         return status
 
     def check_connections(self):
@@ -389,12 +393,32 @@ class experimentControl(analyse):
 
         return status
     
+    def write_meta_data(self):
+        self.meta_data_exp.exp_start_time = self.start_exp_time
+        
+        number = 1
+        for dev, ch in self.get_active_ch_and_device():
+            self.meta_data_exp.actors_classes[number] = ch
+            self.meta_data_exp.actors_names[number] = dev.name + "^" + ch.ch_name
+            self.meta_data_exp.numbers[ch] = number
+            number+=1
+            
+            for nm, val in ch.__dict__.items():
+                print(nm, val)
+        
     def exp_th(self):
+        
+        self.meta_data_exp = metaDataExp()
 
         logger.debug("запущен поток эксперимента")
         self.max_exp_time = 10
         self.start_exp_time = time.time()
-
+        
+        self.write_meta_data()
+        
+        #=================
+        self.meta_data_exp.print_meta_data()
+        #=================
 
         #проверка соединения приборов
         status = self.check_connections()
@@ -423,18 +447,21 @@ class experimentControl(analyse):
 
         target_execute = False
         self.exp_th_connect.is_update_pbar = True
+        number_active_device = 4
         #----------------------------------------------------------------------------------------------
         if not error_start_exp:
             for i in range(self.repeat_experiment):
                 if error == True:
                     break
                 if i > 0:
+                    logger.info("подготовка к повтору эксперименте")
                     self.stop_experiment = False
                     self.set_between_experiments()
+                    
                 while not self.stop_experiment and error == False:
 
                     if not self.pause_flag:
-                        self.set_state_text(QApplication.translate('exp_flow',"Продолжение эксперимента"))
+                        self.set_state_text(QApplication.translate('exp_flow',"Продолжение эксперимента, приборов:") + str(number_active_device))
 
                         number_active_device = 0
                         number_device_which_act_while = 0
@@ -450,10 +477,11 @@ class experimentControl(analyse):
                                     if time.time() - ch.previous_step_time >= ch.pause_time:
                                         ch.previous_step_time = time.time()
                                         device.set_status_step(ch.get_name(), True)
-
+                                        
+                        #print(f"{number_active_device=}")
                         if number_active_device == 0:
                             """остановка эксперимента, нет активных приборов"""
-                            logger.debug("остановка эксперимента, нет активных приборов")
+                            logger.info("остановка эксперимента, нет активных приборов")
                             self.set_state_text(QApplication.translate('exp_flow',"Остановка эксперимента") + "...")
                             self.stop_experiment = True
                         if (
@@ -468,6 +496,8 @@ class experimentControl(analyse):
                         if target_execute is not False:
                             device = target_execute[0]
                             ch = target_execute[1]
+                            
+                            self.meta_data_exp.exp_queue.append( self.meta_data_exp.numbers[ch] )
                             device.set_status_step(ch_name=ch.get_name(), status=False)
                             t = time.time()
                             ans_device = device.on_next_step(ch, repeat=3)
@@ -514,7 +544,6 @@ class experimentControl(analyse):
         self.finalize_experiment(error=error, error_start_exp=error_start_exp)
         self.prepare_for_reexperiment()
 
-
     def manage_subscribers(self, ch):
         subscribers_do_operation = self.message_broker.get_subscribers(
             publisher=ch, name_subscribe=ch.do_operation_trigger
@@ -524,17 +553,21 @@ class experimentControl(analyse):
             """останавливаем подписчиков, которые срабатывали по завершению операции"""
 
             for subscriber in subscribers_do_operation:
-                dev = subscriber.device_class
-                if "do_operation" in dev.get_trigger_value(subscriber):
-                    self.add_text_to_log(
-                        text=dev.get_name()
-                        + " "
-                        + str(subscriber.get_name()) + " "
-                        + QApplication.translate('exp_flow'," завершил работу"),
-                        status="ok",
-                    )
-                    #subscriber.am_i_active_in_experiment = False
-                    subscriber.do_last_step = True
+                
+                if subscriber.am_i_active_in_experiment == True:
+                    
+                    dev = subscriber.device_class
+                    if "do_operation" in dev.get_trigger_value(subscriber):
+                        
+                        self.add_text_to_log(
+                            text=dev.get_name()
+                            + " "
+                            + str(subscriber.get_name()) + " "
+                            + QApplication.translate('exp_flow'," завершил работу"),
+                            status="ok",
+                        )
+                        #subscriber.am_i_active_in_experiment = False
+                        subscriber.do_last_step = True
 
 
             # испускаем сигнал о том, что работа закончена
@@ -716,6 +749,11 @@ class experimentControl(analyse):
             ans = dev.action_end_experiment(ch)
 
         self.pbar_percent = 0  # сбрасываем прогресс бар
+        
+        
+        self.meta_data_exp.exp_stop_time = time.time()
+        
+        self.meta_data_exp.print_meta_data()
 
         if error:
             self.add_text_to_log(QApplication.translate('exp_flow',"Эксперимент прерван из-за ошибки"), "err")
@@ -786,6 +824,32 @@ def print_data(data):
                         f"  {parameter}: {', '.join([str(value) for value in values])}"
                     )
 
+
+
+class metaDataExp():
+    def __init__(self):
+        self.actors_names = {}
+        self.actors_classes = {}
+        self.numbers = {}
+        self.exp_queue = []
+        self.exp_start_time = 0
+        self.exp_stop_time = 0
+        
+    def get_meta_data(self):
+        pass
+    
+    def print_meta_data(self):
+        print("number: \t name: \t steps:")
+        for num, obj in self.actors_classes.items():
+            name = self.actors_names[num]
+            num_steps = obj.dict_settable_parameters["num steps"]
+            print(f"{num} \t { name } \t { num_steps }")
+            
+        print("exp queue:")
+        print(self.exp_queue)
+        
+        print(f"time exp = {self.exp_stop_time - self.exp_start_time} sec")
+            
 
 if __name__ == "__main__":
     # 11:09:02 DS1104Z_1 ch-1_meas	['VMAX1=3,0']	['VMAX2=3,08']	['VMAX3=3,16']	['VMAX4=0,08']	['VMIN1=-0,08']	['VMIN2=0,0']	['VMIN3=-0,2']	['VMIN4=-0,04']	['VPP1=3,08']	['VPP2=3,08']	['VPP3=3,36']	['VPP4=0,12']	['VTOP1=2,944615']	['VTOP2=2,975514']	['VTOP3=2,992146']	['VTOP4=9,9e+37']	['VBASE1=-0,04293274']	['VBASE2=0,05339111']	['VBASE3=-0,008302002']	['VBASE4=9,9e+37']	['VAMP1=2,9829']	['VAMP2=2,9166']	['VAMP3=2,9983']	['VAMP4=9,9e+37']	['VAVG1=1,412107']	['VAVG2=1,477559']	['VAVG3=1,440669']	['VAVG4=0,01140472']	['VRMS1=2,051022']	['VRMS2=2,071482']	['VRMS3=2,080493']	['VRMS4=0,05324268']	['OVERshoot1=0,01853845']	['OVERshoot2=0,0357567']	['OVERshoot3=0,05594298']	['OVERshoot4=9,9e+37']	['MPAREA1=0,00145112']	['MPAREA2=0,00151344']	['MPAREA3=0,00148976']	['MPAREA4=0,0']	['PERIOD1=0,001']	['PERIOD2=0,001']	['PERIOD3=0,001']	['PERIOD4=9,9e+37']	['FREQUENCY1=999,9999']	['FREQUENCY2=999,9999']	['FREQUENCY3=999,9999']	['FREQUENCY4=9,9e+37']	['PWIDth1=0,0005']	['PWIDth2=0,0005']	['PWIDth3=0,0005']	['PWIDth4=9,9e+37']	['NWIDth1=0,0005']	['NWIDth2=0,0005']	['NWIDth3=0,0005']	['NWIDth4=9,9e+37']	['NDUTy1=0,5']	['NDUTy2=0,5']	['NDUTy3=0,5']	['NDUTy4=9,9e+37']	['TVMAX1=-0,000558']	['TVMAX2=0,000118']	['TVMAX3=1,4e-05']	['TVMAX4=-0,00058']	['TVMIN1=-0,000494']	['TVMIN2=-0,000466']	['TVMIN3=-0,00048']	['TVMIN4=-0,000582']	['PSLEWrate1=478007,7']	['PSLEWrate2=467539,7']	['PSLEWrate3=480071,7']	['PSLEWrate4=9,9e+37']	['VMID1=1,450841']	['VMID2=1,514453']	['VMID3=1,491922']	['VMID4=9,9e+37']

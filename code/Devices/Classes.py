@@ -490,7 +490,8 @@ class base_device():
       
     def on_next_step(self, ch, repeat = 1):
         '''активирует следующий шаг канала прибора'''
-        print(f"{self.name=} {ch.step_index = }")
+        stps = ch.dict_settable_parameters["num steps"]
+        print(f"{self.name} {ch.ch_name} {ch.step_index = } steps = {stps}")
         answer = ch_response_to_step.Step_done
         if ch.dict_settable_parameters["num steps"] == QApplication.translate("Device","Пока активны другие приборы"):
             return answer
@@ -498,6 +499,7 @@ class base_device():
             ch.step_index = ch.step_index + 1
         else:
             answer = ch_response_to_step.End_list_of_steps  # след шага нет
+            print(f"{self.name} {ch.ch_name} след шага нет")
         return answer
 
     def sin_wave(self, freq, amplitude, phase_shift, sample_rate):

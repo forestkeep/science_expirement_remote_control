@@ -334,6 +334,10 @@ class relayPr1Class(base_device):
             else:
                 #print("ошибка шага", self.name + " ch " + str(self.active_channel.number))
                 ans = ch_response_to_step.Step_fail
+                
+            if self.is_debug:
+                if ans != ch_response_to_step.End_list_of_steps:
+                    ans = ch_response_to_step.Step_done
 
             return ans, parameters, time.time() - start_time
         return ch_response_to_step.Incorrect_ch, parameters, time.time() - start_time
