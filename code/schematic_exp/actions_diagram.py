@@ -3,9 +3,13 @@ from PyQt5.QtWidgets import QApplication, QScrollArea, QWidget, QVBoxLayout, QPu
 from PyQt5.QtCore import Qt
 import sys
 import qdarktheme
-
-from actions_line import actionLine, blockInfo
-from stack_experiment import unique_colors1
+try:
+	from actions_line import actionLine, blockInfo
+	from stack_experiment import unique_colors1
+except:
+	from schematic_exp.actions_line import actionLine, blockInfo
+	from schematic_exp.stack_experiment import unique_colors1
+ 
 class actDiagramWin(QWidget):
     def __init__(self):
         super().__init__()
@@ -110,7 +114,7 @@ class actDiagram():
 					if name == actor_name:
 						line.add_new_block(new_block)
 					else:
-						line.add_new_block(None)
+						line.add_new_block()
       
 			return True
 

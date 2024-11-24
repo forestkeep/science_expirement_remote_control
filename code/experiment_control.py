@@ -399,7 +399,7 @@ class experimentControl(analyse):
         number = 1
         for dev, ch in self.get_active_ch_and_device():
             self.meta_data_exp.actors_classes[number] = ch
-            self.meta_data_exp.actors_names[number] = dev.name + "^" + ch.ch_name
+            self.meta_data_exp.actors_names[number] = dev.name + " " + ch.ch_name
             self.meta_data_exp.numbers[ch] = number
             number+=1
             
@@ -420,7 +420,10 @@ class experimentControl(analyse):
         self.meta_data_exp.print_meta_data()
         #=================
         
-        self.exp_call_stack.set_data(self.meta_data_exp)
+        for dev, ch in self.get_active_ch_and_device():
+            actor = dev.name + " " + ch.ch_name
+            self.exp_call_stack.add_actor(actor_name = actor)
+
 
         #проверка соединения приборов
         status = self.check_connections()
@@ -500,7 +503,10 @@ class experimentControl(analyse):
                             ch = target_execute[1]
                             
                             self.meta_data_exp.exp_queue.append( self.meta_data_exp.numbers[ch] )
-                            self.exp_call_stack.set_data(self.meta_data_exp)
+                            actor = device.name + " " + ch.ch_name
+                            self.exp_call_stack.add_action(actor_name  = actor,
+                                                            action_name = f"Действие",
+                                                            action_info = f"Описание действия")
                             
                             device.set_status_step(ch_name=ch.get_name(), status=False)
                             t = time.time()

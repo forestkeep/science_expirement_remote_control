@@ -29,7 +29,7 @@ from experiment_control import experimentControl
 from Handler_manager import messageBroker
 from interface.installation_window import Ui_Installation
 from schematic_exp.construct_diagramexp import expDiagram, create_objects, main_dict1
-from schematic_exp.stack_experiment import callStack
+from schematic_exp.actions_diagram import actDiagram
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ class installation_class(experimentControl, analyse):
             #    logger.error(f"Failed to create instance of {device_name} {e}")
                 
         self.exp_diagram = expDiagram()
-        self.exp_call_stack = callStack()
+        self.exp_call_stack = actDiagram()
         
         self.installation_window = Ui_Installation()
         self.installation_window.setWindowTitle(

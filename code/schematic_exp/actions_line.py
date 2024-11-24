@@ -4,8 +4,10 @@ from PyQt5.QtCore import Qt, QPoint
 import sys
 import time
 import qdarktheme
-
-from stack_experiment import deviceAction
+try:
+	from stack_experiment import deviceAction
+except:
+    from schematic_exp.stack_experiment import deviceAction
     
 class blockInfo():
     def __init__(self, name, info):

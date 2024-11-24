@@ -50,8 +50,72 @@ class deviceAction(QWidget):
         layout.setSpacing(0)
 
         self.ch_name = ch_name
+        
+        
+        my = ""
+        if self.ch_name:
+            my = "////"
+        self.label_ch = QLabel( my )
 
-        self.label_ch = QLabel( ch_name )
+        self.label_ch = QLabel( my )
+        self.label_ch.setMinimumSize( max_width, max_height)
+        
+        self.label_ch.setStyleSheet(self.base_color)
+        
+        layout.addWidget(self.label_ch)
+        
+
+        self.frame = QFrame(self)
+        self.frame.setFrameShape(QFrame.Panel)
+        self.frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        
+        self.frame.setLayout(layout)
+
+        outer_layout = QVBoxLayout(self)
+        outer_layout.addWidget(self.frame)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
+
+        self.setLayout(outer_layout)
+
+        self.label_ch.raise_()
+        self.is_check = False
+
+    def mousePressEvent(self, event):
+        print(3434343)
+        
+    def mouseMoveEvent(self, event):
+        pass
+        
+    def mouseReleaseEvent(self, event):
+        self.dragging = False
+
+    def toggle_selection(self, set_check = None):
+        pass
+
+    def set_default_style(self):
+        pass
+        #self.frame.setStyleSheet(self.base_color)
+        
+        
+class deviceActionDraw(QWidget):
+    def __init__(self, ch_name, color, max_height = 12, max_width = 30, parent=None):
+        super().__init__(parent)
+        self.parent_wid = parent
+        self.base_color = color
+        self.setObjectName("device")
+        self.setMouseTracking(True)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        print(ch_name)
+
+        self.ch_name = ch_name
+        my = ""
+        if self.ch_name:
+            my = "////"
+        self.label_ch = QLabel( my )
         self.label_ch.setMinimumSize( max_width, max_height)
         
         self.label_ch.setStyleSheet(self.base_color)
@@ -60,9 +124,8 @@ class deviceAction(QWidget):
 
         self.frame = QFrame(self)
         self.frame.setFrameShape(QFrame.Panel)
-        self.frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.frame.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         
-
         self.frame.setLayout(layout)
 
         outer_layout = QVBoxLayout(self)
@@ -106,7 +169,7 @@ class callStack(QWidget):
         print("данные установлены в стек")
         self.actors_names = meta_data_class.actors_names
         self.exp_queue = meta_data_class.exp_queue
-               
+        print(self.exp_queue)
         self.add_blocks()
         self.update()
         
@@ -124,12 +187,12 @@ class callStack(QWidget):
 
                 for act in self.exp_queue:
                     if num_actor == act:
-                        new_block = deviceAction(ch_name='123444',
+                        new_block = deviceActionDraw(ch_name='////',
                                        color=f"background-color: {unique_colors1[index]};",
                                        max_height = self.rect_height,
                                        max_width = self.rect_width,
                                        parent=self)
-                        new_block.move(offset_x, self.offset_y-6)
+                        new_block.move(offset_x, self.offset_y)
                         self.actions.append(new_block)
                     
                     offset_x += self.rect_width + self.spacing
