@@ -17,6 +17,7 @@ class blockInfo():
 class actionLine(QWidget):
     def __init__(self, name, number, color, parent=None):
         super().__init__(parent)
+        print(f"добавлена линия при создании актора{name}")
         self.parent_wid = parent
         self.name = name
         self.number = number

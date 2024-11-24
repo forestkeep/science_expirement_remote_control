@@ -299,7 +299,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.base_lay.addLayout( self.lower_lay, stretch = 1 )
         
         self.exp_diagram = exp_diagram
-        self.exp_call_stack = exp_call_stack.diagram
+        self.exp_call_stack = exp_call_stack
 
         base_window.resize(self.N*120+10+270, 550)
 
@@ -407,13 +407,13 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
         self.scroll_area_diagram.setWidget(self.exp_diagram)
         
-        '''
+        
         self.scroll_area_stack = QtWidgets.QScrollArea()
         self.scroll_area_stack.setWidgetResizable(True)
         self.scroll_area_stack.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         
         self.scroll_area_stack.setWidget(self.exp_call_stack)
-        '''
+        
         #======================
 
         self.verticalSpacer = QtWidgets.QSpacerItem(15, 15, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
@@ -427,7 +427,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
         self.verticalLayout_2.addWidget(self.schematic_exp_name)
         self.verticalLayout_2.addWidget(self.scroll_area_diagram, stretch=10)
-        self.verticalLayout_2.addWidget(self.exp_call_stack, stretch=3)
+        self.verticalLayout_2.addWidget(self.scroll_area_stack, stretch=3)
         
         self.verticalLayout_2.addWidget(self.open_graph_button)
         # ================================================================
