@@ -419,6 +419,8 @@ class experimentControl(analyse):
         #=================
         self.meta_data_exp.print_meta_data()
         #=================
+        
+        self.exp_call_stack.set_data(self.meta_data_exp)
 
         #проверка соединения приборов
         status = self.check_connections()
@@ -498,6 +500,8 @@ class experimentControl(analyse):
                             ch = target_execute[1]
                             
                             self.meta_data_exp.exp_queue.append( self.meta_data_exp.numbers[ch] )
+                            self.exp_call_stack.set_data(self.meta_data_exp)
+                            
                             device.set_status_step(ch_name=ch.get_name(), status=False)
                             t = time.time()
                             ans_device = device.on_next_step(ch, repeat=3)

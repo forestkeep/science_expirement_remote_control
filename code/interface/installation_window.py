@@ -267,7 +267,7 @@ class channel_page(QtWidgets.QWidget):
 class Ui_Installation(QtWidgets.QMainWindow):
     installation_close_signal = QtCore.pyqtSignal(int)
 
-    def setupUi(self, base_window, installation_class, class_of_devices, exp_diagram):
+    def setupUi(self, base_window, installation_class, class_of_devices, exp_diagram, exp_call_stack):
         base_window.setObjectName("Installation")
         self.setWindowIcon(QIcon('picture/key.png'))  # Укажите путь к вашей иконке
         self.setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }")
@@ -299,6 +299,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.base_lay.addLayout( self.lower_lay, stretch = 1 )
         
         self.exp_diagram = exp_diagram
+        self.exp_call_stack = exp_call_stack
 
         base_window.resize(self.N*120+10+270, 550)
 
@@ -400,11 +401,18 @@ class Ui_Installation(QtWidgets.QMainWindow):
         #=======================
 
 
-        self.scroll_area = QtWidgets.QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.scroll_area_diagram = QtWidgets.QScrollArea()
+        self.scroll_area_diagram.setWidgetResizable(True)
+        self.scroll_area_diagram.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
 
-        self.scroll_area.setWidget(self.exp_diagram)
+        self.scroll_area_diagram.setWidget(self.exp_diagram)
+        
+        
+        self.scroll_area_stack = QtWidgets.QScrollArea()
+        self.scroll_area_stack.setWidgetResizable(True)
+        self.scroll_area_stack.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        
+        self.scroll_area_stack.setWidget(self.exp_call_stack)
         #======================
 
         self.verticalSpacer = QtWidgets.QSpacerItem(15, 15, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
@@ -417,7 +425,8 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.schematic_exp_name.setFont(font)
 
         self.verticalLayout_2.addWidget(self.schematic_exp_name)
-        self.verticalLayout_2.addWidget(self.scroll_area, stretch=10)
+        self.verticalLayout_2.addWidget(self.scroll_area_diagram, stretch=10)
+        self.verticalLayout_2.addWidget(self.scroll_area_stack, stretch=3)
         
         self.verticalLayout_2.addWidget(self.open_graph_button)
         # ================================================================

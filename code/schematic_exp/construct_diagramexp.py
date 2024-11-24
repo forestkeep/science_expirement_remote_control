@@ -151,8 +151,7 @@ class connection():
                 direction_first = Position.LEFT
 
         return (start_point, end_point, direction_first, (is_overlap_x or is_overlap_y) )
-    
-    
+       
     def setStyle(self, new_pen : QPen):
         self.pen = new_pen
 
@@ -583,30 +582,6 @@ class expDiagram(QWidget):
         for group in groups3:
             general_group.append(group)
 
-        #print("группа 1")
-        for family in groups1:
-            #print(family.current_x, family.current_y)
-            for obj in family.blocks:
-                pass
-                #print(f"{obj.dev_name} {obj.ch_name} {obj.x_offset} {obj.y_offset}")
-            #print("-------------")
-
-        #print("группа 2")
-        for family in groups2:
-            #print(family.current_x, family.current_y)
-            for obj in family.blocks:
-                pass
-                #print(f"{obj.dev_name} {obj.ch_name} {obj.x_offset} {obj.y_offset}")
-            #print("-------------")
-
-        #print("группа 3")
-        for family in groups3:
-            #print(family.current_x, family.current_y)
-            for obj in family.blocks:
-                pass
-                #print(f"{obj.dev_name} {obj.ch_name} {obj.x_offset} {obj.y_offset}")
-            #print("-------------")
-
         self.auto_place_group(groups=general_group)
 
         for family in groups1:
@@ -626,7 +601,6 @@ class expDiagram(QWidget):
         packing = Packing(groups)
         focus_widht = packing.pack_rectangles( width = self.height(), height= self.width())
         self.setMinimumSize(focus_widht, self.height())
-        #print(f"{self.width()=} {self.height()=}")
 
     def delete_old_draw(self):
         all_child_widgets = self.findChildren(blockDevice)
