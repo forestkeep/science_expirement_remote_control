@@ -263,7 +263,6 @@ class Packing:
 
         for rectangle in self.rectangles:
 
-
             if rectangle.current_y > self.strip_width:
                 #print(f"Блок {rectangle} не поместится, ставим его принудительно")
                 self.pack_on_ceiling(rectangle, current_x)
@@ -619,7 +618,7 @@ class expDiagram(QWidget):
         self.labels = []
         color_index = 0
         color_map = {}
-
+        
         for dev, ch in install_class.get_active_ch_and_device():
             y = install_class.message_broker.get_subscribers(publisher = ch, name_subscribe = ch.do_operation_trigger)
             name_dev = dev.get_name()

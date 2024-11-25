@@ -90,23 +90,11 @@ class deviceActionDraw(QWidget):
 
         self.label_ch.raise_()
         self.is_check = False
+        print(66666)
 
     def mousePressEvent(self, event):
         print(3434343)
-        
-    def mouseMoveEvent(self, event):
-        pass
-        
-    def mouseReleaseEvent(self, event):
-        self.dragging = False
-
-    def toggle_selection(self, set_check = None):
-        pass
-
-    def set_default_style(self):
-        pass
-        #self.frame.setStyleSheet(self.base_color)
-        
+               
 class callStack(QWidget):
     def __init__(self):
         super().__init__()
@@ -114,6 +102,7 @@ class callStack(QWidget):
         self.exp_queue = []
         self.objects = []
         self.spacing = 2 # Отступ между прямоугольниками
+        self.ind = 1
         
         self.rect_height = 12
         self.rect_width = 30
@@ -122,11 +111,12 @@ class callStack(QWidget):
         print("данные установлены в стек")
         self.actors_names = meta_data_class.actors_names
         self.exp_queue = meta_data_class.exp_queue
-        print(self.exp_queue)
+        self.max_width = 0
+        self.update()
         #self.add_blocks()
-        #self.update()
         
     def add_blocks(self):
+        print("добавляем блок")
         painter = QPainter(self)
         self.offset_y = 0
         self.actions = []
@@ -140,60 +130,57 @@ class callStack(QWidget):
 
                 for act in self.exp_queue:
                     if num_actor == act:
-                        pass
-                        
+                        print(f"Блок найден {self.ind}")
+                        self.ind+=1
                         new_block = deviceActionDraw(ch_name='////',
                                        color=f"background-color: {unique_colors1[index]};",
                                        max_height = self.rect_height,
                                        max_width = self.rect_width,
                                        parent=self)
                         new_block.move(offset_x, self.offset_y)
+                        new_block.show()
+
                         self.actions.append(new_block)
-                        
-                    
+                         
                     offset_x += self.rect_width + self.spacing
-
                 self.offset_y += self.rect_height+6
-
-                painter.setPen( QColor(100, 100, 100, 255) )
-                painter.drawLine(0, self.offset_y - 5, self.width(), self.offset_y - 5) 
-
-                self.max_width = max(self.max_width, offset_x + 10)
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        offset_y_lines = 5
         
-        self.y_line_points = []
-
-        if self.actors_names:
-            max_chars = max(len(name) for name in self.actors_names.values())
-          
-            for index, num_actor in enumerate(self.actors_names.keys()):
-                name = self.actors_names[num_actor]
-                offset_x = max_chars * 8
-                painter.setPen( unique_colors[index] )
-                painter.drawText(10, offset_y_lines + self.rect_height - 5, name)
-                
-                brush = QBrush(QColor(0, 255, 0))  # Цвет прямоугольников
-                
-                for act in self.exp_queue:     
-                    offset_x += self.rect_width + self.spacing
-                    painter.setBrush(brush)
-                    painter.drawRect(120 + offset_x, offset_y_lines, 30, 15)
-                offset_y_lines += self.rect_height+6
-                
-
-                self.y_line_points.append(offset_y_lines - 5)
-
-            self.max_width = max(self.max_width, offset_x + 10) 
-         
-            self.setMinimumSize(self.max_width, offset_y_lines)
-            painter.setPen( QColor(100, 100, 100, 255) )
+    def paintEvent(self, event):
+        print("рисуем")
+        try:
+            painter = QPainter(self)
+            offset_y_lines = 5
             
-            for y_coord in self.y_line_points:
+            self.y_line_points = []
+
+            if self.actors_names:
+                max_chars = max(len(name) for name in self.actors_names.values())
+            
+                for index, num_actor in enumerate(self.actors_names.keys()):
+                    name = self.actors_names[num_actor]
+                    offset_x = max_chars * 8
+                    painter.setPen( unique_colors[index] )
+                    painter.drawText(10, offset_y_lines + self.rect_height - 5, name)
+                    
+                    brush = QBrush( unique_colors[index] )
+                    
+                    for act in self.exp_queue:     
+                        offset_x += self.rect_width + self.spacing
+                        painter.setBrush(brush)
+                    offset_y_lines += self.rect_height+6
+                    
+
+                    self.y_line_points.append(offset_y_lines - 5)
+
+                self.max_width = max(self.max_width, offset_x + 10) 
+            
+                self.setMinimumSize(self.max_width, offset_y_lines)
+                painter.setPen( QColor(100, 100, 100, 255) )
                 
-                painter.drawLine(0, y_coord, self.max_width, y_coord)
+                for y_coord in self.y_line_points:
+                    painter.drawLine(0, y_coord, self.max_width, y_coord)
+        except Exception as e:
+            print(e)
             
 class metaDataExp():
     def __init__(self):
@@ -210,8 +197,8 @@ def actions_table():
     test_data.exp_queue = [1, 3, 2, 1, 3, 1, 2, 2, 2, 3, 1, 2, 1, 4, 4, 1]  # Примеры приборов для отображения
 
     drawing_field = callStack()
-    drawing_field.set_data(test_data)
     drawing_field.show()
+    drawing_field.set_data(test_data)
     return drawing_field
 
 

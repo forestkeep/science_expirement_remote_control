@@ -39,45 +39,46 @@ class callStack(QWidget):
 		self.update()
 
 	def paintEvent(self, event):
-		print("отрисовка")
-		try:
-			painter = QPainter(self)
-			if self.actors_names:
-				max_chars = max(len(name) for name in self.actors_names.values())
-				offset_y = 0
-				rect_height = 15
-				rect_width = 30
-				spacing = 2  # Отступ между прямоугольниками
-
+			try:
+				painter = QPainter(self)
 				if self.actors_names:
+        
 					max_chars = max(len(name) for name in self.actors_names.values())
-		
-					for index, num_actor in enumerate(self.actors_names.keys()):
-						name = self.actors_names[num_actor]
-						offset_x = max_chars * 8
-						painter.setPen( unique_colors[index] )
-						painter.drawText(10, offset_y + rect_height - 5, name)
+					offset_y = 0
+					rect_height = 15
+					rect_width = 30
+					spacing = 2  # Отступ между прямоугольниками
 
-						brush = QBrush( unique_colors[index] )  # Цвет прямоугольников
-						painter.setBrush(brush)
-						for act in self.exp_queue:
-							if num_actor == act:
-								painter.drawRect(10 + offset_x, offset_y-2, rect_width, rect_height)
-							else:
-								pass
-							
-							offset_x += rect_width + spacing  # Смещение по X для следующего прямоугольника
-
-						offset_y += rect_height + 5  # Смещение по Y для следующей строки
+					if self.actors_names:
+						
+						max_chars = max(len(name) for name in self.actors_names.values())
 			
-						self.y_line_points.append(offset_y - 5)
-					self.max_width = max(self.max_width, offset_x + 10) 
-					self.setMinimumSize(self.max_width, offset_y)
-					painter.setPen( QColor(100, 100, 100, 255) )
-					for y_coord in self.y_line_points:   
-						painter.drawLine(0, y_coord, self.max_width, y_coord)
-		except Exception as e:
-			print(f"error {e}")
+						for index, num_actor in enumerate(self.actors_names.keys()):
+							name = self.actors_names[num_actor]
+							offset_x = max_chars * 8
+							painter.setPen( unique_colors[index] )
+							painter.drawText(10, offset_y + rect_height - 5, name)
+
+							brush = QBrush( unique_colors[index] )  # Цвет прямоугольников
+							painter.setBrush(brush)
+							for act in self.exp_queue:
+								if num_actor == act:
+									painter.drawRect(10 + offset_x, offset_y-2, rect_width, rect_height)
+								else:
+									pass
+								
+								offset_x += rect_width + spacing  # Смещение по X для следующего прямоугольника
+
+							offset_y += rect_height + 5  # Смещение по Y для следующей строки
+				
+							self.y_line_points.append(offset_y - 5)
+						self.max_width = max(self.max_width, offset_x + 10) 
+						self.setMinimumSize(self.max_width, offset_y)
+						painter.setPen( QColor(100, 100, 100, 255) )
+						for y_coord in self.y_line_points:   
+							painter.drawLine(0, y_coord, self.max_width, y_coord)
+			except Exception as e:
+				print(f"error {e}")
 
 
 class metaDataExp():
