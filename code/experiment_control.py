@@ -499,10 +499,6 @@ class experimentControl(analyse):
                             device = target_execute[0]
                             ch = target_execute[1]
                             
-                            self.meta_data_exp.exp_queue.append( self.meta_data_exp.numbers[ch] )
-
-                            self.exp_call_stack.set_data(self.meta_data_exp)
-                            
                             device.set_status_step(ch_name=ch.get_name(), status=False)
                             t = time.time()
                             ans_device = device.on_next_step(ch, repeat=3)
@@ -514,10 +510,10 @@ class experimentControl(analyse):
                                 ch.number_meas += 1
 
                                 if ch.get_type() == "act":
-                                    error = self.do_act(device=device, ch=ch)
+                                    error, ans_request, time_step = self.do_act(device=device, ch=ch)
 
                                 elif ch.get_type() == "meas":
-                                    error = self.do_meas(device=device, ch=ch)
+                                    error, ans_request, time_step = self.do_meas(device=device, ch=ch)
 
                             elif ans_device == ch_response_to_step.End_list_of_steps:
                                 ch.am_i_active_in_experiment = False
@@ -542,8 +538,14 @@ class experimentControl(analyse):
                                     )
 
                             self.manage_subscribers(ch = ch)
-
                             self.update_actors_priority(exclude_dev = device, exclude_ch = ch)
+
+                            self.meta_data_exp.exp_queue.append( self.meta_data_exp.numbers[ch] )
+                            self.meta_data_exp.queue_info.append( f'''{device.get_name()} {ch.get_name()} \n\r
+                                                                 Status request = {ans_request} \n\r
+                                                                 Step time = {round(time_step, 3)} s\n\r
+                                                                ''' )
+                            self.exp_call_stack.set_data(self.meta_data_exp)
 
 
         self.finalize_experiment(error=error, error_start_exp=error_start_exp)
@@ -607,6 +609,7 @@ class experimentControl(analyse):
 
     def do_act(self, device, ch):
         error = False
+        step_time = 0
         self.set_state_text(
             QApplication.translate('exp_flow',"Выполняется действие") + " "
             + device.get_name()
@@ -646,7 +649,7 @@ class experimentControl(analyse):
         else:
             pass
 
-        return error
+        return error, ans, step_time
 
     def do_meas(self, device, ch):
         error = False
@@ -661,6 +664,7 @@ class experimentControl(analyse):
             + str(ch.get_name())
         )
         repeat_counter = 0
+        step_time = 0
         while repeat_counter < self.repeat_meas:
             repeat_counter += 1
             try:
@@ -747,7 +751,7 @@ class experimentControl(analyse):
                         error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
                     break
 
-        return error
+        return error, ans, step_time
     
     def finalize_experiment(self, error=False, error_start_exp=False):
         for dev, ch in self.get_active_ch_and_device():
@@ -837,6 +841,7 @@ class metaDataExp():
         self.actors_classes = {}
         self.numbers = {}
         self.exp_queue = []
+        self.queue_info = []
         self.exp_start_time = 0
         self.exp_stop_time = 0
         
@@ -852,6 +857,9 @@ class metaDataExp():
             
         print("exp queue:")
         print(self.exp_queue)
+        
+        print("queue info:")
+        print(self.queue_info)
         
         print(f"time exp = {self.exp_stop_time - self.exp_start_time} sec")
         
