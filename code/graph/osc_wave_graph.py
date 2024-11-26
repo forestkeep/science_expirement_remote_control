@@ -302,6 +302,8 @@ class X:
         self.import_data_button = QPushButton(
             QApplication.translate('graph_win',"Импорт данных")
         )
+
+        self.import_data_button.setMaximumSize(150, 30)  # Ограничиваем максимальный размер
         self.import_data_button.clicked.connect(self.import_data)
 
         self.tab1Layout.addLayout(self.hor_lay)
@@ -436,7 +438,7 @@ class X:
         self.button_hyst_loop = QPushButton()
         self.button_hyst_loop.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button_hyst_loop.setMaximumSize(
-            100, 100
+            130, 100
         )  # Ограничивает максимальный размер кнопки
         second_row_layout.addWidget(self.button_hyst_loop, alignment=Qt.AlignLeft)
 
@@ -444,7 +446,7 @@ class X:
         
         self.button_hyst_loop_clear.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button_hyst_loop_clear.setMaximumSize(
-            100, 100
+            130, 100
         )  # Ограничивает максимальный размер кнопки
         second_row_layout.addWidget(self.button_hyst_loop_clear, alignment=Qt.AlignLeft)
 
@@ -1084,23 +1086,32 @@ class X:
                     status = False
 
             if status:
-                print(434343)
                 left_ind = int(x_vert_1 / sig_scale)
                 right_ind = int(x_vert_2 / sig_scale)
 
                 x, y = self.calc_loop(
                     arr1=sig_arr[left_ind:right_ind], arr2=field_arr[left_ind:right_ind]
                 )
+
+                try:
+                    color = next(self.color_gen)
+                except:
+                    print("color gen error")
+                    self.color_gen = self.get_random_color()
+                    color = next(self.color_gen)
+
+                print("before")
                 self.graphView_loop.plot(
                     x,
                     y,
                     pen={
-                        "color": next(self.color_gen),
+                        "color": color,
                         "width": 1,
                         "antialias": True,
                         "symbol": "o",
                     },
                 )
+                print("after")
             else:
                 logger.warning("неверные данные для построения петли")
         else:
@@ -1184,13 +1195,20 @@ class X:
 
     def get_random_color(self):
         while True:
-            if len(self.used_colors) == len(self.contrast_colors):
-                # Сбросить использованные цвета
-                self.used_colors.clear()
+            print(f"{len(self.used_colors)=} {len(self.contrast_colors)=}")
 
-            color = random.choice(self.contrast_colors)
-            while color in self.used_colors:
+            my_used_colors = set(self.used_colors)
+            my_colors = set(self.contrast_colors)
+            missing = my_colors - my_used_colors
+
+            if len(missing) == 0:
+                # Сбросить использованные цвета
+                print("reset used colors")
+                self.used_colors.clear()
                 color = random.choice(self.contrast_colors)
+            else:
+                color = random.choice(list(missing))
+
 
             self.used_colors.add(color)
             yield color
