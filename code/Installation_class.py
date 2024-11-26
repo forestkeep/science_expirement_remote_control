@@ -29,7 +29,7 @@ from experiment_control import experimentControl
 from Handler_manager import messageBroker
 from interface.installation_window import Ui_Installation
 from schematic_exp.construct_diagramexp import expDiagram, create_objects, main_dict1
-from schematic_exp.rereerere import callStack
+from schematic_exp.exp_time_line import callStack
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +39,11 @@ class installation_class(experimentControl, analyse):
         super().__init__()
         logger.info("запуск установки")
 
-        self.settings = settings
-        self.version_app = version
+        self.settings            = settings
+        self.version_app         = version
         self.load_settings()  # reading settings
 
-        self.dict_device_class = dict_device_class
+        self.dict_device_class   = dict_device_class
 
         self.timer_for_pause_exp = QTimer()
         self.timer_for_pause_exp.timeout.connect(lambda: self.pause_actions())

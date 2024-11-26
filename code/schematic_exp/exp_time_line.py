@@ -33,7 +33,7 @@ class callStack(QWidget):
 		print("создали стек")
 		self.rect_height = 10
 		self.rect_width = 17
-		self.setStyleSheet("QToolTip { background-color: pink; color: black; }")
+		self.setStyleSheet("QToolTip { background-color: rgb(50, 50, 60); color: white; }")
 		#self.show()
 
 	def mousePressEvent(self, event):
@@ -80,7 +80,7 @@ class callStack(QWidget):
 							painter.setPen( QColor(255, 255, 255, 255) )
 							ind = 1
 							for act in self.exp_queue:
-								painter.drawText(10 + offset_x, 10, str(ind))
+								painter.drawText(13 + offset_x, 10, str(ind))
 								if num_actor == act:
 									self.rects[ind-1]["rect"] = QRect(10 + offset_x, offset_y-2, self.rect_width, self.rect_height)
 									painter.drawRect(self.rects[ind-1]["rect"])
@@ -124,7 +124,6 @@ def actions_table():
 	drawing_field.show()
 
 	return drawing_field
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

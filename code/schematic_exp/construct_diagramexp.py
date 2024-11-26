@@ -298,13 +298,13 @@ class blockDevice(QWidget):
         self.setObjectName("device")
         self.is_ctrl_pressed = False
         self.setMouseTracking(True)
-        self.dragging = False
-        self.last_pos = None
-        self.type_trigger = None
-        self.value_trigger = None
-        self.number_meas = None
-        self.master = None
-        self.slave = []
+        self.dragging        = False
+        self.last_pos        = None
+        self.type_trigger    = None
+        self.value_trigger   = None
+        self.number_meas     = None
+        self.master          = None
+        self.slave           = []
 
         #координаты для автоасстановки, показывают смещение виджета внутри блока
         self.x_offset = 0
@@ -313,7 +313,7 @@ class blockDevice(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(1, 0, 0, 0)
 
-        self.ch_name = ch_name
+        self.ch_name  = ch_name
         self.dev_name = dev_name
 
         self.label_ch = QLabel(self.ch_name)
@@ -376,7 +376,7 @@ class blockDevice(QWidget):
             self.frame.setStyleSheet(self.base_color)
             self.is_check = True
             
-        elif set_check == False:
+        elif set_check   == False:
             self.is_check = False
             self.set_default_style()
         else:
@@ -678,12 +678,12 @@ class expDiagram(QWidget):
 class connectObject:
     def __init__(self, device, ch, type, value, num, color):
         self.name = f"{device} {ch}"
-        self.type_trigger = type
+        self.type_trigger  = type
         self.value_trigger = value
-        self.number_meas = num
-        self.color = color
-        self.ch_name = ch
-        self.dev_name = device
+        self.number_meas   = num
+        self.color         = color
+        self.ch_name       = ch
+        self.dev_name      = device
 
 def create_objects(main_dict):
     objects = []

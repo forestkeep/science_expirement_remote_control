@@ -50,7 +50,7 @@ class MyWindow(QtWidgets.QMainWindow):
             "exp_control" + version_app,
         )
 
-        self.graph_window = None
+        self.graph_window   = None
         self.device_creator = device_creator
 
         logger.warning(f"Start Version {version_app}, Admin {is_admin()}")

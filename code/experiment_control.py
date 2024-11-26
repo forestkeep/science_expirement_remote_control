@@ -29,14 +29,14 @@ logger = logging.getLogger(__name__)
 
 class exp_th_connection:
     def __init__(self) -> None:
-        self.flag_show_message = False
-        self.message = ""
-        self.message_status = message_status.info
-        self.is_message_show = False
-        self.ask_save_the_results = False
-        self.is_update_pbar = False
+        self.flag_show_message           = False
+        self.message                     = ""
+        self.message_status              = message_status.info
+        self.is_message_show             = False
+        self.ask_save_the_results        = False
+        self.is_update_pbar              = False
         self.is_measurement_data_updated = False
-        self.start_exp_time = 0
+        self.start_exp_time              = 0
 
 
 class message_status(enum.Enum):
@@ -48,11 +48,10 @@ class message_status(enum.Enum):
 class experimentControl(analyse):
     def __init__(self) -> None:
         super().__init__()
-        self.exp_th_connect = exp_th_connection()
+        self.exp_th_connect    = exp_th_connection()
         self.experiment_thread = None
-        self.stop_experiment = False
-        self.pause_start_time = 0
-        
+        self.stop_experiment   = False
+        self.pause_start_time  = 0
         
         self.meta_data_exp = metaDataExp()
 
@@ -536,14 +535,17 @@ class experimentControl(analyse):
                                         + QApplication.translate('exp_flow',"завершил работу"),
                                         status="ok",
                                     )
-
+                            current_priority = ch.get_priority()
                             self.manage_subscribers(ch = ch)
                             self.update_actors_priority(exclude_dev = device, exclude_ch = ch)
 
                             self.meta_data_exp.exp_queue.append( self.meta_data_exp.numbers[ch] )
-                            self.meta_data_exp.queue_info.append( f'''{device.get_name()} {ch.get_name()} \n\r
+                            self.meta_data_exp.queue_info.append( f'''\n\r 
+                                                                {device.get_name()} {ch.get_name()} \n\r
                                                                  Status request = {ans_request} \n\r
                                                                  Step time = {round(time_step, 3)} s\n\r
+                                                                 Номер шага = {ch.number_meas} \n\r
+                                                                 Приоритет = {current_priority}\n\r
                                                                 ''' )
                             self.exp_call_stack.set_data(self.meta_data_exp)
 
@@ -837,13 +839,13 @@ def print_data(data):
 
 class metaDataExp():
     def __init__(self):
-        self.actors_names = {}
+        self.actors_names   = {}
         self.actors_classes = {}
-        self.numbers = {}
-        self.exp_queue = []
-        self.queue_info = []
+        self.numbers        = {}
+        self.exp_queue      = []
+        self.queue_info     = []
         self.exp_start_time = 0
-        self.exp_stop_time = 0
+        self.exp_stop_time  = 0
         
     def get_meta_data(self):
         pass

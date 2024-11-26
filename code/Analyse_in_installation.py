@@ -427,6 +427,3 @@ class analyse(baseInstallation):
 
         return status
 
-
-if __name__ == "__main__":
-    pass
