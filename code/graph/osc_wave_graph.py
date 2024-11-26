@@ -123,6 +123,9 @@ class X:
             lambda: self.hyst_loop_activate()
         )
 
+        self.loops_stack = [] #здесь хранятся петли, которые были рассчитаны и установлены на график
+        self.drawed_loops = []#здесь хранятся объекты отрисованных графиков
+
         self.label = QLabel()  # Лейбл с именем канала
         self.label2 = QLabel()  # Лейбл с именем канала
 
@@ -427,44 +430,33 @@ class X:
         return layout, checkboxes, channels_wave_forms
 
     def create_hyst_calc_layer(self):
-        # Создаем вертикальный компоновщик для основного слоя
-        self.hyst_loop_layer = QFrame()
-        layout = QVBoxLayout(self.hyst_loop_layer)
 
-        # Создаем горизонтальный компоновщик для второй строки
-        second_row_layout = QHBoxLayout()
-
-        # Создаем чекбокс и добавляем его в левую часть второй строки
         self.button_hyst_loop = QPushButton()
         self.button_hyst_loop.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button_hyst_loop.setMaximumSize(
             130, 100
-        )  # Ограничивает максимальный размер кнопки
-        second_row_layout.addWidget(self.button_hyst_loop, alignment=Qt.AlignLeft)
+        ) 
 
         self.button_hyst_loop_clear = QPushButton()
-        
         self.button_hyst_loop_clear.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button_hyst_loop_clear.setMaximumSize(
             130, 100
-        )  # Ограничивает максимальный размер кнопки
-        second_row_layout.addWidget(self.button_hyst_loop_clear, alignment=Qt.AlignLeft)
+        )  
 
-        # Создаем два комбобокса
-        lay_field = QVBoxLayout()
+        self.button_hyst_loop_clear_last = QPushButton()
+        self.button_hyst_loop_clear_last.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.button_hyst_loop_clear_last.setMaximumSize(
+            130, 100
+        )
+
         self.name_field = QLabel(QApplication.translate("GraphWindow","Поле"))
         self.field_ch_choice = QComboBox()
-        lay_field.addWidget(self.name_field)
-        lay_field.addWidget(self.field_ch_choice)
-        second_row_layout.addLayout(lay_field)
 
-        lay_sig = QVBoxLayout()
+
         self.name_sig = QLabel(QApplication.translate("GraphWindow","Сигнал"))
         
         self.sig_ch_choice = QComboBox()
-        lay_sig.addWidget(self.name_sig)
-        lay_sig.addWidget(self.sig_ch_choice)
-        second_row_layout.addLayout(lay_sig)
+
 
         self.sig_ch_choice.setMaximumSize(250, 40)
         self.field_ch_choice.setMaximumSize(250, 40)
@@ -472,31 +464,21 @@ class X:
         self.sig_ch_choice.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.field_ch_choice.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-        # Добавляем горизонтальный компоновщик во второй строке в основной компоновщик
-        layout.addLayout(second_row_layout)
-
-        # Создаем горизонтальный компоновщик для третьей строки
-        third_row_layout = QHBoxLayout()
-        left_layout = QVBoxLayout()
-        right_layout = QVBoxLayout()
-
-        # Создаем кнопку
         self.auto_button = QPushButton(QApplication.translate("GraphWindow","Авто"))
-        third_row_layout.addWidget(self.auto_button, alignment=Qt.AlignLeft)
         self.auto_button.setMaximumSize(100, 100)
 
-        # Создаем поля для ввода числа с названиями
+        self.avg_loop_button = QPushButton(QApplication.translate("GraphWindow","Усреднить петли"))
+        self.avg_loop_button.setMaximumSize(100, 100)
+
         self.left_coord = wheelLineEdit()
         self.left_coord.line_edit.setPlaceholderText(QApplication.translate("GraphWindow","Координата слева"))
         self.left_coord.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.left_coord.setMaximumSize(250, 40)
-        left_layout.addWidget(self.left_coord)
 
         self.right_coord = wheelLineEdit()
         self.right_coord.line_edit.setPlaceholderText(QApplication.translate("GraphWindow","Координата справа"))
         self.right_coord.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.right_coord.setMaximumSize(250, 40)
-        right_layout.addWidget(self.right_coord)
 
         self.right_coord.set_second_line_widget(line=self.left_coord.line_edit)
         self.left_coord.set_second_line_widget(line=self.right_coord.line_edit)
@@ -506,19 +488,12 @@ class X:
 
         self.square.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.square.setMaximumSize(250, 40)
-        right_layout.addWidget(self.square)
 
         self.resistance = QLineEdit()
         self.resistance.setPlaceholderText(QApplication.translate("GraphWindow","Сопротивление провода(Ом)"))
         self.resistance.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.resistance.setMaximumSize(250, 40)
-        left_layout.addWidget(self.resistance)
 
-        # Добавляем горизонтальный компоновщик в основной компоновщик
-
-        third_row_layout.addLayout(left_layout)
-        third_row_layout.addLayout(right_layout)
-        layout.addLayout(third_row_layout)
 
         self.square.textChanged.connect(lambda: self.is_all_hyst_correct())
         self.resistance.textChanged.connect(lambda: self.is_all_hyst_correct())
@@ -540,10 +515,83 @@ class X:
             lambda: self.update_status_vert_line()
         )
         self.button_hyst_loop.clicked.connect(lambda: self.draw_loop())
-        self.button_hyst_loop_clear.clicked.connect(lambda: self.graphView_loop.clear())
+        self.button_hyst_loop_clear.clicked.connect( lambda: self.clear_all_loops() )
         self.auto_button.clicked.connect(lambda: self.push_auto_button())
 
+        self.button_hyst_loop_clear_last.clicked.connect(lambda: self.clear_last_loop())
+        self.avg_loop_button.clicked.connect(lambda: self.avg_loop())
+
+    #-----------------------------------------
+        self.hyst_loop_layer = QFrame()
+        main_lay = QHBoxLayout(self.hyst_loop_layer)
+
+        buttons_lay = QVBoxLayout()
+
+        buttons1_lay = QHBoxLayout()
+        buttons1_lay.addWidget(self.button_hyst_loop, alignment=Qt.AlignLeft)
+        buttons1_lay.addWidget(self.avg_loop_button, alignment=Qt.AlignLeft)
+        buttons_lay.addLayout(buttons1_lay)
+
+        buttons2_lay = QHBoxLayout()
+        buttons2_lay.addWidget(self.auto_button, alignment=Qt.AlignLeft)
+        
+        buttons_lay.addLayout(buttons2_lay)
+
+        buttons3_lay = QHBoxLayout()
+        buttons3_lay.addWidget(self.button_hyst_loop_clear, alignment=Qt.AlignLeft)
+        buttons3_lay.addWidget(self.button_hyst_loop_clear_last, alignment=Qt.AlignLeft)
+        buttons_lay.addLayout(buttons3_lay)
+
+        main_lay.addLayout(buttons_lay)
+
+        enter_lay = QVBoxLayout()
+
+        field_signal_lay = QHBoxLayout()
+        
+        lay_field = QVBoxLayout()
+
+        lay_field.addWidget(self.name_field)
+        lay_field.addWidget(self.field_ch_choice)
+        field_signal_lay.addLayout(lay_field)
+
+        lay_sig = QVBoxLayout()
+        lay_sig.addWidget(self.name_sig)
+        lay_sig.addWidget(self.sig_ch_choice)
+        field_signal_lay.addLayout(lay_sig)
+
+        enter_lay.addLayout(field_signal_lay)
+
+        coords_line_lay = QHBoxLayout()
+        coords_line_lay.addWidget(self.left_coord)
+        coords_line_lay.addWidget(self.right_coord)
+        enter_lay.addLayout(coords_line_lay)
+
+        field_signal_lay2 = QHBoxLayout()
+        field_signal_lay2.addWidget(self.square)
+
+        field_signal_lay2.addWidget(self.resistance)
+        enter_lay.addLayout(field_signal_lay2)
+
+        main_lay.addLayout(enter_lay)
+
         return self.hyst_loop_layer
+    def avg_loop(self):
+        print("avg")
+
+    def clear_last_loop(self):
+        if len( self.loops_stack ) > 0:
+            self.loops_stack.pop()
+            print(self.drawed_loops[ len(self.drawed_loops) - 1 ])
+            print("clear last")
+            self.graphView_loop.removeItem( self.drawed_loops[ len(self.drawed_loops) - 1 ] )  # Удаляем график
+            self.drawed_loops.pop()
+
+        else:
+            print("no loops")
+
+    def clear_all_loops(self):
+        self.loops_stack = []
+        self.graphView_loop.clear()
 
     def update_num_waveforms(self):
 
@@ -1093,15 +1141,11 @@ class X:
                     arr1=sig_arr[left_ind:right_ind], arr2=field_arr[left_ind:right_ind]
                 )
 
-                try:
-                    color = next(self.color_gen)
-                except:
-                    print("color gen error")
-                    self.color_gen = self.get_random_color()
-                    color = next(self.color_gen)
+                self.loops_stack.append([x, y])
 
-                print("before")
-                self.graphView_loop.plot(
+                color = next(self.color_gen)
+
+                self.drawed_loops.append(self.graphView_loop.plot(
                     x,
                     y,
                     pen={
@@ -1110,8 +1154,7 @@ class X:
                         "antialias": True,
                         "symbol": "o",
                     },
-                )
-                print("after")
+                ))
             else:
                 logger.warning("неверные данные для построения петли")
         else:
@@ -1147,7 +1190,6 @@ class X:
 
 
         return X, Y
-
 
     def calculate_results(self, C):
         Q2 = 1.67  # сильно влияет на форму петли. уточнить влияние, для чего она введена?
@@ -1219,6 +1261,7 @@ class X:
         self.label.setText(_translate("GraphWindow", "Отображаемый канал") )
         self.label2.setText(_translate("GraphWindow", "Номер осциллограммы") )
         self.button_hyst_loop_clear.setText(_translate("GraphWindow", "Очистить петли") )
+        self.button_hyst_loop_clear_last.setText(_translate("GraphWindow", "Очистить последнюю") )
         self.button_hyst_loop.setText(_translate("GraphWindow", "Построить петлю") )
         self.resistance.setPlaceholderText(_translate("GraphWindow", "Сопротивление провода(Ом)") )
         self.square.setPlaceholderText(_translate("GraphWindow", "Площадь провода(мкм)") )
@@ -1309,3 +1352,9 @@ class wheelLineEdit(QWidget):
         изменять значение числа в зависимости от разницы текущего числа и числво во втором виджете
         """
         self.second_line = line
+
+
+class loops:
+    '''хранит данные о петле и ее исходных параметрах'''
+    def __init__(self) -> None:
+        pass
