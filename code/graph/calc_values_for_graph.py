@@ -67,16 +67,21 @@ class ArrayProcessor:
         return y2
 
     @time_decorator
-    def combine_interpolate_arrays(self, arr_time_x, arr_time_y, values_x, values_y):
-        arr_time_x = np.array(arr_time_x)
-        arr_time_y = np.array(arr_time_y)
-        values_x = np.array(values_x)
-        values_y = np.array(values_y)
+    def combine_interpolate_arrays(self, arr_time_x1, arr_time_x2, values_y1, values_y2):
+        
+        '''дополняет оба входных массива точек (х,у) так,
+        чтобы в них обоих был одинаковый набор x компонент,
+        это удобно для дальнейшего усреднения массивов
+        '''
+        arr_time_x1 = np.array(arr_time_x1)
+        arr_time_x2 = np.array(arr_time_x2)
+        values_y1 = np.array(values_y1)
+        values_y2 = np.array(values_y2)
 
-        if arr_time_x.size == arr_time_y.size and np.all(arr_time_x == arr_time_y):
-            return values_x, values_y, arr_time_x
+        if arr_time_x1.size == arr_time_x2.size and np.all(arr_time_x1 == arr_time_x2):
+            return values_y1, values_y2, arr_time_x1
 
-        combine_arr_time = self.__combine_and_sort_arrays(arr_time_x, arr_time_y)
+        combine_arr_time = self.__combine_and_sort_arrays(arr_time_x1, arr_time_x2)
 
         x_new = np.empty(combine_arr_time.size)
         y_new = np.empty(combine_arr_time.size)
@@ -84,45 +89,45 @@ class ArrayProcessor:
         is_y_filled = np.zeros(combine_arr_time.size, dtype=bool)
 
         # Индексы для `arr_time_x` и `arr_time_y`
-        index_x = np.searchsorted(arr_time_x, combine_arr_time)
-        index_y = np.searchsorted(arr_time_y, combine_arr_time)
+        index_x = np.searchsorted(arr_time_x1, combine_arr_time)
+        index_y = np.searchsorted(arr_time_x2, combine_arr_time)
 
         for i in range(len(combine_arr_time)):
             t = combine_arr_time[i]
 
-            if index_x[i] > 0 and arr_time_x[index_x[i] - 1] == t:
-                x_new[i] = values_x[index_x[i] - 1]
+            if index_x[i] > 0 and arr_time_x1[index_x[i] - 1] == t:
+                x_new[i] = values_y1[index_x[i] - 1]
                 is_x_filled[i] = True
-            elif index_x[i] < len(arr_time_x) and arr_time_x[index_x[i]] == t:
-                x_new[i] = values_x[index_x[i]]
+            elif index_x[i] < len(arr_time_x1) and arr_time_x1[index_x[i]] == t:
+                x_new[i] = values_y1[index_x[i]]
                 is_x_filled[i] = True
 
-            if index_y[i] > 0 and arr_time_y[index_y[i] - 1] == t:
-                y_new[i] = values_y[index_y[i] - 1]
+            if index_y[i] > 0 and arr_time_x2[index_y[i] - 1] == t:
+                y_new[i] = values_y2[index_y[i] - 1]
                 is_y_filled[i] = True
-            elif index_y[i] < len(arr_time_y) and arr_time_y[index_y[i]] == t:
-                y_new[i] = values_y[index_y[i]]
+            elif index_y[i] < len(arr_time_x2) and arr_time_x2[index_y[i]] == t:
+                y_new[i] = values_y2[index_y[i]]
                 is_y_filled[i] = True
 
         for i in range(len(combine_arr_time)):
             t = combine_arr_time[i]
 
             if is_x_filled[i] and not is_y_filled[i]:
-                indexy1, indexy2 = self.__find_closest_in_array(arr_time_y, t)
+                indexy1, indexy2 = self.__find_closest_in_array(arr_time_x2, t)
                 y_new[i] = self.__linear_interpolation(
-                    arr_time_y[indexy1],
-                    values_y[indexy1],
-                    arr_time_y[indexy2],
-                    values_y[indexy2],
+                    arr_time_x2[indexy1],
+                    values_y2[indexy1],
+                    arr_time_x2[indexy2],
+                    values_y2[indexy2],
                     t,
                 )
             elif is_y_filled[i] and not is_x_filled[i]:
-                indexy1, indexy2 = self.__find_closest_in_array(arr_time_x, t)
+                indexy1, indexy2 = self.__find_closest_in_array(arr_time_x1, t)
                 x_new[i] = self.__linear_interpolation(
-                    arr_time_x[indexy1],
-                    values_x[indexy1],
-                    arr_time_x[indexy2],
-                    values_x[indexy2],
+                    arr_time_x1[indexy1],
+                    values_y1[indexy1],
+                    arr_time_x1[indexy2],
+                    values_y1[indexy2],
                     t,
                 )
 

@@ -621,10 +621,10 @@ class graphMain:
                     calculator_param = ArrayProcessor()
                     
                     self.x, bufy, _ = calculator_param.combine_interpolate_arrays(
-                        arr_time_x=x_time,
-                        arr_time_y=y_time,
-                        values_x=x_param,
-                        values_y=y_param,
+                        arr_time_x1=x_time,
+                        arr_time_x2=y_time,
+                        values_y1=x_param,
+                        values_y2=y_param,
                                         )
                         
                     self.y[parameter_y] = bufy
@@ -677,10 +677,10 @@ class graphMain:
                     y_time = self.dict_param[device_y2][ch_y2]["time"]
                     calculator_param = ArrayProcessor()
                     self.x2, bufy2, _ = calculator_param.combine_interpolate_arrays(
-                        arr_time_x=x_time,
-                        arr_time_y=y_time,
-                        values_x=x_param,
-                        values_y=y_param,
+                        arr_time_x1=x_time,
+                        arr_time_x2=y_time,
+                        values_y1=x_param,
+                        values_y2=y_param,
                     )
                     self.y2[parameter_y2] = bufy2
                 else:

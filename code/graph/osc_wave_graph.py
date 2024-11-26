@@ -124,7 +124,6 @@ class X:
         )
 
         self.loops_stack = [] #здесь хранятся петли, которые были рассчитаны и установлены на график
-        self.drawed_loops = []#здесь хранятся объекты отрисованных графиков
 
         self.label = QLabel()  # Лейбл с именем канала
         self.label2 = QLabel()  # Лейбл с именем канала
@@ -576,22 +575,75 @@ class X:
 
         return self.hyst_loop_layer
     def avg_loop(self):
-        print("avg")
+        new_loop = self.calc_avg_loop(loops_stack=self.loops_stack)
 
+    def calc_avg_loop(self, loops_stack):
+        '''вернет объект петли, полученный усреднением стека петель'''
+        print("вычисляем среднюю петлю")
+        if len(loops_stack) == 1:
+            return loops_stack[0]
+        
+        last_loop = None
+        if len(loops_stack)%2 == 1:
+            last_loop = loops_stack[-1]
+            loops_stack.pop()
+            
+        while len(loops_stack) > 1:
+            new_loop_stack = []
+            for i in range(len(loops_stack)-1, 0, -2):
+                loop1 = loops_stack[i]
+                loop2 = loops_stack[i-1]
+                loops_stack.pop()
+                loops_stack.pop()
+ 
+                new_loop = self.calc_avg_two_loops(loop1, loop2)
+                
+                new_loop_stack.append(new_loop)
+                
+            loops_stack = new_loop_stack
+            
+        if last_loop is not None:
+            new_loop = self.calc_avg_two_loops(last_loop, loops_stack[0])
+        else:
+            new_loop = loops_stack[0]
+            
+        return new_loop
+            
+    def calc_avg_two_loops(loop1, loop2):
+        calculator = ArrayProcessor()
+        mean_x, y1, y2 = calculator.combine_interpolate_arrays(arr_time_x1=loop1.filtered_raw_data_x,
+                                                      arr_time_x2=loop2.filtered_raw_data_x,
+                                                      values_y1=loop1.filtered_raw_data_y,
+                                                      values_y2=loop2.filtered_raw_data_y)
+        mean_resistance = (loop1.resistance + loop2.resistance)/2
+        mean_wire_square = (loop1.wire_square + loop2.wire_square)/2
+        
+        mean_y = (y1+y2)/2
+        
+        new_loop = hystLoop(raw_x=mean_x,
+                            raw_y=mean_y,
+                            resistance=mean_resistance,
+                            wire_square=mean_wire_square
+                            )
+        
+        return new_loop
+            
+            
     def clear_last_loop(self):
         if len( self.loops_stack ) > 0:
+            deleting_loop = self.loops_stack[-1]
+            self.graphView_loop.removeItem( deleting_loop.plot_obj )  # Удаляем график
             self.loops_stack.pop()
-            print(self.drawed_loops[ len(self.drawed_loops) - 1 ])
-            print("clear last")
-            self.graphView_loop.removeItem( self.drawed_loops[ len(self.drawed_loops) - 1 ] )  # Удаляем график
-            self.drawed_loops.pop()
+            del deleting_loop
 
         else:
             print("no loops")
 
     def clear_all_loops(self):
+        count = len(self.loops_stack)
+        for i in range(count):
+            self.clear_last_loop()
         self.loops_stack = []
-        self.graphView_loop.clear()
 
     def update_num_waveforms(self):
 
@@ -1136,104 +1188,29 @@ class X:
             if status:
                 left_ind = int(x_vert_1 / sig_scale)
                 right_ind = int(x_vert_2 / sig_scale)
+                
+                new_loop = hystLoop(raw_x = sig_arr[left_ind:right_ind],
+                                    raw_y =  field_arr[left_ind:right_ind],
+                                    resistance = float( self.resistance.text() ),
+                                    wire_square = float( self.square.text()) )
+                x, y = new_loop.get_loop()
 
-                x, y = self.calc_loop(
-                    arr1=sig_arr[left_ind:right_ind], arr2=field_arr[left_ind:right_ind]
-                )
+                self.loops_stack.append(new_loop)
 
-                self.loops_stack.append([x, y])
-
-                color = next(self.color_gen)
-
-                self.drawed_loops.append(self.graphView_loop.plot(
+                new_loop.plot_obj = self.graphView_loop.plot(
                     x,
                     y,
                     pen={
-                        "color": color,
+                        "color": next(self.color_gen),
                         "width": 1,
                         "antialias": True,
                         "symbol": "o",
                     },
-                ))
+                )
             else:
                 logger.warning("неверные данные для построения петли")
         else:
             pass
-
-    def calc_loop(self, arr1, arr2):
-
-        data_dict = {}
-        arr1 = np.array(arr1)
-        arr2 = np.array(arr2)
-        data_dict["CH1"] = arr1
-        data_dict["CH2"] = arr2
-        window_size = 50
-        # weights = np.ones(window_size) / window_size
-        # data_dict['CH2_mean'] = np.convolve(data_dict['CH2'], weights, mode='same')
-
-        R = 100 + float(self.resistance.text())
-        # d = 14.2
-        d = float(self.square.text()) / 2 * (10 ** (-6))
-        A = R * (3.1415 * 2 * d * 2)
-        C = 16
-        X = data_dict["CH2"] / A + C
-        Y = self.calculate_results(data_dict["CH1"])
-
-        size1 = len(X)
-        size2 = len(Y)
-
-        if size1 > size2:
-
-            X = X[:size2]
-        elif size2 > size1:
-            Y = Y[:size1]
-
-
-        return X, Y
-
-    def calculate_results(self, C):
-        Q2 = 1.67  # сильно влияет на форму петли. уточнить влияние, для чего она введена?
-
-        noise_level1 = self.threshold_mean_std(C)
-        noise_level2 = self.threshold_median(C)
-        noise_level = noise_level2
-
-        n = len(C)
-
-        # Вычисление средних значений и сдвигов
-        D2 = np.mean(C)
-        E2 = C - D2
-        F2 = np.where(np.abs(E2) > noise_level, 1, 0)
-
-        G2 = E2 * F2
-        H2 = np.mean(G2)
-
-        # Интегрирование
-        I2 = G2 - H2
-        J2 = np.cumsum(I2)  # Кусковая сумма
-        K2 = J2 - np.max(J2) / 2
-        L2 = K2 + Q2
-
-        # Нормировка
-        M = np.where(L2 <= 0, L2 / np.nanmin(L2), L2 / -np.nanmax(L2))
-
-        return M
-
-    def threshold_mean_std(self, data):
-        """Вычисляет порог на основе среднего значения и стандартного отклонения."""
-        mean = np.mean(data)
-        std_dev = np.std(data)
-        k = 2  # Можно настроить коэффициент
-        threshold = mean + k * std_dev
-        return threshold
-
-    def threshold_median(self, data):
-        """Вычисляет порог на основе медианы и интерквартильного размаха."""
-        Q1 = np.percentile(data, 40)
-        Q3 = np.percentile(data, 60)
-        IQR = Q3 - Q1
-        threshold = Q3 + 1.5 * IQR  # Порог устанавливается на уровне Q3 + 1.5 * IQR
-        return threshold
 
     def get_random_color(self):
         while True:
@@ -1354,7 +1331,103 @@ class wheelLineEdit(QWidget):
         self.second_line = line
 
 
-class loops:
-    '''хранит данные о петле и ее исходных параметрах'''
-    def __init__(self) -> None:
-        pass
+class hystLoop:
+    '''хранит данные о петле и ее исходных параметрах, содержит методы расчета петли'''
+    def __init__(self, raw_x, raw_y, resistance, wire_square) -> None:
+        #исходные данные для петли
+        self.raw_data_x = raw_x
+        self.raw_data_y = raw_y
+        #отфильтрованные данные петли
+        self.filtered_raw_data_x = raw_x
+        self.filtered_raw_data_y = raw_y
+        #объект визуального представления петли и его данные
+        self.plot_obj = None
+        self.data_x = None
+        self.data_y = None
+        self.Q2 = 1.67  # сильно влияет на форму петли. уточнить влияние, для чего она введена?
+        
+        self.resistance = resistance
+        self.wire_square = wire_square
+        
+    def get_loop(self):
+        if self.data_x is None or self.data_y is None:
+             self.data_x, self.data_y = self.calc_loop()
+             
+        return self.data_x, self.data_y
+        
+    def calc_loop(self):
+        arr1 = self.filtered_raw_data_x
+        arr2 = self.filtered_raw_data_y
+
+        data_dict = {}
+        arr1 = np.array(arr1)
+        arr2 = np.array(arr2)
+        data_dict["CH1"] = arr1
+        data_dict["CH2"] = arr2
+        window_size = 50
+        # weights = np.ones(window_size) / window_size
+        # data_dict['CH2_mean'] = np.convolve(data_dict['CH2'], weights, mode='same')
+
+        R = 100 + self.resistance
+        # d = 14.2
+        d = self.wire_square / 2 * (10 ** (-6))
+        A = R * (3.1415 * 2 * d * 2)
+        C = 16
+        X = data_dict["CH2"] / A + C
+        Y = self.calculate_results(data_dict["CH1"])
+
+        size1 = len(X)
+        size2 = len(Y)
+
+        if size1 > size2:
+
+            X = X[:size2]
+        elif size2 > size1:
+            Y = Y[:size1]
+
+
+        return X, Y
+
+    def calculate_results(self, C):
+
+        noise_level1 = self.threshold_mean_std(C)
+        noise_level2 = self.threshold_median(C)
+        noise_level = noise_level2
+
+        n = len(C)
+
+        # Вычисление средних значений и сдвигов
+        D2 = np.mean(C)
+        E2 = C - D2
+        F2 = np.where(np.abs(E2) > noise_level, 1, 0)
+
+        G2 = E2 * F2
+        H2 = np.mean(G2)
+
+        # Интегрирование
+        I2 = G2 - H2
+        J2 = np.cumsum(I2)  # Кусковая сумма
+        K2 = J2 - np.max(J2) / 2
+        L2 = K2 + self.Q2
+
+        # Нормировка
+        M = np.where(L2 <= 0, L2 / np.nanmin(L2), L2 / -np.nanmax(L2))
+
+        return M
+
+    def threshold_mean_std(self, data):
+        """Вычисляет порог на основе среднего значения и стандартного отклонения."""
+        mean = np.mean(data)
+        std_dev = np.std(data)
+        k = 2  # Можно настроить коэффициент
+        threshold = mean + k * std_dev
+        return threshold
+
+    def threshold_median(self, data):
+        """Вычисляет порог на основе медианы и интерквартильного размаха."""
+        Q1 = np.percentile(data, 40)
+        Q3 = np.percentile(data, 60)
+        IQR = Q3 - Q1
+        threshold = Q3 + 1.5 * IQR  # Порог устанавливается на уровне Q3 + 1.5 * IQR
+        return threshold
+    
