@@ -575,12 +575,43 @@ class X:
 
         return self.hyst_loop_layer
     def avg_loop(self):
-        new_loop = self.calc_avg_loop(loops_stack=self.loops_stack)
+        buf = []
+
+        for loop in self.loops_stack:
+            print(f"{loop.raw_data_x=}")
+            print(f"{loop.raw_data_y=}")
+            buf.append(loop)
+
+        if len(self.loops_stack) > 1:
+
+            new_loop = self.calc_avg_loop(loops_stack=buf)
+
+            if new_loop is not False:
+                self.clear_all_loops()
+                x, y = new_loop.get_loop()
+
+                self.loops_stack.append(new_loop)
+                new_loop.plot_obj = self.graphView_loop.plot(
+                        x,
+                        y,
+                        pen={
+                            "color": "#FFFFFF66",  # Полупрозрачный белый цвет (66 - это 40% прозрачности)
+                            "width": 2,
+                            "antialias": True,
+                        },
+                        symbol='o',
+                        symbolPen='w',  # Белая обводка для символов
+                        symbolBrush=(255, 255, 255, 100),  # Полупрозрачный белый цвет для символов (100 - это 60% прозрачности)
+                        )
+
+
 
     def calc_avg_loop(self, loops_stack):
         '''вернет объект петли, полученный усреднением стека петель'''
         print("вычисляем среднюю петлю")
-        if len(loops_stack) == 1:
+        if len(loops_stack) == 0:
+            return False
+        elif len(loops_stack) == 1:
             return loops_stack[0]
         
         last_loop = None
@@ -609,7 +640,7 @@ class X:
             
         return new_loop
             
-    def calc_avg_two_loops(loop1, loop2):
+    def calc_avg_two_loops(self, loop1, loop2):
         calculator = ArrayProcessor()
         mean_x, y1, y2 = calculator.combine_interpolate_arrays(arr_time_x1=loop1.filtered_raw_data_x,
                                                       arr_time_x2=loop2.filtered_raw_data_x,
@@ -625,7 +656,6 @@ class X:
                             resistance=mean_resistance,
                             wire_square=mean_wire_square
                             )
-        
         return new_loop
             
             
@@ -635,7 +665,6 @@ class X:
             self.graphView_loop.removeItem( deleting_loop.plot_obj )  # Удаляем график
             self.loops_stack.pop()
             del deleting_loop
-
         else:
             print("no loops")
 

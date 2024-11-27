@@ -240,7 +240,6 @@ class GraphWindow(QMainWindow):
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна
         self.graph_win_close_signal.emit(1)
 
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     mainWindow = GraphWindow()

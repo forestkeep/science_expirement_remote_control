@@ -63,7 +63,14 @@ class ArrayProcessor:
     def __linear_interpolation(self, x1, y1, x3, y3, x2):
         if x1 == x3:
             return y1
-        y2 = y1 + (y3 - y1) * ((x2 - x1) / (x3 - x1))
+        
+        denominator = x3 - x1
+        clip_min = 1e-10
+        denominator_clipped = np.clip(denominator, clip_min, None)
+
+        print(y1, y3, x1, x2, x3)
+        y2 = y1 + (y3 - y1) * ((x2 - x1) / denominator_clipped)
+
         return y2
 
     @time_decorator
@@ -144,31 +151,74 @@ class TestArrayProcessor(unittest.TestCase):
             self.arr_time_x, self.arr_time_y, self.val_x, self.val_y
         )
 
+        len_end = len(time)
+
+        len_start1 = len(self.arr_time_x)
+        len_start2 = len(self.arr_time_y)
+
         np.testing.assert_array_almost_equal(x, expected_x)
         np.testing.assert_array_almost_equal(y, expected_y)
         np.testing.assert_array_equal(time, expected_time)
 
+        self.assertGreaterEqual(len_end, len_start1)
+        self.assertGreaterEqual(len_end, len_start2)
+
         self.assertEqual(
             len(time), len(expected_time), "Length of time array does not match"
         )
+
+    def test_combine_interpolate_arrays(self):
+        x, y, time = self.calculator.combine_interpolate_arrays(
+            self.arr_time_x, self.arr_time_y, self.val_x, self.val_y
+        )
+
+        self.arr_time_x = np.array(self.arr_time_x)
+        self.arr_time_y = np.array(self.arr_time_y)
+
+        all_x_in_time = np.all(np.isin(self.arr_time_x, time))
+        all_y_in_time = np.all(np.isin(self.arr_time_y, time))
+
+        print(f"Все элементы из arr_time_x входят в time: {all_x_in_time}")
+        print(f"Все элементы из arr_time_y входят в time: {all_y_in_time}")
+
+
+
 
 
 # Пример вызова функции
 
 if __name__ == "__main__":
     from test_calc_data import expected_time, expected_x, expected_y, generate_arrays
+      
+
 
     unittest.main()
-    """
     arr_time_x, val_x, arr_time_y, val_y = generate_arrays()
 
     calculator = ArrayProcessor()
     x, y, time = calculator.combine_interpolate_arrays(arr_time_x, arr_time_y, val_x, val_y)
     np.set_printoptions(threshold=np.inf)
-    #print(np.array2string(x, separator=', '))
-    #print(np.array2string(y, separator=', '))
-    print(np.array2string(time, separator=', '))
-    """
+
+    
+    arrx1 = [1,2,3,4,5]
+    arrx2 = [1,3,4,5]
+
+    arry1 = [1,2,3,4,5]
+    arry2 = [2, 6, 8, 10]
+
+    calculator = ArrayProcessor()
+    arr1, arr2, gen_x = calculator.combine_interpolate_arrays(arrx1, arrx2, arry1, arry2)
+
+    print(gen_x)
+    print()
+
+    print(arr1)
+    print(arr2)
+
+
+
+
+    
 
 
 # kernprof -l -v C:\Users\zahidovds\Desktop\virtual_for_uswindsens\main\graph\calc_values_for_graph.py
