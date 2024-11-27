@@ -468,6 +468,12 @@ class X:
 
         self.avg_loop_button = QPushButton(QApplication.translate("GraphWindow","Усреднить петли"))
         self.avg_loop_button.setMaximumSize(100, 100)
+        
+        self.accept_avg_loop_but = QPushButton(QApplication.translate("GraphWindow","Оставить"))
+        self.accept_avg_loop_but.setMaximumSize(30, 30)
+        
+        self.destroy_avg_loop_but = QPushButton(QApplication.translate("GraphWindow","не оставить"))
+        self.destroy_avg_loop_but.setMaximumSize(30, 30)
 
         self.left_coord = wheelLineEdit()
         self.left_coord.line_edit.setPlaceholderText(QApplication.translate("GraphWindow","Координата слева"))
@@ -533,6 +539,12 @@ class X:
 
         buttons2_lay = QHBoxLayout()
         buttons2_lay.addWidget(self.auto_button, alignment=Qt.AlignLeft)
+
+        buttons2_lay.addWidget(self.accept_avg_loop_but)
+        buttons2_lay.addWidget(self.destroy_avg_loop_but)
+        
+        self.accept_avg_loop_but.hide()
+        self.destroy_avg_loop_but.hide()
         
         buttons_lay.addLayout(buttons2_lay)
 
@@ -601,6 +613,9 @@ class X:
                         #symbolPen='w',  # Белая обводка для символов
                         #symbolBrush=(255, 255, 255, 30),  # Полупрозрачный белый цвет для символов (100 - это 60% прозрачности)
                         )
+                
+                self.accept_avg_loop_but.show()
+                self.destroy_avg_loop_but.show()
 
     def calc_avg_loop(self, loops_stack):
         '''вернет объект петли, полученный усреднением стека петель'''
