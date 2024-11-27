@@ -578,8 +578,6 @@ class X:
         buf = []
 
         for loop in self.loops_stack:
-            print(f"{loop.raw_data_x=}")
-            print(f"{loop.raw_data_y=}")
             buf.append(loop)
 
         if len(self.loops_stack) > 1:
@@ -587,7 +585,7 @@ class X:
             new_loop = self.calc_avg_loop(loops_stack=buf)
 
             if new_loop is not False:
-                self.clear_all_loops()
+                #self.clear_all_loops()
                 x, y = new_loop.get_loop()
 
                 self.loops_stack.append(new_loop)
@@ -599,12 +597,10 @@ class X:
                             "width": 2,
                             "antialias": True,
                         },
-                        symbol='o',
-                        symbolPen='w',  # Белая обводка для символов
-                        symbolBrush=(255, 255, 255, 100),  # Полупрозрачный белый цвет для символов (100 - это 60% прозрачности)
+                        #symbol='o',
+                        #symbolPen='w',  # Белая обводка для символов
+                        #symbolBrush=(255, 255, 255, 30),  # Полупрозрачный белый цвет для символов (100 - это 60% прозрачности)
                         )
-
-
 
     def calc_avg_loop(self, loops_stack):
         '''вернет объект петли, полученный усреднением стека петель'''
@@ -614,47 +610,48 @@ class X:
         elif len(loops_stack) == 1:
             return loops_stack[0]
         
-        last_loop = None
-        if len(loops_stack)%2 == 1:
-            last_loop = loops_stack[-1]
-            loops_stack.pop()
-            
-        while len(loops_stack) > 1:
-            new_loop_stack = []
-            for i in range(len(loops_stack)-1, 0, -2):
-                loop1 = loops_stack[i]
-                loop2 = loops_stack[i-1]
-                loops_stack.pop()
-                loops_stack.pop()
- 
-                new_loop = self.calc_avg_two_loops(loop1, loop2)
-                
-                new_loop_stack.append(new_loop)
-                
-            loops_stack = new_loop_stack
-            
-        if last_loop is not None:
-            new_loop = self.calc_avg_two_loops(last_loop, loops_stack[0])
-        else:
-            new_loop = loops_stack[0]
-            
+        new_loop = loops_stack[0]
+        for i in range(1, len(loops_stack)):
+            new_loop = self.calc_avg_two_loops(new_loop, loops_stack[i])  
+        
         return new_loop
+    
+    def average_arrays(self, arr1, arr2):
+
+        len1, len2 = len(arr1), len(arr2)
+        min_len = min(len1, len2)
+        
+        average_part = (arr1[:min_len] + arr2[:min_len]) / 2
+        
+        if len1 > len2:
+            result = np.concatenate((average_part, arr1[min_len:]))
+        elif len2 > len1:
+            result = np.concatenate((average_part, arr2[min_len:]))
+        else:
+            result = average_part
+        
+        return result
             
     def calc_avg_two_loops(self, loop1, loop2):
-        calculator = ArrayProcessor()
-        mean_x, y1, y2 = calculator.combine_interpolate_arrays(arr_time_x1=loop1.filtered_raw_data_x,
-                                                      arr_time_x2=loop2.filtered_raw_data_x,
-                                                      values_y1=loop1.filtered_raw_data_y,
-                                                      values_y2=loop2.filtered_raw_data_y)
-        mean_resistance = (loop1.resistance + loop2.resistance)/2
+        if loop1.time_scale != loop2.time_scale:
+            print("невозможно вычислить среднее между петлями, временной шаг должен быть одинаковым")
+            return False
+        
+        mean_resistance  = (loop1.resistance + loop2.resistance)/2
         mean_wire_square = (loop1.wire_square + loop2.wire_square)/2
         
-        mean_y = (y1+y2)/2
+        mean_sig = self.average_arrays(loop2.filtered_signal_data,
+                                       loop1.filtered_signal_data)
         
-        new_loop = hystLoop(raw_x=mean_x,
-                            raw_y=mean_y,
-                            resistance=mean_resistance,
-                            wire_square=mean_wire_square
+        mean_field = self.average_arrays(loop2.filtered_field_data,
+                                         loop1.filtered_field_data)
+                                       
+        
+        new_loop = hystLoop(raw_x        =mean_sig,
+                            raw_y        =mean_field,
+                            time_scale   =loop1.time_scale,
+                            resistance   =mean_resistance,
+                            wire_square  =mean_wire_square
                             )
         return new_loop
             
@@ -1202,10 +1199,11 @@ class X:
             sig_scale = self.dict_param[device][ch_sig]["scale"][number_field]
             field_scale = self.dict_param[device][ch_field]["scale"][number_field]
             
-
             if status:
                 if field_scale != sig_scale:
                     status = False
+                    print("time scale сигнала и поля должны быть равны")
+                    
 
             if status:
                 try:
@@ -1218,8 +1216,18 @@ class X:
                 left_ind = int(x_vert_1 / sig_scale)
                 right_ind = int(x_vert_2 / sig_scale)
                 
-                new_loop = hystLoop(raw_x = sig_arr[left_ind:right_ind],
-                                    raw_y =  field_arr[left_ind:right_ind],
+                raw_x = sig_arr[left_ind:right_ind]
+                raw_y = field_arr[left_ind:right_ind]
+                
+                
+                if len(raw_y) > len(raw_x):
+                    raw_y = raw_y[0: len(raw_x)]
+                elif len(raw_y) < len(raw_x):
+                    raw_x = raw_x[0: len(raw_y)]
+                
+                new_loop = hystLoop(raw_x = raw_x,
+                                    raw_y =  raw_y,
+                                    time_scale=field_scale,
                                     resistance = float( self.resistance.text() ),
                                     wire_square = float( self.square.text()) )
                 x, y = new_loop.get_loop()
@@ -1362,13 +1370,17 @@ class wheelLineEdit(QWidget):
 
 class hystLoop:
     '''хранит данные о петле и ее исходных параметрах, содержит методы расчета петли'''
-    def __init__(self, raw_x, raw_y, resistance, wire_square) -> None:
+    def __init__(self, raw_x, raw_y, time_scale, resistance, wire_square) -> None:
+        
         #исходные данные для петли
-        self.raw_data_x = raw_x
-        self.raw_data_y = raw_y
+        self.signal_raw_data = raw_x #raw_data_x
+        self.field_raw_data = raw_y #raw_data_y
+        self.time_raw_data = [i*time_scale for i in range(len(raw_x))]
+        self.time_scale = time_scale
         #отфильтрованные данные петли
-        self.filtered_raw_data_x = raw_x
-        self.filtered_raw_data_y = raw_y
+        self.filtered_signal_data = raw_x
+        self.filtered_field_data = raw_y
+        self.filtered_time_data = [i*time_scale for i in range(len(raw_x))]
         #объект визуального представления петли и его данные
         self.plot_obj = None
         self.data_x = None
@@ -1378,6 +1390,9 @@ class hystLoop:
         self.resistance = resistance
         self.wire_square = wire_square
         
+        print(f"Петля создана {len(self.signal_raw_data)=} {len(self.field_raw_data)=} {len(self.time_raw_data)=}")
+        print({self.time_raw_data[1] - self.time_raw_data[0]})
+        
     def get_loop(self):
         if self.data_x is None or self.data_y is None:
              self.data_x, self.data_y = self.calc_loop()
@@ -1385,35 +1400,27 @@ class hystLoop:
         return self.data_x, self.data_y
         
     def calc_loop(self):
-        arr1 = self.filtered_raw_data_x
-        arr2 = self.filtered_raw_data_y
+        arr1 = self.filtered_signal_data
+        arr2 = self.filtered_field_data
 
-        data_dict = {}
         arr1 = np.array(arr1)
         arr2 = np.array(arr2)
-        data_dict["CH1"] = arr1
-        data_dict["CH2"] = arr2
-        window_size = 50
-        # weights = np.ones(window_size) / window_size
-        # data_dict['CH2_mean'] = np.convolve(data_dict['CH2'], weights, mode='same')
 
         R = 100 + self.resistance
         # d = 14.2
         d = self.wire_square / 2 * (10 ** (-6))
         A = R * (3.1415 * 2 * d * 2)
         C = 16
-        X = data_dict["CH2"] / A + C
-        Y = self.calculate_results(data_dict["CH1"])
+        X = arr2 / A + C
+        Y = self.calculate_results( arr1 )
 
         size1 = len(X)
         size2 = len(Y)
 
         if size1 > size2:
-
             X = X[:size2]
         elif size2 > size1:
             Y = Y[:size1]
-
 
         return X, Y
 
