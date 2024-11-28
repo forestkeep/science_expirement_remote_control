@@ -42,10 +42,12 @@ try:
     from calc_values_for_graph import ArrayProcessor
     from Message_graph import messageDialog
     from Link_data_import_win import Check_data_import_win
+    from hyst_loop import hystLoop
 except:
     from graph.calc_values_for_graph import ArrayProcessor
     from graph.Message_graph import messageDialog
     from graph.Link_data_import_win import Check_data_import_win
+    from graph.hyst_loop import hystLoop
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +57,7 @@ def time_decorator(func):
         result = func(*args, **kwargs)
         end_time = time.time()
         return result
-
     return wrapper
-
 
 class X:
     def __init__(self, tablet_page):
@@ -325,6 +325,7 @@ class X:
         self.graphView_loop = self.setupGraphView()
 
         self.graphView_loop.scene().sigMouseMoved.connect(self.showToolTip_loop)
+        #self.graphView_loop.scene().sigMouseClicked.connect(self.clicked_graph_loop)
 
         splitter.addWidget(self.graphView)
         splitter.addWidget(self.graphView_loop)
@@ -344,6 +345,36 @@ class X:
         self.page.setLayout(self.tab1Layout)
 
         self.retranslateUI(self.page)
+        #===============================================
+        self.old_items = []
+    def clicked_graph_loop(self, event):
+
+        try:
+            items = self.graphView_loop.scene().items()
+            print(set(self.old_items) - set(items))
+            self.old_items = items
+        except AttributeError as e:
+            return
+        i = 1
+        for item in items:
+           print(i, item)
+           i+=1
+           if isinstance(item, pg.GraphItem): 
+               print("содержит GraphItem")
+               print(item.scatter.pointsAt())
+               if item.scatter.pointsAt():
+                   pass 
+               
+        print(f"{event=}")
+        if event.button() == 1:  # ЛКМ
+            print("ЛКМ")
+            mouse_point = event.scenePos()
+            print(f"{mouse_point=}")
+
+            # Проверяем каждый элемент графика
+            for loop in self.loops_stack:
+                if loop.plot_obj.curveClickable():  
+                    print("да", loop.plot_obj)
 
     def setupGraphView(self):
         graphView = pg.PlotWidget(title="")
@@ -523,7 +554,7 @@ class X:
         self.button_hyst_loop_clear.clicked.connect( lambda: self.clear_all_loops() )
         self.auto_button.clicked.connect(lambda: self.push_auto_button())
 
-        self.button_hyst_loop_clear_last.clicked.connect(lambda: self.clear_last_loop())
+        self.button_hyst_loop_clear_last.clicked.connect(lambda: self.clear_highlight_loop())
         self.avg_loop_button.clicked.connect(lambda: self.avg_loop())
 
     #-----------------------------------------
@@ -600,20 +631,21 @@ class X:
                 #self.clear_all_loops()
                 x, y = new_loop.get_loop()
 
+                new_pen = {
+                        "color": next(self.color_gen),
+                        "width": 1,
+                        "antialias": True,
+                        "symbol": "o",
+                        }
+
                 self.loops_stack.append(new_loop)
-                new_loop.plot_obj = self.graphView_loop.plot(
+                plot_obj = self.graphView_loop.plot(
                         x,
                         y,
-                        pen={
-                            "color": "#FFFFFF66",  # Полупрозрачный белый цвет (66 - это 40% прозрачности)
-                            "width": 2,
-                            "antialias": True,
-                        },
-                        #symbol='o',
-                        #symbolPen='w',  # Белая обводка для символов
-                        #symbolBrush=(255, 255, 255, 30),  # Полупрозрачный белый цвет для символов (100 - это 60% прозрачности)
+                        pen=new_pen,
+
                         )
-                
+                new_loop.set_plot_obj(plot_obj, new_pen, highlight=True)
                 self.accept_avg_loop_but.show()
                 self.destroy_avg_loop_but.show()
 
@@ -671,20 +703,25 @@ class X:
         return new_loop
             
             
-    def clear_last_loop(self):
-        if len( self.loops_stack ) > 0:
-            deleting_loop = self.loops_stack[-1]
-            self.graphView_loop.removeItem( deleting_loop.plot_obj )  # Удаляем график
-            self.loops_stack.pop()
-            del deleting_loop
+    def clear_highlight_loop(self):
+        print(self.loops_stack)
+        if len(self.loops_stack) > 0:
+            for index in range(len(self.loops_stack) - 1, -1, -1):
+                loop = self.loops_stack[index]
+                if loop.current_highlight:
+                    self.graphView_loop.removeItem(loop.plot_obj)
+                    del self.loops_stack[index]
         else:
             print("no loops")
+        print(self.loops_stack)
 
     def clear_all_loops(self):
-        count = len(self.loops_stack)
-        for i in range(count):
-            self.clear_last_loop()
-        self.loops_stack = []
+        if len(self.loops_stack) > 0:
+            for loop in self.loops_stack:
+                self.graphView_loop.removeItem(loop.plot_obj)
+            self.loops_stack.clear()
+        else:
+            print("no loops")
 
     def update_num_waveforms(self):
 
@@ -867,90 +904,6 @@ class X:
         except:
             pass  # лейбл удален
 
-    def test_3d(self, tablet_page):
-        self.tab2Layout = QVBoxLayout()
-        w = GLViewWidget()
-        w.setWindowTitle("3D график точек с уникальными цветами по Y")
-        self.tab2Layout.addWidget(w)
-        tablet_page.setLayout(self.tab2Layout)
-
-        # Создаем 3D координатную сетку
-        x = np.linspace(0, 10, 10)
-        y = np.linspace(0, 10, 10)
-        X, Y = np.meshgrid(x, y)
-        Z = np.sin(np.sqrt(X**2 + Y**2))  # Функция для высоты
-
-        # Создаем массив точек
-        points = np.array([X.flatten(), Y.flatten(), Z.flatten()]).T
-
-        # Определяем цвета для различных значений Y
-        unique_y = np.unique(points[:, 1])
-        colors_dict = {
-            value: (np.random.rand(), np.random.rand(), np.random.rand(), 1)
-            for value in unique_y
-        }  # Альфа-канал
-        colors = np.zeros((points.shape[0], 4))  # 4 канала: R, G, B, A
-        grouped_lines = {value: [] for value in unique_y}
-
-        for i in range(len(points)):
-            y_value = points[i, 1]
-            color = colors_dict[y_value]
-            colors[i] = color  # Теперь color содержит RGBA
-            grouped_lines[y_value].append(points[i])  # Группируем по y
-
-        # Создаем объект для отображения точек
-        scatter = GLScatterPlotItem(pos=points, size=5, color=colors)
-
-        # Добавляем линии для каждой уникальной координаты Y
-        for y_value, line_points in grouped_lines.items():
-            if line_points:
-                # Преобразуем в массив NumPy и сортируем по x для последовательного соединения
-                line_points = np.array(line_points)
-                line_points = line_points[np.argsort(line_points[:, 0])]
-                line_item = GLLinePlotItem(
-                    pos=line_points, color=colors_dict[y_value], width=2
-                )  # color уже содержит альфа-канал
-                w.addItem(line_item)
-
-        # Добавляем точки в сцену
-        w.addItem(scatter)
-
-        # Добавление осей X и Z
-        axis = GLAxisItem()
-
-        axis.setSize(10, 10, 10)
-
-        w.addItem(axis)
-
-        # Показываем график
-
-        main_dict = {
-            "device1": {"ch_1": {"time": "some_time", "param1": "some_value"}},
-            "device2": {
-                "ch_1": {"time": "some_time", "param1": "some_value"},
-                "ch_2": {"time": "some_time", "param1": "some_value"},
-                "ch_3": {"time": "some_time", "param1": "some_value"},
-            },
-            "device3": {
-                "ch_1": {"time": "some_time", "param1": "some_value"},
-                "ch_2": {
-                    "time": "some_time",
-                    "param1": "some_value",
-                    "wavech1": [[3.2, 3.2, 3.2], [3.2, 3.2, 3.2]],
-                },
-            },
-            "device4": {
-                "ch_1": {
-                    "time": "some_time",
-                    "wavech1": [[3.2, 3.2, 3.2], [3.2, 3.2, 3.2]],
-                    "wavech2": [[3.2, 3.2, 3.2], [3.2, 3.2, 3.2]],
-                }
-            },
-        }
-
-        channel_keys = self.extract_wavech_devices(main_dict)
-
-        w.show()
 
     # hyst section func
     def is_coord_correct(self) -> bool:
@@ -1057,7 +1010,6 @@ class X:
     def find_sign_change(self, derivative):
         sign_changes = []
         for i in range(1, len(derivative)):
-            # if np.sign(derivative[i]) != np.sign(derivative[i - 1]) and np.sign(derivative[i]) > 0:
             if (
                 np.sign(derivative[i]) != np.sign(derivative[i - 1])
                 and derivative[i] != 0
@@ -1249,16 +1201,22 @@ class X:
 
                 self.loops_stack.append(new_loop)
 
-                new_loop.plot_obj = self.graphView_loop.plot(
-                    x,
-                    y,
-                    pen={
+                new_pen = {
                         "color": next(self.color_gen),
                         "width": 1,
                         "antialias": True,
                         "symbol": "o",
-                    },
+                        }
+
+                plot_obj = self.graphView_loop.plot(
+                    x,
+                    y,
+                    pen=new_pen,
                 )
+
+                new_loop.set_plot_obj( plot_obj, new_pen )
+
+                print( new_loop.plot_obj.getViewBox() )
             else:
                 logger.warning("неверные данные для построения петли")
         else:
@@ -1266,20 +1224,15 @@ class X:
 
     def get_random_color(self):
         while True:
-            print(f"{len(self.used_colors)=} {len(self.contrast_colors)=}")
-
             my_used_colors = set(self.used_colors)
             my_colors = set(self.contrast_colors)
             missing = my_colors - my_used_colors
 
             if len(missing) == 0:
-                # Сбросить использованные цвета
-                print("reset used colors")
                 self.used_colors.clear()
                 color = random.choice(self.contrast_colors)
             else:
                 color = random.choice(list(missing))
-
 
             self.used_colors.add(color)
             yield color
@@ -1289,8 +1242,8 @@ class X:
         self.build_hyst_loop_check.setText(_translate("GraphWindow", "Построение петель гистерезиса") )
         self.label.setText(_translate("GraphWindow", "Отображаемый канал") )
         self.label2.setText(_translate("GraphWindow", "Номер осциллограммы") )
-        self.button_hyst_loop_clear.setText(_translate("GraphWindow", "Очистить петли") )
-        self.button_hyst_loop_clear_last.setText(_translate("GraphWindow", "Очистить последнюю") )
+        self.button_hyst_loop_clear.setText(_translate("GraphWindow", "Очистить все") )
+        self.button_hyst_loop_clear_last.setText(_translate("GraphWindow", "Очистить выделенные") )
         self.button_hyst_loop.setText(_translate("GraphWindow", "Построить петлю") )
         self.resistance.setPlaceholderText(_translate("GraphWindow", "Сопротивление провода(Ом)") )
         self.square.setPlaceholderText(_translate("GraphWindow", "Площадь провода(мкм)") )
@@ -1383,102 +1336,4 @@ class wheelLineEdit(QWidget):
         self.second_line = line
 
 
-class hystLoop:
-    '''хранит данные о петле и ее исходных параметрах, содержит методы расчета петли'''
-    def __init__(self, raw_x, raw_y, time_scale, resistance, wire_square) -> None:
-        
-        #исходные данные для петли
-        self.signal_raw_data = raw_x #raw_data_x
-        self.field_raw_data = raw_y #raw_data_y
-        self.time_raw_data = [i*time_scale for i in range(len(raw_x))]
-        self.time_scale = time_scale
-        #отфильтрованные данные петли
-        self.filtered_signal_data = raw_x
-        self.filtered_field_data = raw_y
-        self.filtered_time_data = [i*time_scale for i in range(len(raw_x))]
-        #объект визуального представления петли и его данные
-        self.plot_obj = None
-        self.data_x = None
-        self.data_y = None
-        self.Q2 = 1.67  # сильно влияет на форму петли. уточнить влияние, для чего она введена?
-        
-        self.resistance = resistance
-        self.wire_square = wire_square
-        
-        print(f"Петля создана {len(self.signal_raw_data)=} {len(self.field_raw_data)=} {len(self.time_raw_data)=}")
-        print({self.time_raw_data[1] - self.time_raw_data[0]})
-        
-    def get_loop(self):
-        if self.data_x is None or self.data_y is None:
-             self.data_x, self.data_y = self.calc_loop()
-             
-        return self.data_x, self.data_y
-        
-    def calc_loop(self):
-        arr1 = self.filtered_signal_data
-        arr2 = self.filtered_field_data
-
-        arr1 = np.array(arr1)
-        arr2 = np.array(arr2)
-
-        R = 100 + self.resistance
-        # d = 14.2
-        d = self.wire_square / 2 * (10 ** (-6))
-        A = R * (3.1415 * 2 * d * 2)
-        C = 16
-        X = arr2 / A + C
-        Y = self.calculate_results( arr1 )
-
-        size1 = len(X)
-        size2 = len(Y)
-
-        if size1 > size2:
-            X = X[:size2]
-        elif size2 > size1:
-            Y = Y[:size1]
-
-        return X, Y
-
-    def calculate_results(self, C):
-
-        noise_level1 = self.threshold_mean_std(C)
-        noise_level2 = self.threshold_median(C)
-        noise_level = noise_level2
-
-        n = len(C)
-
-        # Вычисление средних значений и сдвигов
-        D2 = np.mean(C)
-        E2 = C - D2
-        F2 = np.where(np.abs(E2) > noise_level, 1, 0)
-
-        G2 = E2 * F2
-        H2 = np.mean(G2)
-
-        # Интегрирование
-        I2 = G2 - H2
-        J2 = np.cumsum(I2)  # Кусковая сумма
-        K2 = J2 - np.max(J2) / 2
-        L2 = K2 + self.Q2
-
-        # Нормировка
-        M = np.where(L2 <= 0, L2 / np.nanmin(L2), L2 / -np.nanmax(L2))
-
-        return M
-
-    def threshold_mean_std(self, data):
-        """Вычисляет порог на основе среднего значения и стандартного отклонения."""
-        mean = np.mean(data)
-        std_dev = np.std(data)
-        k = 2  # Можно настроить коэффициент
-        threshold = mean + k * std_dev
-        return threshold
-
-    def threshold_median(self, data):
-        """Вычисляет порог на основе медианы и интерквартильного размаха."""
-        Q1 = np.percentile(data, 40)
-        Q3 = np.percentile(data, 60)
-        IQR = Q3 - Q1
-        threshold = Q3 + 1.5 * IQR  # Порог устанавливается на уровне Q3 + 1.5 * IQR
-        return threshold
     
