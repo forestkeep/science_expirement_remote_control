@@ -427,7 +427,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
         self.verticalLayout_2.addWidget(self.schematic_exp_name)
         self.verticalLayout_2.addWidget(self.scroll_area_diagram, stretch=10)
-        self.verticalLayout_2.addWidget(self.scroll_area_stack, stretch=3)
+        self.verticalLayout_2.addWidget(self.scroll_area_stack, stretch=6)
         
         self.verticalLayout_2.addWidget(self.open_graph_button)
         # ================================================================

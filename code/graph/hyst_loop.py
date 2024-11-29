@@ -11,41 +11,32 @@
 
 import numpy as np
 import pyqtgraph as pg
+class graphData:
+    def __init__(self, raw_x, raw_y) -> None:
+        """
+        Initializes the graphData object with raw data for x and y axes.
 
-class hystLoop:
-    '''хранит данные о петле и ее исходных параметрах, содержит методы расчета петли'''
-    def __init__(self, raw_x, raw_y, time_scale, resistance, wire_square) -> None:
-        
-        #исходные данные для петли
-        self.signal_raw_data = raw_x #raw_data_x
-        self.field_raw_data = raw_y #raw_data_y
-        self.time_raw_data = [i*time_scale for i in range(len(raw_x))]
-        self.time_scale = time_scale
-        #отфильтрованные данные петли
-        self.filtered_signal_data = raw_x
-        self.filtered_field_data = raw_y
-        self.filtered_time_data = [i*time_scale for i in range(len(raw_x))]
-        #объект визуального представления петли и его данные
+        Parameters:
+            raw_x: The raw data for the x-axis.
+            raw_y: The raw data for the y-axis.
+        """
+        self.raw_data = raw_x 
+        self.raw_data = raw_y 
+
+        self.filtered_x_data = raw_x
+        self.filtered_y_data = raw_y
+
         self.plot_obj = None
         self.data_x = None
         self.data_y = None
-        self.Q2 = 1.67  # сильно влияет на форму петли. уточнить влияние, для чего она введена?
-        
-        self.resistance = resistance
-        self.wire_square = wire_square
-        
-        print(f"Петля создана {len(self.signal_raw_data)=} {len(self.field_raw_data)=} {len(self.time_raw_data)=}")
-        print({self.time_raw_data[1] - self.time_raw_data[0]})
-        
+
     def set_plot_obj(self, plot_obj, pen, highlight=False):
         self.plot_obj = plot_obj
         self.plot_obj.setFocus()
         self.plot_obj.setZValue(100)
         self.plot_obj.setCurveClickable( state = True, width = 10)#установить кривую кликабельной с шириной 10 пикселей
-        #self.plot_obj.setShadowPen(pen=None)#перо для выделения графика, если нажали, то задать это
         self.plot_obj.sigPointsClicked.connect(self.on_points_clicked)
         self.plot_obj.sigClicked.connect(self.on_plot_clicked)
-        #self.plot_obj.sigPlotChanged.connect(self.on_plot_changed)
 
         self.line_color = (0, 0, 255)
         self.current_highlight = False
@@ -67,15 +58,42 @@ class hystLoop:
         else:
             self.current_highlight = True
             self.plot_obj.setPen(pg.mkPen('w', width=2))
+
+class hystLoop(graphData):
+    '''хранит данные о петле и ее исходных параметрах, содержит методы расчета петли'''
+    def __init__(self, raw_x, raw_y, time_scale, resistance, wire_square) -> None:
+        super().__init__(raw_x, raw_y)
+        self.time_raw_data = [i*time_scale for i in range(len(raw_x))]
+        self.time_scale = time_scale
+        #отфильтрованные данные петли
+        self.filtered_time_data = [i*time_scale for i in range(len(raw_x))]
+        self.Q2 = 1.67  # сильно влияет на форму петли. уточнить влияние, для чего она введена?
         
-    def get_loop(self):
-        if self.data_x is None or self.data_y is None:
-             self.data_x, self.data_y = self.calc_loop()   
-        return self.data_x, self.data_y
-        
+        self.resistance = resistance
+        self.wire_square = wire_square
+            
+    def set_plot_obj(self, plot_obj, pen, highlight=False):
+        self.plot_obj = plot_obj
+        self.plot_obj.setFocus()
+        self.plot_obj.setZValue(100)
+        self.plot_obj.setCurveClickable( state = True, width = 10)#установить кривую кликабельной с шириной 10 пикселей
+        #self.plot_obj.setShadowPen(pen=None)#перо для выделения графика, если нажали, то задать это
+        self.plot_obj.sigPointsClicked.connect(self.on_points_clicked)
+        self.plot_obj.sigClicked.connect(self.on_plot_clicked)
+        #self.plot_obj.sigPlotChanged.connect(self.on_plot_changed)
+
+        self.line_color = (0, 0, 255)
+        self.current_highlight = False
+
+        self.saved_pen = pen
+
+        if highlight:
+            self.current_highlight = True
+            self.plot_obj.setPen(pg.mkPen('w', width=2))
+    
     def calc_loop(self):
-        arr1 = self.filtered_signal_data
-        arr2 = self.filtered_field_data
+        arr1 = self.filtered_x_data
+        arr2 = self.filtered_y_data
 
         arr1 = np.array(arr1)
         arr2 = np.array(arr2)
@@ -140,3 +158,12 @@ class hystLoop:
         IQR = Q3 - Q1
         threshold = Q3 + 1.5 * IQR  # Порог устанавливается на уровне Q3 + 1.5 * IQR
         return threshold
+    
+    def recalc_data(self):
+        self.data_x, self.data_y = self.calc_loop()   
+        return self.data_x, self.data_y
+    
+    def get_xy_data(self):
+        if self.data_x is None or self.data_y is None:
+             self.data_x, self.data_y = self.calc_loop()   
+        return self.data_x, self.data_y

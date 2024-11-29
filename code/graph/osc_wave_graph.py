@@ -36,7 +36,6 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QDialog
 )
-from pyqtgraph.opengl import GLAxisItem, GLLinePlotItem, GLScatterPlotItem, GLViewWidget
 
 try:
     from calc_values_for_graph import ArrayProcessor
@@ -311,27 +310,18 @@ class X:
         self.tab1Layout.addLayout(self.hor_lay)
         self.tab1Layout.addWidget(self.build_hyst_loop_check)
         self.tab1Layout.addWidget(self.import_data_button)
-        # self.graphView.hide()
-        # self.graphView.show()
 
         splitter = QSplitter()
         splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        # Добавяем графики в сплиттер
-
-        # Устанавливаем ориентировку на вертикальную
         splitter.setOrientation(1)  # 1 - вертикальный
 
         self.graphView_loop = self.setupGraphView()
 
         self.graphView_loop.scene().sigMouseMoved.connect(self.showToolTip_loop)
-        #self.graphView_loop.scene().sigMouseClicked.connect(self.clicked_graph_loop)
 
         splitter.addWidget(self.graphView)
         splitter.addWidget(self.graphView_loop)
-
-        # Устанавливаем ориентировку на вертикальную
-        splitter.setOrientation(1)  # 1 - вертикальный
 
         splitter.setStretchFactor(0, 5)  # Первому виджету (Plot 1) коэффициент 1
         splitter.setStretchFactor(1, 5)  # Второму виджету (Plot 2) коэффициент 2
@@ -344,37 +334,12 @@ class X:
         self.tab1Layout.addWidget(self.hyst_loop_layer)
         self.page.setLayout(self.tab1Layout)
 
+        self.page.subscribe_to_key_press(key = Qt.Key_Delete, callback = self.delete_key_press)
+
         self.retranslateUI(self.page)
-        #===============================================
-        self.old_items = []
-    def clicked_graph_loop(self, event):
 
-        try:
-            items = self.graphView_loop.scene().items()
-            print(set(self.old_items) - set(items))
-            self.old_items = items
-        except AttributeError as e:
-            return
-        i = 1
-        for item in items:
-           print(i, item)
-           i+=1
-           if isinstance(item, pg.GraphItem): 
-               print("содержит GraphItem")
-               print(item.scatter.pointsAt())
-               if item.scatter.pointsAt():
-                   pass 
-               
-        print(f"{event=}")
-        if event.button() == 1:  # ЛКМ
-            print("ЛКМ")
-            mouse_point = event.scenePos()
-            print(f"{mouse_point=}")
-
-            # Проверяем каждый элемент графика
-            for loop in self.loops_stack:
-                if loop.plot_obj.curveClickable():  
-                    print("да", loop.plot_obj)
+    def delete_key_press(self):
+        self.clear_highlight_loop()
 
     def setupGraphView(self):
         graphView = pg.PlotWidget(title="")
@@ -473,11 +438,7 @@ class X:
             130, 100
         )  
 
-        self.button_hyst_loop_clear_last = QPushButton()
-        self.button_hyst_loop_clear_last.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.button_hyst_loop_clear_last.setMaximumSize(
-            130, 100
-        )
+
 
         self.name_field = QLabel(QApplication.translate("GraphWindow","Поле"))
         self.field_ch_choice = QComboBox()
@@ -495,17 +456,11 @@ class X:
         self.field_ch_choice.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         self.auto_button = QPushButton(QApplication.translate("GraphWindow","Авто"))
-        self.auto_button.setMaximumSize(100, 100)
+        self.auto_button.setMaximumSize(130, 100)
 
         self.avg_loop_button = QPushButton(QApplication.translate("GraphWindow","Усреднить петли"))
-        self.avg_loop_button.setMaximumSize(100, 100)
+        self.avg_loop_button.setMaximumSize(130, 100)
         
-        self.accept_avg_loop_but = QPushButton(QApplication.translate("GraphWindow","Оставить"))
-        self.accept_avg_loop_but.setMaximumSize(30, 30)
-        
-        self.destroy_avg_loop_but = QPushButton(QApplication.translate("GraphWindow","не оставить"))
-        self.destroy_avg_loop_but.setMaximumSize(30, 30)
-
         self.left_coord = wheelLineEdit()
         self.left_coord.line_edit.setPlaceholderText(QApplication.translate("GraphWindow","Координата слева"))
         self.left_coord.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -530,7 +485,6 @@ class X:
         self.resistance.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.resistance.setMaximumSize(250, 40)
 
-
         self.square.textChanged.connect(lambda: self.is_all_hyst_correct())
         self.resistance.textChanged.connect(lambda: self.is_all_hyst_correct())
         self.right_coord.line_edit.textChanged.connect(
@@ -554,7 +508,6 @@ class X:
         self.button_hyst_loop_clear.clicked.connect( lambda: self.clear_all_loops() )
         self.auto_button.clicked.connect(lambda: self.push_auto_button())
 
-        self.button_hyst_loop_clear_last.clicked.connect(lambda: self.clear_highlight_loop())
         self.avg_loop_button.clicked.connect(lambda: self.avg_loop())
 
     #-----------------------------------------
@@ -571,20 +524,11 @@ class X:
         buttons2_lay = QHBoxLayout()
         buttons2_lay.addWidget(self.auto_button, alignment=Qt.AlignLeft)
 
-        buttons2_lay.addWidget(self.accept_avg_loop_but)
-        buttons2_lay.addWidget(self.destroy_avg_loop_but)
-        
-        self.accept_avg_loop_but.hide()
-        self.destroy_avg_loop_but.hide()
-        
         buttons_lay.addLayout(buttons2_lay)
 
         buttons3_lay = QHBoxLayout()
         buttons3_lay.addWidget(self.button_hyst_loop_clear, alignment=Qt.AlignLeft)
-        buttons3_lay.addWidget(self.button_hyst_loop_clear_last, alignment=Qt.AlignLeft)
         buttons_lay.addLayout(buttons3_lay)
-
-        main_lay.addLayout(buttons_lay)
 
         enter_lay = QVBoxLayout()
 
@@ -615,6 +559,7 @@ class X:
         enter_lay.addLayout(field_signal_lay2)
 
         main_lay.addLayout(enter_lay)
+        main_lay.addLayout(buttons_lay)
 
         return self.hyst_loop_layer
     def avg_loop(self):
@@ -629,7 +574,7 @@ class X:
 
             if new_loop is not False:
                 #self.clear_all_loops()
-                x, y = new_loop.get_loop()
+                x, y = new_loop.get_xy_data()
 
                 new_pen = {
                         "color": next(self.color_gen),
@@ -646,8 +591,6 @@ class X:
 
                         )
                 new_loop.set_plot_obj(plot_obj, new_pen, highlight=True)
-                self.accept_avg_loop_but.show()
-                self.destroy_avg_loop_but.show()
 
     def calc_avg_loop(self, loops_stack):
         '''вернет объект петли, полученный усреднением стека петель'''
@@ -687,13 +630,12 @@ class X:
         mean_resistance  = (loop1.resistance + loop2.resistance)/2
         mean_wire_square = (loop1.wire_square + loop2.wire_square)/2
         
-        mean_sig = self.average_arrays(loop2.filtered_signal_data,
-                                       loop1.filtered_signal_data)
+        mean_sig = self.average_arrays(loop2.filtered_x_data,
+                                       loop1.filtered_x_data)
         
-        mean_field = self.average_arrays(loop2.filtered_field_data,
-                                         loop1.filtered_field_data)
-                                       
-        
+        mean_field = self.average_arrays(loop2.filtered_y_data,
+                                         loop1.filtered_y_data)
+                               
         new_loop = hystLoop(raw_x        =mean_sig,
                             raw_y        =mean_field,
                             time_scale   =loop1.time_scale,
@@ -701,8 +643,7 @@ class X:
                             wire_square  =mean_wire_square
                             )
         return new_loop
-            
-            
+                     
     def clear_highlight_loop(self):
         print(self.loops_stack)
         if len(self.loops_stack) > 0:
@@ -903,7 +844,6 @@ class X:
             self.tooltip.setText(text)
         except:
             pass  # лейбл удален
-
 
     # hyst section func
     def is_coord_correct(self) -> bool:
@@ -1148,7 +1088,6 @@ class X:
             number_field = int(self.channels_wave_choice[ch_field].currentText()) - 1
             status = True
 
-            
             key_wave_field = None
             for key in self.dict_param[device][ch_field].keys():
                 if "wavech" in key:
@@ -1196,8 +1135,9 @@ class X:
                                     raw_y =  raw_y,
                                     time_scale=field_scale,
                                     resistance = float( self.resistance.text() ),
-                                    wire_square = float( self.square.text()) )
-                x, y = new_loop.get_loop()
+                                    wire_square = float( self.square.text())
+                                      )
+                x, y = new_loop.get_xy_data()
 
                 self.loops_stack.append(new_loop)
 
@@ -1237,13 +1177,31 @@ class X:
             self.used_colors.add(color)
             yield color
 
+    def set_filters(self, filter_func):
+        for loop in self.loops_stack:
+            if loop.current_highlight:
+                loop.filtered_x_data = filter_func(loop.filtered_x_data)
+                loop.filtered_y_data = filter_func(loop.filtered_y_data)
+                self.graphView_loop.removeItem(loop.plot_obj)
+
+                x, y = loop.recalc_data()
+
+                plot_obj = self.graphView_loop.plot(
+                    x,
+                    y,
+                    pen=loop.saved_pen,
+                )
+
+                loop.set_plot_obj( plot_obj, loop.saved_pen)
+                
+
+
     def retranslateUI(self, GraphWindow):
         _translate = QApplication.translate
         self.build_hyst_loop_check.setText(_translate("GraphWindow", "Построение петель гистерезиса") )
         self.label.setText(_translate("GraphWindow", "Отображаемый канал") )
         self.label2.setText(_translate("GraphWindow", "Номер осциллограммы") )
         self.button_hyst_loop_clear.setText(_translate("GraphWindow", "Очистить все") )
-        self.button_hyst_loop_clear_last.setText(_translate("GraphWindow", "Очистить выделенные") )
         self.button_hyst_loop.setText(_translate("GraphWindow", "Построить петлю") )
         self.resistance.setPlaceholderText(_translate("GraphWindow", "Сопротивление провода(Ом)") )
         self.square.setPlaceholderText(_translate("GraphWindow", "Площадь провода(мкм)") )
@@ -1254,7 +1212,6 @@ class X:
         self.name_field.setText(_translate("GraphWindow", "Поле") )
         self.import_data_button.setText(_translate("GraphWindow", "Импортировать...") )
         
-
 class verticals_lines:
 
     def __init__(self) -> None:

@@ -21,17 +21,26 @@ from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
     QTabWidget,
-    QVBoxLayout,
+    QHBoxLayout,
     QWidget,
-    QListWidgetItem
+    QListWidgetItem,
+    QSplitter,
+    QSizePolicy,
+    QTabBar,
 )
+
+from PyQt5.QtCore import Qt
 
 if __name__ == "__main__":
     from graph_main import graphMain
     from osc_wave_graph import X
+    from tabPage_win import tabPage
+    from filters_win import filtersClass
 else:
     from graph.graph_main import graphMain
     from graph.osc_wave_graph import X
+    from graph.tabPage_win import tabPage
+    from graph.filters_win import filtersClass
 
 
 def time_decorator(func):
@@ -87,7 +96,6 @@ class test_graph:
         current_directory = os.path.dirname(os.path.abspath(__file__))
 
         file_name = "test_loop.csv"
-
 
         # Формирование полного пути
         full_path = os.path.join(current_directory, file_name)
@@ -196,15 +204,35 @@ class GraphWindow(QMainWindow):
         self.mainWidget = QWidget(self)
         self.setWindowIcon(QIcon('picture/graph.png'))  # Укажите путь к вашей иконке
         self.setCentralWidget(self.mainWidget)
-        self.mainLayout = QVBoxLayout(self.mainWidget)
+        self.mainLayout = QHBoxLayout(self.mainWidget)
+
+        self.filter_class = filtersClass()
 
         # Create Tab Widget
         self.tabWidget = QTabWidget()
-        self.mainLayout.addWidget(self.tabWidget)
+
+        #---------------------------------
+        splitter = QSplitter()
+        splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        splitter.setOrientation(1)  # 1 - вертикальный
+
+        splitter.addWidget(self.tabWidget)
+        splitter.addWidget(self.filter_class.filt_window)
+
+        splitter.setStretchFactor(0, 10)
+        splitter.setStretchFactor(1, 1)
+
+
+        self.filter_class.set_filter_slot(self.filters_callback)#при нажатии кнопок в фильтре будет вызываться эта функция
+
+        #---------------------------------
+
+        self.mainLayout.addWidget(splitter)
 
         # Create first tab and set its layout
-        self.tab1 = QWidget()
-        self.tab2 = QWidget()
+        self.tab1 = tabPage(1)
+        self.tab2 = tabPage(2)
 
         # Add tabs to the tab widget
         self.tabWidget.addTab(self.tab1, QApplication.translate("GraphWindow", "Графики") )
@@ -215,6 +243,14 @@ class GraphWindow(QMainWindow):
 
         self.tabWidget.setCurrentIndex(0)  # Default to first tab
 
+    def filters_callback(self, filter_func):
+
+        active_tab_index = self.tabWidget.currentIndex()  # Получаем индекс активной вкладки
+        if active_tab_index == 0:
+            self.graph_main.set_filters(filter_func)
+        elif active_tab_index == 1:
+            self.graph_wave.set_filters(filter_func)
+ 
     def update_graphics(self, new_data: dict):
         if new_data:
             self.graph_main.update_dict_param(new=new_data)
