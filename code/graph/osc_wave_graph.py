@@ -41,12 +41,12 @@ try:
     from calc_values_for_graph import ArrayProcessor
     from Message_graph import messageDialog
     from Link_data_import_win import Check_data_import_win
-    from hyst_loop import hystLoop
+    from hyst_loop import hystLoop, oscData
 except:
     from graph.calc_values_for_graph import ArrayProcessor
     from graph.Message_graph import messageDialog
     from graph.Link_data_import_win import Check_data_import_win
-    from graph.hyst_loop import hystLoop
+    from graph.hyst_loop import hystLoop, oscData
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +58,8 @@ def time_decorator(func):
         return result
     return wrapper
 
-class X:
-    def __init__(self, tablet_page):
+class graphOsc:
+    def __init__(self, tablet_page, main_class):
         self.page = tablet_page
         self.legend = pg.LegendItem(size=(80, 60), offset=(10, 10))
         self.is_show_warning = True
@@ -67,6 +67,10 @@ class X:
         self.x = []
         self.y = []
         self.dict_param = {}
+
+        self.stack_osc = {}
+
+        self.main_class = main_class
 
         self.used_colors = set()
         self.color_gen = self.get_random_color()
@@ -111,6 +115,10 @@ class X:
             "#ADFF2F",  # Лаймовый
         ]
 
+        self.y_second_axis_label = "V"
+        self.x_axis_label = "s"
+        self.y_main_axis_label = "V"
+
         self.key = True  # ключ предназначен для манипулирования данными в виджетах без вызова функций обработчиков, если ключ установлен в False, то обработчик не будет испольняться
 
         self.vertical_lines = verticals_lines()
@@ -153,7 +161,6 @@ class X:
             try:
                 self.update_num_waveforms()
             except Exception as e:
-                print(e)
                 self.new_dev_checked()
                 self.update_num_waveforms()
 
@@ -200,6 +207,11 @@ class X:
         return channel_with_wave
 
     def import_data(self, *args, **kwargs):
+
+        if self.main_class.experiment_controller is not None:
+            if self.main_class.experiment_controller.is_experiment_running():
+                self.main_class.show_tooltip("Дождитесь окончания эксперимента", timeout=3000)
+                return
         
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
@@ -300,6 +312,22 @@ class X:
 
         self.graphView.scene().sigMouseMoved.connect(self.showToolTip_main)
 
+        self.legend.setParentItem(self.graphView.plotItem)
+
+        '''
+        self.graphView.plotItem.getAxis("left").linkToView(
+            self.graphView.plotItem.getViewBox()
+        )
+        self.graphView.plotItem.getAxis("bottom").linkToView(
+            self.graphView.plotItem.getViewBox()
+        )
+        '''
+
+        self.graphView.setLabel("left", self.y_main_axis_label, color="#ffffff")
+        self.graphView.setLabel("bottom", self.x_axis_label, color="#ffffff")
+        self.graphView.getAxis("left").setGrid(True)
+        self.graphView.getAxis("bottom").setGrid(True)
+
         self.import_data_button = QPushButton(
             QApplication.translate('graph_win',"Импорт данных")
         )
@@ -323,9 +351,8 @@ class X:
         splitter.addWidget(self.graphView)
         splitter.addWidget(self.graphView_loop)
 
-        splitter.setStretchFactor(0, 5)  # Первому виджету (Plot 1) коэффициент 1
-        splitter.setStretchFactor(1, 5)  # Второму виджету (Plot 2) коэффициент 2
-
+        splitter.setStretchFactor(0, 5)
+        splitter.setStretchFactor(1, 5)  
         self.tab1Layout.addWidget(splitter)
         self.graphView_loop.hide()
 
@@ -336,7 +363,34 @@ class X:
 
         self.page.subscribe_to_key_press(key = Qt.Key_Delete, callback = self.delete_key_press)
 
+        self.page.subscribe_to_key_press(key = Qt.Key_Escape, callback = self.reset_filters)
+
+        '''
+        Escape: Qt.Key_Escape
+        Space: Qt.Key_Space
+        Enter: Qt.Key_Return или Qt.Key_Enter
+        Control: Qt.Key_Control
+        Shift: Qt.Key_Shift
+        Minus: Qt.Key_Minus
+        Plus: Qt.Key_Plus
+        '''
         self.retranslateUI(self.page)
+
+    def reset_filters(self):
+        print(5454545)
+        for loop in self.loops_stack:
+            if loop.current_highlight:
+                loop.filtered_x_data = loop.raw_data_x
+                loop.filtered_y_data = loop.raw_data_y
+                loop.plot_obj.setData(loop.filtered_x_data, loop.filtered_y_data)
+
+        for osc in self.stack_osc.values():
+            if osc.current_highlight:
+                osc.filtered_x_data = osc.raw_data_x
+                osc.filtered_y_data = osc.raw_data_y
+                osc.plot_obj.setData(osc.filtered_x_data, osc.filtered_y_data)
+
+        
 
     def delete_key_press(self):
         self.clear_highlight_loop()
@@ -410,7 +464,7 @@ class X:
             list_osc.currentIndexChanged.connect(lambda: self.checked_channel())
             layout.addLayout(
                 lay, row, col
-            )  # Размещение в соответствующей строке и столбце
+            )  
             checkboxes.append(checkbox)
             checkbox.stateChanged.connect(lambda: self.checked_channel())
             channels_wave_forms[name_ch] = list_osc
@@ -437,8 +491,6 @@ class X:
         self.button_hyst_loop_clear.setMaximumSize(
             130, 100
         )  
-
-
 
         self.name_field = QLabel(QApplication.translate("GraphWindow","Поле"))
         self.field_ch_choice = QComboBox()
@@ -645,7 +697,6 @@ class X:
         return new_loop
                      
     def clear_highlight_loop(self):
-        print(self.loops_stack)
         if len(self.loops_stack) > 0:
             for index in range(len(self.loops_stack) - 1, -1, -1):
                 loop = self.loops_stack[index]
@@ -654,7 +705,6 @@ class X:
                     del self.loops_stack[index]
         else:
             print("no loops")
-        print(self.loops_stack)
 
     def clear_all_loops(self):
         if len(self.loops_stack) > 0:
@@ -745,24 +795,51 @@ class X:
             self.legend_ch_names = {}
             for ch in self.ch_check:
                 ch_name = ch.text()
-                #print(f"{ch_name=}")
-                #number = int(ch_name[3])
+
+                device = self.choice_device.currentText()
+                num_wave = (
+                        int(self.channels_wave_choice[ch.text()].currentText()) - 1
+                )
+
+                key_stack = str(device) + str(ch_name) + str(num_wave)
 
                 if ch.isChecked():
-                    device = self.choice_device.currentText()
-                    num_wave = (
-                        int(self.channels_wave_choice[ch.text()].currentText()) - 1
-                    )
-                    for key in self.dict_param[device][ch_name].keys():
-                        if "wavech" in key:
-                            key_wave = key
-                            break
-                    self.y_values[ch_name] = self.dict_param[device][ch_name][key_wave][num_wave]
-                    reere = self.dict_param[device][ch_name]["scale"]
-                    self.scales[ch_name] = self.dict_param[device][ch_name]["scale"][num_wave]
-                    self.legend_ch_names[ch_name] = ch_name
+                    
+                    if self.stack_osc.get(key_stack, None) == None:
+
+                        for key in self.dict_param[device][ch_name].keys():
+                            if "wavech" in key:
+                                key_wave = key
+                                break
+
+                        self.y_values[ch_name] = self.dict_param[device][ch_name][key_wave][num_wave]
+                        self.scales[ch_name] = self.dict_param[device][ch_name]["scale"][num_wave]
+                        self.legend_ch_names[ch_name] = ch_name
+
+                        scale = self.dict_param[device][ch_name]["scale"][num_wave]
+
+                        y = np.array(self.dict_param[device][ch_name][key_wave][num_wave])
+                        x = np.array([scale*i for i in range(1, len(y)+1)])
+
+                        new_osc = oscData( raw_x  = x, 
+                                           raw_y  = y, 
+                                           device = device, 
+                                           ch     = ch_name, 
+                                           name   = key_wave, 
+                                           number = num_wave)
+                        
+                        self.stack_osc[key_stack] = new_osc
+
+
+                    self.stack_osc[key_stack].is_draw = True                
+                    
                 else:
                     self.y_values[ch_name] = []
+
+                    if self.stack_osc.get(key_stack, None) != None:
+                        self.stack_osc[key_stack].is_draw = False
+
+                        self.stack_osc[key_stack].current_highlight = False
 
             self.update_draw()
 
@@ -775,50 +852,47 @@ class X:
         pass
 
     def update_draw(self):
-        self.y_second_axis_label = "V"
-        self.x_axis_label = "s"
-        self.y_main_axis_label = "V"
 
-        # Вместо полного очищения графика удаляем только текущие кривые
-        current_curves = self.graphView.plotItem.listDataItems()
-        for curve in current_curves:
-            if curve not in self.list_vert_curve:
-                self.graphView.plotItem.removeItem(curve)
-
-        self.graphView.plotItem.getAxis("left").linkToView(
-            self.graphView.plotItem.getViewBox()
-        )
-        self.graphView.plotItem.getAxis("bottom").linkToView(
-            self.graphView.plotItem.getViewBox()
-        )
-        self.graphView.setLabel("left", self.y_main_axis_label, color="#ffffff")
-        self.graphView.setLabel("bottom", self.x_axis_label, color="#ffffff")
         self.legend.clear()
+        #===================================================
+        print(self.stack_osc)
+        for obj in self.stack_osc.values():
+            if obj.is_draw:
+                print(f"build {obj}")
+                if obj.plot_obj == None:
 
-        self.legend.setParentItem(self.graphView.plotItem)
+                    if obj.saved_pen == None:
+                        buf_pen = {
+                            "color": next(self.color_gen),
+                            "width": 1,
+                            "antialias": True,  
+                            "symbol": "o",
+                        }
+                    else:
+                        buf_pen = obj.saved_pen
 
-        for i, key in enumerate(self.y_values.keys()):
-            if len(self.y_values[key]) > 0:
-                curve = self.graphView.plot(
-                    [k * self.scales[key] for k in range(len(self.y_values[key]))],
-                    self.y_values[key],
-                    pen={
-                        "color": self.contrast_colors[i],
-                        "width": 1,
-                        "antialias": True,
-                        "symbol": "o",
-                    },
-                    name=f"{self.legend_ch_names[key]}",  # Укажите имя для легенды
-                )
+                    graph = self.graphView.plot(obj.filtered_x_data, 
+                                                obj.filtered_y_data, 
+                                                pen  = buf_pen,
+                                                name = obj.legend_name
+                                                )
+
+                    obj.set_plot_obj(plot_obj = graph,
+                                    pen       = buf_pen)
+                    
+                legend_name = obj.legend_name
                 self.legend.addItem(
-                    curve, f"{self.legend_ch_names[key]}"
-                )  # Добавление элемента в легенду
+                        obj.plot_obj, obj.legend_name
+                )
 
-        self.graphView.getAxis("left").setGrid(True)
-        self.graphView.getAxis("bottom").setGrid(True)
-
+            else:
+                if obj.plot_obj != None:
+                    print(f"destroy {obj}")
+                    self.graphView.removeItem(obj.plot_obj)
+                    obj.plot_obj = None
+                
     def showToolTip_main(self, event):
-        pos = event  # Позиция курсора
+        pos = event
         x_val = round(
             self.graphView.plotItem.vb.mapSceneToView(pos).x(), 5
         )  # Координата X
@@ -832,13 +906,13 @@ class X:
             pass  # лейбл удален
 
     def showToolTip_loop(self, event):
-        pos = event  # Позиция курсора
+        pos = event
         x_val = round(
             self.graphView_loop.plotItem.vb.mapSceneToView(pos).x(), 5
-        )  # Координата X
+        )
         y_val = round(
             self.graphView_loop.plotItem.vb.mapSceneToView(pos).y(), 5
-        )  # Координата Y
+        )
         text = f'<p style="font-size:{10}pt">X:{x_val} Y:{y_val}</p>'
         try:
             self.tooltip.setText(text)
@@ -1156,7 +1230,6 @@ class X:
 
                 new_loop.set_plot_obj( plot_obj, new_pen )
 
-                print( new_loop.plot_obj.getViewBox() )
             else:
                 logger.warning("неверные данные для построения петли")
         else:
@@ -1182,6 +1255,7 @@ class X:
             if loop.current_highlight:
                 loop.filtered_x_data = filter_func(loop.filtered_x_data)
                 loop.filtered_y_data = filter_func(loop.filtered_y_data)
+
                 self.graphView_loop.removeItem(loop.plot_obj)
 
                 x, y = loop.recalc_data()
@@ -1193,8 +1267,17 @@ class X:
                 )
 
                 loop.set_plot_obj( plot_obj, loop.saved_pen)
-                
 
+        for osc in self.stack_osc.values():
+            if osc.current_highlight:
+
+                osc.filtered_y_data = filter_func(osc.filtered_y_data)
+                osc.filtered_x_data = osc.filtered_x_data[-len(osc.filtered_y_data):]
+
+                print(osc.filtered_x_data)
+                print(osc.filtered_y_data)
+
+                osc.plot_obj.setData(osc.filtered_x_data, osc.filtered_y_data)
 
     def retranslateUI(self, GraphWindow):
         _translate = QApplication.translate

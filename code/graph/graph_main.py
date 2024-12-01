@@ -97,7 +97,7 @@ def time_decorator(func):
 
 class graphMain:
 
-    def __init__(self, tablet_page):
+    def __init__(self, tablet_page, main_class):
         self.page = tablet_page
         self.is_show_warning = True
         self.key_to_update_plot = True
@@ -106,6 +106,8 @@ class graphMain:
         self.x2 = []
         self.y2 = {}
         self.dict_param = {}
+    
+        self.main_class = main_class
 
         self.curve1 = {}
         self.curve2 = {}
@@ -168,6 +170,11 @@ class graphMain:
 
     @time_decorator
     def import_data(self, *args, **kwargs):
+
+        if self.main_class.experiment_controller is not None:
+            if self.main_class.experiment_controller.is_experiment_running():
+                self.main_class.show_tooltip("Дождитесь окончания эксперимента", timeout = 3000)
+                return
         
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
@@ -180,20 +187,11 @@ class graphMain:
         
         if fileName:
             if ans == "Книга Excel (*.xlsx)":
-                # Считываем все листы из книги Excel
-                #xls = pd.ExcelFile(fileName, engine='openpyxl')
-                #dfs = {sheet_name: xls.parse(sheet_name) for sheet_name in xls.sheet_names}
 
 
                 df = pd.read_excel(fileName, engine='openpyxl')
-                #for sheet_name, df in dfs.items():
-                #    if 'time' not in df.columns:
-                #       self.is_time_column = False
-                #       print(f"Отсутствует столбец 'time' в листе {sheet_name}")
-
                 if 'time' not in df.columns:
                     self.is_time_column = False
-                    #raise ValueError("Отсутствует обязательный столбец 'time'")
 
                 df = df.dropna(axis=1, how='all')#удаление пустых столбцов
 
@@ -233,8 +231,6 @@ class graphMain:
     def setupDataSourceSelectors(self):
         # Data source selectors layout
         dataSourceLayout = QHBoxLayout()
-
-        #sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
 
         # Создание селекторов
         x_buf = self.createHoverSelector("X-Axis:")

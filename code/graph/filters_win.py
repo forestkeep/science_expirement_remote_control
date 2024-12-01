@@ -1,8 +1,9 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSpinBox, QPushButton
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSpinBox, QPushButton, QDoubleSpinBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 class filterWin(QWidget):
     def __init__(self):
@@ -12,9 +13,9 @@ class filterWin(QWidget):
     def initUI(self):
         main_layout = QVBoxLayout()
 
-        self.median_button = QPushButton("Применить")
-        self.average_button = QPushButton("Применить")
-        self.calman_button = QPushButton("Применить")
+        self.median_button   = QPushButton("Применить")
+        self.average_button  = QPushButton("Применить")
+        self.calman_button   = QPushButton("Применить")
         self.exp_mean_button = QPushButton("Применить")
 
         self.median_button.setMinimumSize(30, 20)
@@ -22,28 +23,30 @@ class filterWin(QWidget):
         self.calman_button.setMinimumSize(30, 20)
         self.exp_mean_button.setMinimumSize(30, 20)
 
-        self.spin_median = QSpinBox() 
-        self.spin_average = QSpinBox()
-        self.spin_calman = QSpinBox()
-        self.spin_calman2 = QSpinBox()
-        self.spin_exp_mean = QSpinBox()
-        self.spin_exp_mean2 = QSpinBox()
-        self.spin_exp_mean3 = QSpinBox()
+        self.spin_median   = QSpinBox() 
+        self.spin_average  = QSpinBox()
+        self.spin_calman   = QSpinBox()
+        self.spin_calman2  = QSpinBox()
+        self.spin_exp_mean = QDoubleSpinBox()
 
-        main_layout.addLayout(self.create_layer_filter("Медианный фильтр", [self.create_spin_box("Порядок", self.spin_median)],
+        self.spin_calman.setMaximum(10)
+        self.spin_calman2.setMaximum(10)
+        self.spin_exp_mean.setMaximum(1)
+
+        self.spin_exp_mean.setSingleStep(0.01)
+
+        main_layout.addLayout(self.create_layer_filter("Медианный фильтр", [self.create_spin_box("Окно", self.spin_median)],
                                                                             self.median_button) )
         
-        main_layout.addLayout(self.create_layer_filter("Бегущее среднее", [self.create_spin_box("Порядок", self.spin_average)],
+        main_layout.addLayout(self.create_layer_filter("Бегущее среднее", [self.create_spin_box("Окно", self.spin_average)],
                                                                            self.average_button) )
-        
+        '''
         main_layout.addLayout(self.create_layer_filter("Фильтр Калмана", [self.create_spin_box("Q", self.spin_calman),
                                                                           self.create_spin_box("R", self.spin_calman2)],
                                                                           self.calman_button) )
-        
+        '''
         main_layout.addLayout(self.create_layer_filter("Экспоненциальное \n среднее",
-                                                        [self.create_spin_box("Коэфф", self.spin_exp_mean3),
-                                                         self.create_spin_box("Макс", self.spin_exp_mean2),
-                                                         self.create_spin_box("Коэфф", self.spin_exp_mean3)],
+                                                        [self.create_spin_box("Коэфф", self.spin_exp_mean)],
                                                          self.exp_mean_button)  )
 
         self.setLayout(main_layout)
@@ -104,30 +107,94 @@ class filtersClass():
 
     def prepare_filters(self, func):
         self.range_avg = int(self.filt_window.spin_average.value())
-        print(self.range_avg)
+        self.range_median = int(self.filt_window.spin_median.value())
+        self.alpha_exp = float(self.filt_window.spin_exp_mean.value())
         #TODO:reading coeff for filters
         for callback in self.filters_callbacks:
             callback(func)
 
     def med_filt(self, data):
-        median = data.rolling(window=3).median()  
-        return data
+        """
+        Applies a median filter to the input data.
+
+        This function constructs a sliding window of size `self.range_median` 
+        around each element of the input `data`, and calculates the median 
+        value within the window. The edges are padded using the border values 
+        of the input data to handle incomplete windows at the boundaries.
+
+        Parameters:
+            data (array-like): The input array of data to be filtered.
+
+        Returns:
+            np.ndarray: The array of filtered data with the same length as the input data.
+        """
+        k2 = (self.range_median - 1) // 2
+        y = np.zeros ((len (data), self.range_median), dtype=data.dtype)
+        y[:,k2] = data
+        for i in range (k2):
+            j = k2 - i
+            y[j:,i] = data[:-j]
+            y[:j,i] = data[0]
+            y[:-j,-(i+1)] = data[j:]
+            y[-j:,-(i+1)] = data[-1]
+        return np.median(y, axis=1)
 
     def exp_mean_filt(self, data):
-        return data
+
+        data = pd.Series(data)
+        ema = data.ewm(alpha=self.alpha_exp, adjust=False).mean()
+        return ema
 
     def calman_filt(self, data):
         return data
 
     def average_filt(self, data):
         N = self.range_avg
-        return np.convolve(data, np.ones((N,))/N)[(N-1):]
+
+        return np.convolve(data, np.ones(N)/N, 'valid') #same #full #valid
+
+
+def test_filters():
+    np.random.seed(42)
+    x = np.linspace(0, 10, 100)
+    clean_data = np.sin(x)
+    noise = np.random.normal(0, 0.5, size=x.shape)
+    noisy_data = clean_data + noise
+
+    filter_instance = filtersClass()
+    filter_instance.filt_window.spin_average.setValue(5)
+    filter_instance.filt_window.spin_median.setValue(5)
+    filter_instance.filt_window.spin_exp_mean.setValue(0.1)
+
+    filter_instance.range_avg = 5
+    filter_instance.range_median = 5
+    filter_instance.alpha_exp = 0.5
+
+    filtered_average = filter_instance.average_filt(noisy_data)
+    filtered_median = filter_instance.med_filt(noisy_data)
+    filtered_exp_mean = filter_instance.exp_mean_filt(noisy_data)
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(x, noisy_data, label='Зашумленные данные', color='gray', alpha=0.5)
+    plt.plot(x, clean_data, label='Чистый сигнал', color='green', linestyle='--')
+    plt.plot(x[:len(filtered_average)], filtered_average, label='Отфильтрованные (среднее)', color='blue')
+    plt.plot(x, filtered_median, label='Отфильтрованные (медиана)', color='orange')
+    plt.plot(x, filtered_exp_mean, label='Отфильтрованные (экспоненциальный)', color='purple')
+
+    plt.title('Фильтрация сигналов')
+    plt.legend()
+    plt.xlabel('Время')
+    plt.ylabel('Амплитуда')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
 
 
 if __name__ == '__main__':
-    import sys
 
+    import sys
     app = QApplication(sys.argv)
+    test_filters()
     widget = filtersClass()
     widget.filt_window.setWindowTitle("Фильтры данных")
     widget.filt_window.show()

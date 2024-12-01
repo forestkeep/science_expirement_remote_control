@@ -20,8 +20,12 @@ class tabPage(QWidget):
         self.callbacks = {Qt.Key_Delete:[]}
 
     def keyPressEvent(self, event):
-        for callback in self.callbacks[event.key()]:
+        print(event.key())
+        for callback in self.callbacks.get(event.key(), []):
             callback()
 
     def subscribe_to_key_press(self, key, callback):
+
+        if key not in self.callbacks.keys():
+            self.callbacks[key] = []
         self.callbacks[key].append(callback)

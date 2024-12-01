@@ -15,7 +15,7 @@ import time
 
 import numpy as np
 import pandas as pd
-from PyQt5.QtCore import QTimer, pyqtSignal
+from PyQt5.QtCore import QTimer, pyqtSignal, QPropertyAnimation, QPoint, Qt, QTimer
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QApplication,
@@ -23,24 +23,26 @@ from PyQt5.QtWidgets import (
     QTabWidget,
     QHBoxLayout,
     QWidget,
-    QListWidgetItem,
     QSplitter,
     QSizePolicy,
-    QTabBar,
+    QFrame,
+    QVBoxLayout,
+    QLabel
 )
 
-from PyQt5.QtCore import Qt
 
 if __name__ == "__main__":
     from graph_main import graphMain
-    from osc_wave_graph import X
+    from osc_wave_graph import graphOsc
     from tabPage_win import tabPage
     from filters_win import filtersClass
+    from notification import NotificationWidget
 else:
     from graph.graph_main import graphMain
-    from graph.osc_wave_graph import X
+    from graph.osc_wave_graph import graphOsc
     from graph.tabPage_win import tabPage
     from graph.filters_win import filtersClass
+    from graph.notification import NotificationWidget
 
 
 def time_decorator(func):
@@ -193,16 +195,18 @@ class test_graph:
 class GraphWindow(QMainWindow):
     graph_win_close_signal = pyqtSignal(int)
 
-    def __init__(self):
+    def __init__(self, experiment_controller = None):
         super().__init__()
         self.setWindowTitle("Online Graph")
         self.setGeometry(100, 100, 900, 600)
+        self.experiment_controller = experiment_controller
+        self.notification = None
         self.initUI()
 
     def initUI(self):
         # Main widget and layout
         self.mainWidget = QWidget(self)
-        self.setWindowIcon(QIcon('picture/graph.png'))  # Укажите путь к вашей иконке
+        self.setWindowIcon(QIcon('picture/graph.png')) 
         self.setCentralWidget(self.mainWidget)
         self.mainLayout = QHBoxLayout(self.mainWidget)
 
@@ -238,19 +242,45 @@ class GraphWindow(QMainWindow):
         self.tabWidget.addTab(self.tab1, QApplication.translate("GraphWindow", "Графики") )
         self.tabWidget.addTab(self.tab2, QApplication.translate("GraphWindow", "Осциллограммы") )  # Placeholder for another tab
 
-        self.graph_main = graphMain(tablet_page=self.tab1)
-        self.graph_wave = X(self.tab2)
+        self.graph_main = graphMain(tablet_page=self.tab1, main_class=self)
+        self.graph_wave = graphOsc(self.tab2, self)
 
         self.tabWidget.setCurrentIndex(0)  # Default to first tab
 
+    def show_tooltip(self, message, show_while_not_click = False, timeout = 3000):
+        if self.notification is None:
+            self.notification = NotificationWidget(parent=self)
+
+        self.notification.set_message(message)
+
+        note_size = self.notification.sizeHint()
+        pos = QPoint(self.width() - note_size.width() , self.height() - note_size.height())
+
+        self.notification.move(pos)  # Перемещаем уведомление перед показом
+
+        if show_while_not_click:
+            self.notification.show()
+        else:
+            self.notification.show_with_animation(timeout=timeout)
+
     def filters_callback(self, filter_func):
 
-        active_tab_index = self.tabWidget.currentIndex()  # Получаем индекс активной вкладки
-        if active_tab_index == 0:
-            self.graph_main.set_filters(filter_func)
-        elif active_tab_index == 1:
-            self.graph_wave.set_filters(filter_func)
- 
+        is_apply = True
+        if self.experiment_controller is not None:
+            if self.experiment_controller.is_experiment_running():
+                is_apply = False
+
+        if is_apply:
+            active_tab_index = self.tabWidget.currentIndex()  # Получаем индекс активной вкладки
+            if active_tab_index == 0:
+                self.graph_main.set_filters(filter_func)
+            elif active_tab_index == 1:
+                self.graph_wave.set_filters(filter_func)
+
+            self.show_tooltip("Фильтры применены к выделенным графикам. \n Для сброса фильтров выделите графики и нажмите кнопку esc.",show_while_not_click=True, timeout=5000)
+        else:
+            self.show_tooltip("Дождитесь окончания эксперимента", timeout=3000)
+
     def update_graphics(self, new_data: dict):
         if new_data:
             self.graph_main.update_dict_param(new=new_data)
@@ -277,7 +307,9 @@ class GraphWindow(QMainWindow):
         self.graph_win_close_signal.emit(1)
 
 if __name__ == "__main__":
+    import qdarktheme
     app = QApplication(sys.argv)
+    qdarktheme.setup_theme(corner_shape="sharp")
     mainWindow = GraphWindow()
     mainWindow.show()
     #mainWindow.test_update()

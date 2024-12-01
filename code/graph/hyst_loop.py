@@ -20,8 +20,8 @@ class graphData:
             raw_x: The raw data for the x-axis.
             raw_y: The raw data for the y-axis.
         """
-        self.raw_data = raw_x 
-        self.raw_data = raw_y 
+        self.raw_data_x = raw_x 
+        self.raw_data_y = raw_y 
 
         self.filtered_x_data = raw_x
         self.filtered_y_data = raw_y
@@ -29,6 +29,10 @@ class graphData:
         self.plot_obj = None
         self.data_x = None
         self.data_y = None
+
+        self.mother_data = None
+
+        self.saved_pen = None
 
     def set_plot_obj(self, plot_obj, pen, highlight=False):
         self.plot_obj = plot_obj
@@ -38,7 +42,6 @@ class graphData:
         self.plot_obj.sigPointsClicked.connect(self.on_points_clicked)
         self.plot_obj.sigClicked.connect(self.on_plot_clicked)
 
-        self.line_color = (0, 0, 255)
         self.current_highlight = False
 
         self.saved_pen = pen
@@ -59,6 +62,17 @@ class graphData:
             self.current_highlight = True
             self.plot_obj.setPen(pg.mkPen('w', width=2))
 
+class oscData(graphData):
+    def __init__(self, raw_x, raw_y, device, ch, name, number) -> None:
+        super().__init__(raw_x, raw_y)
+        self.device = device
+        self.ch = ch
+        self.name = name
+        self.number = number
+        self.legend_name = ch
+
+        self.is_draw = False
+
 class hystLoop(graphData):
     '''хранит данные о петле и ее исходных параметрах, содержит методы расчета петли'''
     def __init__(self, raw_x, raw_y, time_scale, resistance, wire_square) -> None:
@@ -72,25 +86,6 @@ class hystLoop(graphData):
         self.resistance = resistance
         self.wire_square = wire_square
             
-    def set_plot_obj(self, plot_obj, pen, highlight=False):
-        self.plot_obj = plot_obj
-        self.plot_obj.setFocus()
-        self.plot_obj.setZValue(100)
-        self.plot_obj.setCurveClickable( state = True, width = 10)#установить кривую кликабельной с шириной 10 пикселей
-        #self.plot_obj.setShadowPen(pen=None)#перо для выделения графика, если нажали, то задать это
-        self.plot_obj.sigPointsClicked.connect(self.on_points_clicked)
-        self.plot_obj.sigClicked.connect(self.on_plot_clicked)
-        #self.plot_obj.sigPlotChanged.connect(self.on_plot_changed)
-
-        self.line_color = (0, 0, 255)
-        self.current_highlight = False
-
-        self.saved_pen = pen
-
-        if highlight:
-            self.current_highlight = True
-            self.plot_obj.setPen(pg.mkPen('w', width=2))
-    
     def calc_loop(self):
         arr1 = self.filtered_x_data
         arr2 = self.filtered_y_data
