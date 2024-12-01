@@ -277,7 +277,7 @@ class GraphWindow(QMainWindow):
             elif active_tab_index == 1:
                 self.graph_wave.set_filters(filter_func)
 
-            self.show_tooltip("Фильтры применены к выделенным графикам. \n Для сброса фильтров выделите графики и нажмите кнопку esc.",show_while_not_click=True, timeout=5000)
+            self.show_tooltip("Фильтры применены к выделенным графикам. \n Для сброса фильтров выделите графики и нажмите кнопку esc.", timeout=5000)
         else:
             self.show_tooltip("Дождитесь окончания эксперимента", timeout=3000)
 

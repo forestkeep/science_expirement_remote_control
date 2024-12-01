@@ -229,11 +229,11 @@ class graphOsc:
                 if 'time' not in df.columns:
                     self.is_time_column = False
 
-                df = df.dropna(axis=1, how='all')#удаление пустых столбцов
+                df = df.dropna(axis=1, how='all')
 
                 window = Check_data_import_win([col for col in df.columns], self.update_dict_param)
                 ans = window.exec_()
-                if ans == QDialog.Accepted:  # проверяем, была ли нажата кнопка OK
+                if ans == QDialog.Accepted: 
                     selected_step = window.step_combo.currentText()
                     selected_channels = [cb.text() for cb in window.checkboxes if cb.isChecked()]
                 else:
@@ -251,15 +251,13 @@ class graphOsc:
                     
                 if errors_col != []:
                     res = ', '.join(errors_col)
-                    text = QApplication.translate("GraphWindow", "В столбцах {res} обнаружены данные, которые не получается преобразовать в числа.\nПри построение эти точки будут пропущены.")
-                    text = text.format(res = res)
-                    message = messageDialog(
-                        title = QApplication.translate("GraphWindow","Сообщение"),
-                        text= text
-                    )
-                    message.exec_()
 
-                selected_channels.pop(len(selected_channels) - 1)
+
+                    self.main_class.show_tooltip(f"В столбцах {res} обнаружены данные,\n которые не получается преобразовать в числа.\n При построение эти точки будут пропущены.", timeout=4000)
+
+                selected_channels.pop()
+
+                print(selected_channels)
 
                 import_time_scale_column = pd.to_numeric(df[selected_step], errors='coerce')
 
@@ -277,9 +275,12 @@ class graphOsc:
                     return
                              
                 dev = {'import_data': {}}
-                df = df.dropna(axis=1)
+                df = df[[col for col in df.columns if col in selected_channels]]
                 for col in selected_channels:
                     df[col] = (pd.to_numeric(df[col], errors='coerce'))
+                df = df.dropna()
+                print(df)
+                for col in selected_channels:
                     col_ = col.replace('(', '[').replace(')', ']') + ' wavech'
                     volt_val = np.array( df[col].tolist() )
                     dev["import_data"][col] = {col_: {0 : volt_val}, "scale": [import_time_scale for i in range(len(volt_val))]}
@@ -382,12 +383,14 @@ class graphOsc:
             if loop.current_highlight:
                 loop.filtered_x_data = loop.raw_data_x
                 loop.filtered_y_data = loop.raw_data_y
-                loop.plot_obj.setData(loop.filtered_x_data, loop.filtered_y_data)
+                x, y = loop.recalc_data()
+                loop.plot_obj.setData(x, y)
 
         for osc in self.stack_osc.values():
             if osc.current_highlight:
                 osc.filtered_x_data = osc.raw_data_x
                 osc.filtered_y_data = osc.raw_data_y
+
                 osc.plot_obj.setData(osc.filtered_x_data, osc.filtered_y_data)
 
         

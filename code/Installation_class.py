@@ -33,7 +33,7 @@ from schematic_exp.exp_time_line import callStack
 
 logger = logging.getLogger(__name__)
 
-version_app = "1.0.2"
+version_app = "1.0.3"
 class installation_class(experimentControl, analyse):
     def __init__(self, settings, dict_device_class, version) -> None:
         super().__init__()
