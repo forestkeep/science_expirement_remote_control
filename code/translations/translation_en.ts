@@ -302,18 +302,6 @@ the selected source takes some action or measurement.</translation>
         <translation type="obsolete">The customizable channel will perform an action every time 
 the selected source completes its work in the experiment.</translation>
     </message>
-    <message>
-        <location filename="../Devices/Classes.py" line="829"/>
-        <source>Настраиваемый канал будет совершать действие всякий раз 
- когда выбранный источник сделает какое-то действие или измерение.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../Devices/Classes.py" line="830"/>
-        <source>Настраиваемый канал будет совершать действие всякий раз 
- когда выбранный источник завершит свою работу в эксперименте.</source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>Dialog</name>
@@ -380,7 +368,7 @@ the selected source completes its work in the experiment.</translation>
     <message>
         <location filename="../graph/Message_graph.py" line="44"/>
         <source>Не показывать снова</source>
-        <translation>Don't show again</translation>
+        <translation>Don&apos;t show again</translation>
     </message>
     <message>
         <location filename="../graph/online_graph.py" line="242"/>
@@ -455,22 +443,22 @@ the selected source completes its work in the experiment.</translation>
     <message>
         <location filename="../graph/osc_wave_graph.py" line="271"/>
         <source>Выбранный шаг не является числом или равен нулю, проверьте столбец с шагом времени</source>
-        <translation type="unfinished"></translation>
+        <translation>The selected step is not a number or is zero, check the time step column</translation>
     </message>
     <message>
         <location filename="../graph/osc_wave_graph.py" line="1299"/>
         <source>Импортировать...</source>
-        <translation type="unfinished"></translation>
+        <translation>Import...</translation>
     </message>
     <message>
         <location filename="../graph/osc_wave_graph.py" line="516"/>
         <source>Усреднить петли</source>
-        <translation type="unfinished"></translation>
+        <translation>Average loops</translation>
     </message>
     <message>
         <location filename="../graph/osc_wave_graph.py" line="1290"/>
         <source>Очистить все</source>
-        <translation type="unfinished"></translation>
+        <translation>Clear all</translation>
     </message>
 </context>
 <context>
@@ -1007,7 +995,7 @@ Once all devices are configured, the system checks for interface conflicts. If c
 
 Set the number of measurements at each point and the number of repeats for the experiment in the field to the right of the devices. More than 1 measurement will help average the results, and more than 1 repeat will allow you to verify their reproducibility.
 
-The setup controller will display the current progress in percentage and the remaining working time. The log will show informational messages about the current actions and their results. Upon completing the experiment, the program will prompt you to select a file to save the results if you haven't done so in advance.
+The setup controller will display the current progress in percentage and the remaining working time. The log will show informational messages about the current actions and their results. Upon completing the experiment, the program will prompt you to select a file to save the results if you haven&apos;t done so in advance.
 
 During the experiment or after its completion, you can click the &quot;Show Chart&quot; button. The chart displays the dependence of the measured parameter on time or other parameters. You can scale the charts, change colors and backgrounds, save them as images, and perform simple digital processing.
 
@@ -1436,42 +1424,17 @@ with the same names and must be enclosed in curly braces.</translation>
 
 Then enter the command, replacing the arguments in {} with the required values, and click the send button.
 
-Observe the device's reaction and the response.
+Observe the device&apos;s reaction and the response.
 
 Check all commands and the response format, then enter them into the corresponding fields and proceed to the next command.
 
 Example of testing the command &quot;:WAV:STARt {point}&quot;:
 
-{point} - we change this argument to any valid value for the device, let's say 125.
+{point} - we change this argument to any valid value for the device, let&apos;s say 125.
 
 Then our command in the sending field will look like:
 
 &quot;:WAV:STARt 125&quot;</translation>
-    </message>
-    <message>
-        <location filename="../device_creator/dev_creator.py" line="150"/>
-        <source>Введите значение для команды:
- {command_template}.
- Аргументы в фигурных скобках обязательно должны
- присутствовать в команде под теми же названиями,
- их обязательно обрамлять фигурными скобками.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../device_creator/dev_creator.py" line="329"/>
-        <source>
-            Введите настройки для подключения к прибору. 
-            Затем введите команду, замените аргументы в {} на нужные значения и нажмите кнопку отправить. 
-            Смотрите на реакцию прибора и на ответ. 
-            Проверьте все команды и формат ответа, после введите их в соответствующие поля и перейдите к следующей команде.
-
-            Пример тестирования команды &quot;:WAV:STARt {point}
-&quot;:
-            {point} - этот аргумент мы меняем на какое-нибудь допустимое для прибора значение, пусть будет 125.
-            Тогда наша команда в поле отправки будет выглядеть так: 
-            &quot;:WAV:STARt 125
-&quot;</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1584,7 +1547,7 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../experiment_control.py" line="378"/>
         <source>не отвечает</source>
-        <translation>don't answer</translation>
+        <translation>don&apos;t answer</translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="386"/>
@@ -1634,7 +1597,7 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../experiment_control.py" line="465"/>
         <source>Продолжение эксперимента, приборов:</source>
-        <translation type="unfinished"></translation>
+        <translation>Continuation of the experiment, devices:</translation>
     </message>
 </context>
 <context>
@@ -1758,7 +1721,7 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../Installation_class.py" line="357"/>
         <source>{device_name} {ch_name} не имеет источника сигнала, проверьте его настройки</source>
-        <translation>{device_name} {ch_name} don't has sourse signal, check it</translation>
+        <translation>{device_name} {ch_name} don&apos;t has sourse signal, check it</translation>
     </message>
     <message>
         <location filename="../Installation_class.py" line="372"/>
@@ -1817,7 +1780,7 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../interface/Message.py" line="43"/>
         <source>Не показывать снова</source>
-        <translation>Don't show again</translation>
+        <translation>Don&apos;t show again</translation>
     </message>
 </context>
 <context>
@@ -1895,7 +1858,7 @@ Then our command in the sending field will look like:
         <source>При активации эксперимент будет продолжаться независимо от ответа прибора, 
 
  если ответа от прибора не будет, в файл результатов будет записано слово fail</source>
-        <translation type="obsolete">When activated, the experiment will continue regardless of the device's response; if there is no response from the device, the word &quot;fail&quot; will be recorded in the results file</translation>
+        <translation type="obsolete">When activated, the experiment will continue regardless of the device&apos;s response; if there is no response from the device, the word &quot;fail&quot; will be recorded in the results file</translation>
     </message>
     <message>
         <location filename="../interface/experiment_settings_window.py" line="132"/>
@@ -1907,19 +1870,6 @@ Then our command in the sending field will look like:
         <translation type="obsolete">At each measurement, values are recorded in the buffer file. 
 After the experiment, the file is read and converted into a readable format.
 If this option is activated, the buffer file will be deleted after successful saving of the results</translation>
-    </message>
-    <message>
-        <location filename="../interface/experiment_settings_window.py" line="127"/>
-        <source>При активации эксперимент будет продолжаться независимо от ответа прибора, 
- если ответа от прибора не будет, в файл результатов будет записано слово fail</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../interface/experiment_settings_window.py" line="132"/>
-        <source>При каждом измерении значения записываются в буферный файл, 
- после эксперимента файл вычитывается и переводится в удобочитаемый формат, 
- в случае активации этого пункта буферный файл будет удаляться после удачного сохранения результатов.</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

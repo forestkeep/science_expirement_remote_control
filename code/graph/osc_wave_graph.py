@@ -378,7 +378,6 @@ class graphOsc:
         self.retranslateUI(self.page)
 
     def reset_filters(self):
-        print(5454545)
         for loop in self.loops_stack:
             if loop.current_highlight:
                 loop.filtered_x_data = loop.raw_data_x

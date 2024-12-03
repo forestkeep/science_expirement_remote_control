@@ -712,6 +712,9 @@ class graphMain:
                 )
                 message.exec_()
 
+
+    def set_filters(self, filter_func):
+        print(filter_func)
     @time_decorator
     def update_draw(self):
 

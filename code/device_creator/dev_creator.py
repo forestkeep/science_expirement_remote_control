@@ -19,8 +19,13 @@ from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QInputDialog, QLabel,
                              QLineEdit, QMessageBox, QPushButton, QVBoxLayout,
                              QDialog)
 
-from device_creator.dev_template import templates
-from device_creator.test_commands import TestCommands
+
+if __name__ == '__main__':
+    from dev_template import templates
+    from test_commands import TestCommands
+else:
+    from device_creator.dev_template import templates
+    from device_creator.test_commands import TestCommands
 
 
 class InvalidTemplate(Exception):
@@ -220,7 +225,7 @@ class deviceCreator(QDialog):
         self.ok_button.setParent(None)
         self.cancel_button.setParent(None)
         self.main_label.setText(QApplication.translate('device_creator',"Выберите тип добавляемого прибора"))
-        type_devices = ['oscilloscope']
+        type_devices = ['oscilloscope', 'power suply']
         self.buttons_type = []
         for tp in type_devices:
             button = QPushButton(tp, self)

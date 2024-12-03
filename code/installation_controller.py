@@ -29,6 +29,7 @@ from interface.selectdevice_window import Ui_Selectdevice
 from Devices.svps34_control import Ui_SVPS34_control
 from device_creator.dev_creator import deviceCreator
 from PyQt5.QtCore import QTranslator, QLocale
+from device_creator.test_commands import TestCommands
 
 version_app = "1.0.3"
 logger = logging.getLogger(__name__)
@@ -145,6 +146,14 @@ class MyWindow(QtWidgets.QMainWindow):
         self.cur_install.stop_scan_thread = True#stop scanning thread
         self.close()
         del self
+
+    def open_test_cmd(self):
+        self.test_commands_window = TestCommands()
+        current_size = self.size()
+        width = current_size.width()
+        main_window_pos = self.pos()
+        self.test_commands_window.move(main_window_pos.x() + width, main_window_pos.y())
+        self.test_commands_window.show()
 
     def load_language(self, lang):
         if lang == 'RUS':

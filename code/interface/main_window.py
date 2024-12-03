@@ -69,10 +69,16 @@ class Ui_MainWindow(object):
         self.services.setObjectName("services")
 
         self.open_graph = QtWidgets.QAction(MainWindow)
-        self.open_graph.setObjectName("debug_mode")
+        self.open_graph.setObjectName("open_graph")
         self.open_graph.triggered.connect(self.main_class.open_graph_in_exp)
 
+        self.open_test_commands = QtWidgets.QAction(MainWindow)
+        self.open_test_commands.setObjectName("open_test_commands")
+        self.open_test_commands.triggered.connect(self.main_class.open_test_cmd)
+
+
         self.services.addAction(self.open_graph)
+        self.services.addAction(self.open_test_commands)
 
         MainWindow.setMenuBar(self.menubar)
 
@@ -146,5 +152,6 @@ class Ui_MainWindow(object):
 
         self.language_menu.setTitle(_translate("main","Выбрать язык"))
         self.open_graph.setText(_translate("main","Анализ графиков"))
+        self.open_test_commands.setText(_translate("main","Тест команд"))
         self.actionEnglish.setText("English")
         self.actionRussian.setText("Русский")
