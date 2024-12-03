@@ -30,9 +30,20 @@ class graphData:
         self.data_x = None
         self.data_y = None
 
+        self.device = None
+        self.ch = None
+        self.name = None
+        self.number = None
+        self.legend_name = None
+
         self.mother_data = None
 
         self.saved_pen = None
+
+        self.is_draw = False
+
+        self.parent_graph_field = None
+        self.legend_field = None
 
     def set_plot_obj(self, plot_obj, pen, highlight=False):
         self.plot_obj = plot_obj
@@ -63,6 +74,7 @@ class graphData:
             self.current_highlight = True
             self.plot_obj.setPen(pg.mkPen('w', width=2))
 
+
 class oscData(graphData):
     def __init__(self, raw_x, raw_y, device, ch, name, number) -> None:
         super().__init__(raw_x, raw_y)
@@ -71,8 +83,6 @@ class oscData(graphData):
         self.name = name
         self.number = number
         self.legend_name = ch
-
-        self.is_draw = False
 
 class hystLoop(graphData):
     '''хранит данные о петле и ее исходных параметрах, содержит методы расчета петли'''

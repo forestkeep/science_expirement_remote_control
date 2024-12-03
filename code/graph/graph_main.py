@@ -332,7 +332,6 @@ class graphMain:
         )
         settingsLayout = QHBoxLayout()
         settingsLayout.addWidget(self.multiple_checkbox)
-        #settingsLayout.addWidget(self.line_graph_button_second)
         settingsLayout.addItem(self.horizontalSpacer)
         settingsLayout.addWidget(self.tooltip)
 
@@ -342,7 +341,6 @@ class graphMain:
         if self.multiple_checkbox.isChecked() == True:
             self.y_first_param_selector.setSelectionMode(QListWidget.MultiSelection)
             self.y_second_param_selector.setSelectionMode(QListWidget.MultiSelection)
-            
         else:
             self.y_first_param_selector.setSelectionMode(QListWidget.SingleSelection)
             self.y_second_param_selector.setSelectionMode(QListWidget.SingleSelection)
@@ -452,8 +450,6 @@ class graphMain:
 
         self.dict_param = {}
 
-        old_name_parameters = []
-
         self.key_to_update_plot = True
 
     def remove_parameter(self, parameter, qlistwidget):
@@ -503,7 +499,6 @@ class graphMain:
         self.key_to_update_plot = True
 
     def updateViews(self):
-
         self.p2.setGeometry(self.p1.vb.sceneBoundingRect())
         self.p2.linkedViewChanged(self.p1.vb, self.p2.XAxis)
 
@@ -516,7 +511,6 @@ class graphMain:
         string_y = self.get_last_item_parameter(self.y_first_param_selector)
         string_y2 = self.get_last_item_parameter(self.y_second_param_selector)
 
-        
         current_items_y = list(item.text() for item in self.y_first_param_selector.selectedItems())
         current_items_y2 = list(item.text() for item in self.y_second_param_selector.selectedItems())
 
@@ -541,7 +535,6 @@ class graphMain:
                     return
                 else:
                     string_y2 = "Select parameter"
-
 
         if string_x != "Select parameter":
             self.remove_parameter("Select parameter", self.x_param_selector)
@@ -691,7 +684,6 @@ class graphMain:
             self.x2 = self.x2[:0]
             self.y2.clear()
 
-
         if len(self.y.keys()) > 1:
             #если множественное построение, то лейбл не ставим
             self.y_main_axis_label = ""
@@ -712,18 +704,52 @@ class graphMain:
                 )
                 message.exec_()
 
-
     def set_filters(self, filter_func):
         print(filter_func)
+
     @time_decorator
     def update_draw(self):
 
+        #===================================
+        self.stack_curve = {}
+        for obj in self.stack_curve.values():
+            if obj.is_draw:
+                if obj.plot_obj == None:
+
+                    if obj.saved_pen == None:
+                        buf_pen = {
+                            "color": next(self.color_gen),
+                            "width": 1,
+                            "antialias": True,  
+                            "symbol": "o",
+                        }
+                    else:
+                        buf_pen = obj.saved_pen
+
+                    graph = pg.PlotDataItem(obj.filtered_x_data, 
+                                            obj.filtered_y_data, 
+                                            pen  = buf_pen,
+                                            name = obj.legend_name
+                                            )
+                    self.parent_graph_field.addItem(graph)
+                    obj.set_plot_obj(plot_obj = graph,
+                                     pen      = buf_pen)
+                    
+                legend_name = obj.legend_name
+                obj.legend_field.addItem(
+                        obj.plot_obj, obj.legend_name
+                )
+
+            else:
+                if obj.plot_obj != None:
+                    self.parent_graph_field.removeItem(obj.plot_obj)
+                    obj.plot_obj = None
+        #=============================================================
         keys_y = set(self.y.keys())
         keys_y2 = set(self.y2.keys())
 
         to_remove1 = [key for key in self.curve1 if key not in keys_y]
         to_remove2 = [key for key in self.curve2 if key not in keys_y2]
-
 
         for key in to_remove1:
             self.graphView.removeItem(self.curve1[key])

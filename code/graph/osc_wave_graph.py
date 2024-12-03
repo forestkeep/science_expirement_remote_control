@@ -41,12 +41,12 @@ try:
     from calc_values_for_graph import ArrayProcessor
     from Message_graph import messageDialog
     from Link_data_import_win import Check_data_import_win
-    from hyst_loop import hystLoop, oscData
+    from graph.curve_data import hystLoop, oscData
 except:
     from graph.calc_values_for_graph import ArrayProcessor
     from graph.Message_graph import messageDialog
     from graph.Link_data_import_win import Check_data_import_win
-    from graph.hyst_loop import hystLoop, oscData
+    from graph.curve_data import hystLoop, oscData
 
 logger = logging.getLogger(__name__)
 
@@ -349,6 +349,7 @@ class graphOsc:
         self.graphView_loop = self.setupGraphView()
 
         self.graphView_loop.scene().sigMouseMoved.connect(self.showToolTip_loop)
+        self.graphView_loop.scene().sigMouseClicked.connect(self.click_scene_loop_graph)
 
         splitter.addWidget(self.graphView)
         splitter.addWidget(self.graphView_loop)
@@ -380,15 +381,21 @@ class graphOsc:
 
     def click_scene_main_graph(self, event):
         #print(len(self.graphView.scene().itemsNearEvent(event)))
-        print(1)
+        self.__callback_click_scene(self.stack_osc.values())
+
+    def click_scene_loop_graph(self, event):
+        #print(len(self.graphView.scene().itemsNearEvent(event)))
+        self.__callback_click_scene(self.loops_stack)
+
+    def __callback_click_scene(self, focus_objects: list):
         is_click_plot = True
-        for graph in self.stack_osc.values():
+        for graph in focus_objects:
             if graph.i_am_click_now:
                 graph.i_am_click_now = False
                 is_click_plot = False
 
         if is_click_plot:
-            for graph in self.stack_osc.values():
+            for graph in focus_objects:
                 if graph.current_highlight:
                         graph.current_highlight = False
                         graph.plot_obj.setPen(graph.saved_pen)
@@ -417,30 +424,10 @@ class graphOsc:
 
         graphView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        self.color_line_main = "#55aa00"
-        self.color_line_second = "#ff0000"
-
-        # Placeholder items for dropdown - this will be dynamically populated later
-
         graphView.plotItem.getAxis("left").linkToView(graphView.plotItem.getViewBox())
         graphView.plotItem.getAxis("bottom").linkToView(graphView.plotItem.getViewBox())
 
-        self.p1 = graphView.plotItem
-
-        self.p2 = pg.ViewBox()
-        # self.p1.showAxis('right')
-        self.p1.scene().addItem(self.p2)
-        self.p1.getAxis("right").linkToView(self.p2)
-        self.p2.setXLink(self.p1)
-        self.p1.getAxis("right").setLabel("axis2", color="#000fff")
-
-        self.curve2 = pg.PlotCurveItem(
-            pen=pg.mkPen(color=self.color_line_second, width=1)
-        )
-        self.p2.addItem(self.curve2)
-
         my_font = QFont("Times", 13)
-        self.p1.getAxis("right").label.setFont(my_font)
         graphView.getAxis("bottom").label.setFont(my_font)
         graphView.getAxis("left").label.setFont(my_font)
 
@@ -847,9 +834,8 @@ class graphOsc:
                         
                         self.stack_osc[key_stack] = new_osc
 
-
                     self.stack_osc[key_stack].is_draw = True                
-                    
+            
                 else:
                     self.y_values[ch_name] = []
 
@@ -866,13 +852,11 @@ class graphOsc:
         self.graphView_loop.plotItem.clear()
         self.choice_device.clear()
         self.choice_device.addItems([self.choice_device_default_text])
-        pass
 
     def update_draw(self):
 
         self.legend.clear()
         #===================================================
-        print(self.stack_osc)
         for obj in self.stack_osc.values():
             if obj.is_draw:
                 print(f"build {obj}")
