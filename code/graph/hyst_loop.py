@@ -39,22 +39,23 @@ class graphData:
         self.plot_obj.setFocus()
         self.plot_obj.setZValue(100)
         self.plot_obj.setCurveClickable( state = True, width = 10)#установить кривую кликабельной с шириной 10 пикселей
-        self.plot_obj.sigPointsClicked.connect(self.on_points_clicked)
         self.plot_obj.sigClicked.connect(self.on_plot_clicked)
 
         self.current_highlight = False
+
+        self.i_am_click_now = False #флаг поднимается в момент, когда по графику кликают мышкой. Сбрасывается в методе, вызванном по сигналу от клика по всей сцене, 
+        #в этом методе проверяется. был-ли только то кликнут график, и если да, то выделенные графики не сбрасываются
 
         self.saved_pen = pen
 
         if highlight:
             self.current_highlight = True
             self.plot_obj.setPen(pg.mkPen('w', width=2))
-    
-    def on_points_clicked(self, points):
-        print("clicked point",points)
      
-    def on_plot_clicked(self, pos):
-        print("clicked plot", pos)
+    def on_plot_clicked(self, obj):
+
+        self.i_am_click_now = True
+
         if self.current_highlight:
             self.current_highlight = False
             self.plot_obj.setPen(self.saved_pen)

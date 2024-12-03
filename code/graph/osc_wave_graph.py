@@ -312,7 +312,8 @@ class graphOsc:
         self.graphView = self.setupGraphView()
 
         self.graphView.scene().sigMouseMoved.connect(self.showToolTip_main)
-
+        self.graphView.scene().sigMouseClicked.connect(self.click_scene_main_graph)
+        self.graphView.scene().setClickRadius(20)
         self.legend.setParentItem(self.graphView.plotItem)
 
         '''
@@ -377,6 +378,21 @@ class graphOsc:
         '''
         self.retranslateUI(self.page)
 
+    def click_scene_main_graph(self, event):
+        #print(len(self.graphView.scene().itemsNearEvent(event)))
+        print(1)
+        is_click_plot = True
+        for graph in self.stack_osc.values():
+            if graph.i_am_click_now:
+                graph.i_am_click_now = False
+                is_click_plot = False
+
+        if is_click_plot:
+            for graph in self.stack_osc.values():
+                if graph.current_highlight:
+                        graph.current_highlight = False
+                        graph.plot_obj.setPen(graph.saved_pen)
+
     def reset_filters(self):
         for loop in self.loops_stack:
             if loop.current_highlight:
@@ -393,7 +409,6 @@ class graphOsc:
                 osc.plot_obj.setData(osc.filtered_x_data, osc.filtered_y_data)
 
         
-
     def delete_key_press(self):
         self.clear_highlight_loop()
 
@@ -895,6 +910,19 @@ class graphOsc:
                 
     def showToolTip_main(self, event):
         pos = event
+
+        #==============показываются кривые, когда курсор находится в квадрате графика, квадрат очерчен вокруг графика, 
+        '''
+        from pyqtgraph.graphicsItems.PlotCurveItem import PlotCurveItem
+        items = self.graphView.scene().items(pos)  # Получаем все элементы под курсором
+        plot_items = [item for item in items if isinstance(item, PlotCurveItem)]
+        if plot_items:
+            print("PlotItem под курсором:", plot_items)
+        else:
+            print("Нет PlotItem под курсором")
+        '''
+        #==================================================================
+
         x_val = round(
             self.graphView.plotItem.vb.mapSceneToView(pos).x(), 5
         )  # Координата X
@@ -908,7 +936,8 @@ class graphOsc:
             pass  # лейбл удален
 
     def showToolTip_loop(self, event):
-        pos = event
+        pos = event  # Получаем позицию курсора
+
         x_val = round(
             self.graphView_loop.plotItem.vb.mapSceneToView(pos).x(), 5
         )
