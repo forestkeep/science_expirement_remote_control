@@ -1104,11 +1104,11 @@ class graphOsc:
                 x_vert_1,
                 y_vert,
                 pen={
-                    "color": self.contrast_colors[7],
+                    "color": next(self.color_gen),
                     "width": 1,
                     "antialias": True,
                     "symbol": "o",
-                },
+                }
             )
 
         if x_vert_2_ok:
@@ -1118,7 +1118,7 @@ class graphOsc:
                 x_vert_2,
                 y_vert,
                 pen={
-                    "color": self.contrast_colors[9],
+                    "color": next(self.color_gen),
                     "width": 1,
                     "antialias": True,
                     "symbol": "o",

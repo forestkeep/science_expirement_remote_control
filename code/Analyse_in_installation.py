@@ -134,7 +134,14 @@ class analyse(baseInstallation):
         out = []
         for c in line:
             if c != False:
-                dev_name, ch_name, trg = c.split()[0], c.split()[1], c.split()[2]
+                try:
+                    dev_name, ch_name, trg = c.split()[0], c.split()[1], c.split()[2]
+                except Exception as e:
+                    logger.warning(f"ошибка расшифровки линии источника сигнала: {str(e)} {c=}")
+                    out.append(False)
+                    continue
+                #TODO:подробнее разобрать случаи возникновения исключений и что делать в случае возникновения исключенийф
+
                 dev = self.name_to_class(name_device=dev_name)
                 if dev is not False:
                     ch = dev.get_object_ch(ch_name=ch_name)
@@ -426,4 +433,3 @@ class analyse(baseInstallation):
             status = False
 
         return status
-

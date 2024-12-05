@@ -187,10 +187,10 @@ class akip2404Class(base_device):
         start_time = time.time()
         parameters = [self.name + " " + str(ch.get_name())]
         if ch.get_type() == "meas":
-            print("делаем измерение", self.name)
+            print("делаем измерение", self.name, str(ch.get_name()))
 
             is_correct = True
-            voltage = self._get_current_voltage(self.active_channel_meas.number)
+            voltage = self._get_current_voltage(ch_num = self.active_channel.number)
             if voltage is not False:
                 val = ["voltage=" + str(voltage)]
                 parameters.append(val)
@@ -220,17 +220,18 @@ class akip2404Class(base_device):
     def _get_current_voltage(self, ch_num) -> float:
         """возвращает значение установленного напряжения канала"""
         self.open_port()
-        self.select_channel(ch_num)
-        response = self.get_parameter("READ", 1)
+        self.select_channel(channel = ch_num)
+        time.sleep(0.3)
+        response = self.get_parameter("READ", 3)
         if response is not False:
             num, ed = response[:6], (
                 response[6:].strip() if response != False else (None, None)
             )
-        try:
-            response = float(num) / 1000 if ed == "mV" else float(num)
-        except Exception as e:
-            logger.warning(f"ошибка: {str(e)}")
-            response = False
+            try:
+                response = float(num) / 1000 if ed == "mV" else float(num)
+            except Exception as e:
+                logger.warning(f"ошибка: {str(e)} ответ прибора - {response}")
+                response = False
         self.client.close()
         return response
 
@@ -271,19 +272,20 @@ class akip2404Class(base_device):
             if line:
                 print("Received:", line)
                 return line
+        logger.warning("No answer from device AKIP2404 timeout")
         return False
 
     def check_connect(self) -> bool:
         line = self.get_parameter("*IDN", timeout=1)
         ver = self.get_parameter(":SYSTem:VERSion", timeout=1)
         if line is not False and ver is not False:
-            print(line + " " + ver)
-            return True
+            return line + "  " + ver
         return False
 
     def select_channel(self, channel):
         self.open_port()
-        self.client.write(f":VOLTage:AC:CH{channel}\n".encode())
+        command = bytes(f":VOLTage:AC:CH{channel}\n", "ascii")
+        self.client.write( command )
 
 
 class ch_meas_akip_class(base_ch):
@@ -296,5 +298,7 @@ class ch_meas_akip_class(base_ch):
 
 
 if __name__ == "__main__":
+
+
 
     pass

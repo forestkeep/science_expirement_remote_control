@@ -372,6 +372,7 @@ class experimentControl(analyse):
         for dev in self.dict_active_device_class.values():
             is_connect = dev.check_connect()
 
+
             if is_connect == False:
                 status = False
                 logger.warning(f"Нет ответа прибора {dev.get_name()}")
@@ -416,7 +417,7 @@ class experimentControl(analyse):
         self.write_meta_data()
         
         #=================
-        self.meta_data_exp.print_meta_data()
+        #self.meta_data_exp.print_meta_data()
         #=================
         
         self.exp_call_stack.set_data(self.meta_data_exp)
@@ -655,6 +656,7 @@ class experimentControl(analyse):
 
     def do_meas(self, device, ch):
         error = False
+        ans = ch_response_to_step.Step_fail
         self.set_state_text(
             QApplication.translate('exp_flow',"Выполняется измерение") + " "
             + device.get_name()
@@ -683,6 +685,8 @@ class experimentControl(analyse):
                     message = False
                 elif len(result) == 4:
                     ans, param, step_time, message = result
+                else:
+                    logger.warning(f"неправильная структура ответа прибора result = {result}")
                 if ans == ch_response_to_step.Incorrect_ch:
                     break
 
@@ -764,7 +768,7 @@ class experimentControl(analyse):
         
         self.meta_data_exp.exp_stop_time = time.time()
         
-        self.meta_data_exp.print_meta_data()
+        #self.meta_data_exp.print_meta_data()
 
         if error:
             self.add_text_to_log(QApplication.translate('exp_flow',"Эксперимент прерван из-за ошибки"), "err")
