@@ -33,9 +33,11 @@ from PyQt5.QtWidgets import (
 try:
     from calc_values_for_graph import ArrayProcessor
     from Message_graph import messageDialog
+    from curve_data import linearData
 except:
     from graph.calc_values_for_graph import ArrayProcessor
     from graph.Message_graph import messageDialog
+    from graph.curve_data import linearData
 
 cold_colors = [
     "#0000ff",  # Синий
@@ -124,6 +126,8 @@ class graphMain:
         self.y_main_axis_label = ""
         self.x_axis_label = ""
         self.y_second_axis_label = ""
+
+        self.stack_curve = {}
 
         self.initUI()
 
@@ -479,7 +483,6 @@ class graphMain:
         if box_y is not None:
             box_y = box_y.text()
         
-        # print(f"{box_x=} {box_y=}")
         self.x_param_selector.clear()
         self.y_first_param_selector.clear()
         self.y_second_param_selector.clear()
@@ -489,7 +492,7 @@ class graphMain:
             self.list_param.append(box_y)
         if box_y not in self.list_param:
             self.list_param.append(box_y2)
-        # print(f"{self.list_param=}")
+
         self.x_param_selector.addItems(self.list_param)
         self.y_first_param_selector.addItems(self.list_param)
         self.y_second_param_selector.addItems(self.list_param)
@@ -505,7 +508,7 @@ class graphMain:
     def get_last_item_parameter(self, selector, default="Select parameter"):
         item = selector.currentItem()
         return item.text() if item is not None else default
-    
+    @time_decorator
     def update_data(self):
         string_x = self.get_last_item_parameter(self.x_param_selector)
         string_y = self.get_last_item_parameter(self.y_first_param_selector)
@@ -597,10 +600,8 @@ class graphMain:
                 self.y_main_axis_label = parameter_x
                 self.x_axis_label = parameter_x
             else:
-
                 device_y, ch_y, parameter_y = self.decode_name_parameters(string_y)
                 device_x, ch_x, parameter_x = self.decode_name_parameters(string_x)
-                print(self.dict_param)
                 x_param = self.dict_param[device_x][ch_x][parameter_x]
                 y_param = self.dict_param[device_y][ch_y][parameter_y]
                 if self.is_time_column:
@@ -707,18 +708,215 @@ class graphMain:
     def set_filters(self, filter_func):
         print(filter_func)
 
-    @time_decorator
-    def update_draw(self):
 
-        #===================================
-        self.stack_curve = {}
+    def update_data_new(self):
+
+        #блок удаления данных после клика по выбранному параметру
+        string_x = self.get_last_item_parameter(self.x_param_selector)
+        string_y = self.get_last_item_parameter(self.y_first_param_selector)
+        string_y2 = self.get_last_item_parameter(self.y_second_param_selector)
+
+        current_items_y = list(item.text() for item in self.y_first_param_selector.selectedItems())
+        current_items_y2 = list(item.text() for item in self.y_second_param_selector.selectedItems())
+
+        if string_y not in current_items_y and string_y != "Select parameter":
+                device_y, ch_y, key_y = self.decode_name_parameters(string_y)
+                if key_y in self.y.keys():
+                    self.y.pop(key_y)
+                    self.graphView.removeItem(self.curve1[key_y])
+                    self.curve1.pop(key_y)
+                    return
+                else:
+                    string_y = "Select parameter"
+
+        if string_y2 not in current_items_y2 and string_y2 != "Select parameter":
+                device_y2, ch_y2, key_y2 = self.decode_name_parameters(string_y2)
+                if key_y2 in self.y2.keys():
+                    self.y2.pop(key_y2)
+                    self.p2.removeItem(self.curve2[key_y2])
+                    self.p2.removeItem(self.curve2_dots[key_y2])
+                    self.curve2.pop(key_y2)
+                    self.curve2_dots.pop(key_y2)
+                    return
+                else:
+                    string_y2 = "Select parameter"
+
+        if string_x != "Select parameter":
+            self.remove_parameter("Select parameter", self.x_param_selector)
+
+        if string_y != "Select parameter":
+            self.remove_parameter("Select parameter", self.y_first_param_selector)
+
+        if string_y2 != "Select parameter":
+            self.remove_parameter("Select parameter", self.y_second_param_selector)
+        #==========================================================================
+
+
+        check_main = True
+        
+        if not self.multiple_checkbox.isChecked():
+            self.y.clear()
+            self.y2.clear()
+
+        if string_x == "Select parameter" or string_y == "Select parameter":
+            check_main = False
+            if self.second_check_box.isChecked():
+                if string_x == "Select parameter" or string_y2 == "Select parameter":
+                    return
+            else:
+                return
+
+        if string_x == "time" and string_y == "time":
+            check_main = False
+            if self.second_check_box.isChecked():
+                if string_x == "time" or string_y2 == "time":
+                    return
+            else:
+                return
+            
+        device_y, ch_y, parameter_y = self.decode_name_parameters_new(string_y)
+        device_x, ch_x, parameter_x = self.decode_name_parameters_new(string_x)
+        device_y2, ch_y2, parameter_y2 = self.decode_name_parameters_new(string_y2)
+
+        self.x_axis_label = parameter_x
+        self.y_main_axis_label = parameter_y
+        self.y_second_axis_label = parameter_y2
+
+        for lin_data in self.stack_curve.values():
+            if lin_data.x_name == string_x:
+                if lin_data.y_name == string_y:
+                    pass#такая кривая встречалась, расчет нет смысла делать, просто устанавливаем ее в первый график
+                elif lin_data.y_name == string_y2:
+                    pass#во вторй
+
+        if check_main == True:
+            if self.y is self.y2:
+                self.y = {}
+                self.x = []
+                self.y_main_axis_label = ""
+
+            if (string_x == "time"and string_y != "time" and string_y != "Select parameter"):
+                self.x = self.dict_param[device_y][ch_y]["time"]
+                self.y[parameter_y] = self.dict_param[device_y][ch_y][parameter_y]
+
+                new_data = linearData(raw_x = self.x,
+                                    raw_y   = self.y[parameter_y],
+                                    device  = device_y,
+                                    ch      = ch_y,
+                                    y_name  = string_y,
+                                    x_name  = string_x
+                                    )
+                
+                new_data.is_draw = True
+                self.stack_curve.append(new_data)
+                
+            elif string_y == "time" and string_x != "time":
+                self.x = self.dict_param[device_x][ch_x][parameter_x]
+                self.y["time"] = self.dict_param[device_x][ch_x]["time"]
+                
+            elif string_x == string_y:
+                self.x = self.dict_param[device_x][ch_x][parameter_x]
+                self.y[parameter_x] = self.dict_param[device_y][ch_y][parameter_y]
+            else:
+                x_param = self.dict_param[device_x][ch_x][parameter_x]
+                y_param = self.dict_param[device_y][ch_y][parameter_y]
+                if self.is_time_column:
+
+                    x_time = self.dict_param[device_x][ch_x]["time"]
+                    y_time = self.dict_param[device_y][ch_y]["time"]
+                    calculator_param = ArrayProcessor()
+                    
+                    self.x, bufy, _ = calculator_param.combine_interpolate_arrays(
+                        arr_time_x1=x_time,
+                        arr_time_x2=y_time,
+                        values_y1=x_param,
+                        values_y2=y_param,
+                                        )
+                        
+                    self.y[parameter_y] = bufy
+                    
+                else:
+                    self.x = x_param
+                    self.y[parameter_y] = y_param
+
+        if self.second_check_box.isChecked():
+            if (string_x == "time" and string_y2 == "time") or string_y2 == "Select parameter":
+                self.y_second_axis_label = ""
+                self.x2 = []
+                self.y2.clear()
+
+            elif (string_x == "time" and string_y2 != "time" and string_y2 != "Select parameter"):
+                self.x2 = self.dict_param[device_y2][ch_y2]["time"]
+                self.y2[parameter_y2] = self.dict_param[device_y2][ch_y2][parameter_y2]
+
+            elif string_y2 == "time" and string_x != "time":
+                self.y2["time"] = self.dict_param[device_x][ch_x]["time"]
+                self.x2 = self.dict_param[device_x][ch_x][parameter_x]
+            elif string_x == string_y2 and string_y2 != "time":
+                self.x2 = self.dict_param[device_x][ch_x][parameter_x]
+                self.y2[parameter_x] = self.x2
+            else:
+                x_param = self.dict_param[device_x][ch_x][parameter_x]
+                y_param = self.dict_param[device_y2][ch_y2][parameter_y2]
+                if self.is_time_column:
+                    x_time = self.dict_param[device_x][ch_x]["time"]
+                    y_time = self.dict_param[device_y2][ch_y2]["time"]
+                    calculator_param = ArrayProcessor()
+                    self.x2, bufy2, _ = calculator_param.combine_interpolate_arrays(
+                        arr_time_x1=x_time,
+                        arr_time_x2=y_time,
+                        values_y1=x_param,
+                        values_y2=y_param,
+                    )
+                    self.y2[parameter_y2] = bufy2
+                else:
+                    self.x2 = x_param
+                    self.y2[parameter_y2] = y_param
+
+        else:
+            self.y_second_axis_label = ""
+            self.x2 = self.x2[:0]
+            self.y2.clear()
+
+        if len(self.y.keys()) > 1:
+            #если множественное построение, то лейбл не ставим
+            self.y_main_axis_label = ""
+
+        if len(self.y2.keys()) > 1:
+            #если множественное построение, то лейбл не ставим
+            self.y_second_axis_label = ""
+
+
+        self.check_and_show_warning()
+
+    def check_and_show_warning(self):
+        if self.is_show_warning == True:
+            points_num = 10000
+            self.is_show_warning = False
+            if len(self.x) > points_num:
+                text = QApplication.translate("GraphWindow", "Число точек превысило {points_num}, расчет зависимости одного параметра от другого может занимать некоторое время.\n Особенно, на слабых компьютерах. Рекомендуется выводить графики в зависимости от времени.")
+                text = text.format(points_num = points_num)
+                message = messageDialog(
+                    title=QApplication.translate("GraphWindow","Сообщение"),
+                    text=text
+                )
+                message.exec_()
+
+    def update_draw_new(self):
+
+        #==================================
+        self.legend.clear()
+        self.legend2.clear()
+
+        self.graphView.setLabel("left", self.y_main_axis_label, color=self.color_line_main)
+        self.graphView.setLabel("bottom", self.x_axis_label, color="#ffffff")
         for obj in self.stack_curve.values():
             if obj.is_draw:
                 if obj.plot_obj == None:
-
+                    buf_color = next(self.color_gen)
                     if obj.saved_pen == None:
                         buf_pen = {
-                            "color": next(self.color_gen),
+                            "color": buf_color,
                             "width": 1,
                             "antialias": True,  
                             "symbol": "o",
@@ -729,8 +927,12 @@ class graphMain:
                     graph = pg.PlotDataItem(obj.filtered_x_data, 
                                             obj.filtered_y_data, 
                                             pen  = buf_pen,
-                                            name = obj.legend_name
+                                            name = obj.legend_name,
+                                            symbolPen=buf_color,
+                                            symbolBrush=buf_color,
+                                            symbol='o',
                                             )
+
                     self.parent_graph_field.addItem(graph)
                     obj.set_plot_obj(plot_obj = graph,
                                      pen      = buf_pen)
@@ -745,6 +947,10 @@ class graphMain:
                     self.parent_graph_field.removeItem(obj.plot_obj)
                     obj.plot_obj = None
         #=============================================================
+
+    @time_decorator
+    def update_draw(self):
+
         keys_y = set(self.y.keys())
         keys_y2 = set(self.y2.keys())
 
@@ -776,8 +982,18 @@ class graphMain:
                 self.curve1[key].setData( self.x[:min_length], data[:min_length] )
             else:
                 pen = pg.mkPen(color=cold_colors[i], width=2, style=pg.QtCore.Qt.SolidLine)
-                self.curve1[key] = self.graphView.plot(x = self.x[:min_length], y = data[:min_length], pen=pen, symbol='o', 
-                                                    symbolPen=cold_colors[i], symbolBrush=cold_colors[i])
+           
+                self.curve1[key] = pg.PlotDataItem(
+                    x=self.x[:min_length],
+                    y=data[:min_length],
+                    pen=pen,
+                    symbol='o',
+                    symbolPen=cold_colors[i],
+                    symbolBrush=cold_colors[i]
+                )
+
+                self.graphView.addItem(self.curve1[key])
+
             self.legend.addItem(self.curve1[key], f"{key}")
 
         # Обновление curve2, если чекбокс отмечен
@@ -836,6 +1052,23 @@ class graphMain:
         else:
             print(f"ошибка при декодиировании имени параметра {buf_y}")
             return 1,1,1
+
+        return device_y, ch_y, parameter_y
+    
+
+    def decode_name_parameters_new(self, string_y):
+        if string_y.upper() == "TIME" or string_y.upper() == "SELECT PARAMETER":
+            return False, False, string_y
+        
+        buf_y = string_y.split("(")
+        if len(buf_y) > 1:
+            parameter_y = buf_y[0]
+            # print(f"{buf_y=}")
+            device_y = buf_y[1].split(" ")[0]
+            ch_y = buf_y[1].split(" ")[1][:-1]
+        else:
+            print(f"ошибка при декодиировании имени параметра {buf_y}")
+            return False, False, string_y
 
         return device_y, ch_y, parameter_y
 

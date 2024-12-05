@@ -75,6 +75,14 @@ class graphData:
             self.plot_obj.setPen(pg.mkPen('w', width=2))
 
 
+class linearData(graphData):
+    def __init__(self, raw_x, raw_y, device, ch, y_name, x_name) -> None:
+        super().__init__(raw_x, raw_y)
+        self.device = device
+        self.ch = ch
+        self.y_name = y_name
+        self.x_name = x_name
+
 class oscData(graphData):
     def __init__(self, raw_x, raw_y, device, ch, name, number) -> None:
         super().__init__(raw_x, raw_y)

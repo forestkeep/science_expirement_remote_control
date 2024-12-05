@@ -41,12 +41,14 @@ try:
     from calc_values_for_graph import ArrayProcessor
     from Message_graph import messageDialog
     from Link_data_import_win import Check_data_import_win
-    from graph.curve_data import hystLoop, oscData
+    from curve_data import hystLoop, oscData
+    from colors import GColors
 except:
     from graph.calc_values_for_graph import ArrayProcessor
     from graph.Message_graph import messageDialog
     from graph.Link_data_import_win import Check_data_import_win
     from graph.curve_data import hystLoop, oscData
+    from graph.colors import GColors
 
 logger = logging.getLogger(__name__)
 
@@ -73,47 +75,11 @@ class graphOsc:
         self.main_class = main_class
 
         self.used_colors = set()
-        self.color_gen = self.get_random_color()
+        self.colors_class = GColors()
+        self.color_gen = self.colors_class.get_random_color()
 
         self.y_main_axis_label = ""
         self.x_axis_label = ""
-
-        self.contrast_colors = [
-            "#FFFFFF",  # Белый
-            "#FF0000",  # Красный
-            "#00FF00",  # Зеленый
-            "#0000FF",  # Синий
-            "#FFFF00",  # Желтый
-            "#FF00FF",  # Пурпурный
-            "#00FFFF",  # Голубой
-            "#FFA500",  # Оранжевый
-            "#FFA07A",  # Светло-коралловый
-            "#FF1493",  # Ярко-розовый
-            "#00FA9A",  # Яркий зеленый
-            "#1E90FF",  # Ярко-синий
-            "#FFD700",  # Золотой
-            "#ADFF2F",  # Зелёный лайм
-            "#FF4500",  # Оранжево-красный
-            "#FF69B4",  # Ярко-розовый
-            "#FFB6C1",  # Светло-розовый
-            "#FFDAB9",  # Персиковый
-            "#98FB98",  # Светло-зеленый
-            "#7B68EE",  # Ярко-лавандовый
-            "#FFD700",  # Золотой
-            "#FF6347",  # Помидор
-            "#FF00FF",  # Фуксия
-            "#00BFFF",  # Ярко-голубой
-            "#FF8C00",  # Яркий оранжевый
-            "#00FF7F",  # Ярко-зеленый
-            "#FF1493",  # Ярко-розовый
-            "#FF7F50",  # Кoral
-            "#FFD700",  # Золотой
-            "#FFA500",  # Оранжевый
-            "#FFB559",  # Светло-оранжевый
-            "#3CB371",  # Ярко-зеленый
-            "#00CED1",  # Ярко-голубой
-            "#ADFF2F",  # Лаймовый
-        ]
 
         self.y_second_axis_label = "V"
         self.x_axis_label = "s"
@@ -1249,21 +1215,6 @@ class graphOsc:
                 logger.warning("неверные данные для построения петли")
         else:
             pass
-
-    def get_random_color(self):
-        while True:
-            my_used_colors = set(self.used_colors)
-            my_colors = set(self.contrast_colors)
-            missing = my_colors - my_used_colors
-
-            if len(missing) == 0:
-                self.used_colors.clear()
-                color = random.choice(self.contrast_colors)
-            else:
-                color = random.choice(list(missing))
-
-            self.used_colors.add(color)
-            yield color
 
     def set_filters(self, filter_func):
         for loop in self.loops_stack:
