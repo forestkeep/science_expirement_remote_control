@@ -62,7 +62,7 @@ class chActPowerSupply(base_ch):
         self.dict_buf_parameters["soft_start"] = False
         self.dict_buf_parameters["soft_off"] = False
 
-        self.dict_settable_parameters = self.dict_buf_parameters
+        self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
 
 class chMeasPowerSupply(base_ch):
@@ -74,7 +74,7 @@ class chMeasPowerSupply(base_ch):
         self.dict_buf_parameters["meas_set_cur"] = False
         self.dict_buf_parameters["meas_set_vol"] = False
 
-        self.dict_settable_parameters = self.dict_buf_parameters
+        self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
 
 class power_supply(base_device):

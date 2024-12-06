@@ -456,7 +456,7 @@ class chActPR(base_ch):
         self.dict_buf_parameters["mode"] = ( QApplication.translate("Device", "Смена полярности") )
         self.dict_buf_parameters["num steps"] = "1"
 
-        self.dict_settable_parameters = self.dict_buf_parameters
+        self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
         self.polarity = current_polarity.pol_1
         self.state_output = out_state.off
@@ -472,7 +472,7 @@ class chMeasPR(base_ch):
         self.dict_buf_parameters["hall3"] = False
         self.dict_buf_parameters["hall4"] = False
 
-        self.dict_settable_parameters = self.dict_buf_parameters
+        self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
 def decode_raw_data(raw_data):
     decoded_values = []

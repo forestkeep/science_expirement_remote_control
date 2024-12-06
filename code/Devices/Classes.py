@@ -13,10 +13,7 @@ import logging
 import math
 import time
 from enum import Enum
-import sys
-import os
-
-
+import copy
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QTimer
@@ -221,9 +218,7 @@ class base_device():
     def base_show_window(func):
         def wrapper(self, *args, **kwargs):
             '''Устанавливает базовые параметры для канала действий при запуске окна'''
-            print("врапер показать окно")
 
-            #print(args[0])
             self.switch_channel(number=args[0])
 
             self.key_to_signal_func = False
@@ -232,6 +227,9 @@ class base_device():
             # Установка текущих параметров
             self.setting_window.comportslist.setCurrentText(self.dict_buf_parameters["COM"])
             self.setting_window.boudrate.setCurrentText(self.dict_buf_parameters["baudrate"])
+
+            if self.active_channel_meas.dict_buf_parameters is self.active_channel_meas.dict_settable_parameters:
+                logger.warning("в активном измерительном канале буфферный накопитель парамметров и основной являются одним объектом")
             
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
                 self.setting_window.triger_act_enter.setCurrentText(self.active_channel_act.dict_buf_parameters["trigger"])
@@ -263,9 +261,7 @@ class base_device():
     def base_add_parameters_from_window(func):
         '''Добавляет базовые параметры из окна в локальный буфер класса прибора'''
         def wrapper(self, *args, **kwargs):
-            print("врапер добавить параметры")
             if self.key_to_signal_func:
-                print("adding parameters")
                 if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
                         self.active_channel_meas.dict_buf_parameters["num steps"] = self.setting_window.num_meas_enter.currentText()
                         self.active_channel_meas.dict_buf_parameters["trigger"] = (self.setting_window.triger_meas_enter.currentText())
@@ -777,7 +773,9 @@ class base_device():
                     self.active_channel.dict_buf_parameters[param] = parameters[param]
 
 
-                self.active_channel.dict_settable_parameters = self.active_channel.dict_buf_parameters
+                self.active_channel.dict_settable_parameters = copy.deepcopy(self.active_channel.dict_buf_parameters)
+
+
         if self.part_ch == which_part_in_ch.bouth:
             self.installation_class.message_from_device_settings(
                 name_device = self.name,

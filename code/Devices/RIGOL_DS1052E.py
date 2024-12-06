@@ -9,7 +9,7 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-
+import copy
 from Devices.Classes import base_ch
 from Devices.oscilloscope import oscilloscopeClass
 
@@ -73,7 +73,7 @@ class chMeasOscilloscope(base_ch):
             self.dict_buf_parameters[f"Invertch{num_ch}"] = "Hand control"
             self.dict_buf_parameters[f"vscalech{num_ch}"] = "Hand control"
 
-        self.dict_settable_parameters = self.dict_buf_parameters
+        self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
 
 class DS1052E(oscilloscopeClass):

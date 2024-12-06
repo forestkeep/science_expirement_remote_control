@@ -664,7 +664,7 @@ class ch_meas_sr830_class(base_ch):
         self.dict_buf_parameters["frequency"] = "400"
         self.dict_buf_parameters["amplitude"] = "1"
         self.dict_buf_parameters["num steps"] = "1"
-        self.dict_settable_parameters = self.dict_buf_parameters
+        self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
 
 if __name__ == "__main__":

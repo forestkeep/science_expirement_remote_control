@@ -57,7 +57,7 @@ class chActFreqGen(base_ch):
         self.dict_buf_parameters["second_value"] = str(self.max_ampl)
         self.dict_buf_parameters["repeat_reverse"] = False
 
-        self.dict_settable_parameters = self.dict_buf_parameters
+        self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
 class chMeasFreqGen(base_ch):
     def __init__(self, number, device_class) -> None:
@@ -68,7 +68,7 @@ class chMeasFreqGen(base_ch):
         self.dict_buf_parameters["meas_set_freq"] = False
         self.dict_buf_parameters["meas_set_ampl"] = False
 
-        self.dict_settable_parameters = self.dict_buf_parameters
+        self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
 
 class FreqGen(base_device):

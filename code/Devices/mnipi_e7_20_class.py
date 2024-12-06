@@ -490,6 +490,8 @@ class ch_mnipi_class(base_ch):
         self.dict_buf_parameters["frequency"] = "1000"
         self.dict_buf_parameters["level"] = "1"
         self.dict_buf_parameters["offset"] = "0"
+
+        self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
         
 if __name__ == "__main__":
         

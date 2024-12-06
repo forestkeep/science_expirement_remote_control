@@ -10,8 +10,8 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import sys
-from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QPainter, QPen, QColor, QBrush
+from PyQt5.QtCore import Qt, QPoint, QRect
+from PyQt5.QtGui import QPainter, QPen, QColor, QBrush, QFontMetrics, QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QFrame, QSizePolicy
 import qdarktheme
 from enum import Enum
@@ -68,6 +68,7 @@ class connection():
         self.first_unit = None
         self.second_unit = None
         self.name = name
+        self.type_signal = None
         self.pen = QPen(QColor(255, 255, 255), 1, Qt.SolidLine)
         self.type = connectionType.SINGLE
 
@@ -79,6 +80,7 @@ class connection():
             self.first_unit = first_unit
         if second_unit is not False:
             self.second_unit = second_unit
+            self.type_signal = second_unit.value_trigger
 
     def get_coords(self):
         if self.first_unit is None or self.second_unit is None:
@@ -199,6 +201,22 @@ class connection():
         start_point, end_point, direction_first, is_overlap = self.get_coords()
 
         if direction_first != False:
+
+            try:
+                sig_text = str(self.type_signal.split()[2])
+            except:
+                sig_text = str(self.type_signal)
+
+
+            font = QFont("Arial", 8)
+            painter.setFont(font)
+
+
+            bounding_rect = painter.boundingRect(QRect(), 0, sig_text)
+            text_width = bounding_rect.width()
+            text_height = bounding_rect.height()
+
+            painter.setPen(QColor(255, 255, 255))
             if is_overlap:
                 #три линии
                 midpoint = QPoint( int((start_point.x() + end_point.x()) / 2) , int((start_point.y() + end_point.y()) / 2))
@@ -206,10 +224,21 @@ class connection():
                     painter.drawLine(start_point.x(), start_point.y(), midpoint.x(), start_point.y())
                     painter.drawLine(midpoint.x(), start_point.y(), midpoint.x(), end_point.y())
                     painter.drawLine(midpoint.x(), end_point.y(), end_point.x(), end_point.y())
+
+                    painter.setPen(QColor(120, 120, 0))
+                    if direction_first == Position.LEFT:
+                        painter.drawText(end_point.x()-text_width-10, end_point.y()-3, str(sig_text))
+                    else:
+                        painter.drawText(end_point.x()+10, end_point.y() + text_height, str(sig_text))
+
+
                 else:
                     painter.drawLine(start_point.x(), start_point.y(), start_point.x(), midpoint.y())
                     painter.drawLine(start_point.x(), midpoint.y(), end_point.x(), midpoint.y())
                     painter.drawLine(end_point.x(), midpoint.y(), end_point.x(), end_point.y())
+
+                    painter.setPen(QColor(120, 120, 0))
+                    painter.drawText(end_point.x()+10, end_point.y(), str(sig_text))
             else:
                 #две линии
                 if direction_first == Position.LEFT or direction_first==Position.RIGHT:
@@ -218,6 +247,9 @@ class connection():
                 if direction_first == Position.TOP or direction_first==Position.BOTTOM:
                     painter.drawLine(start_point.x(), start_point.y(), start_point.x(), end_point.y())
                     painter.drawLine(start_point.x(), end_point.y(), end_point.x(), end_point.y())
+
+                painter.setPen(QColor(120, 120, 0))
+                painter.drawText(end_point.x()+10, end_point.y(), str(sig_text))
 
         
             self.add_in_simbol(end_point)
@@ -246,6 +278,7 @@ class Packing:
         self.rectangles = sorted(rectangles, key=lambda r: r.current_x, reverse=True)
         self.levels = []
         self.current_level = []
+        self.field_height = 0
         #print(f"всего блоков {len(self.rectangles)}")
 
     def is_ceiling_feasible(self, rectangle):
@@ -258,7 +291,7 @@ class Packing:
 
         self.strip_width = width
         self.box_height = height
-        #print(f"высота-{self.strip_width} ширина-{height}")
+        print(f"высота-{self.strip_width} ширина-{height}")
         current_x = 0  # Начальная высота уровня
 
         for rectangle in self.rectangles:
@@ -266,9 +299,11 @@ class Packing:
             if rectangle.current_y > self.strip_width:
                 #print(f"Блок {rectangle} не поместится, ставим его принудительно")
                 self.pack_on_ceiling(rectangle, current_x)
+                self.field_height = max(self.field_height, rectangle.current_y)
             elif self.is_ceiling_feasible(rectangle):
                 #print(f"устанавливаем на пол блок {rectangle}")
                 self.pack_on_ceiling(rectangle, current_x)
+                self.field_height = max(self.field_height, rectangle.current_y + (rectangle.current_y - self.strip_width))
             #elif self.is_floor_feasible(rectangle):
             #    self.pack_on_floor(rectangle, current_x)
             else:
@@ -284,7 +319,7 @@ class Packing:
         if self.current_level:
             current_x += max(r.current_x for r in self.current_level)
         #print(f"{current_x=}")
-        return current_x
+        return current_x, self.field_height
 
     def pack_on_ceiling(self, rectangle, current_x):   
         rectangle.x_offset = current_x
@@ -598,8 +633,9 @@ class expDiagram(QWidget):
 
     def auto_place_group(self, groups):
         packing = Packing(groups)
-        focus_widht = packing.pack_rectangles( width = self.height(), height= self.width())
-        self.setMinimumSize(focus_widht, self.height())
+        focus_widht, focus_height = packing.pack_rectangles( width = self.height(), height= self.width())#90 degrees
+        print(f"{focus_height=} {focus_widht=}")
+        self.setMinimumSize(focus_widht, focus_height)
 
     def delete_old_draw(self):
         all_child_widgets = self.findChildren(blockDevice)

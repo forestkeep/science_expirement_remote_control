@@ -296,6 +296,8 @@ class ch_meas_akip_class(base_ch):
         self.dict_buf_parameters["range"] = "Auto"  # dB
         self.dict_buf_parameters["num steps"] = "1"
 
+        self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
+
 
 if __name__ == "__main__":
 

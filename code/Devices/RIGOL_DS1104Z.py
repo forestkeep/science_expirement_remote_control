@@ -10,6 +10,7 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 import sys
 import os
+import copy
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -76,7 +77,7 @@ class chMeasOscilloscope(base_ch):
             self.dict_buf_parameters[f"Invertch{num_ch}"] = "Hand control"
             self.dict_buf_parameters[f"vscalech{num_ch}"] = "Hand control"
 
-        self.dict_settable_parameters = self.dict_buf_parameters
+        self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
 
 class DS1104Z(oscilloscopeClass):
