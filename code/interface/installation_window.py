@@ -301,7 +301,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.exp_diagram = exp_diagram
         self.exp_call_stack = exp_call_stack
 
-        base_window.resize(self.N*120+10+270, 550)
+        base_window.resize(self.N*120+10+500, 600)
 
         self.horLayout = QtWidgets.QHBoxLayout()
         self.horLayout.setObjectName("horLayout")
@@ -432,8 +432,8 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.verticalLayout_2.addWidget(self.open_graph_button)
         # ================================================================
 
-        self.upper_lay.addLayout(self.horLayout, stretch=1)
-        self.upper_lay.addLayout(self.verticalLayout_2, stretch=2)
+        self.upper_lay.addLayout(self.horLayout, stretch=3)
+        self.upper_lay.addLayout(self.verticalLayout_2, stretch=9)
         self.lower_lay.addLayout(self.log_lay)
         self.lower_lay.addLayout(self.button_lay)
 
@@ -512,7 +512,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
             self.horLayout.addWidget(dev)
             self.devices_lay[device] = dev
 
-            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Ignored)
+            sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
             ind_channels_buf = [0,0,0,0,0,0,0,0,0,0]
             for i in class_of_devices[device].channels:
                 ind_channels_buf[i.get_number()-1]+=1
