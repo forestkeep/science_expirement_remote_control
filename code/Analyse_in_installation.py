@@ -42,8 +42,6 @@ class analyse(baseInstallation):
 
                 time_lines.append(time_line)
                 
-        print(time_lines)
-
         for line in time_lines:
             buf = []
             for lin in line:

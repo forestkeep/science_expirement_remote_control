@@ -519,7 +519,7 @@ class installation_class(experimentControl, analyse):
         self.show_window_installation()
         self.timer_open = QTimer()
         self.timer_open.timeout.connect(lambda: self.timer_open_timeout(install_list))
-        self.timer_open.start(100)
+        self.timer_open.start(800)
 
     def timer_open_timeout(self, install_list):
         self.timer_open.stop()
@@ -681,9 +681,7 @@ class installation_class(experimentControl, analyse):
                                     parameters[param] = ""
                                     if set_open:
                                         set_open = False
-                                        self.get_device_widget(
-                                            device.get_name()
-                                        ).set_state_ch_widget(chann.number, False)
+                                        self.get_device_widget(device.get_name()).set_state_ch_widget(chann.number, False)
                                         # self.get_device_widget(device.get_name()).click_change_ch(num = chann.number, is_open = False)
                                 elif param == QApplication.translate('main install',"Не настроено"):
                                     parameters[param] = ""
@@ -701,11 +699,8 @@ class installation_class(experimentControl, analyse):
                                             device.get_name()
                                         ).set_state_ch_widget(chann.number, True)
                                         # self.get_device_widget(device.get_name()).click_change_ch(num = chann.number, is_open = True)
-                            device.set_parameters(
-                                channel_name=chann.get_name(), parameters=parameters
-                            )
+                            device.set_parameters(channel_name=chann.get_name(), parameters=parameters)
             self.get_device_widget(device.get_name()).update_widgets()
-
 
 if __name__ == "__main__":
     import logging

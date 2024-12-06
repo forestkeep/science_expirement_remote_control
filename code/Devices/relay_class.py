@@ -71,6 +71,8 @@ class relayPr1Class(base_device):
     def show_setting_window(self, number_of_channel):
         self.switch_channel(number_of_channel)
 
+        print("func")
+
         self.key_to_signal_func = False
         # ============установка текущих параметров=======================
 
@@ -101,6 +103,7 @@ class relayPr1Class(base_device):
 
         self._action_when_select_trigger()
         self._is_correct_parameters()
+
         self.setting_window.show()
 
     @base_device.base_is_correct_parameters
@@ -151,6 +154,9 @@ class relayPr1Class(base_device):
             if not self._is_correct_parameters():
                 is_parameters_correct = False
 
+        #print("actrelay",self.active_channel_act, self.active_channel_act.dict_buf_parameters)
+        #print("measrelay",self.active_channel_act, self.active_channel_meas.dict_buf_parameters)
+
         self.installation_class.message_from_device_settings(
             name_device=self.name,
             num_channel=self.active_channel_meas.number,
@@ -162,13 +168,14 @@ class relayPr1Class(base_device):
 
     # фцункция подтверждения корректности параметров от контроллера установкию. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств
     def confirm_parameters(self):
-        # print(str(self.name) +" получил подтверждение настроек, рассчитываем шаги")
-        if True:
-            for ch in self.channels:
-                if ch.is_ch_active():
-                    ch.step_index = -1
-        else:
-            pass
+        #print(str(self.name) +" получил подтверждение настроек, рассчитываем шаги")
+
+        for ch in self.channels:
+            if ch.is_ch_active():
+                ch.step_index = -1
+
+        #print("actrelay",self.active_channel_act, self.active_channel_act.dict_buf_parameters)
+        #print("measrelay",self.active_channel_meas, self.active_channel_meas.dict_buf_parameters)
 
     # настройка прибора перед началом эксперимента, переопределяется при каждлом старте эксперимента
 

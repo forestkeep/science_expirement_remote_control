@@ -153,7 +153,6 @@ class base_device():
             response = self.client.query(f"*IDN?\r\n", 1000)
         except:
             logger.info(f"у прибора {self.name} не определена функция проверки подключения")
-        print(f"{self.name=} {response=}")
         return response if response not in [b'', b'\r\n', None] else False
 
     def base_settings_window(self):
@@ -222,20 +221,18 @@ class base_device():
     def base_show_window(func):
         def wrapper(self, *args, **kwargs):
             '''Устанавливает базовые параметры для канала действий при запуске окна'''
+            print("врапер показать окно")
 
             #print(args[0])
             self.switch_channel(number=args[0])
+
             self.key_to_signal_func = False
             self.active_ports = []
             self.timer_for_scan_com_port.start(500)
             # Установка текущих параметров
             self.setting_window.comportslist.setCurrentText(self.dict_buf_parameters["COM"])
             self.setting_window.boudrate.setCurrentText(self.dict_buf_parameters["baudrate"])
-            self.key_to_signal_func = True
-
-            #print(f"{self.active_channel_act=}")
-            #print(f"{self.active_channel_meas=}")
-
+            
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
                 self.setting_window.triger_act_enter.setCurrentText(self.active_channel_act.dict_buf_parameters["trigger"])
                 self.setting_window.sourse_act_enter.setCurrentText(str(self.active_channel_act.dict_buf_parameters["sourse/time"]))
@@ -259,13 +256,16 @@ class base_device():
                 self.setting_window.num_meas_enter.addItems(num_meas_list)
                 self.setting_window.num_meas_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["num steps"]))
 
+            self.key_to_signal_func = True
             return func(self, *args, **kwargs)
         return wrapper
 
     def base_add_parameters_from_window(func):
         '''Добавляет базовые параметры из окна в локальный буфер класса прибора'''
         def wrapper(self, *args, **kwargs):
+            print("врапер добавить параметры")
             if self.key_to_signal_func:
+                print("adding parameters")
                 if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
                         self.active_channel_meas.dict_buf_parameters["num steps"] = self.setting_window.num_meas_enter.currentText()
                         self.active_channel_meas.dict_buf_parameters["trigger"] = (self.setting_window.triger_meas_enter.currentText())
@@ -499,7 +499,6 @@ class base_device():
             ch.step_index = ch.step_index + 1
         else:
             answer = ch_response_to_step.End_list_of_steps  # след шага нет
-            print(f"{self.name} {ch.ch_name} след шага нет")
         return answer
 
     def sin_wave(self, freq, amplitude, phase_shift, sample_rate):
@@ -668,7 +667,11 @@ class base_device():
     def _action_when_select_trigger(self):
         if self.key_to_signal_func:
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
-                self.active_channel_act.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_act_enter.currentText()
+
+                #Для чего оно здесь???????
+                #self.active_channel_act.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_act_enter.currentText()
+
+
                 if self.setting_window.triger_act_enter.currentText() == QApplication.translate( "Device", "Таймер" ):
                     try:
                         buf = int(self.active_channel_act.dict_buf_parameters["sourse/time"])
@@ -695,7 +698,10 @@ class base_device():
                 self.setting_window.sourse_act_enter.setStyleSheet(current_style + "background-color: rgb(70, 70, 70);" )
 
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
-                self.active_channel_meas.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_meas_enter.currentText()
+
+                #Для чего оно здесь???????
+                #self.active_channel_meas.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_meas_enter.currentText()
+
                 if self.setting_window.triger_meas_enter.currentText() == QApplication.translate( "Device", "Таймер" ):
                     try:
                         buf = int(self.active_channel_meas.dict_buf_parameters["sourse/time"])
@@ -715,8 +721,6 @@ class base_device():
                     #print(f"{self.message_broker.get_subscribe_list(object = self.active_channel_meas)=}")
                     #self.active_channel_meas.signal_list = self.installation_class.get_signal_list(self.name, self.active_channel_meas)
                     self.active_channel_meas.signal_list = self.message_broker.get_subscribe_list(object = self.active_channel_meas)
-
-
 
                     self.setting_window.sourse_meas_enter.addItems(self.active_channel_meas.signal_list)
                     if buf in self.active_channel_meas.signal_list:
