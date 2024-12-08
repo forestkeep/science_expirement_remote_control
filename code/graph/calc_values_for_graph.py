@@ -73,7 +73,6 @@ class ArrayProcessor:
 
         return y2
 
-    @time_decorator
     def combine_interpolate_arrays(self, arr_time_x1, arr_time_x2, values_y1, values_y2):
         
         '''дополняет оба входных массива точек (х,у) так,
@@ -209,11 +208,6 @@ if __name__ == "__main__":
     calculator = ArrayProcessor()
     arr1, arr2, gen_x = calculator.combine_interpolate_arrays(arrx1, arrx2, arry1, arry2)
 
-    print(gen_x)
-    print()
-
-    print(arr1)
-    print(arr2)
 
 
 
