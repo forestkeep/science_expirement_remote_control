@@ -90,10 +90,9 @@ class deviceActionDraw(QWidget):
 
         self.label_ch.raise_()
         self.is_check = False
-        print(66666)
 
     def mousePressEvent(self, event):
-        print(3434343)
+        pass
                
 class callStack(QWidget):
     def __init__(self):
@@ -108,7 +107,7 @@ class callStack(QWidget):
         self.rect_width = 30
         
     def set_data(self, meta_data_class):
-        print("данные установлены в стек")
+        #print("данные установлены в стек")
         self.actors_names = meta_data_class.actors_names
         self.exp_queue = meta_data_class.exp_queue
         self.max_width = 0
@@ -116,7 +115,7 @@ class callStack(QWidget):
         #self.add_blocks()
         
     def add_blocks(self):
-        print("добавляем блок")
+        #print("добавляем блок")
         painter = QPainter(self)
         self.offset_y = 0
         self.actions = []
@@ -130,7 +129,7 @@ class callStack(QWidget):
 
                 for act in self.exp_queue:
                     if num_actor == act:
-                        print(f"Блок найден {self.ind}")
+                        #print(f"Блок найден {self.ind}")
                         self.ind+=1
                         new_block = deviceActionDraw(ch_name='////',
                                        color=f"background-color: {unique_colors1[index]};",
@@ -146,7 +145,7 @@ class callStack(QWidget):
                 self.offset_y += self.rect_height+6
         
     def paintEvent(self, event):
-        print("рисуем")
+        #print("рисуем")
         try:
             painter = QPainter(self)
             offset_y_lines = 5

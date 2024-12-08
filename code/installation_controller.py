@@ -263,7 +263,7 @@ if __name__ == "__main__":
 
     # Настройка консольного обработчика
     console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
+    console.setLevel(logging.WARNING)
     console.setFormatter(logging.Formatter(FORMAT))
 
     # Настройка файлового обработчика

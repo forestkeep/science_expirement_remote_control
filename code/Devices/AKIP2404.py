@@ -187,7 +187,7 @@ class akip2404Class(base_device):
         start_time = time.time()
         parameters = [self.name + " " + str(ch.get_name())]
         if ch.get_type() == "meas":
-            print("делаем измерение", self.name, str(ch.get_name()))
+            #print("делаем измерение", self.name, str(ch.get_name()))
 
             is_correct = True
             voltage = self._get_current_voltage(ch_num = self.active_channel.number)
@@ -205,7 +205,7 @@ class akip2404Class(base_device):
             # -----------------------------
 
             if is_correct:
-                print("сделан шаг", self.name)
+                #print("сделан шаг", self.name)
                 ans = ch_response_to_step.Step_done
             else:
                 print("Ошибка шага", self.name)
@@ -255,22 +255,12 @@ class akip2404Class(base_device):
             self.client.write(bytes(command, "ascii") + b"?\r\n")
         else:
             param = str(param)
-            self.client.write(
-                bytes(command, "ascii") + b"? " + bytes(param, "ascii") + b"\r\n"
-            )
-        if param != False:
-            print(
-                "чтение параметров",
-                bytes(command, "ascii") + b"? " + bytes(param, "ascii") + b"\r\n",
-            )
-        else:
-            print(bytes(command, "ascii") + b"?\r\n")
+            self.client.write(bytes(command, "ascii") + b"? " + bytes(param, "ascii") + b"\r\n")
 
         start_time = time.time()
         while time.time() - start_time < timeout:
             line = self.client.readline().decode().strip()
             if line:
-                print("Received:", line)
                 return line
         logger.warning("No answer from device AKIP2404 timeout")
         return False

@@ -715,9 +715,7 @@ if __name__ == "__main__":
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
 
-    file_handler = RotatingFileHandler(
-        "log_files\logfile.log", maxBytes=100000, backupCount=3
-    )
+    file_handler = RotatingFileHandler("log_files/logfile.log", maxBytes=100000, backupCount=3)
 
     logging.basicConfig(
         encoding="utf-8",

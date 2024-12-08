@@ -291,7 +291,7 @@ class Packing:
 
         self.strip_width = width
         self.box_height = height
-        print(f"высота-{self.strip_width} ширина-{height}")
+        #print(f"высота-{self.strip_width} ширина-{height}")
         current_x = 0  # Начальная высота уровня
 
         for rectangle in self.rectangles:

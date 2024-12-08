@@ -17,21 +17,18 @@ class MyWidget(QWidget):
             painter.drawRect(r["rect"])
 
     def mousePressEvent(self, event):
-        print(33333)
         for r in self.rects:
             if r["rect"].contains(event.pos()):
-                print(event.pos())
+                #print(event.pos())
                 QToolTip.showText(event.globalPos(), r["text"], self)
                 return
 
     def mouseReleaseEvent(self, event):
-        print(22222)
+        pass
 
     def mouseMoveEvent(self, event):
-        print(event.pos())
         for r in self.rects:
             if r["rect"].contains(event.pos()):
-                print(event.pos())
                 QToolTip.showText(event.globalPos(), r["text"], self)
                 return
         QToolTip.hideText()

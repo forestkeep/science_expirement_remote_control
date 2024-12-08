@@ -30,7 +30,7 @@ class callStack(QWidget):
 		self.y_line_points = []
 		self.actors_names = {}
 		self.lb = QLabel("ererer")
-		print("создали стек")
+		#print("создали стек")
 		self.rect_height = 10
 		self.rect_width = 17
 		self.setStyleSheet("QToolTip { background-color: rgb(50, 50, 60); color: white; }")
@@ -43,7 +43,7 @@ class callStack(QWidget):
 				return
         
 	def set_data(self, meta_data_class):
-		print("данные установлены в стек")
+		#print("данные установлены в стек")
 		self.actors_names = meta_data_class.actors_names
 		self.exp_queue = meta_data_class.exp_queue
 		self.queue_info = meta_data_class.queue_info

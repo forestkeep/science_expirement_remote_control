@@ -487,7 +487,7 @@ class base_device():
     def on_next_step(self, ch, repeat = 1):
         '''активирует следующий шаг канала прибора'''
         stps = ch.dict_settable_parameters["num steps"]
-        print(f"{self.name} {ch.ch_name} {ch.step_index = } steps = {stps}")
+        #print(f"{self.name} {ch.ch_name} {ch.step_index = } steps = {stps}")
         answer = ch_response_to_step.Step_done
         if ch.dict_settable_parameters["num steps"] == QApplication.translate("Device","Пока активны другие приборы"):
             return answer
