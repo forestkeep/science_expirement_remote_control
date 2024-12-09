@@ -74,6 +74,32 @@ class graphData:
             self.current_highlight = True
             self.plot_obj.setPen(pg.mkPen('w', width=2))
 
+    def place_curve_on_graph(self, graph_field: pg.ViewBox, legend_field):
+        """
+        Places the curve on the given graph and legend fields. If the given fields
+        are different from the current fields, the curve is first removed from the
+        current fields before being added to the new fields.
+
+        Parameters
+        ----------
+        graph_field : pg.ViewBox
+            The ViewBox to add the curve to.
+        legend_field : pg.LegendItem
+            The LegendItem to add the curve to.
+        """
+        if graph_field is not self.parent_graph_field and self.legend_field is not legend_field:
+            self.parent_graph_field.removeItem(self.plot_obj)
+            self.legend_field.removeItem(self.legend_name)
+
+        self.parent_graph_field = graph_field
+        self.legend_field = legend_field
+
+        self.parent_graph_field.addItem(self.plot_obj)
+        self.legend_field.addItem(self.plot_obj,self.legend_name)
+
+    def delete_curve_from_graph(self):
+        self.parent_graph_field.removeItem(self.plot_obj)
+        self.legend_field.removeItem(self.legend_name)
 
 class linearData(graphData):
     def __init__(self, raw_x, raw_y, device, ch, y_name, x_name) -> None:

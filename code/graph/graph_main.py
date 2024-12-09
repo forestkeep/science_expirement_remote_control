@@ -394,6 +394,7 @@ class graphMain:
             for index in range(qlistwidget.count()):
                 if qlistwidget.item(index).text() == parameter:
                     qlistwidget.takeItem(index)
+                    #print(f"удалили {parameter} из {qlistwidget}")
                     break
 
     def update_param_in_comboxes(self, new_param = None):
@@ -645,15 +646,10 @@ class graphMain:
 
     def update_data(self, obj):
 
-        #блок удаления данных после клика по выбранному параметру
         string_x = self.get_last_item_parameter(self.x_param_selector)
         string_y = self.get_last_item_parameter(self.y_first_param_selector)
         string_y2 = self.get_last_item_parameter(self.y_second_param_selector)
-
-        current_items_y = list(item.text() for item in self.y_first_param_selector.selectedItems())
-        current_items_y2 = list(item.text() for item in self.y_second_param_selector.selectedItems())
-
-          
+   
         #блок очистки полей
 
         if string_x != "Select parameter":
@@ -690,47 +686,73 @@ class graphMain:
             pass
 
         elif obj is self.y_first_param_selector and check_main:
-                if string_y not in current_items_y and string_y != "Select parameter":
-                    if self.stack_curve.get(string_y + string_x) is not None:
-                        self.stack_curve[string_y + string_x].is_draw = False
-                        print(f"отменяем отрисовку {string_y + string_x} в блоке 1")
-                        return
-
+                if self.multiple_checkbox.isChecked():
+                    current_items_y = list(item.text() for item in self.y_first_param_selector.selectedItems())
+                    if string_y not in current_items_y and string_y != "Select parameter":
+                        if self.stack_curve.get(string_y + string_x) is not None:
+                            self.stack_curve[string_y + string_x].is_draw = False
+                            self.stack_curve[string_y + string_x].delete_curve_from_graph()
+                            self.y_second_param_selector.addItem(string_y)
+                            print(f"отменяем отрисовку {string_y + string_x} в блоке 1")
+                            return
+                else:
+                    #отменить отрисовку всех кривых в блоке 1 кроме текущей
+                    for data_curve in self.stack_curve.values():
+                        if data_curve.is_draw and data_curve.parent_graph_field is self.graphView:
+                            data_curve.is_draw = False
+                            data_curve.delete_curve_from_graph()
+                            self.y_second_param_selector.addItem(data_curve.y_name)
+                    
                 if self.stack_curve.get(string_y + string_x) is not None:
                     print(f"задаем отрисовку {string_y + string_x} в блоке 1")
+                    self.stack_curve[string_y + string_x].place_curve_on_graph(graph_field  = self.graphView,
+                                                                                legend_field = self.legend)
                     self.stack_curve[string_y + string_x].is_draw = True
-                    self.stack_curve[string_y + string_x].parent_graph_field = self.graphView
-                    self.stack_curve[string_y + string_x].legend_field = self.legend
                 else:
                     print(f"создаем кривую {string_y + string_x} в блоке 1")
                     x1, y1, x1_name, y1_name, name_device1, name_ch1 = self.calc_curve_parameter(string_x, string_y)
                     self.manage_curve(y1, x1, name_device1, name_ch1, y1_name, x1_name, self.graphView, self.legend)
 
+                self.remove_parameter(string_y, self.y_second_param_selector)
+
         elif obj is self.y_second_param_selector or obj is self.second_check_box:
             if not self.second_check_box.isChecked() or not check_second:
                 return
             
-
-            if string_y2 not in current_items_y2 and string_y2 != "Select parameter":
-                if self.stack_curve.get(string_y2 + string_x) is not None:
-                    self.stack_curve[string_y2 + string_x].is_draw = False
-                    print(f"отменяем отрисовку {string_y2 + string_x} в блоке 2")
-                    return
+            if self.multiple_checkbox.isChecked():
+                current_items_y2 = list(item.text() for item in self.y_second_param_selector.selectedItems())
+                if string_y2 not in current_items_y2 and string_y2 != "Select parameter":
+                    if self.stack_curve.get(string_y2 + string_x) is not None:
+                        self.stack_curve[string_y2 + string_x].is_draw = False
+                        self.stack_curve[string_y2 + string_x].delete_curve_from_graph()
+                        self.y_first_param_selector.addItem(string_y2)
+                        print(f"отменяем отрисовку {string_y2 + string_x} в блоке 2")
+                        return
+            else:
+                #отменить отрисовку всех кривых в блоке 2 кроме текущей
+                for data_curve in self.stack_curve.values():
+                    if data_curve.is_draw and data_curve.parent_graph_field is self.p2:
+                        data_curve.is_draw = False
+                        data_curve.delete_curve_from_graph()
+                        self.y_first_param_selector.addItem(data_curve.y_name)
             
             if self.stack_curve.get(string_y2 + string_x) is not None:
                 print(f"задаем отрисовку {string_y2 + string_x} в блоке 2")
+
+                self.stack_curve[string_y2 + string_x].place_curve_on_graph(graph_field  = self.p2,
+                                                                            legend_field = self.legend2)
                 self.stack_curve[string_y2 + string_x].is_draw = True
-                self.stack_curve[string_y2 + string_x].parent_graph_field = self.p2
-                self.stack_curve[string_y2 + string_x].legend_field = self.legend2
+
             else:
                 print(f"создаем кривую {string_y2 + string_x} в блоке 2")
                 x2, y2, x2_name, y2_name, name_device2, name_ch2 = self.calc_curve_parameter(string_x, string_y2)
                 self.manage_curve(y2, x2, name_device2, name_ch2, y2_name, x2_name, self.p2, self.legend2)
 
+            self.remove_parameter(string_y2, self.y_first_param_selector)#удаляем этот параметр из второго селектора
 
         for key, curve in self.stack_curve.items():
-            print(key, curve.is_draw)
-
+            pass
+            #print(key, curve.is_draw)
         print("//////////")
 
         
@@ -746,7 +768,12 @@ class graphMain:
         if self.multiple_checkbox.isChecked():
             self.y_main_axis_label = ""
             self.y_second_axis_label = ""
-
+    def deselect_item(self, text, list_widget):
+        for index in range(list_widget.count()):
+            item = list_widget.item(index)
+            if item.text() == text:
+                list_widget.setItemSelected(item, False)
+                break
     def calc_curve_parameter(self, string_x, string_y):
         device_y, ch_y, parameter_y = self.decode_name_parameters_new(string_y)
         device_x, ch_x, parameter_x = self.decode_name_parameters_new(string_x)
@@ -861,18 +888,19 @@ class graphMain:
                                             symbol='o',
                                             )
 
-                    obj.parent_graph_field.addItem(graph)
                     obj.set_plot_obj(plot_obj = graph,
                                      pen      = buf_pen)
-                    
+                print(f"рисуем в {obj.parent_graph_field=}")
+                obj.parent_graph_field.addItem(obj.plot_obj)
                 obj.legend_field.addItem(
                         obj.plot_obj, obj.legend_name
                 )
 
             else:
                 if obj.plot_obj != None:
+                    print(f"удаляем {obj.plot_obj} из {obj.parent_graph_field=}")
                     obj.parent_graph_field.removeItem(obj.plot_obj)
-                    obj.plot_obj = None
+                    #obj.plot_obj = None
         #=============================================================
 
     def update_draw_old(self):
