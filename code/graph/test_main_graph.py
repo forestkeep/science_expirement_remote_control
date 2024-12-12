@@ -76,32 +76,24 @@ class test_graph:
 
         file_name = "test_loop.csv"
 
-        # Формирование полного пути
         full_path = os.path.join(current_directory, file_name)
 
         df = pd.read_csv(full_path, sep=";")
 
-        # Создаем словарь для хранения данных
         data_dict = {}
 
-        # Считываем данные из DataFrame
         for column in df.columns:
-            # Конвертируем данные в float и помещаем в словарь
             data_dict[column] = df[column].astype(str).tolist()
         for key, values in data_dict.items():
-            # Новая переменная для хранения конвертированных значений
             converted_values = []
             for val in values:
                 val = val.replace(",", ".")
                 try:
-                    # Пытаемся конвертировать в float
                     if val == "nan":
                         continue
                     converted_values.append(float(val))
                 except ValueError:
-                    # Игнорируем неконвертируемые значения
                     continue
-            # Обновляем словарь с новыми списками значений
             data_dict[key] = np.array(converted_values)
 
         return data_dict["CH1"], data_dict["CH2"], data_dict["Increment"][0]
@@ -117,11 +109,11 @@ class test_graph:
 
         frequency = np.random.uniform(
             lower_bound, upper_bound
-        )  # Частота в диапазоне от 0.5 до 5.0
+        )
         x = np.linspace(0, 2 * np.pi, size)
         sine_wave = list(
             np.round(np.sin(frequency * x), 2)
-        )  # Округляем до 2 знаков после запятой
+        )
 
         return sine_wave
 
@@ -130,14 +122,12 @@ class test_graph:
         for channel in main_dict.values():
             for key, value in channel.items():
                     if key == "time":
-                        # Добавляем текущее время
                         value.append(round(time.time() - self.start_time))
                     elif (
                         isinstance(value, list)
                         and not any(isinstance(i, list) for i in value)
                         and key != "wavech"
                     ):
-                        # Добавляем случайное число от 1 до 10 в конечные списки
                         value.append(random.randint(1, 10))
                     elif (
                         isinstance(value, list)
@@ -163,7 +153,6 @@ class test_graph:
         list_size = 1
         all_values = list(range(start_range, end_range * list_size))
         random.shuffle(all_values)
-        # Берем первые list_size элементов
         time_dict = all_values[:list_size]
         time_dict.sort()
         return time_dict

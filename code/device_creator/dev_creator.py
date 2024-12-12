@@ -44,7 +44,6 @@ class deviceCreator(QDialog):
         self.setWindowTitle('Конструктор')
         self.setMinimumWidth(500)
 
-        # Создание метки с сообщением
         welcome_message = QApplication.translate('device_creator',"""Добро пожаловать в Конструктор нового прибора!
                         Здесь вы сможете добавить новый прибор для использования 
                         в автоматическом контроллере физического эксперимента. 
@@ -58,15 +57,12 @@ class deviceCreator(QDialog):
         #self.main_label.setAlignment(Qt.AlignCenter)
         
         self.test_commands_window = None
-
-        #Виджеты для диалога 
         self.test_button = QPushButton(QApplication.translate('device_creator',"Протестировать команду"))
         self.test_button.clicked.connect(self.test_function)
         self.input_field = QLineEdit()
         self.input_field.adjustSize()
         self.input_field.returnPressed.connect(self.submit_command)  # Обработка нажатия Enter
 
-        # Организация компоновки
         self.main_layout = QVBoxLayout()
         self.main_layout.addWidget(self.main_label)
 
@@ -108,7 +104,6 @@ class deviceCreator(QDialog):
         self.cancel_button.clicked.connect(self.on_cancel_clicked)
 
         self.show()
-        #определить необходимые поля
         self.current_index = 0
 
         # считывать команды и задавать вопросы
@@ -319,12 +314,11 @@ class deviceCreator(QDialog):
 
     def test_function(self):
 
-        current_size = self.size()  # Получаем размер главного окна
-        width = current_size.width()  # Ширина
-        height = current_size.height()  # Высота
+        current_size = self.size()
+        width = current_size.width()
+        height = current_size.height()
         main_window_pos = self.pos()
     
-        # Устанавливаем положение для нового окна
         self.test_commands_window = TestCommands()
         self.test_commands_window.move(main_window_pos.x() + width, main_window_pos.y())
         self.test_commands_window.show()

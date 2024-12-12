@@ -406,7 +406,6 @@ class blockDevice(QWidget):
         self.dragging = False
 
     def toggle_selection(self, set_check = None):
-        # Изменяем стиль выделенного виджета
         if set_check == True:
             self.frame.setStyleSheet(self.base_color)
             self.is_check = True

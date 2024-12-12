@@ -91,7 +91,7 @@ class actDiagram():
         self.current_number+=1
   
         font_metrics = lb.fontMetrics()
-        text_size = font_metrics.size(0, lb.text())  # Получаем размеры текста
+        text_size = font_metrics.size(0, lb.text())
 
         if self.max_width_name_actors < text_size.width():
             self.max_width_name_actors = int(text_size.width()*1.2)

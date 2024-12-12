@@ -102,11 +102,11 @@ class oscRigolCommands:
             for num_ch in channels_number:
                 frequency = np.random.uniform(
                     0.5, 5.0
-                )  # Частота в диапазоне от 0.5 до 5.0
+                )
                 x = np.linspace(0, 2 * np.pi, 3000)
                 sine_wave = np.round(
                     np.sin(frequency * x), 2
-                )  # Округляем до 2 знаков после запятой
+                )
                 arr = sine_wave
                 result[num_ch] = arr
 

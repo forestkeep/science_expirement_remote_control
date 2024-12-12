@@ -447,7 +447,7 @@ class sr830Class(base_device):
 
             self.get_sin = self.sin_wave(
                 freq=1, amplitude=1, phase_shift=0, sample_rate=100
-            )  # Частота 1 Гц, амплитуда 1, фазовый сдвиг 0, частота дискретизации 100 Гц
+            )
             self.get_ln = self.natural_log_generator()
             self.get_exp = self.exponential_function_generator()
             self.get_mult = self.multiple_function_generator(3)

@@ -26,7 +26,7 @@ class messageDialog(QDialog):
         self, title="Сообщение", text="Отлично выглядите!", are_show_again=False
     ):
         super().__init__()
-        self.setMinimumSize(400, 200)  # устанавливаем минимальный размер окна
+        self.setMinimumSize(400, 200)
 
         self.setWindowTitle(title)
 
@@ -39,7 +39,7 @@ class messageDialog(QDialog):
         ok_button = QPushButton("Ok", self)
         ok_button.clicked.connect(
             self.accept
-        )  # закрываем окно при нажатии на кнопку Ok
+        )
         if are_show_again:
             self.check_not_show = QCheckBox(QApplication.translate("GraphWindow","Не показывать снова") )
             layout.addWidget(self.check_not_show)

@@ -619,7 +619,6 @@ class installation_class(experimentControl, analyse):
 
             if adding_set_dev:
                 buf = buffer[i].split("|")
-                # print(buf)
                 if len(buf) != 2:
                     pass
                 else:
@@ -652,7 +651,7 @@ class installation_class(experimentControl, analyse):
             for dev in new_installation_list.keys():
                 new_install.append(dev[:-2])
 
-            self.dict_active_device_class = {}  # обнуляем словарь с классами приборов
+            self.dict_active_device_class = {}
             self.message_broker.clear_all()
             logger.info(
                 f"закрыто окно установки {self.installation_window}, реконструируем новое"
@@ -664,10 +663,10 @@ class installation_class(experimentControl, analyse):
             return True, new_installation_list
 
     def add_parameter_devices(self, new_installation_list):
-        for key in new_installation_list.keys():  # заполняем параметры приборов
+        for key in new_installation_list.keys():
             device = self.dict_active_device_class[key]
             for ch in new_installation_list[key].keys():
-                if ch == "set":  ##установка настроек прибора
+                if ch == "set":  
                     for param in new_installation_list[key][ch]:
                         device.dict_buf_parameters[param[0]] = param[1]
                         device.dict_settable_parameters[param[0]] = param[1]
@@ -732,13 +731,10 @@ if __name__ == "__main__":
             "exp_control" + version_app,
         )
     
-    # Получаем все ключи
     keys = settings.allKeys()
 
-    # Печатаем все настройки
     for key in keys:
         value = settings.value(key)
-        #print(key, value)
 
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 

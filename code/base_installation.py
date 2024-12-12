@@ -368,7 +368,7 @@ class baseInstallation:
         new_added_device = {}
         if device_list:
             number_device = len(self.dict_active_device_class.keys()) + 1
-            for key in device_list:  # создаем экземпляры классов переданных приборов
+            for key in device_list:
                 try:
                     key_dev = key + "_" + str(number_device)
                     dev = self.dict_device_class[key](

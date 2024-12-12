@@ -98,8 +98,8 @@ class graphOsc:
 
         self.loops_stack = [] #здесь хранятся петли, которые были рассчитаны и установлены на график
 
-        self.label = QLabel()  # Лейбл с именем канала
-        self.label2 = QLabel()  # Лейбл с именем канала
+        self.label = QLabel() 
+        self.label2 = QLabel() 
 
         self.list_vert_curve = []
         self.initUI()
@@ -268,7 +268,7 @@ class graphOsc:
         self.choice_device.setSizePolicy(
             QSizePolicy.Expanding, QSizePolicy.Fixed
         )  # Расширяющийся по ширине и фиксированный по высоте
-        self.choice_device.setMaximumSize(150, 20)  # Ограничиваем максимальный размер
+        self.choice_device.setMaximumSize(150, 20)
 
         self.choice_device.currentTextChanged.connect(lambda: self.new_dev_checked())
         self.choice_device.currentIndexChanged.connect(lambda: self.new_dev_checked())
@@ -300,7 +300,7 @@ class graphOsc:
             QApplication.translate('graph_win',"Импорт данных")
         )
 
-        self.import_data_button.setMaximumSize(150, 30)  # Ограничиваем максимальный размер
+        self.import_data_button.setMaximumSize(150, 30)
         self.import_data_button.clicked.connect(self.import_data)
 
         self.tab1Layout.addLayout(self.hor_lay)
@@ -407,18 +407,16 @@ class graphOsc:
         checkboxes = []
         channels_wave_forms = {}
 
-        # Размещение лейблов и чекбоксов с комбобоксами
         for index, name_ch in enumerate(channels):
-            col = index // 4  # Номер столбца
+            col = index // 4
             row = (
                 index % 4 + 1
             )  # Строка для размещения чекбокса и комбобокса, смещение на 1 для лейблов
 
-            # Создание лейбла для столбца, если он еще не добавлен
             if row == 1:  # Лейбл добавляется в первую строку
                 lay = QHBoxLayout()
-                self.label = QLabel()  # Лейбл с именем канала
-                self.label2 = QLabel()  # Лейбл с именем канала
+                self.label = QLabel()
+                self.label2 = QLabel()
                 lay.addWidget(self.label)
                 lay.addWidget(self.label2)
                 layout.addLayout(lay, 0, col)
@@ -686,7 +684,6 @@ class graphOsc:
 
     def update_num_waveforms(self):
 
-        # формируем список каналов
         devices = self.extract_ch_with_wave(self.dict_param)
 
         current_dev = self.choice_device.currentText()
@@ -714,7 +711,6 @@ class graphOsc:
             else:
                 self.clear_layout(self.hor_lay, self.choice_device)
 
-                # формируем список каналов
                 channel_keys = self.extract_wavech_devices(self.dict_param)
                 devices, channels, wavechs = self.extract_data(channel_keys)
 
@@ -740,20 +736,19 @@ class graphOsc:
                 self.hor_lay.addLayout(ch_check_layer)
 
     def clear_layout(self, layout, widget_to_keep):
-        # Проходим по всем элементам лэйаута в обратном порядке
         for i in reversed(range(layout.count())):
             item = layout.itemAt(i)
             if item is not None:
                 widget = item.widget()
                 if (
                     widget and widget != widget_to_keep
-                ):  # Если виджет не целевой, удаляем его
+                ):
                     layout.removeWidget(widget)
-                    widget.deleteLater()  # Удаляем виджет из памяти
-                elif item.layout():  # Если это лэйаут, очищаем и удаляем его
+                    widget.deleteLater()
+                elif item.layout():
                     self.clear_layout(item.layout(), widget_to_keep)
-                    layout.removeItem(item)  # Удаляем сам лэйаут из родителя
-                    item.layout().deleteLater()  # Удаляем лэйаут из памяти
+                    layout.removeItem(item)
+                    item.layout().deleteLater()
 
     def checked_channel(self):
         """сканирует выбранные каналы и строит соответсвующие осциллограммы"""

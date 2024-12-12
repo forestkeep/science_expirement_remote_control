@@ -13,8 +13,6 @@ import copy
 import logging
 import random
 import time
-import sys
-import os
 
 from PyQt5.QtWidgets import QApplication
 from Devices.Classes import (

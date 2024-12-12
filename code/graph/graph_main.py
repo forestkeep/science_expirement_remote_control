@@ -196,7 +196,6 @@ class graphMain:
         # Data source selectors layout
         dataSourceLayout = QHBoxLayout()
 
-        # Создание селекторов
         x_buf = self.createHoverSelector("X-Axis:")
         y_first_buf = self.createHoverSelector("Y main Axis:")
         y_second_buf = self.createHoverSelector("Y second Axis:")

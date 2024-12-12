@@ -74,13 +74,12 @@ class Graph(pg.GraphItem):
 
 
 pw = pg.PlotWidget(title="PlotItem")
-g = Graph(pw)                                                   # +++ pw
+g = Graph(pw)                                    
 
 pw.addItem(g)
 pw.showGrid(x=True, y=True)
 pw.show()                                    
 
-#                      v <---- попробуйте изменить значение
 x = np.linspace(1, 10, 5)
 
 pos = np.column_stack((x, np.sin(x)))

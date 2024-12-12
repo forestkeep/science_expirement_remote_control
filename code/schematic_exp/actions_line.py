@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QFrame, 
 from PyQt5.QtGui import QPainter, QBrush, QColor, QPen
 from PyQt5.QtCore import Qt, QPoint
 import sys
-import time
 import qdarktheme
 try:
 	from stack_experiment import deviceAction

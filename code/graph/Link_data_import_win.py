@@ -17,7 +17,6 @@ class Check_data_import_win(QDialog):
         title_label = QLabel("Выберите столбец с шагом времени и отметьте столбцы для импорта")
         layout_vert_main.addWidget(title_label)
 
-        # Комбобокс для шага времени
         step_label = QLabel("Шаг времени")
         self.step_combo = QComboBox()
         self.step_combo.addItems(strings)
@@ -26,7 +25,6 @@ class Check_data_import_win(QDialog):
         lay_combo.addWidget(self.step_combo)
         self.checkboxes = []
 
-        # Чекбоксы для каналов
         for string in strings:
             checkbox = QCheckBox(string)
             lay_columns.addWidget(checkbox)

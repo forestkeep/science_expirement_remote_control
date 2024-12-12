@@ -140,9 +140,7 @@ for i in range(n):
 
 axis = Custom3DAxis(fig1, color=(0.2, 0.2, 0.2, 0.6))
 axis.setSize(x=12, y=12, z=12)
-# Add axes labels
 axis.add_labels()
-# Add axes tick values
 axis.add_tick_values(xticks=[0, 4, 8, 12], yticks=[0, 6, 12], zticks=[0, 3, 6, 9, 12])
 fig1.addItem(axis)
 fig1.opts["distance"] = 40

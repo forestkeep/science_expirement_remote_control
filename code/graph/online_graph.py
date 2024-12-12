@@ -67,7 +67,6 @@ class GraphWindow(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        # Main widget and layout
         self.mainWidget = QWidget(self)
         self.setWindowIcon(QIcon('picture/graph.png')) 
         self.setCentralWidget(self.mainWidget)
@@ -75,7 +74,6 @@ class GraphWindow(QMainWindow):
 
         self.filter_class = filtersClass()
 
-        # Create Tab Widget
         self.tabWidget = QTabWidget()
 
         #---------------------------------
@@ -96,18 +94,16 @@ class GraphWindow(QMainWindow):
 
         self.mainLayout.addWidget(splitter)
 
-        # Create first tab and set its layout
         self.tab1 = tabPage(1)
         self.tab2 = tabPage(2)
 
-        # Add tabs to the tab widget
         self.tabWidget.addTab(self.tab1, QApplication.translate("GraphWindow", "Графики") )
         self.tabWidget.addTab(self.tab2, QApplication.translate("GraphWindow", "Осциллограммы") )  # Placeholder for another tab
 
         self.graph_main = graphMain(tablet_page=self.tab1, main_class=self)
         self.graph_wave = graphOsc(self.tab2, self)
 
-        self.tabWidget.setCurrentIndex(0)  # Default to first tab
+        self.tabWidget.setCurrentIndex(0)
 
     def show_tooltip(self, message, show_while_not_click = False, timeout = 3000):
         if self.notification is None:
@@ -118,7 +114,7 @@ class GraphWindow(QMainWindow):
         note_size = self.notification.sizeHint()
         pos = QPoint(self.width() - note_size.width() , self.height() - note_size.height())
 
-        self.notification.move(pos)  # Перемещаем уведомление перед показом
+        self.notification.move(pos)
 
         if show_while_not_click:
             self.notification.show()
@@ -133,7 +129,7 @@ class GraphWindow(QMainWindow):
                 is_apply = False
 
         if is_apply:
-            active_tab_index = self.tabWidget.currentIndex()  # Получаем индекс активной вкладки
+            active_tab_index = self.tabWidget.currentIndex()
             if active_tab_index == 0:
                 self.graph_main.set_filters(filter_func)
             elif active_tab_index == 1:
@@ -165,7 +161,7 @@ class GraphWindow(QMainWindow):
         self.timer.timeout.connect(self.gen_new_data)
         self.timer.start(100)
 
-    def closeEvent(self, event):  # эта функция вызывается при закрытии окна
+    def closeEvent(self, event):
         self.graph_win_close_signal.emit(1)
 
 if __name__ == "__main__":

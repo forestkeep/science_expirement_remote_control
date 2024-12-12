@@ -13,9 +13,9 @@ def build_python_app():
     #'--onefile',
     '--noconsole', 
     '--hidden-import=pyvisa_py',
-    #'--add-data=picture/*:picture',  # Добавление всех файлов из папки picture
-    '--exclude-module=PyQt6',  # Исключение модуля PyQt6
-    '--icon=picture/picture/cat.ico',  # Добавление иконки
+    #'--add-data=picture/*:picture',  
+    '--exclude-module=PyQt6',  
+    '--icon=picture/picture/cat.ico',
     '--clean',
     '--noconfirm'
     ])
@@ -35,17 +35,14 @@ def move_file_up_one_directory(filename):
         target_path_in_parent = os.path.join(parent_dir, new_filename)
 
 
-        # Проверка на наличие файла в родительской директории
         if os.path.exists(target_path_in_parent):
-            os.remove(target_path_in_parent)  # Удаление существующего файла
+            os.remove(target_path_in_parent)
             print(f"Существующий файл {new_filename} в родительской директории {target_path_in_parent} был удалён.")
 
-        # Перемещение файла
         shutil.move(target_file_path, target_path_in_parent)
         print(f"Файл {filename} успешно перемещён в {parent_dir}.")
         
 
-        # Переименование файла
         os.rename(target_path_in_parent, new_file_path)
         print(f"Файл был переименован в {new_filename}.")
     else:

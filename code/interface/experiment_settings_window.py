@@ -43,7 +43,6 @@ class settigsDialog(QDialog):
         main_layout = QVBoxLayout()
         set_layout = QHBoxLayout()
 
-        # Создание чекбоксов
         checkboxes_layout_1 = QVBoxLayout()
         self.check_boxes_1 = []
         for i in range(2):

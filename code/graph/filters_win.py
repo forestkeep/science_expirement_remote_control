@@ -74,7 +74,7 @@ class filterWin(QWidget):
         filter_label.setAlignment(Qt.AlignCenter)
         filter_layout.addWidget(filter_label)
 
-        font = QFont('Arial', 10, QFont.Bold)  # Установите желаемый шрифт
+        font = QFont('Arial', 10, QFont.Bold)
         filter_label.setFont(font)
 
         parameter_layout = QHBoxLayout()

@@ -22,9 +22,9 @@ PyInstaller.__main__.run([
     #'--onefile',
     '--noconsole', 
     '--hidden-import=pyvisa_py',
-    #'--add-data=picture/*:picture',  # Добавление всех файлов из папки picture
-    '--exclude-module=PyQt6',  # Исключение модуля PyQt6
-    '--icon=picture/picture/cat.ico',  # Добавление иконки
+    #'--add-data=picture/*:picture', 
+    '--exclude-module=PyQt6', 
+    '--icon=picture/picture/cat.ico',
     '--clean',
     '--noconfirm'
 ])

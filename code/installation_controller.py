@@ -76,7 +76,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
         #======================languages load==========================
 
-        self.translator = QTranslator()  # Создайте экземпляр переводчика
+        self.translator = QTranslator() 
         self.lang = None
 
         lang = self.settings.value(
@@ -88,15 +88,12 @@ class MyWindow(QtWidgets.QMainWindow):
         if False:
             if os.path.isfile("picture/tray.png"):
                 try:
-                    # Создаем системный трей и устанавливаем иконку
                     self.tray_icon = QtWidgets.QSystemTrayIcon(self)
                     self.tray_icon.setIcon(QtGui.QIcon("picture/tray.png"))
                     self.tray_icon.activated.connect(self.tray_icon_activated)
 
-                    # Создаем контекстное меню
                     self.tray_menu = QtWidgets.QMenu()
 
-                    # Добавляем пункты в меню
                     self.show_action = self.tray_menu.addAction(QApplication.translate('main', "Развернуть"))
                     self.quit_action = self.tray_menu.addAction(QApplication.translate('main', "Закрыть приложение"))
 
@@ -108,7 +105,6 @@ class MyWindow(QtWidgets.QMainWindow):
                     self.tray_icon.setToolTip(QApplication.translate('main',"Управление экспериментальной установкой"))
                     self.tray_icon.show()
 
-                    # Сигнал для закрытия окна
                     self.close_event = QtWidgets.QShortcut(
                         QtGui.QKeySequence("Ctrl+Q"), self
                     )
@@ -121,7 +117,6 @@ class MyWindow(QtWidgets.QMainWindow):
         if lang == self.lang:
             return
         
-        # Удаляем текущий переводчик
         QtWidgets.QApplication.instance().removeTranslator(self.translator)
         
         self.lang = lang
@@ -244,7 +239,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def tray_icon_activated(self, reason):
         if reason == QtWidgets.QSystemTrayIcon.Trigger:
-            self.show()  # Показываем окно при нажатии на трей-иконку
+            self.show()  
             self.activateWindow()
 
     def quit_application(self):
@@ -261,12 +256,9 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
 
-    # Настройка консольного обработчика
     console = logging.StreamHandler()
     console.setLevel(logging.WARNING)
     console.setFormatter(logging.Formatter(FORMAT))
-
-    # Настройка файлового обработчика
 
     folder_path = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")
     if not os.path.exists(folder_path):
@@ -279,20 +271,15 @@ if __name__ == "__main__":
     file_handler.setLevel(logging.WARNING)
     file_handler.setFormatter(logging.Formatter(FORMAT))
 
-    # Общая настройка логгирования
     logging.basicConfig(handlers=[file_handler, console], level=logging.DEBUG)
 
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
 
-    # Создаем экземпляр deviceCreator
     device_creator = deviceCreator()
 
     translator = QTranslator()
     
-    #translator.load("translations/translation_en.qm")
-    
-    #app.installTranslator(translator)
     QtWidgets.QApplication.instance().installTranslator(translator)
 
     start_window = MyWindow(device_creator=device_creator)

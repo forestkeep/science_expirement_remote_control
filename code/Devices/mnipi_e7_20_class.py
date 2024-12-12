@@ -443,7 +443,7 @@ class mnipiE720Class(base_device):
             first_read_byte = False
             status_read = False
             while is_reading:
-                data = client.read(1)  # Читаем один байт данных
+                data = client.read(1)
                 if data:
                     binary_data = int.from_bytes(data, byteorder='big')  # Конвертируем байт в двоичное представление
                     if binary_data == 170:

@@ -507,7 +507,7 @@ class base_device():
     def natural_log_generator(self):
         x = 0
         while True:
-            yield str(math.log(1 + x))  # Рассчитываем натуральный логарифм для x
+            yield str(math.log(1 + x))
             x+=1
 
     def exponential_function_generator(self):

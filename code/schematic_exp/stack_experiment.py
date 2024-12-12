@@ -100,7 +100,7 @@ class callStack(QWidget):
         self.actors_names = {}
         self.exp_queue = []
         self.objects = []
-        self.spacing = 2 # Отступ между прямоугольниками
+        self.spacing = 2
         self.ind = 1
         
         self.rect_height = 12

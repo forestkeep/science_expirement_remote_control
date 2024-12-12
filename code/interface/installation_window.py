@@ -87,9 +87,9 @@ class device_page(QtWidgets.QWidget):
 
         self.add_ch_button = {}
         font = QFont()
-        font.setFamily("Arial")  # Установка шрифта
-        font.setPointSize(18)    # Установка размера шрифта
-        font.setBold(True)       # Установка жирного начертания
+        font.setFamily("Arial") 
+        font.setPointSize(18)   
+        font.setBold(True)       
         for i in range(self.ind_channels):
             self.add_ch_button[i+1] = QtWidgets.QToolButton()
             self.add_ch_button[i+1].setFixedSize(15, 180)
@@ -269,7 +269,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
     def setupUi(self, base_window, installation_class, class_of_devices, exp_diagram, exp_call_stack):
         base_window.setObjectName("Installation")
-        self.setWindowIcon(QIcon('picture/key.png'))  # Укажите путь к вашей иконке
+        self.setWindowIcon(QIcon('picture/key.png'))
         self.setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }")
         self.central_widget = QtWidgets.QWidget(base_window)
         self.setCentralWidget(self.central_widget)

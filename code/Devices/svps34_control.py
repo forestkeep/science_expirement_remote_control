@@ -601,11 +601,8 @@ class Ui_SVPS34_control(QtWidgets.QMainWindow):
 
         for port in ports:
             try:
-                # Попытаемся открыть порт
                 ser = serial.Serial(port.device)
-                # Если порт успешно открыт, добавляем его в список активных портов
                 active_ports.append(port.device)
-                # Закрываем порт
                 ser.close()
             except (OSError, serial.SerialException):
                 pass

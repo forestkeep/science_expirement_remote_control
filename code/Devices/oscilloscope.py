@@ -13,8 +13,6 @@ import copy
 import logging
 import random
 import time
-import sys
-import os
 
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QApplication

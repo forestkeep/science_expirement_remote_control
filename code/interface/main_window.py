@@ -28,7 +28,7 @@ class Ui_MainWindow(object):
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.setWindowIcon(QIcon('picture/key.png'))  # Укажите путь к вашей иконке
+        MainWindow.setWindowIcon(QIcon('picture/key.png'))
         self.mother_class = MainWindow
 
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -89,10 +89,8 @@ class Ui_MainWindow(object):
         self.debug_mode.setObjectName("debug_mode")
         self.debug_mode.triggered.connect(self.set_design_mode)
 
-        # Создание подменю для выбора языка
         self.language_menu = QtWidgets.QMenu(self.menu)
         
-        # Добавление пунктов в подменю
         self.actionEnglish = QtWidgets.QAction(MainWindow)
         self.actionEnglish.triggered.connect(lambda: self.change_language('ENG'))
         
@@ -102,8 +100,7 @@ class Ui_MainWindow(object):
         self.language_menu.addAction(self.actionEnglish)
         self.language_menu.addAction(self.actionRussian)
         
-        # Добавление подменю в основное меню
-        self.menu.addAction(self.language_menu.menuAction())  # Добавляем действие подменю
+        self.menu.addAction(self.language_menu.menuAction())
 
         self.menu.addSeparator()
         self.menu.addAction(self.debug_mode)

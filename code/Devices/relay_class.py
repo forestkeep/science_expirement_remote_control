@@ -99,7 +99,7 @@ class relayPr1Class(base_device):
             self.active_channel_meas.dict_settable_parameters["hall4"] == True
         )
 
-        self.key_to_signal_func = True  # разрешаем выполнение функций
+        self.key_to_signal_func = True
 
         self._action_when_select_trigger()
         self._is_correct_parameters()

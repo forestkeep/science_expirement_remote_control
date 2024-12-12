@@ -15,13 +15,11 @@ import numpy as np
 def generate_arrays():
     np.random.seed(42)  # Для воспроизводимости результатов
 
-    # Генерация времени
-    arr_time_x = np.sort(np.random.choice(range(1, 10000), 1000, replace=False))  # Уникальные временные метки возрастающие
-    arr_time_y = np.sort(np.random.choice(range(1, 10000), 1000, replace=False))  # То же для arr_time_y
+    arr_time_x = np.sort(np.random.choice(range(1, 10000), 1000, replace=False))
+    arr_time_y = np.sort(np.random.choice(range(1, 10000), 1000, replace=False))
 
-    # Генерация значений для x и y
-    val_x = np.random.randint(-100, 100, size=1000).tolist()  # Случайные целые значения для val_x
-    val_y = np.random.randint(-100, 100, size=1000).tolist()  # Случайные целые значения для val_y
+    val_x = np.random.randint(-100, 100, size=1000).tolist()
+    val_y = np.random.randint(-100, 100, size=1000).tolist()
 
     return arr_time_x.tolist(), val_x, arr_time_y.tolist(), val_y
 
@@ -1138,4 +1136,3 @@ expected_x = np.array([ 8.00000000e+00, -9.20000000e+01, -3.80000000e+01, -5.566
  -9.00000000e+01, -7.90000000e+01,  1.00000000e+01,  2.40000000e+01,
  -4.40000000e+01, -1.20000000e+01, -9.00000000e+00,  3.00000000e+01,
   5.70000000e+01,  6.37500000e+01,  9.07500000e+01])
-

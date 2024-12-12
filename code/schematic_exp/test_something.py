@@ -33,7 +33,6 @@ class MyWidget(QWidget):
                 return
         QToolTip.hideText()
 
-# Пример использования
 app = QApplication([])
 window = MyWidget()
 window.show()
