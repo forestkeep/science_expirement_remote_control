@@ -54,7 +54,6 @@ def time_decorator(func):
 
     return wrapper
 
-
 class GraphWindow(QMainWindow):
     graph_win_close_signal = pyqtSignal(int)
 

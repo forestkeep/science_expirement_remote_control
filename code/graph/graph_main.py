@@ -654,6 +654,8 @@ class graphMain:
         string_y = self.get_last_item_parameter(self.y_first_param_selector)
         string_y2 = self.get_last_item_parameter(self.y_second_param_selector)
 
+        is_multiple = self.multiple_checkbox.isChecked()
+
         if string_x != "Select parameter":
             self.remove_parameter("Select parameter", self.x_param_selector)
 
@@ -663,29 +665,27 @@ class graphMain:
         if string_y2 != "Select parameter":
             self.remove_parameter("Select parameter", self.y_second_param_selector)
 
-        if obj is self.x_param_selector:
-            if self.previous_x == string_x:
-                #снято выделение
-                self.previous_x = None
-                self.x_param_selector.setCurrentItem(self.x_param_selector.currentItem(), QItemSelectionModel.Clear)
-            else:
-                self.previous_x = string_x
+        if not is_multiple:
+            if obj is self.x_param_selector:
+                if self.previous_x == string_x:
+                    self.previous_x = None
+                    self.x_param_selector.setCurrentItem(self.x_param_selector.currentItem(), QItemSelectionModel.Clear)
+                else:
+                    self.previous_x = string_x
 
-        elif obj is self.y_first_param_selector:
-            if self.previous_y == string_y and obj is self.y_first_param_selector:
-                #снято выделение
-                self.previous_y = None     
-                self.y_first_param_selector.setCurrentItem(self.y_first_param_selector.currentItem(), QItemSelectionModel.Clear)
-            else:
-                self.previous_y = string_y  
+            elif obj is self.y_first_param_selector:
+                if self.previous_y == string_y and obj is self.y_first_param_selector:
+                    self.previous_y = None     
+                    self.y_first_param_selector.setCurrentItem(self.y_first_param_selector.currentItem(), QItemSelectionModel.Clear)
+                else:
+                    self.previous_y = string_y  
 
-        elif obj is self.y_second_param_selector:
-            if self.previous_y2 == string_y2:            
-                #снято выделение  
-                self.previous_y2 = None          
-                self.y_second_param_selector.setCurrentItem(self.y_second_param_selector.currentItem(), QItemSelectionModel.Clear)
-            else:
-                self.previous_y2 = string_y2
+            elif obj is self.y_second_param_selector:
+                if self.previous_y2 == string_y2:             
+                    self.previous_y2 = None          
+                    self.y_second_param_selector.setCurrentItem(self.y_second_param_selector.currentItem(), QItemSelectionModel.Clear)
+                else:
+                    self.previous_y2 = string_y2
 
 
         #блок проверки параметров
@@ -697,10 +697,11 @@ class graphMain:
         if string_x in block_parameters and string_y in block_parameters:
             check_main = False
 
-        if string_x in block_parameters and string_y2 in block_parameters and self.second_check_box.isChecked():
+        if string_x in block_parameters and string_y2 in block_parameters or not self.second_check_box.isChecked():
             check_second = False
 
         if not check_second and not check_main:
+            print("block parameters error")
             return
         
 
@@ -712,8 +713,9 @@ class graphMain:
             pass
 
         elif obj is self.y_first_param_selector and check_main:
-                if self.multiple_checkbox.isChecked():
+                if is_multiple:
                     current_items_y = list(item.text() for item in self.y_first_param_selector.selectedItems())
+                    print(current_items_y)
                     if string_y not in current_items_y and string_y != "Select parameter":
                         if self.stack_curve.get(string_y + string_x) is not None:
                             self.stack_curve[string_y + string_x].is_draw = False
@@ -730,7 +732,7 @@ class graphMain:
                             data_curve.delete_curve_from_graph()
                             self.y_second_param_selector.addItem(data_curve.y_name)
                     
-                if self.previous_y != None:
+                if self.previous_y != None or is_multiple:
                     if self.stack_curve.get(string_y + string_x) is not None:
                         print(f"задаем отрисовку {string_y + string_x} в блоке 1")
                         self.stack_curve[string_y + string_x].place_curve_on_graph(graph_field  = self.graphView,
@@ -751,7 +753,7 @@ class graphMain:
             if not self.second_check_box.isChecked() or not check_second:
                 return
             
-            if self.multiple_checkbox.isChecked():
+            if is_multiple:
                 current_items_y2 = list(item.text() for item in self.y_second_param_selector.selectedItems())
                 if string_y2 not in current_items_y2 and string_y2 != "Select parameter":
                     if self.stack_curve.get(string_y2 + string_x) is not None:
@@ -803,7 +805,7 @@ class graphMain:
         self.x_axis_label = string_x
         self.y_main_axis_label = string_y
         self.y_second_axis_label = string_y2
-        if self.multiple_checkbox.isChecked():
+        if is_multiple:
             self.y_main_axis_label = ""
             self.y_second_axis_label = ""
     def deselect_item(self, text, list_widget):
@@ -922,13 +924,12 @@ class graphMain:
 
     def update_draw(self):
 
-        #==================================
-        print("========")
         self.legend.clear()
         self.legend2.clear()
 
         self.graphView.setLabel("left", self.y_main_axis_label, color=self.color_line_main)
         self.graphView.setLabel("bottom", self.x_axis_label, color="#ffffff")
+        '''
         for obj in self.stack_curve.values():
             if obj.is_draw and False:
                 if obj.plot_obj == None:
@@ -962,15 +963,12 @@ class graphMain:
 
             else:
                 pass
-            '''
+            
                 if obj.plot_obj != None:
                     print(f"удаляем {obj.plot_obj} из {obj.parent_graph_field=}")
                     obj.parent_graph_field.removeItem(obj.plot_obj)
                     #obj.plot_obj = None
-            '''
-
-        print("========")
-        #=============================================================
+        '''
 
     def update_draw_old(self):
 
