@@ -95,19 +95,36 @@ class graphData:
         self.legend_field = legend_field
 
         self.parent_graph_field.addItem(self.plot_obj)
-        self.legend_field.addItem(self.plot_obj,self.legend_name)
+        self.legend_field.addItem(self.plot_obj, self.legend_name)
 
     def delete_curve_from_graph(self):
-        self.parent_graph_field.removeItem(self.plot_obj)
-        self.legend_field.removeItem(self.legend_name)
+        if self.is_draw:
+            self.is_draw = False
+            self.parent_graph_field.removeItem(self.plot_obj)
+            self.legend_field.removeItem(self.legend_name)
+
 
 class linearData(graphData):
-    def __init__(self, raw_x, raw_y, device, ch, y_name, x_name) -> None:
+    def __init__(self, raw_x, raw_y, device, ch, y_name, x_name, y_param_name, x_param_name) -> None:
         super().__init__(raw_x, raw_y)
         self.device = device
         self.ch = ch
         self.y_name = y_name
         self.x_name = x_name
+        self.legend_name = " ".join([device, ch])
+
+        self.y_param_name = y_param_name
+        self.x_param_name = x_param_name
+
+    def set_full_legend_name(self):
+        self.legend_field.removeItem(self.legend_name)
+        self.legend_name = " ".join([self.device, self.ch, self.y_param_name])
+        self.legend_field.addItem(self.plot_obj, self.legend_name)
+
+    def set_short_legend_name(self):
+        self.legend_field.removeItem(self.legend_name)
+        self.legend_name = " ".join([self.device, self.ch])
+        self.legend_field.addItem(self.plot_obj, self.legend_name)
 
 class oscData(graphData):
     def __init__(self, raw_x, raw_y, device, ch, name, number) -> None:

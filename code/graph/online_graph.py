@@ -9,12 +9,9 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-import random
 import sys
 import time
 
-import numpy as np
-import pandas as pd
 from PyQt5.QtCore import QTimer, pyqtSignal, QPropertyAnimation, QPoint, Qt, QTimer
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
@@ -25,9 +22,6 @@ from PyQt5.QtWidgets import (
     QWidget,
     QSplitter,
     QSizePolicy,
-    QFrame,
-    QVBoxLayout,
-    QLabel
 )
 
 if __name__ == "__main__":
@@ -149,7 +143,7 @@ class GraphWindow(QMainWindow):
 
     def gen_new_data(self):
         """функция раз в n секунд генерирует словарь и обновляет данные"""
-        sec = 10000
+        sec = 100000
         self.update_graphics(next(self.gen))
         self.timer.start(sec*1000)
 

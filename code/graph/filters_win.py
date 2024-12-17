@@ -3,7 +3,6 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 class filterWin(QWidget):
     def __init__(self):
@@ -155,6 +154,7 @@ class filtersClass():
 
 
 def test_filters():
+    import matplotlib.pyplot as plt
     np.random.seed(42)
     x = np.linspace(0, 10, 100)
     clean_data = np.sin(x)
