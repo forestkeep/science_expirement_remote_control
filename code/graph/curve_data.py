@@ -122,11 +122,16 @@ class linearData(graphData):
         self.y_param_name = y_param_name
         self.x_param_name = x_param_name
 
-        self.tree_item.update_parameters(min_x = self.raw_data_x.min(),
-                                        max_x = self.raw_data_x.max(),
-                                        min_y = self.raw_data_y.min(),
-                                        max_y = self.raw_data_y.max(),
-                                        name = "-".join([self.y_name, self.x_name]))
+        self.tree_item.update_parameters(
+                                        {"min_x":self.raw_data_x.min(),
+                                        "max_x":self.raw_data_x.max(),
+                                        "min_y":self.raw_data_y.min(),
+                                        "max_y":self.raw_data_y.max(),
+                                        "name":"-".join([self.y_name, self.x_name]),
+                                        "tip":"linear",
+                                        "mean":round(np.mean(self.raw_data_y),3),
+                                        "std": round(np.std(self.raw_data_y),3)}
+                                        )
 
     def set_full_legend_name(self):
         self.legend_field.removeItem(self.legend_name)

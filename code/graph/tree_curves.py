@@ -11,62 +11,69 @@ class CurveTreeItem(QTreeWidgetItem):
     def __init__(self, curve_data_obj = None,  parent = None, name = None):
         super().__init__(parent)
         self.setText(0, f"Кривая {name}")
-        font = QFont()
-        font.setBold(True)
-        self.setFont(0, font)
+        self.font = QFont()
+        self.font.setItalic(True)
+        self.font.setBold(True)
+        self.font.setPointSize(12)
+        self.setFont(0, self.font)
 
         self.curve_data_obj = curve_data_obj
 
-        self.min_y = 0
-        self.max_y = 10
-        self.min_x = -3
-        self.max_x = 3
-
-        self.name = name
+        self.parameters = {
+            "min_x": False,
+            "max_x": False,
+            "min_y": False,
+            "max_y": False,
+            "name": False,
+            "tip": False,
+            "mean": False,
+            "std": False,
+            "ID": False
+            }
 
         # Добавить основные характеристики
         self.add_basic_characteristics()
 
     def add_basic_characteristics(self):
-        self.addChild(QTreeWidgetItem([f"Тип: Полином", "Коэффициенты: [1, 2, 3]"]))
-        self.addChild(QTreeWidgetItem([f"Область определения: {self.min_x}, {self.max_x}"]))
-        self.addChild(QTreeWidgetItem([f"Область значений: {self.min_y}, {self.max_y}"]))
+        self.addChild(QTreeWidgetItem([f"ID: {self.parameters['ID']}", "c"]))
+        self.addChild(QTreeWidgetItem([f"Тип: {self.parameters['tip']}", "Коэффициенты: [1, 2, 3]"]))
+        self.addChild(QTreeWidgetItem([f"Область определения: ({self.parameters['min_x']}, {self.parameters['max_x']})"]))
+        self.addChild(QTreeWidgetItem([f"Область значений: ({self.parameters['min_y']}, {self.parameters['max_y']})"]))
+        self.add_statistics(2.5, 1.0)
 
-    def update_parameters(self, **kwargs) :
-        for parameter_name, new_value in kwargs.items():
-            if parameter_name == "min_x":
-                self.min_x = new_value
-            elif parameter_name == "max_x":
-                self.max_x = new_value
-            elif parameter_name == "min_y":
-                self.min_y = new_value
-            elif parameter_name == "max_y":
-                self.max_y = new_value
-            elif parameter_name == "mean":
-                self.mean = new_value
-            elif parameter_name == "std_dev":
-                self.std_dev = new_value
-            elif parameter_name == "name":
-                self.name = new_value
-            else:
-                pass
+        '''
+        self.add_filter("Сглаживание", "Порядок 3")
+        self.add_filter("Нормализация", "")
+        self.add_statistics(2.5, 1.0)
+        self.add_change_history("Применен фильтр сглаживания")
+        self.add_change_history("Изменение параметров")
+        self.add_notes("Кривая была получена из эксперимента X.")
+        '''
+
+    def update_parameters(self, dict_parameters) :
+        for parameter_name, new_value in dict_parameters.items():
+            if self.parameters.get(parameter_name) is not None:
+                self.parameters[parameter_name] = new_value
 
         self.update_display()
 
     def update_display(self):
-        self.setText(0, f"{self.name}")
-        self.child(1).setText(0, f"Область определения: {self.min_x}, {self.max_x}")
-        self.child(2).setText(0, f"Область значений: {self.min_y}, {self.max_y}")
+        self.setText(0, f"{self.parameters['name']}")
+        self.child(0).setText(0, f"ID: {self.parameters['ID']}")
+        self.child(1).setText(0, f"Тип: {self.parameters['tip']}")
+        self.child(2).setText(0, f"Область определения: ({self.parameters['min_x']}, {self.parameters['max_x']})")
+        self.child(3).setText(0, f"Область значений: ({self.parameters['min_y']}, {self.parameters['max_y']})")
 
         stats_item = self.findChild("Статистические данные")
         if stats_item:
-            stats_item.child(0).setText(0, f"Среднее: {self.mean}")
-            stats_item.child(1).setText(0, f"Стандартное отклонение: {self.std_dev}")
+            stats_item.child(0).setText(0, f"Среднее: {self.parameters['mean']}")
+            stats_item.child(1).setText(0, f"Стандартное отклонение: {self.parameters['std']}")
 
     def add_filter(self, filter_name, parameters):
         filters_item = self.findChild("Фильтры")
         if filters_item is None:
             filters_item = QTreeWidgetItem(self, ["Фильтры"])
+            filters_item.setFont(0, self.font)
             filters_item.setExpanded(True)
 
         filter_item = QTreeWidgetItem(filters_item, [f"Фильтр: {filter_name}"])
@@ -76,6 +83,7 @@ class CurveTreeItem(QTreeWidgetItem):
         stats_item = self.findChild("Статистические данные")
         if stats_item is None:
             stats_item = QTreeWidgetItem(self, ["Статистические данные"])
+            stats_item.setFont(0, self.font)
             stats_item.setExpanded(True)
 
         stats_item.addChild(QTreeWidgetItem([f"Среднее: {mean}"]))
@@ -85,6 +93,7 @@ class CurveTreeItem(QTreeWidgetItem):
         history_item = self.findChild("История изменений")
         if history_item is None:
             history_item = QTreeWidgetItem(self, ["История изменений"])
+            history_item.setFont(0, self.font)
             history_item.setExpanded(True)
 
         history_item.addChild(QTreeWidgetItem([f"[{datetime.now().strftime('%d.%m.%Y %H:%M:%S')}] {description}"]))
@@ -93,6 +102,7 @@ class CurveTreeItem(QTreeWidgetItem):
         notes_item = self.findChild("Примечания")
         if notes_item is None:
             notes_item = QTreeWidgetItem(self, ["Примечания"])
+            notes_item.setFont(0, self.font)
 
         notes_item.addChild(QTreeWidgetItem([notes]))
 
@@ -182,15 +192,12 @@ class treeWin(QWidget):
     def create_curve(self):
         # Создаем новый объект CurveItem
         print("Создание кривой")
-    def add_curve(self, curve_item):
+    def add_curve(self, curve_item:CurveTreeItem ):
+
         self.tree_widget.addTopLevelItem(curve_item)
-        curve_item.add_filter("Сглаживание", "Порядок 3")
-        curve_item.add_filter("Нормализация", "")
-        curve_item.add_statistics(2.5, 1.0)
-        curve_item.add_change_history("Применен фильтр сглаживания")
-        curve_item.add_change_history("Изменение параметров")
-        curve_item.add_notes("Кривая была получена из эксперимента X.")
+        curve_item.update_parameters({"ID": "CUR" + str(len(self.curves) + 1)})
         self.curves.append(curve_item)
+
     def add_test_curve(self):
         # Создаем новый объект CurveItem
         curve_item = CurveTreeItem()
@@ -207,7 +214,7 @@ class treeWin(QWidget):
         if item:  # Если на элемент было нажато
             view_action = QAction("Просмотр", self)
             edit_action = QAction("Редактировать", self)
-            delete_action = QAction("Удалить", self)
+            delete_action = QAction("Удалить график", self)
             context_menu.addAction(view_action)
             context_menu.addAction(edit_action)
             context_menu.addAction(delete_action)
@@ -229,6 +236,9 @@ class treeWin(QWidget):
             else:
                 QMessageBox.warning(self, "Ошибка", "Пожалуйста, выберите элемент для удаления.")
                 return
+            
+        if item is self.curves:
+            self.curves.remove(item)
 
         parent = item.parent()
         if parent:  # Если у элемента есть родитель
@@ -250,5 +260,3 @@ if __name__ == "__main__":
     mainWin.show()
     sys.exit(app.exec_())
     
-
-
