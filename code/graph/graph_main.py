@@ -35,12 +35,13 @@ try:
     from Message_graph import messageDialog
     from curve_data import linearData
     from colors import cold_colors, warm_colors, GColors
+    from tree_curves import CurveTreeItem
 except:
     from graph.calc_values_for_graph import ArrayProcessor
     from graph.Message_graph import messageDialog
     from graph.curve_data import linearData
     from graph.colors import cold_colors, warm_colors, GColors
-
+    from graph.tree_curves import CurveTreeItem
 
 def time_decorator(func):
     def wrapper(*args, **kwargs):
@@ -717,7 +718,10 @@ class graphMain:
         if obj is None:
             return
         elif obj is self.x_param_selector:
-            pass
+            #удалить все кривые с графика
+            for data_curve in self.stack_curve.values():
+                if data_curve.is_draw:
+                    data_curve.delete_curve_from_graph()
 
         elif obj is self.y_first_param_selector and check_main:
                 ret = self.handle_skip_draw(self.y_first_param_selector, self.y_second_param_selector, self.graphView, string_x, string_y, is_multiple)
@@ -859,6 +863,9 @@ class graphMain:
                                     x_param_name = x_param_name
                                     )
             buf_color = next(self.color_warm_gen)
+            #===========================
+            self.main_class.tree_class.add_curve(new_data.tree_item)
+            #===========================
             if new_data.saved_pen == None:
                 buf_pen = {
                             "color": buf_color,

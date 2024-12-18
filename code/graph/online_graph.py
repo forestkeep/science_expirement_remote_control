@@ -30,12 +30,14 @@ if __name__ == "__main__":
     from tabPage_win import tabPage
     from filters_win import filtersClass
     from notification import NotificationWidget
+    from tree_curves import treeWin
 else:
     from graph.graph_main import graphMain
     from graph.osc_wave_graph import graphOsc
     from graph.tabPage_win import tabPage
     from graph.filters_win import filtersClass
     from graph.notification import NotificationWidget
+    from graph.tree_curves import treeWin
 
 
 def time_decorator(func):
@@ -67,6 +69,8 @@ class GraphWindow(QMainWindow):
 
         self.filter_class = filtersClass()
 
+        self.tree_class = treeWin()
+
         self.tabWidget = QTabWidget()
 
         #---------------------------------
@@ -75,11 +79,13 @@ class GraphWindow(QMainWindow):
 
         splitter.setOrientation(1)  # 1 - вертикальный
 
+        splitter.addWidget(self.tree_class)
         splitter.addWidget(self.tabWidget)
         splitter.addWidget(self.filter_class.filt_window)
 
-        splitter.setStretchFactor(0, 10)
-        splitter.setStretchFactor(1, 1)
+        splitter.setStretchFactor(0, 1)
+        splitter.setStretchFactor(1, 10)
+        splitter.setStretchFactor(2, 1)
 
         self.filter_class.set_filter_slot(self.filters_callback)#при нажатии кнопок в фильтре будет вызываться эта функция
 

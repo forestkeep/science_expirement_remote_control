@@ -8,20 +8,60 @@ from datetime import datetime
 
 
 class CurveTreeItem(QTreeWidgetItem):
-    def __init__(self, parent=None):
+    def __init__(self, curve_data_obj = None,  parent = None, name = None):
         super().__init__(parent)
-        self.setText(0, f"Кривая {parent.topLevelItemCount() + 1}")
+        self.setText(0, f"Кривая {name}")
         font = QFont()
         font.setBold(True)
         self.setFont(0, font)
+
+        self.curve_data_obj = curve_data_obj
+
+        self.min_y = 0
+        self.max_y = 10
+        self.min_x = -3
+        self.max_x = 3
+
+        self.name = name
 
         # Добавить основные характеристики
         self.add_basic_characteristics()
 
     def add_basic_characteristics(self):
         self.addChild(QTreeWidgetItem([f"Тип: Полином", "Коэффициенты: [1, 2, 3]"]))
-        self.addChild(QTreeWidgetItem([f"Диапазон: [0, 10]"]))
-        self.addChild(QTreeWidgetItem([f"Домен: [-5, 5]"]))
+        self.addChild(QTreeWidgetItem([f"Область определения: {self.min_x}, {self.max_x}"]))
+        self.addChild(QTreeWidgetItem([f"Область значений: {self.min_y}, {self.max_y}"]))
+
+    def update_parameters(self, **kwargs) :
+        for parameter_name, new_value in kwargs.items():
+            if parameter_name == "min_x":
+                self.min_x = new_value
+            elif parameter_name == "max_x":
+                self.max_x = new_value
+            elif parameter_name == "min_y":
+                self.min_y = new_value
+            elif parameter_name == "max_y":
+                self.max_y = new_value
+            elif parameter_name == "mean":
+                self.mean = new_value
+            elif parameter_name == "std_dev":
+                self.std_dev = new_value
+            elif parameter_name == "name":
+                self.name = new_value
+            else:
+                pass
+
+        self.update_display()
+
+    def update_display(self):
+        self.setText(0, f"{self.name}")
+        self.child(1).setText(0, f"Область определения: {self.min_x}, {self.max_x}")
+        self.child(2).setText(0, f"Область значений: {self.min_y}, {self.max_y}")
+
+        stats_item = self.findChild("Статистические данные")
+        if stats_item:
+            stats_item.child(0).setText(0, f"Среднее: {self.mean}")
+            stats_item.child(1).setText(0, f"Стандартное отклонение: {self.std_dev}")
 
     def add_filter(self, filter_name, parameters):
         filters_item = self.findChild("Фильтры")
@@ -61,20 +101,23 @@ class CurveTreeItem(QTreeWidgetItem):
             if self.child(i).text(0) == title:
                 return self.child(i)
         return None
-
+    
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-
-        self.curves = []
 
         self.setWindowTitle("Приложение с графиком и древовидной структурой")
         self.setGeometry(100, 100, 800, 600)
 
         # Основной виджет
-        main_widget = QWidget(self)
+        main_widget = treeWin()
         self.setCentralWidget(main_widget)
 
+class treeWin(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.curves = []
         # Вертикальный слой для кнопок и QTreeWidget
         left_layout = QVBoxLayout()
 
@@ -95,7 +138,7 @@ class MainWindow(QMainWindow):
             i+=1
 
         # Подключение кнопок к функциям
-        self.buttons[0].clicked.connect(self.add_curve)  # Добавить
+        self.buttons[0].clicked.connect(self.add_test_curve)  # Добавить
         self.buttons[1].clicked.connect(self.create_curve)  # Создать
 
         # Добавляем горизонтальный слой с кнопками в вертикальный слой
@@ -114,7 +157,7 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(self.tree_widget)
 
         # Установка общего слоя
-        main_layout = QHBoxLayout(main_widget)
+        main_layout = QHBoxLayout(self)
         main_layout.addLayout(left_layout)
 
         # Устанавливаем контекстное меню
@@ -139,12 +182,8 @@ class MainWindow(QMainWindow):
     def create_curve(self):
         # Создаем новый объект CurveItem
         print("Создание кривой")
-    def add_curve(self):
-        # Создаем новый объект CurveItem
-        curve_item = CurveTreeItem(self.tree_widget)
+    def add_curve(self, curve_item):
         self.tree_widget.addTopLevelItem(curve_item)
-
-        # Пример добавления фильтров и статистики
         curve_item.add_filter("Сглаживание", "Порядок 3")
         curve_item.add_filter("Нормализация", "")
         curve_item.add_statistics(2.5, 1.0)
@@ -152,6 +191,10 @@ class MainWindow(QMainWindow):
         curve_item.add_change_history("Изменение параметров")
         curve_item.add_notes("Кривая была получена из эксперимента X.")
         self.curves.append(curve_item)
+    def add_test_curve(self):
+        # Создаем новый объект CurveItem
+        curve_item = CurveTreeItem()
+        self.add_curve(curve_item)
 
     def show_context_menu(self, position):
         # Получаем элемент по позиции курсора

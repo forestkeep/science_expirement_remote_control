@@ -11,6 +11,10 @@
 
 import numpy as np
 import pyqtgraph as pg
+try:
+    from tree_curves import CurveTreeItem
+except:
+    from graph.tree_curves import CurveTreeItem
 class graphData:
     def __init__(self, raw_x, raw_y) -> None:
         """
@@ -20,11 +24,11 @@ class graphData:
             raw_x: The raw data for the x-axis.
             raw_y: The raw data for the y-axis.
         """
-        self.raw_data_x = raw_x 
-        self.raw_data_y = raw_y 
+        self.raw_data_x = np.array(raw_x)
+        self.raw_data_y = np.array(raw_y)
 
-        self.filtered_x_data = raw_x
-        self.filtered_y_data = raw_y
+        self.filtered_x_data = np.array(raw_x)
+        self.filtered_y_data = np.array(raw_y)
 
         self.plot_obj = None
         self.data_x = None
@@ -44,6 +48,8 @@ class graphData:
 
         self.parent_graph_field = None
         self.legend_field = None
+
+        self.tree_item = CurveTreeItem(curve_data_obj=self)
 
     def set_plot_obj(self, plot_obj, pen, highlight=False):
         self.plot_obj = plot_obj
@@ -115,6 +121,12 @@ class linearData(graphData):
 
         self.y_param_name = y_param_name
         self.x_param_name = x_param_name
+
+        self.tree_item.update_parameters(min_x = self.raw_data_x.min(),
+                                        max_x = self.raw_data_x.max(),
+                                        min_y = self.raw_data_y.min(),
+                                        max_y = self.raw_data_y.max(),
+                                        name = "-".join([self.y_name, self.x_name]))
 
     def set_full_legend_name(self):
         self.legend_field.removeItem(self.legend_name)
