@@ -11,6 +11,7 @@
 
 import numpy as np
 import pyqtgraph as pg
+from scipy import stats
 try:
     from tree_curves import CurveTreeItem
 except:
@@ -130,7 +131,10 @@ class linearData(graphData):
                                         "name":"-".join([self.y_name, self.x_name]),
                                         "tip":"linear",
                                         "mean":round(np.mean(self.raw_data_y),3),
-                                        "std": round(np.std(self.raw_data_y),3)}
+                                        "std": round(np.std(self.raw_data_y),3),
+                                        "median": np.median(self.raw_data_y),
+                                        "count": len(self.raw_data_y),
+                                        "mode": stats.mode(self.raw_data_y)[0]}
                                         )
 
     def set_full_legend_name(self):
