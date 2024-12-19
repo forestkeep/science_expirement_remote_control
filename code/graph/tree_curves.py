@@ -1,20 +1,32 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QTreeWidget, QTreeWidgetItem,
-                             QMessageBox, QMenu, QAction, QDialog, QLineEdit)
-from PyQt5.QtGui import QColor, QIcon, QFont
+                             QMessageBox, QMenu, QAction, QDialog, QLineEdit, QColorDialog, QHeaderView)
+from PyQt5.QtGui import QColor, QIcon, QFont, QBrush
 from PyQt5.QtCore import Qt
 from datetime import datetime
 
 class CurveTreeItem(QTreeWidgetItem):
     def __init__(self, curve_data_obj=None, parent=None, name=None):
         super().__init__(parent)
+
         self.setText(0, f"Кривая {name}")
         self.font = QFont()
         self.font.setItalic(True)
         self.font.setBold(True)
         self.font.setPointSize(12)
         self.setFont(0, self.font)
+
+        self.setForeground(1, QBrush(QColor("#ff30ea")))
+
+
+        self.col_font = QFont()
+        self.col_font.setBold(True)
+        self.col_font.setPointSize(20)
+        self.setFont(1, self.col_font)
+
+        self.setText(1, "--●--")
+        self.setForeground(1, QBrush(QColor("#ff30ea")))
 
         self.curve_data_obj = curve_data_obj
 
@@ -35,10 +47,9 @@ class CurveTreeItem(QTreeWidgetItem):
 
         self.add_basic_characteristics()
 
-
     def add_basic_characteristics(self):
-        self.addChild(QTreeWidgetItem([f"ID: {self.parameters['id']}", "c"]))
-        self.addChild(QTreeWidgetItem([f"Тип: {self.parameters['tip']}", "Коэффициенты: [1, 2, 3]"]))
+        self.addChild(QTreeWidgetItem([f"ID: {self.parameters['id']}"]))
+        self.addChild(QTreeWidgetItem([f"Тип: {self.parameters['tip']}"]))
         self.addChild(QTreeWidgetItem([f"Область определения: ({self.parameters['min_x']}, {self.parameters['max_x']})"]))
         self.addChild(QTreeWidgetItem([f"Область значений: ({self.parameters['min_y']}, {self.parameters['max_y']})"]))
         self.add_statistics(self.parameters["mean"], self.parameters["std"], 
@@ -64,6 +75,10 @@ class CurveTreeItem(QTreeWidgetItem):
                 self.parameters[parameter_name] = new_value
         self.update_display()
 
+    def change_color(self, color):
+        self.setForeground(1, QBrush(QColor(color)))
+        self.curve_data_obj.change_color(color)
+
     def update_display(self):
         self.setText(0, f"{self.parameters['name']}")
         self.child(0).setText(0, f"ID: {self.parameters['id']}")
@@ -73,6 +88,7 @@ class CurveTreeItem(QTreeWidgetItem):
 
         stats_item = self.findChild("Статистические данные")
         if stats_item:
+            print(self.parameters)
             stats_item.child(0).setText(0, f"Среднее: {self.parameters['mean']}")
             stats_item.child(1).setText(0, f"Стандартное отклонение: {self.parameters['std']}")
             stats_item.child(2).setText(0, f"Мода: {self.parameters['mode']}")
@@ -113,6 +129,14 @@ class CurveDialog(QDialog):
     def get_curve_data(self):
         return self.name_input.text(), self.formula_input.text()
 
+
+def choose_color():
+    color = QColorDialog.getColor()
+    if color.isValid():
+        return color.name()
+    return None
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -124,17 +148,19 @@ class MainWindow(QMainWindow):
 class treeWin(QWidget):
     def __init__(self):
         super().__init__()
+        self.setMinimumSize(0,0)
         self.curves = []
         left_layout = QVBoxLayout()
         button_layout = QHBoxLayout()
 
         button_colors = [QColor(255, 0, 0)]
-        button_names = ["Создать кривую"]
         self.buttons = []
         i = 0
         for color in button_colors:
-            button = QPushButton(button_names[i])
+            button = QPushButton()
             button.setStyleSheet(f"background-color: {color.name()}; border:none;")
+            button.setMaximumSize(30, 30)
+            button.setMinimumSize(0, 0)
             button_layout.addWidget(button)
             self.buttons.append(button)
             i += 1
@@ -148,11 +174,20 @@ class treeWin(QWidget):
         self.visibility_button.setCheckable(True)
         self.visibility_button.clicked.connect(self.toggle_visibility)
         self.visibility_button.setToolTip("Показать активные кривые")
+        self.visibility_button.setMinimumSize(0, 30)
+        self.visibility_button.setMaximumSize(30, 30)
         button_layout.addWidget(self.visibility_button)
 
         self.tree_widget = QTreeWidget()
-        self.tree_widget.setHeaderLabels(["Кривые"])
+        self.tree_widget.setColumnCount(3)
+        self.tree_widget.setSortingEnabled(True)
+        self.tree_widget.setHeaderLabels(["Кривые", "Цвет", "Статус"])
         left_layout.addWidget(self.tree_widget)
+
+        header = self.tree_widget.header()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.Fixed)
+        header.setSectionResizeMode(2, QHeaderView.Fixed)
 
         main_layout = QHBoxLayout(self)
         main_layout.addLayout(left_layout)
@@ -191,19 +226,26 @@ class treeWin(QWidget):
 
     def show_context_menu(self, position):
         item = self.tree_widget.itemAt(position)
+        parent = item
+        while True:
+            root_item = parent
+            parent = parent.parent()
+            if parent  is None:
+                break
+        
         context_menu = QMenu(self)
 
         if item:
-            view_action = QAction("Просмотр", self)
+            color_action = QAction("Изменить цвет", self)
             edit_action = QAction("Редактировать", self)
             delete_action = QAction("Удалить график", self)
-            context_menu.addAction(view_action)
+            context_menu.addAction(color_action)
             context_menu.addAction(edit_action)
             context_menu.addAction(delete_action)
 
-            view_action.triggered.connect(lambda: self.view_curve(item))
-            edit_action.triggered.connect(lambda: self.edit_curve(item))
-            delete_action.triggered.connect(lambda: self.delete_curve(item))
+            color_action.triggered.connect(lambda: self.change_color_curve(root_item))
+            edit_action.triggered.connect(lambda: self.edit_curve(root_item))
+            delete_action.triggered.connect(lambda: self.delete_curve(root_item))
 
         context_menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
 
@@ -227,7 +269,12 @@ class treeWin(QWidget):
             if index != -1:
                 self.tree_widget.takeTopLevelItem(index)
 
-    def view_curve(self, item):
+    def change_color_curve(self, item):
+        color = choose_color()
+        if color:
+            item.change_color(color)
+        else:
+            print("Не выбран цвет")
         QMessageBox.information(self, "Просмотр", f"Просмотр данных для {item.text(0)}")
 
     def edit_curve(self, item):

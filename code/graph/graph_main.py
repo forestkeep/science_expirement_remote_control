@@ -886,7 +886,7 @@ class graphMain:
                                             )
 
             new_data.set_plot_obj(plot_obj = graph,
-                                     pen      = buf_pen)
+                                  pen      = buf_pen)
             self.stack_curve[y_name + x_name] = new_data
             
         self.stack_curve[y_name + x_name].is_draw = True

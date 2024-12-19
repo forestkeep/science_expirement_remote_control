@@ -12,6 +12,8 @@
 import numpy as np
 import pyqtgraph as pg
 from scipy import stats
+
+from PyQt5.QtGui import QColor, QIcon, QFont, QBrush
 try:
     from tree_curves import CurveTreeItem
 except:
@@ -66,9 +68,16 @@ class graphData:
 
         self.saved_pen = pen
 
+        self.tree_item.setForeground(1, QBrush(QColor(self.saved_pen['color'])))
+
         if highlight:
             self.current_highlight = True
             self.plot_obj.setPen(pg.mkPen('w', width=2))
+
+    def change_color(self, color):
+        self.saved_pen['color'] = color
+        self.plot_obj.setPen(self.saved_pen)
+        self.plot_obj.setSymbolBrush(self.saved_pen['color'])
      
     def on_plot_clicked(self, obj):
 
