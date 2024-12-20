@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QTreeWidget, QTreeWidgetItem,
                              QMessageBox, QMenu, QAction, QDialog, QLineEdit, QColorDialog, QHeaderView)
 from PyQt5.QtGui import QColor, QIcon, QFont, QBrush
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QEvent
 from datetime import datetime
 
 class CurveTreeItem(QTreeWidgetItem):
@@ -75,9 +75,18 @@ class CurveTreeItem(QTreeWidgetItem):
                 self.parameters[parameter_name] = new_value
         self.update_display()
 
+    def this_choise(self):
+        self.curve_data_obj.higlight_curve()
+
+    def deselection(self):
+        self.curve_data_obj.unhiglight_curve()
+
     def change_color(self, color):
         self.setForeground(1, QBrush(QColor(color)))
         self.curve_data_obj.change_color(color)
+
+    def is_draw(self):
+        return self.curve_data_obj.is_draw
 
     def update_display(self):
         self.setText(0, f"{self.parameters['name']}")
@@ -145,6 +154,23 @@ class MainWindow(QMainWindow):
         main_widget = treeWin()
         self.setCentralWidget(main_widget)
 
+class customTreeWidget(QTreeWidget):
+    def __init__(self, par_class):
+        super().__init__()
+        self.par_class = par_class
+        self.setMouseTracking(True)
+        #self.setStyleSheet("QTreeWidget::item:selected { background-color: transparent; }")#отключение подсветки фона
+    def mouseMoveEvent(self, event):
+        item = self.itemAt(event.pos())
+        if not item:
+            item = None
+        self.par_class.on_item_entered(item)
+        super().mouseMoveEvent(event)
+    def leaveEvent(self, event):
+        # Ваш код обработки события ухода курсора
+        self.par_class.on_item_entered(item = None)
+        super().leaveEvent(event)
+
 class treeWin(QWidget):
     def __init__(self):
         super().__init__()
@@ -178,10 +204,11 @@ class treeWin(QWidget):
         self.visibility_button.setMaximumSize(30, 30)
         button_layout.addWidget(self.visibility_button)
 
-        self.tree_widget = QTreeWidget()
+        self.tree_widget = customTreeWidget(self)
         self.tree_widget.setColumnCount(3)
         self.tree_widget.setSortingEnabled(True)
         self.tree_widget.setHeaderLabels(["Кривые", "Цвет", "Статус"])
+
         left_layout.addWidget(self.tree_widget)
 
         header = self.tree_widget.header()
@@ -195,16 +222,33 @@ class treeWin(QWidget):
         self.tree_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree_widget.customContextMenuRequested.connect(self.show_context_menu)
 
+    def on_item_entered(self, item):
+        root_item = None
+        if item:
+            parent = item
+            while True:
+                root_item = parent
+                parent = parent.parent()
+                if parent  is None:
+                    break
+
+            root_item.this_choise()
+
+        for cur in self.curves:
+            if cur != item and cur != root_item:
+                cur.deselection()
+
     def toggle_visibility(self):
         if self.visibility_button.isChecked():
             self.visibility_button.setIcon(QIcon("eye_crossed.png"))
-            self.visibility_button.setToolTip("Показать все кривые")
+            self.visibility_button.setToolTip("Показать активные кривые")
             if self.curves:
                 for curve in self.curves:
-                    curve.setHidden(True)
+                    if not curve.is_draw():
+                        curve.setHidden(True)
         else:
             self.visibility_button.setIcon(QIcon("eye.png"))
-            self.visibility_button.setToolTip("Показать активные кривые")
+            self.visibility_button.setToolTip("Показать все кривые")
             if self.curves:
                 for curve in self.curves:
                     curve.setHidden(False)
@@ -237,15 +281,15 @@ class treeWin(QWidget):
 
         if item:
             color_action = QAction("Изменить цвет", self)
-            edit_action = QAction("Редактировать", self)
-            delete_action = QAction("Удалить график", self)
+            #edit_action = QAction("Редактировать", self)
+            #delete_action = QAction("Удалить график", self)
             context_menu.addAction(color_action)
-            context_menu.addAction(edit_action)
-            context_menu.addAction(delete_action)
+            #context_menu.addAction(edit_action)
+            #context_menu.addAction(delete_action)
 
             color_action.triggered.connect(lambda: self.change_color_curve(root_item))
-            edit_action.triggered.connect(lambda: self.edit_curve(root_item))
-            delete_action.triggered.connect(lambda: self.delete_curve(root_item))
+            #edit_action.triggered.connect(lambda: self.edit_curve(root_item))
+            #delete_action.triggered.connect(lambda: self.delete_curve(root_item))
 
         context_menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
 
@@ -274,11 +318,10 @@ class treeWin(QWidget):
         if color:
             item.change_color(color)
         else:
-            print("Не выбран цвет")
-        QMessageBox.information(self, "Просмотр", f"Просмотр данных для {item.text(0)}")
+            pass
 
-    def edit_curve(self, item):
-        QMessageBox.information(self, "Редактировать", f"Редактирование данных для {item.text(0)}")
+
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

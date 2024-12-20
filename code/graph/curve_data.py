@@ -65,7 +65,7 @@ class graphData:
 
         self.i_am_click_now = False #флаг поднимается в момент, когда по графику кликают мышкой. Сбрасывается в методе, вызванном по сигналу от клика по всей сцене, 
         #в этом методе проверяется. был-ли только то кликнут график, и если да, то выделенные графики не сбрасываются
-
+        self.preselection_pen = None #эта пеерменная необходимо для запоминания стиля перед выделением графика через меню дерева
         self.saved_pen = pen
 
         self.tree_item.setForeground(1, QBrush(QColor(self.saved_pen['color'])))
@@ -78,7 +78,17 @@ class graphData:
         self.saved_pen['color'] = color
         self.plot_obj.setPen(self.saved_pen)
         self.plot_obj.setSymbolBrush(self.saved_pen['color'])
-     
+
+    def higlight_curve(self):
+        if self.current_highlight:
+            self.preselection_pen = pg.mkPen('w', width=2)
+        else:
+            self.preselection_pen = self.saved_pen
+        self.plot_obj.setPen(pg.mkPen(color=(150, 150, 150, 90), width=5))
+
+    def unhiglight_curve(self):
+        self.plot_obj.setPen(self.preselection_pen)
+
     def on_plot_clicked(self, obj):
 
         self.i_am_click_now = True

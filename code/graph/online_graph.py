@@ -12,7 +12,7 @@
 import sys
 import time
 
-from PyQt5.QtCore import QTimer, pyqtSignal, QPropertyAnimation, QPoint, Qt, QTimer
+from PyQt5.QtCore import QTimer, pyqtSignal, QPropertyAnimation, QPoint, Qt, QTimer, QEvent
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QApplication,
@@ -56,7 +56,7 @@ class GraphWindow(QMainWindow):
     def __init__(self, experiment_controller = None):
         super().__init__()
         self.setWindowTitle("Online Graph")
-        self.setGeometry(100, 100, 900, 600)
+        self.setGeometry(100, 100, 1200, 700)
         self.experiment_controller = experiment_controller
         self.notification = None
         self.initUI()
