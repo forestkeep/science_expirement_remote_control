@@ -85,9 +85,14 @@ class graphData:
         else:
             self.preselection_pen = self.saved_pen
         self.plot_obj.setPen(pg.mkPen(color=(150, 150, 150, 90), width=5))
+        self.plot_obj.setSymbolBrush(color=(150, 150, 150, 90))
 
     def unhiglight_curve(self):
         self.plot_obj.setPen(self.preselection_pen)
+        if self.preselection_pen is not self.saved_pen:
+            self.plot_obj.setSymbolBrush(color = 'w')
+        else:
+            self.plot_obj.setSymbolBrush(color = self.saved_pen['color'])
 
     def on_plot_clicked(self, obj):
 
@@ -144,18 +149,20 @@ class linearData(graphData):
         self.x_param_name = x_param_name
 
         self.tree_item.update_parameters(
-                                        {"min_x":self.raw_data_x.min(),
-                                        "max_x":self.raw_data_x.max(),
-                                        "min_y":self.raw_data_y.min(),
-                                        "max_y":self.raw_data_y.max(),
-                                        "name":"-".join([self.y_name, self.x_name]),
-                                        "tip":"linear",
-                                        "mean":round(np.mean(self.raw_data_y),3),
-                                        "std": round(np.std(self.raw_data_y),3),
-                                        "median": np.median(self.raw_data_y),
-                                        "count": len(self.raw_data_y),
-                                        "mode": stats.mode(self.raw_data_y)[0]}
-                                        )
+            {
+                "min_x": np.nanmin(self.raw_data_x),
+                "max_x": np.nanmax(self.raw_data_x),
+                "min_y": np.nanmin(self.raw_data_y),
+                "max_y": np.nanmax(self.raw_data_y),
+                "name": "-".join([self.y_name, self.x_name]),
+                "tip": "linear",
+                "mean": round(np.nanmean(self.raw_data_y), 3),
+                "std": round(np.nanstd(self.raw_data_y), 3),
+                "median": np.nanmedian(self.raw_data_y),
+                "count": np.count_nonzero(~np.isnan(self.raw_data_y)),  #Колиество ненулевых значений
+                "mode": stats.mode(self.raw_data_y[~np.isnan(self.raw_data_y)])[0]  #только ненулевые значения
+            }
+        )
 
     def set_full_legend_name(self):
         self.legend_field.removeItem(self.legend_name)

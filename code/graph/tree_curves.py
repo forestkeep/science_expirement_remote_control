@@ -73,6 +73,8 @@ class CurveTreeItem(QTreeWidgetItem):
         for parameter_name, new_value in dict_parameters.items():
             if self.parameters.get(parameter_name, False) is not False:
                 self.parameters[parameter_name] = new_value
+            else:
+                print(f"ключ {parameter_name} не найден в параметрах отображения кривой")
         self.update_display()
 
     def this_choise(self):
@@ -182,7 +184,7 @@ class treeWin(QWidget):
         self.buttons = []
         i = 0
         for color in button_colors:
-            button = QPushButton()
+            button = QPushButton("+")
             button.setStyleSheet(f"background-color: {color.name()}; border:none;")
             button.setMaximumSize(30, 30)
             button.setMinimumSize(0, 0)
@@ -194,7 +196,7 @@ class treeWin(QWidget):
 
         left_layout.addLayout(button_layout)
 
-        self.visibility_button = QPushButton()
+        self.visibility_button = QPushButton("eye")
         self.visibility_button.setIcon(QIcon("eye.png"))
         self.visibility_button.setCheckable(True)
         self.visibility_button.clicked.connect(self.toggle_visibility)
@@ -205,7 +207,7 @@ class treeWin(QWidget):
 
         self.tree_widget = customTreeWidget(self)
         self.tree_widget.setColumnCount(3)
-        self.tree_widget.setSortingEnabled(True)
+        self.tree_widget.setSortingEnabled(False)
         self.tree_widget.setHeaderLabels(["Кривые", "Цвет", "Статус"])
 
         left_layout.addWidget(self.tree_widget)
@@ -239,11 +241,9 @@ class treeWin(QWidget):
 
     def update_visible(self):
         if self.visibility_button.isChecked():
-            print(1)
             if self.curves:
                 for curve in self.curves:
                     if not curve.is_draw():
-                        print(f"{curve}{curve.is_draw()=}")
                         curve.setHidden(True)
                     else:
                         curve.setHidden(False)
@@ -273,7 +273,7 @@ class treeWin(QWidget):
 
     def add_curve(self, curve_item: CurveTreeItem):
         self.tree_widget.addTopLevelItem(curve_item)
-        curve_item.update_parameters({"ID": "CUR" + str(len(self.curves) + 1)})
+        curve_item.update_parameters({"id": "CUR" + str(len(self.curves) + 1)})
         self.curves.append(curve_item)
 
     def create_curve(self):
