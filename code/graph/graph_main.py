@@ -14,10 +14,13 @@ import time
 import pandas as pd
 import pyqtgraph as pg
 import numpy as np
-from PyQt5.QtCore import *
+from PyQt5.QtCore import pyqtSignal, Qt, QItemSelectionModel, QObject
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import (
+    QListWidgetItem,
+    QListWidget,
+    QWidget,
+    QApplication,
     QCheckBox,
     QComboBox,
     QHBoxLayout,
@@ -54,9 +57,11 @@ def time_decorator(func):
     return wrapper
 
 
-class graphMain:
+class graphMain(QObject):
+    new_curve_selected = pyqtSignal()
 
     def __init__(self, tablet_page, main_class):
+        super().__init__()
         self.page = tablet_page
         self.is_show_warning = True
         self.key_to_update_plot = True
@@ -714,7 +719,6 @@ class graphMain:
         
 
         #==========================================================================
-
         if obj is None:
             return
         elif obj is self.x_param_selector:
@@ -733,7 +737,6 @@ class graphMain:
                         print(f"задаем отрисовку {string_y + string_x} в блоке 1")
                         self.stack_curve[string_y + string_x].place_curve_on_graph(graph_field  = self.graphView,
                                                                                     legend_field = self.legend)
-                        self.stack_curve[string_y + string_x].is_draw = True
 
                         self.y_main_axis_label = self.stack_curve[string_y + string_x].y_param_name
                     else:
@@ -794,6 +797,8 @@ class graphMain:
                     data_curve.set_full_legend_name()
                 else:
                     data_curve.set_short_legend_name()
+
+        self.new_curve_selected.emit() #сигнал о том. что набор кривых был изменен
         
 
     def calc_curve_parameter(self, string_x, string_y):
@@ -917,7 +922,6 @@ class graphMain:
         keys_y = set(self.y.keys())
         keys_y2 = set(self.y2.keys())
 
-        print(f"{keys_y=}")
 
         to_remove1 = [key for key in self.curve1 if key not in keys_y]
         to_remove2 = [key for key in self.curve2 if key not in keys_y2]

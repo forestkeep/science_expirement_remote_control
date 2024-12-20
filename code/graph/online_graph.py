@@ -104,6 +104,8 @@ class GraphWindow(QMainWindow):
         self.graph_main = graphMain(tablet_page=self.tab1, main_class=self)
         self.graph_wave = graphOsc(self.tab2, self)
 
+        self.graph_main.new_curve_selected.connect(self.tree_class.update_visible)
+
         self.tabWidget.setCurrentIndex(0)
 
     def show_tooltip(self, message, show_while_not_click = False, timeout = 3000):

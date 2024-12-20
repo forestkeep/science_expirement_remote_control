@@ -65,7 +65,7 @@ class graphData:
 
         self.i_am_click_now = False #флаг поднимается в момент, когда по графику кликают мышкой. Сбрасывается в методе, вызванном по сигналу от клика по всей сцене, 
         #в этом методе проверяется. был-ли только то кликнут график, и если да, то выделенные графики не сбрасываются
-        self.preselection_pen = None #эта пеерменная необходимо для запоминания стиля перед выделением графика через меню дерева
+        self.preselection_pen = pen #эта пеерменная необходимо для запоминания стиля перед выделением графика через меню дерева
         self.saved_pen = pen
 
         self.tree_item.setForeground(1, QBrush(QColor(self.saved_pen['color'])))
@@ -122,6 +122,7 @@ class graphData:
 
         self.parent_graph_field.addItem(self.plot_obj)
         self.legend_field.addItem(self.plot_obj, self.legend_name)
+        self.is_draw = True
 
     def delete_curve_from_graph(self):
         if self.is_draw:

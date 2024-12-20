@@ -97,7 +97,6 @@ class CurveTreeItem(QTreeWidgetItem):
 
         stats_item = self.findChild("Статистические данные")
         if stats_item:
-            print(self.parameters)
             stats_item.child(0).setText(0, f"Среднее: {self.parameters['mean']}")
             stats_item.child(1).setText(0, f"Стандартное отклонение: {self.parameters['std']}")
             stats_item.child(2).setText(0, f"Мода: {self.parameters['mode']}")
@@ -237,6 +236,18 @@ class treeWin(QWidget):
         for cur in self.curves:
             if cur != item and cur != root_item:
                 cur.deselection()
+
+    def update_visible(self):
+        if self.visibility_button.isChecked():
+            print(1)
+            if self.curves:
+                for curve in self.curves:
+                    if not curve.is_draw():
+                        print(f"{curve}{curve.is_draw()=}")
+                        curve.setHidden(True)
+                    else:
+                        curve.setHidden(False)
+
 
     def toggle_visibility(self):
         if self.visibility_button.isChecked():
