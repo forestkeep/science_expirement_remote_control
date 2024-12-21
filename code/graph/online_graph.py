@@ -85,9 +85,9 @@ class GraphWindow(QMainWindow):
 
         splitter.setHandleWidth(1)
 
-        splitter.setStretchFactor(0, 1)
-        splitter.setStretchFactor(1, 20)
-        splitter.setStretchFactor(2, 0)
+        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(1, 10)
+        splitter.setStretchFactor(2, 1)
 
         self.filter_class.set_filter_slot(self.filters_callback)#при нажатии кнопок в фильтре будет вызываться эта функция
 

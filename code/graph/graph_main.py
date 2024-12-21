@@ -722,10 +722,18 @@ class graphMain(QObject):
         if obj is None:
             return
         elif obj is self.x_param_selector:
-            #удалить все кривые с графика
+            #удалить все кривые с графика снять выделения с селекторов вертикальных осей
             for data_curve in self.stack_curve.values():
                 if data_curve.is_draw:
                     data_curve.delete_curve_from_graph()
+
+            for item in self.y_first_param_selector.selectedItems():
+                self.y_first_param_selector.setCurrentItem(item, QItemSelectionModel.Clear)
+                self.y_second_param_selector.addItem(item.text())
+                
+            for item in self.y_second_param_selector.selectedItems():
+                self.y_second_param_selector.setCurrentItem(item, QItemSelectionModel.Clear)
+                self.y_first_param_selector.addItem(item.text())
 
         elif obj is self.y_first_param_selector and check_main:
                 ret = self.handle_skip_draw(self.y_first_param_selector, self.y_second_param_selector, self.graphView, string_x, string_y, is_multiple)
