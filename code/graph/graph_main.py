@@ -73,6 +73,8 @@ class graphMain(QObject):
     
         self.main_class = main_class
 
+        self._is_exp_running = False
+
         self.curve1 = {}
         self.curve2 = {}
         self.curve2_dots = {}
@@ -367,7 +369,7 @@ class graphMain(QObject):
             # Устанавливаем текст подсказки
             self.tooltip.setText(text)
 
-    def update_dict_param(self, new: dict):
+    def update_dict_param(self, new: dict, is_exp_stop = False):
         if new:
             new_param = []
             new_name_parameters = self.create_name_param(new)
@@ -378,7 +380,7 @@ class graphMain(QObject):
                 self.old_params.append(param)
 
             self.update_param_in_comboxes(new_param)
-            self.update_plot()
+            self.update_plot(is_exp_stop = is_exp_stop)
 
     def set_default(self):
         self.key_to_update_plot = False
@@ -464,7 +466,7 @@ class graphMain(QObject):
         item = selector.currentItem()
         return item.text() if item is not None else default
     
-    def update_data_old(self):
+    def update_data_running(self):
         string_x = self.get_last_item_parameter(self.x_param_selector)
         string_y = self.get_last_item_parameter(self.y_first_param_selector)
         string_y2 = self.get_last_item_parameter(self.y_second_param_selector)
@@ -649,17 +651,7 @@ class graphMain(QObject):
             #если множественное построение, то лейбл не ставим
             self.y_second_axis_label = ""
 
-        if self.is_show_warning == True:
-            points_num = 10000
-            self.is_show_warning = False
-            if len(self.x) > points_num:
-                text = QApplication.translate("GraphWindow", "Число точек превысило {points_num}, расчет зависимости одного параметра от другого может занимать некоторое время.\n Особенно, на слабых компьютерах. Рекомендуется выводить графики в зависимости от времени.")
-                text = text.format(points_num = points_num)
-                message = messageDialog(
-                    title=QApplication.translate("GraphWindow","Сообщение"),
-                    text=text
-                )
-                message.exec_()
+        self.check_and_show_warning()
 
     def set_filters(self, filter_func):
         print(filter_func)
@@ -730,7 +722,7 @@ class graphMain(QObject):
             for item in self.y_first_param_selector.selectedItems():
                 self.y_first_param_selector.setCurrentItem(item, QItemSelectionModel.Clear)
                 self.y_second_param_selector.addItem(item.text())
-                
+
             for item in self.y_second_param_selector.selectedItems():
                 self.y_second_param_selector.setCurrentItem(item, QItemSelectionModel.Clear)
                 self.y_first_param_selector.addItem(item.text())
@@ -808,7 +800,6 @@ class graphMain(QObject):
 
         self.new_curve_selected.emit() #сигнал о том. что набор кривых был изменен
         
-
     def calc_curve_parameter(self, string_x, string_y):
         device_y, ch_y, parameter_y = self.decode_name_parameters_new(string_y)
         device_x, ch_x, parameter_x = self.decode_name_parameters_new(string_x)
@@ -923,13 +914,9 @@ class graphMain(QObject):
                 message.exec_()
 
     def update_draw(self):
-        pass
-
-    def update_draw_old(self):
 
         keys_y = set(self.y.keys())
         keys_y2 = set(self.y2.keys())
-
 
         to_remove1 = [key for key in self.curve1 if key not in keys_y]
         to_remove2 = [key for key in self.curve2 if key not in keys_y2]
@@ -997,10 +984,74 @@ class graphMain(QObject):
             self.p1.getAxis("right").setStyle(showValues=False)
             self.p1.getAxis("right").setLabel("")
 
-    def update_plot(self, obj = None):
+    @property
+    def is_exp_running(self):
+        return self._is_exp_running
+    
+    @is_exp_running.setter
+    def is_exp_running(self, new_state):
+        if new_state != self._is_exp_running:
+            print(f"Значение изменилось с {self._is_exp_running} на {new_state}")
+            self._is_exp_running = new_state
+            if self._is_exp_running == False:
+                self.reconfig_state()
+    
+
+    def update_plot(self, obj = None, is_exp_stop = False):
         if self.key_to_update_plot:
-            self.update_data( obj )
-            self.update_draw()
+            is_running = False
+            if self.main_class.experiment_controller is not None:
+                print("not None exp controller")
+                if self.main_class.experiment_controller.is_experiment_running():
+                    is_running = True
+
+            if is_running and not is_exp_stop:
+                print("is running")
+                self.update_data_running()
+                self.update_draw()
+            else:
+                print("not running")
+                self.update_data( obj )
+
+            self.is_exp_running = is_running and not is_exp_stop
+
+    def reconfig_state(self):
+        '''функция предназначена для расчета параметров кривых при окончании эксперимента'''
+        self.legend.clear()
+        self.legend2.clear()
+        for item in self.graphView.items():
+            if isinstance(item, pg.PlotDataItem) or isinstance(item, pg.PlotCurveItem) or isinstance(item, pg.ScatterPlotItem):
+                self.graphView.removeItem(item)
+
+        for item in self.p2.allChildren():
+            if isinstance(item, pg.PlotDataItem) or isinstance(item, pg.PlotCurveItem) or isinstance(item, pg.ScatterPlotItem):
+                self.p2.removeItem(item)
+
+        string_x = self.get_last_item_parameter(self.x_param_selector)
+
+        items_first_selector = set(item.text() for item in self.y_first_param_selector.selectedItems())
+        items_second_selector = set(item.text() for item in self.y_second_param_selector.selectedItems()) - items_first_selector
+
+        for string_y in items_first_selector:
+            x1, y1, x1_name, y1_name, name_device1, name_ch1, parameter_y1, parameter_x1 = self.calc_curve_parameter(string_x, string_y)
+            self.create_and_place_curve(y1, x1, name_device1, name_ch1, y1_name, x1_name, parameter_y1, parameter_x1, self.graphView, self.legend)
+            self.y_main_axis_label = parameter_y1
+            self.remove_parameter(string_y, self.y_second_param_selector)
+
+        for string_y2 in items_second_selector:
+            x2, y2, x2_name, y2_name, name_device2, name_ch2, parameter_y2, parameter_x2 = self.calc_curve_parameter(string_x, string_y2)
+            self.create_and_place_curve(y2, x2, name_device2, name_ch2, y2_name, x2_name, parameter_y2, parameter_x2, self.p2, self.legend2)
+            self.y_main_axis_label = parameter_y2
+            self.remove_parameter(string_y2, self.y_first_param_selector)
+
+        for data_curve in self.stack_curve.values():
+            if data_curve.is_draw:
+                if self.multiple_checkbox.isChecked():
+                    data_curve.set_full_legend_name()
+                else:
+                    data_curve.set_short_legend_name()
+
+        self.new_curve_selected.emit() #сигнал о том. что набор кривых был изменен
 
     def create_name_param(self, main_dict):
         if "time" in main_dict.keys():

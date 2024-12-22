@@ -769,6 +769,8 @@ class experimentControl(analyse):
         self.meta_data_exp.exp_stop_time = time.time()
         
         #self.meta_data_exp.print_meta_data()
+        if self.graph_window is not None:
+            self.graph_window.update_graphics(self.measurement_parameters, is_exp_stop = True)#сообщаем окну просмотра, что эксперимент завершен
 
         if error:
             self.add_text_to_log(QApplication.translate('exp_flow',"Эксперимент прерван из-за ошибки"), "err")

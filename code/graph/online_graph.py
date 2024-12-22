@@ -58,6 +58,7 @@ class GraphWindow(QMainWindow):
         self.setWindowTitle("Online Graph")
         self.setGeometry(100, 100, 1200, 700)
         self.experiment_controller = experiment_controller
+        print(f"{self.experiment_controller=}")
         self.notification = None
         self.initUI()
 
@@ -142,10 +143,11 @@ class GraphWindow(QMainWindow):
         else:
             self.show_tooltip("Дождитесь окончания эксперимента", timeout=3000)
 
-    def update_graphics(self, new_data: dict):
+    def update_graphics(self, new_data: dict, is_exp_stop = False):
+        '''is_exp_stop - флаг остановки эксперимента, передается, когда эксперимент завершается, принудительно переводит окно графиков в расщиренный режим просмотра'''
         if new_data:
-            self.graph_main.update_dict_param(new=new_data)
-            self.graph_wave.update_dict_param(new=new_data)
+            self.graph_main.update_dict_param(new=new_data, is_exp_stop=is_exp_stop)
+            self.graph_wave.update_dict_param(new=new_data, is_exp_stop=is_exp_stop)
 
     def set_default(self):
         self.graph_main.set_default()
@@ -153,19 +155,31 @@ class GraphWindow(QMainWindow):
 
     def gen_new_data(self):
         """функция раз в n секунд генерирует словарь и обновляет данные"""
-        sec = 100000
         self.update_graphics(next(self.gen))
-        self.timer.start(sec*1000)
+        self.counter_test += 1
+        if self.counter_test == 10:
+            self.graph_main.reconfig_state()
+            self.experiment_controller.running = False
+            self.timer.stop()
 
     def test_update(self):
         self.test = test_graph()
         self.gen = self.test.append_values()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.gen_new_data)
-        self.timer.start(100)
+        periodsec = 3
+        self.timer.start(periodsec*1000)
+        self.counter_test = 0
+        self.experiment_controller = exprEmul()
 
     def closeEvent(self, event):
         self.graph_win_close_signal.emit(1)
+class exprEmul():
+    def __init__(self):
+        self.running = True
+
+    def is_experiment_running(self):
+        return self.running
 
 if __name__ == "__main__":
     from test_main_graph import test_graph

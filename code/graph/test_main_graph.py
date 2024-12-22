@@ -9,7 +9,7 @@ class test_graph:
     def __init__(self):
         self.start_time = time.time()
         ch1, ch2, step = self.read_param_from_test()
-        '''
+        
         self.main_dict = {
             "device1": {"ch_1": {"time": [0], self.get_param(): self.get_values()}},
             "device3": {
@@ -40,6 +40,7 @@ class test_graph:
                 }
             },
         }
+        '''
         
         self.main_dict = {
             "АКИП-2404_1":{
@@ -53,7 +54,7 @@ class test_graph:
                 }
             }
         }
-        '''
+        
         self.main_dict = {
             "АКИП":{
                 "ch-2":{
@@ -68,6 +69,7 @@ class test_graph:
                 }
             }
         }
+        '''
 
     def read_param_from_test(self):
         import os
@@ -119,8 +121,9 @@ class test_graph:
 
     def update_dict(self, main_dict):
         """добавляет в каждый конечный список число"""
-        for channel in main_dict.values():
-            for key, value in channel.items():
+        for channels in main_dict.values():
+            for channel, parameters in channels.items():
+                for key, value in parameters.items():
                     if key == "time":
                         value.append(round(time.time() - self.start_time))
                     elif (

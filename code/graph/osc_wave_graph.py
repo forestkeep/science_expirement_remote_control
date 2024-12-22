@@ -104,7 +104,7 @@ class graphOsc:
         self.list_vert_curve = []
         self.initUI()
 
-    def update_dict_param(self, new: dict):
+    def update_dict_param(self, new: dict, is_exp_stop = False):
         if new:
             self.dict_param = new
             channel_keys = self.extract_wavech_devices(self.dict_param)

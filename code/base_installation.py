@@ -350,7 +350,7 @@ class baseInstallation:
         if self.graph_window is not None:
             pass
         else:
-            self.graph_window = GraphWindow()
+            self.graph_window = GraphWindow(experiment_controller = self)
             self.graph_window.graph_win_close_signal.connect(self.graph_win_closed)
             self.graph_window.update_graphics(self.measurement_parameters)
         self.graph_window.show()
