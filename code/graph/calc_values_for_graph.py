@@ -27,13 +27,14 @@ def time_decorator(func):
 
 
 class ArrayProcessor:
-
-    def __combine_and_sort_arrays(self, array1, array2):
+    @staticmethod
+    def combine_and_sort_arrays(array1, array2):
         # Удаление дубликатов и сортировка в одном шаге
         unique_values = np.unique(np.concatenate((array1, array2)))
         return unique_values
 
-    def __find_closest_in_array(self, array, num):
+    @staticmethod
+    def find_closest_in_array(array, num):
         low = 0
         high = array.size - 1
         if num < array[low]:
@@ -60,24 +61,27 @@ class ArrayProcessor:
         else:
             return high, low
 
-    def __linear_interpolation(self, x1, y1, x3, y3, x2):
+    def linear_interpolation(x1, y1, x3, y3, x2):
         if x1 == x3:
             return y1
-        
+         
         denominator = x3 - x1
         clip_min = 1e-10
-        denominator_clipped = np.clip(denominator, clip_min, None)
+        if denominator > -1*clip_min and denominator < 0:
+            denominator= np.clip(denominator, -1*clip_min, None)
+        if denominator < clip_min and denominator > 0:
+            denominator= np.clip(denominator, None, clip_min)
 
-        print(y1, y3, x1, x2, x3)
-        y2 = y1 + (y3 - y1) * ((x2 - x1) / denominator_clipped)
+        y2 = y1 + (y3 - y1) * ((x2 - x1) / denominator)
 
         return y2
-
-    def combine_interpolate_arrays(self, arr_time_x1, arr_time_x2, values_y1, values_y2):
+    
+    @staticmethod
+    def combine_interpolate_arrays(arr_time_x1, arr_time_x2, values_y1, values_y2):
         
         '''дополняет оба входных массива точек (х,у) так,
         чтобы в них обоих был одинаковый набор x компонент,
-        это удобно для дальнейшего усреднения массивов
+        y рассчитывается с помощью линейной интерполяции
         '''
         arr_time_x1 = np.array(arr_time_x1)
         arr_time_x2 = np.array(arr_time_x2)
@@ -87,49 +91,49 @@ class ArrayProcessor:
         if arr_time_x1.size == arr_time_x2.size and np.all(arr_time_x1 == arr_time_x2):
             return values_y1, values_y2, arr_time_x1
 
-        combine_arr_time = self.__combine_and_sort_arrays(arr_time_x1, arr_time_x2)
+        main_x_arr = ArrayProcessor.combine_and_sort_arrays(arr_time_x1, arr_time_x2)
 
-        x_new = np.empty(combine_arr_time.size)
-        y_new = np.empty(combine_arr_time.size)
-        is_x_filled = np.zeros(combine_arr_time.size, dtype=bool)
-        is_y_filled = np.zeros(combine_arr_time.size, dtype=bool)
+        y1_new = np.empty(main_x_arr.size)
+        y2_new = np.empty(main_x_arr.size)
+        is_y1_filled = np.zeros(main_x_arr.size, dtype=bool)
+        is_y2_filled = np.zeros(main_x_arr.size, dtype=bool)
 
         # Индексы для `arr_time_x` и `arr_time_y`
-        index_x = np.searchsorted(arr_time_x1, combine_arr_time)
-        index_y = np.searchsorted(arr_time_x2, combine_arr_time)
+        index_x = np.searchsorted(arr_time_x1, main_x_arr)
+        index_y = np.searchsorted(arr_time_x2, main_x_arr)
 
-        for i in range(len(combine_arr_time)):
-            t = combine_arr_time[i]
+        for i in range(len(main_x_arr)):
+            t = main_x_arr[i]
 
             if index_x[i] > 0 and arr_time_x1[index_x[i] - 1] == t:
-                x_new[i] = values_y1[index_x[i] - 1]
-                is_x_filled[i] = True
+                y1_new[i] = values_y1[index_x[i] - 1]
+                is_y1_filled[i] = True
             elif index_x[i] < len(arr_time_x1) and arr_time_x1[index_x[i]] == t:
-                x_new[i] = values_y1[index_x[i]]
-                is_x_filled[i] = True
+                y1_new[i] = values_y1[index_x[i]]
+                is_y1_filled[i] = True
 
             if index_y[i] > 0 and arr_time_x2[index_y[i] - 1] == t:
-                y_new[i] = values_y2[index_y[i] - 1]
-                is_y_filled[i] = True
+                y2_new[i] = values_y2[index_y[i] - 1]
+                is_y2_filled[i] = True
             elif index_y[i] < len(arr_time_x2) and arr_time_x2[index_y[i]] == t:
-                y_new[i] = values_y2[index_y[i]]
-                is_y_filled[i] = True
+                y2_new[i] = values_y2[index_y[i]]
+                is_y2_filled[i] = True
 
-        for i in range(len(combine_arr_time)):
-            t = combine_arr_time[i]
+        for i in range(len(main_x_arr)):
+            t = main_x_arr[i]
 
-            if is_x_filled[i] and not is_y_filled[i]:
-                indexy1, indexy2 = self.__find_closest_in_array(arr_time_x2, t)
-                y_new[i] = self.__linear_interpolation(
+            if is_y1_filled[i] and not is_y2_filled[i]:
+                indexy1, indexy2 = ArrayProcessor.find_closest_in_array(arr_time_x2, t)
+                y2_new[i] = ArrayProcessor.linear_interpolation(
                     arr_time_x2[indexy1],
                     values_y2[indexy1],
                     arr_time_x2[indexy2],
                     values_y2[indexy2],
                     t,
                 )
-            elif is_y_filled[i] and not is_x_filled[i]:
-                indexy1, indexy2 = self.__find_closest_in_array(arr_time_x1, t)
-                x_new[i] = self.__linear_interpolation(
+            elif is_y2_filled[i] and not is_y1_filled[i]:
+                indexy1, indexy2 = ArrayProcessor.find_closest_in_array(arr_time_x1, t)
+                y1_new[i] = ArrayProcessor.linear_interpolation(
                     arr_time_x1[indexy1],
                     values_y1[indexy1],
                     arr_time_x1[indexy2],
@@ -137,61 +141,139 @@ class ArrayProcessor:
                     t,
                 )
 
-        return x_new, y_new, combine_arr_time
+        return y1_new, y2_new, main_x_arr
+    
+    @staticmethod
+    def are_all_arrays_equal(arrays: list[np.ndarray]) -> bool:
+        first_array = arrays[0]
+        return all(np.array_equal(first_array, array) for array in arrays)
+    
+    @staticmethod
+    def combine_all_arrays(all_x: list, all_y: list) -> list:
+
+        while not ArrayProcessor.are_all_arrays_equal(all_x):
+            for i in range(len(all_x)-1):
+                all_y[i], all_y[i+1], main_x  = ArrayProcessor.combine_interpolate_arrays(
+                                                        arr_time_x1 = all_x[i],
+                                                        arr_time_x2 = all_x[i+1],
+                                                        values_y1   = all_y[i],
+                                                        values_y2   = all_y[i+1]
+                                                        )
+                all_x[i+1] = main_x
+                all_x[i] = main_x
+
+        return all_x, all_y
 
 
 class TestArrayProcessor(unittest.TestCase):
     def setUp(self):
-        self.calculator = ArrayProcessor()
-        self.arr_time_x, self.val_x, self.arr_time_y, self.val_y = generate_arrays()
+        pass
+
+    def test_linear_interpolation(self):
+        # Тесты для функции __linear_interpolation
+        self.assertAlmostEqual(ArrayProcessor.linear_interpolation(0, 0, 10, 10, 5), 5 )
+        self.assertAlmostEqual(ArrayProcessor.linear_interpolation(0, 0, 10, 10, 0), 0)
+        self.assertAlmostEqual(ArrayProcessor.linear_interpolation(0, 0, 10, 10, 10), 10)
+        self.assertAlmostEqual(ArrayProcessor.linear_interpolation(1, 2, 3, 4, 2), 3)
+        self.assertAlmostEqual(ArrayProcessor.linear_interpolation(1, 2, 5, 6, 3), 4)
 
     def test_combine_interpolate_arrays(self):
-        x, y, time = self.calculator.combine_interpolate_arrays(
-            self.arr_time_x, self.arr_time_y, self.val_x, self.val_y
-        )
+        # Тесты для функции combine_interpolate_arrays
+        arr_time_x1 = [1, 2, 3]
+        arr_time_x2 = [2, 3, 4]
+        values_y1 = [10, 20, 30]
+        values_y2 = [15, 25, 35]
 
-        len_end = len(time)
+        y1_new, y2_new, main_x_arr = ArrayProcessor.combine_interpolate_arrays(arr_time_x1, arr_time_x2, values_y1, values_y2)
 
-        len_start1 = len(self.arr_time_x)
-        len_start2 = len(self.arr_time_y)
+        expected_y1_new = [10,  20, 30, 40]
+        expected_y2_new = [5, 15, 25, 35]
+        expected_main_x_arr = [1, 2, 3, 4]
 
-        np.testing.assert_array_almost_equal(x, expected_x)
-        np.testing.assert_array_almost_equal(y, expected_y)
-        np.testing.assert_array_equal(time, expected_time)
+        np.testing.assert_array_equal(y1_new, expected_y1_new)
+        np.testing.assert_array_equal(y2_new, expected_y2_new)
+        np.testing.assert_array_equal(main_x_arr, expected_main_x_arr)
 
-        self.assertGreaterEqual(len_end, len_start1)
-        self.assertGreaterEqual(len_end, len_start2)
+    def test_combine_interpolate_arrays_with_overlap(self):
+        arr_time_x1 = [1, 3, 5]
+        arr_time_x2 = [2, 4]
+        values_y1 = [10, 30, 50]
+        values_y2 = [20, 40]
 
-        self.assertEqual(
-            len(time), len(expected_time), "Length of time array does not match"
-        )
+        y1_new, y2_new, main_x_arr = ArrayProcessor.combine_interpolate_arrays(arr_time_x1, arr_time_x2, values_y1, values_y2)
 
-    def test_combine_interpolate_arrays(self):
-        x, y, time = self.calculator.combine_interpolate_arrays(
-            self.arr_time_x, self.arr_time_y, self.val_x, self.val_y
-        )
+        expected_y1_new = [10, 20, 30, 40, 50]
+        expected_y2_new = [10, 20, 30, 40, 50]
+        expected_main_x_arr = [1, 2, 3, 4, 5]
 
-        self.arr_time_x = np.array(self.arr_time_x)
-        self.arr_time_y = np.array(self.arr_time_y)
+        np.testing.assert_array_equal(y1_new, expected_y1_new)
+        np.testing.assert_array_equal(y2_new, expected_y2_new)
+        np.testing.assert_array_equal(main_x_arr, expected_main_x_arr)
 
-        all_x_in_time = np.all(np.isin(self.arr_time_x, time))
-        all_y_in_time = np.all(np.isin(self.arr_time_y, time))
+    def test_combine_all_arrays_equal(self):
+        # Тест, когда все массивы уже равны
+        all_x = [np.array([1, 2, 3]), np.array([1, 2, 3])]
+        all_y = [np.array([10, 20, 30]), np.array([10, 20, 30])]
 
-        print(f"Все элементы из arr_time_x входят в time: {all_x_in_time}")
-        print(f"Все элементы из arr_time_y входят в time: {all_y_in_time}")
+        result_x, result_y = ArrayProcessor.combine_all_arrays(all_x, all_y)
+
+        np.testing.assert_array_equal(result_x[0], result_x[1])
+        np.testing.assert_array_equal(result_y[0], result_y[1])
+
+    def test_combine_all_arrays_interpolate(self):
+        # Тест с разными значениями, требующими интерполяции
+        all_x = [np.array([1, 3]), np.array([2, 4])]
+        all_y = [np.array([10, 30]), np.array([20,40])]
+
+        result_x, result_y = ArrayProcessor.combine_all_arrays(all_x, all_y)
+
+        # Проверка, что результат содержит объединенные массивы
+        expected_x = [np.array([1, 2, 3, 4]),  np.array([1, 2, 3, 4])]
+        expected_y = [np.array([10, 20, 30, 40]), np.array([10, 20, 30, 40])]
+
+        np.testing.assert_array_equal(result_x, expected_x)
+        np.testing.assert_array_equal(result_y, expected_y)
 
 
+    def test_combine_all_arrays_empty(self):
+        # Тест на пустые массивы
+        all_x = [np.array([]), np.array([])]
+        all_y = [np.array([]), np.array([])]
+
+        result_x, result_y = ArrayProcessor.combine_all_arrays(all_x, all_y)
+
+        # Проверка, что результат все равно пустой массив
+        np.testing.assert_array_equal(result_x[0], np.array([]))
+        np.testing.assert_array_equal(result_y[0], np.array([]))
+
+    def test_combine_multiple_arrays(self):
+        # Тест с произвольным числом массивов
+        all_x = [
+            np.array([1, 2, 3]),
+            np.array([3, 4, 5]),
+            np.array([5, 6])
+        ]
+        all_y = [
+            np.array([10, 20, 30]),
+            np.array([30, 40, 50]),
+            np.array([50, 60])
+        ]
+
+        result_x, result_y = ArrayProcessor.combine_all_arrays(all_x, all_y)
+
+        # Проверка на правильность объединения
+        expected_x = np.array([1, 2, 3, 4, 5, 6])
+        expected_y = np.array([10, 20, 30, 40, 50, 60])  # Значения интерполируются корректно
+
+        np.testing.assert_array_equal(result_x[0], expected_x)
+        self.assertTrue(np.all(np.isin(result_y[0], expected_y)) and np.all(np.isin(result_y[1], expected_y)))
 
 
-
-# Пример вызова функции
 
 if __name__ == "__main__":
-    from test_calc_data import expected_time, expected_x, expected_y, generate_arrays
-      
-
 
     unittest.main()
+    '''
     arr_time_x, val_x, arr_time_y, val_y = generate_arrays()
 
     calculator = ArrayProcessor()
@@ -207,7 +289,7 @@ if __name__ == "__main__":
 
     calculator = ArrayProcessor()
     arr1, arr2, gen_x = calculator.combine_interpolate_arrays(arrx1, arrx2, arry1, arry2)
-
+    '''
 
 
 
