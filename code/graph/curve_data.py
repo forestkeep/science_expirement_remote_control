@@ -118,9 +118,13 @@ class graphData:
         legend_field : pg.LegendItem
             The LegendItem to add the curve to.
         """
-        if graph_field is not self.parent_graph_field and self.legend_field is not legend_field:
-            self.parent_graph_field.removeItem(self.plot_obj)
-            self.legend_field.removeItem(self.legend_name)
+        if self.parent_graph_field:
+            if graph_field is not self.parent_graph_field:
+                self.parent_graph_field.removeItem(self.plot_obj)
+
+        if self.legend_field:
+            if self.legend_field is not legend_field:
+                self.legend_field.removeItem(self.legend_name)
 
         self.parent_graph_field = graph_field
         self.legend_field = legend_field

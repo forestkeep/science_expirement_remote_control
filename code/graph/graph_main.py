@@ -474,8 +474,6 @@ class graphMain(QObject):
         current_items_y = list(item.text() for item in self.y_first_param_selector.selectedItems())
         current_items_y2 = list(item.text() for item in self.y_second_param_selector.selectedItems())
 
-        print(f"{string_y=} {current_items_y=}")
-
         if string_y not in current_items_y and string_y != "Select parameter":
                 if string_y in self.y.keys():
                     self.y.pop(string_y)
@@ -566,9 +564,8 @@ class graphMain(QObject):
 
                     x_time = self.dict_param[device_x][ch_x]["time"]
                     y_time = self.dict_param[device_y][ch_y]["time"]
-                    calculator_param = ArrayProcessor()
                     
-                    self.x, bufy, _ = calculator_param.combine_interpolate_arrays(
+                    self.x, bufy, _ = ArrayProcessor.combine_interpolate_arrays(
                         arr_time_x1=x_time,
                         arr_time_x2=y_time,
                         values_y1=x_param,
@@ -623,8 +620,7 @@ class graphMain(QObject):
                 if self.is_time_column:
                     x_time = self.dict_param[device_x][ch_x]["time"]
                     y_time = self.dict_param[device_y2][ch_y2]["time"]
-                    calculator_param = ArrayProcessor()
-                    self.x2, bufy2, _ = calculator_param.combine_interpolate_arrays(
+                    self.x2, bufy2, _ = ArrayProcessor.combine_interpolate_arrays(
                         arr_time_x1=x_time,
                         arr_time_x2=y_time,
                         values_y1=x_param,
@@ -834,9 +830,8 @@ class graphMain(QObject):
 
                 x_time = self.dict_param[device_x][ch_x]["time"]
                 y_time = self.dict_param[device_y][ch_y]["time"]
-                calculator_param = ArrayProcessor()
                 
-                buf_x, bufy, _  = calculator_param.combine_interpolate_arrays(
+                buf_x, bufy, _  = ArrayProcessor.combine_interpolate_arrays(
                                                                             arr_time_x1 = x_time,
                                                                             arr_time_x2 = y_time,
                                                                             values_y1   = x_param,
@@ -854,9 +849,7 @@ class graphMain(QObject):
             name_ch1 = ch_y
 
         return x1, y1, x1_name, y1_name, name_device1, name_ch1, parameter_y, parameter_x
-
-    def create_and_place_curve(self, y_data, x_data, name_device, name_ch, y_name, x_name, y_param_name, x_param_name, graph_field, legend_field):
-        if self.stack_curve.get(y_name + x_name) is None:
+    def create_curve(self, y_data, x_data, name_device, name_ch, y_name, x_name, y_param_name, x_param_name) -> linearData:
             new_data = linearData(raw_x   = x_data,
                                     raw_y   = y_data,
                                     device  = name_device,
@@ -867,9 +860,7 @@ class graphMain(QObject):
                                     x_param_name = x_param_name
                                     )
             buf_color = next(self.color_warm_gen)
-            #===========================
-            self.main_class.tree_class.add_curve(new_data.tree_item)
-            #===========================
+
             if new_data.saved_pen == None:
                 buf_pen = {
                             "color": buf_color,
@@ -891,12 +882,14 @@ class graphMain(QObject):
 
             new_data.set_plot_obj(plot_obj = graph,
                                   pen      = buf_pen)
+            
+            return new_data
+    def create_and_place_curve(self, y_data, x_data, name_device, name_ch, y_name, x_name, y_param_name, x_param_name, graph_field, legend_field):
+        if self.stack_curve.get(y_name + x_name) is None:
+            new_data = self.create_curve(y_data, x_data, name_device, name_ch, y_name, x_name, y_param_name, x_param_name)
+            self.main_class.tree_class.add_curve(new_data.tree_item)
             self.stack_curve[y_name + x_name] = new_data
             
-        self.stack_curve[y_name + x_name].is_draw = True
-        self.stack_curve[y_name + x_name].parent_graph_field = graph_field
-        self.stack_curve[y_name + x_name].legend_field = legend_field
-
         self.stack_curve[y_name + x_name].place_curve_on_graph(graph_field  = graph_field,
                                                               legend_field  = legend_field)
 
@@ -1001,16 +994,13 @@ class graphMain(QObject):
         if self.key_to_update_plot:
             is_running = False
             if self.main_class.experiment_controller is not None:
-                print("not None exp controller")
                 if self.main_class.experiment_controller.is_experiment_running():
                     is_running = True
 
             if is_running and not is_exp_stop:
-                print("is running")
                 self.update_data_running()
                 self.update_draw()
             else:
-                print("not running")
                 self.update_data( obj )
 
             self.is_exp_running = is_running and not is_exp_stop
@@ -1064,7 +1054,6 @@ class graphMain(QObject):
                 if "time" in values.keys() and "time" not in output_list:
                     output_list.append("time")
                 for key, value in values.items():
-                    # print(key)
                     if key != "time" and ("WAVECH" not in key.upper()):
                         output_list.append(f"{key}({device} {channel})")
 
@@ -1074,7 +1063,6 @@ class graphMain(QObject):
         buf_y = string_y.split("(")
         if len(buf_y) > 1:
             parameter_y = buf_y[0]
-            # print(f"{buf_y=}")
             device_y = buf_y[1].split(" ")[0]
             ch_y = buf_y[1].split(" ")[1][:-1]
         else:
@@ -1090,7 +1078,6 @@ class graphMain(QObject):
         buf_y = string_y.split("(")
         if len(buf_y) > 1:
             parameter_y = buf_y[0]
-            # print(f"{buf_y=}")
             device_y = buf_y[1].split(" ")[0]
             ch_y = buf_y[1].split(" ")[1][:-1]
         else:

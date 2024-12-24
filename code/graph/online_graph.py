@@ -58,7 +58,6 @@ class GraphWindow(QMainWindow):
         self.setWindowTitle("Online Graph")
         self.setGeometry(100, 100, 1200, 700)
         self.experiment_controller = experiment_controller
-        print(f"{self.experiment_controller=}")
         self.notification = None
         self.initUI()
 
@@ -70,7 +69,7 @@ class GraphWindow(QMainWindow):
 
         self.filter_class = filtersClass()
 
-        self.tree_class = treeWin()
+        self.tree_class = treeWin(main_class=self)
 
         self.tabWidget = QTabWidget()
 
@@ -157,7 +156,7 @@ class GraphWindow(QMainWindow):
         """функция раз в n секунд генерирует словарь и обновляет данные"""
         self.update_graphics(next(self.gen))
         self.counter_test += 1
-        if self.counter_test == 10:
+        if self.counter_test == 4:
             self.graph_main.reconfig_state()
             self.experiment_controller.running = False
             self.timer.stop()
@@ -167,7 +166,7 @@ class GraphWindow(QMainWindow):
         self.gen = self.test.append_values()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.gen_new_data)
-        periodsec = 3
+        periodsec = 1
         self.timer.start(periodsec*1000)
         self.counter_test = 0
         self.experiment_controller = exprEmul()

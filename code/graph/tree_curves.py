@@ -5,6 +5,9 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PyQt5.QtGui import QColor, QIcon, QFont, QBrush
 from PyQt5.QtCore import Qt, QEvent
 from datetime import datetime
+from calc_values_for_graph import ArrayProcessor
+import numexpr as ne
+import numpy as np
 
 class CurveTreeItem(QTreeWidgetItem):
     def __init__(self, curve_data_obj=None, parent=None, name=None):
@@ -173,24 +176,22 @@ class customTreeWidget(QTreeWidget):
         super().leaveEvent(event)
 
 class treeWin(QWidget):
-    def __init__(self):
+    def __init__(self, main_class = None):
         super().__init__()
         self.setMinimumSize(0,0)
         self.curves = []
         left_layout = QVBoxLayout()
         button_layout = QHBoxLayout()
 
-        button_colors = [QColor(255, 0, 0)]
+        self.main_class = main_class
+
         self.buttons = []
-        i = 0
-        for color in button_colors:
-            button = QPushButton("+")
-            button.setStyleSheet(f"background-color: {color.name()}; border:none;")
-            button.setMaximumSize(30, 30)
-            button.setMinimumSize(0, 0)
-            button_layout.addWidget(button)
-            self.buttons.append(button)
-            i += 1
+        button = QPushButton("+")
+        button.setMaximumSize(30, 30)
+        button.setMinimumSize(0, 0)
+        button_layout.addWidget(button)
+        self.buttons.append(button)
+
 
         self.buttons[0].clicked.connect(self.open_curve_dialog)
 
@@ -268,8 +269,77 @@ class treeWin(QWidget):
         dialog = CurveDialog(self)
         if dialog.exec_() == QDialog.Accepted:
             name, formula = dialog.get_curve_data()
-            curve_item = CurveTreeItem(name=name)
-            self.add_curve(curve_item)
+
+            context = {}
+            choised_curves = {}
+            is_consist_curve = False
+            for curve in self.curves:
+                if curve.parameters["id"] in formula:
+                    is_consist_curve = True
+                    context[curve.parameters["id"]] = curve
+                    choised_curves[curve.parameters["id"]] = curve
+            if not is_consist_curve:
+                print("в формуле не обнаружено кривых")
+                return
+            
+            names_x_parameters = set()
+            x_name = ""
+            for id, curve in choised_curves.items():
+                if curve.curve_data_obj.x_name not in names_x_parameters and names_x_parameters:
+                    print(f"Выбранные кривые построены в различных пространствах. {names_x_parameters}")
+                    #TODO: вывести предупреждение пользователю и сообщить о конкретных кривых из разных пространств
+                    return
+                names_x_parameters.add(curve.curve_data_obj.x_name)
+                x_name = curve.curve_data_obj.x_name
+
+            print(f"{context=}")
+            context, all_x = self.preparation_arrays(context)
+            print(f"{context=}")
+                
+            result = self.evaluate_expression(formula, context)
+            print(f"{result=} {all_x=}")
+
+            curve_data = self.main_class.graph_main.create_curve(y_data = result, 
+                                                    x_data = all_x[0],
+                                                    name_device ="1",
+                                                    name_ch ="1",
+                                                    y_name =name,
+                                                    x_name =x_name,
+                                                    y_param_name =name,
+                                                    x_param_name=x_name)
+
+            curve_data.place_curve_on_graph(graph_field  = self.main_class.graph_main.graphView,
+                                            legend_field  = self.main_class.graph_main.legend)
+            self.add_curve(curve_data.tree_item)
+
+    
+    def preparation_arrays(self, tree_curves: dict):
+        keys = list(tree_curves.keys())
+        all_x = []
+        all_y = []
+        for key in keys:
+            curve_data = tree_curves[key].curve_data_obj
+            x = curve_data.filtered_x_data
+            y = curve_data.filtered_y_data
+            
+            all_x.append(x)
+            all_y.append(y)
+
+        all_x, all_y = ArrayProcessor.combine_all_arrays(all_x, all_y)
+
+        for i, key in enumerate(keys):
+            tree_curves[key] = all_y[i]
+
+        return tree_curves, all_x
+
+    def evaluate_expression(self, expression, context=None):
+        result = None
+        try:
+            result = ne.evaluate(expression, context)
+        except Exception as e:
+            print(f'Ошибка: {str(e)}')
+
+        return result
 
     def add_curve(self, curve_item: CurveTreeItem):
         self.tree_widget.addTopLevelItem(curve_item)
