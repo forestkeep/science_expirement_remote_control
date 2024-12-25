@@ -795,6 +795,12 @@ class graphOsc:
                         
                         self.stack_osc[key_stack] = new_osc
 
+                    for key in self.stack_osc.keys():
+                        if key != key_stack:
+                            if str(device) + str(ch_name) in key:
+                                self.stack_osc[key].is_draw = False
+                                self.stack_osc[key].current_highlight = False
+
                     self.stack_osc[key_stack].is_draw = True                
             
                 else:
@@ -820,7 +826,6 @@ class graphOsc:
         #===================================================
         for obj in self.stack_osc.values():
             if obj.is_draw:
-                print(f"build {obj}")
                 if obj.plot_obj == None:
 
                     if obj.saved_pen == None:
