@@ -22,7 +22,6 @@ from PyQt5.QtWidgets import (
     QWidget,
     QApplication,
     QCheckBox,
-    QComboBox,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -38,13 +37,11 @@ try:
     from Message_graph import messageDialog
     from curve_data import linearData
     from colors import cold_colors, warm_colors, GColors
-    from tree_curves import CurveTreeItem
 except:
     from graph.calc_values_for_graph import ArrayProcessor
     from graph.Message_graph import messageDialog
     from graph.curve_data import linearData
     from graph.colors import cold_colors, warm_colors, GColors
-    from graph.tree_curves import CurveTreeItem
 
 def time_decorator(func):
     def wrapper(*args, **kwargs):
@@ -59,6 +56,7 @@ def time_decorator(func):
 
 class graphMain(QObject):
     new_curve_selected = pyqtSignal()
+    new_data_imported = pyqtSignal()
 
     def __init__(self, tablet_page, main_class):
         super().__init__()
@@ -405,6 +403,8 @@ class graphMain(QObject):
         self.dict_param = {}
 
         self.key_to_update_plot = True
+
+        self.new_data_imported.emit()
 
     def remove_parameter(self, parameter, qlistwidget):
             for index in range(qlistwidget.count()):
@@ -795,6 +795,24 @@ class graphMain(QObject):
                     data_curve.set_short_legend_name()
 
         self.new_curve_selected.emit() #сигнал о том. что набор кривых был изменен
+
+    def destroy_curve(self, curve_data_obj):
+        curve_data_obj.delete_curve_from_graph()
+        curve_data_obj.is_draw = False
+        key = curve_data_obj.y_name + curve_data_obj.x_name
+        if self.stack_curve.get(key) is not None:
+            del self.stack_curve[key]
+
+    def show_curve(self, curve_data_obj:linearData):
+        #TODO: определеить поведение в зависимости от режима выбора кривых, пересмотреть подписи осей при этих режимах. Возможно, стоит отображать кривую через искусственный выбор параметра в селекторе
+        if self.x_axis_label == curve_data_obj.x_name:
+            curve_data_obj.place_curve_on_graph(graph_field  = self.graphView,
+                                                legend_field = self.legend)
+        else:
+            self.main_class.show_tooltip(message = "Кривая принадлежит другому пространству")
+    
+    def hide_curve(self, curve_data_obj:linearData):
+        curve_data_obj.delete_curve_from_graph()
         
     def calc_curve_parameter(self, string_x, string_y):
         device_y, ch_y, parameter_y = self.decode_name_parameters_new(string_y)

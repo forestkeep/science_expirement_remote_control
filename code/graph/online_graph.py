@@ -12,7 +12,7 @@
 import sys
 import time
 
-from PyQt5.QtCore import QTimer, pyqtSignal, QPropertyAnimation, QPoint, Qt, QTimer, QEvent
+from PyQt5.QtCore import QTimer, pyqtSignal, QPoint, QTimer
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QApplication,
@@ -105,6 +105,10 @@ class GraphWindow(QMainWindow):
         self.graph_wave = graphOsc(self.tab2, self)
 
         self.graph_main.new_curve_selected.connect(self.tree_class.update_visible)
+        self.graph_main.new_data_imported.connect(self.tree_class.clear_all)
+        self.tree_class.curve_deleted.connect(self.graph_main.destroy_curve)
+        self.tree_class.curve_shown.connect(self.graph_main.show_curve)
+        self.tree_class.curve_hide.connect(self.graph_main.hide_curve)
 
         self.tabWidget.setCurrentIndex(0)
 

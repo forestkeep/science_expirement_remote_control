@@ -13,7 +13,7 @@ import numpy as np
 import pyqtgraph as pg
 from scipy import stats
 
-from PyQt5.QtGui import QColor, QIcon, QFont, QBrush
+from PyQt5.QtGui import QColor, QBrush
 try:
     from tree_curves import CurveTreeItem
 except:
@@ -128,9 +128,13 @@ class graphData:
 
         self.parent_graph_field = graph_field
         self.legend_field = legend_field
+        
+        if self.plot_obj not in self.parent_graph_field.items():
+            self.parent_graph_field.addItem(self.plot_obj)
 
-        self.parent_graph_field.addItem(self.plot_obj)
-        self.legend_field.addItem(self.plot_obj, self.legend_name)
+        if self.legend_field.getLabel( self.plot_obj ) is None:
+            self.legend_field.addItem(self.plot_obj, self.legend_name)
+
         self.is_draw = True
 
     def delete_curve_from_graph(self):
@@ -138,7 +142,6 @@ class graphData:
             self.is_draw = False
             self.parent_graph_field.removeItem(self.plot_obj)
             self.legend_field.removeItem(self.legend_name)
-
 
 class linearData(graphData):
     def __init__(self, raw_x, raw_y, device, ch, y_name, x_name, y_param_name, x_param_name) -> None:
@@ -169,14 +172,22 @@ class linearData(graphData):
         )
 
     def set_full_legend_name(self):
-        self.legend_field.removeItem(self.legend_name)
+        if self.legend_field:
+            self.legend_field.removeItem(self.legend_name)
+
         self.legend_name = " ".join([self.device, self.ch, self.y_param_name])
-        self.legend_field.addItem(self.plot_obj, self.legend_name)
+
+        if self.legend_field:
+            self.legend_field.addItem(self.plot_obj, self.legend_name)
 
     def set_short_legend_name(self):
-        self.legend_field.removeItem(self.legend_name)
+        if self.legend_field:
+            self.legend_field.removeItem(self.legend_name)
+
         self.legend_name = " ".join([self.device, self.ch])
-        self.legend_field.addItem(self.plot_obj, self.legend_name)
+
+        if self.legend_field:
+            self.legend_field.addItem(self.plot_obj, self.legend_name)
 
 class oscData(graphData):
     def __init__(self, raw_x, raw_y, device, ch, name, number) -> None:
