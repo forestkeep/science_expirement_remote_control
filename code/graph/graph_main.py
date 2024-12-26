@@ -973,6 +973,9 @@ class graphMain(QObject):
             
         self.stack_curve[y_name + x_name].place_curve_on_graph(graph_field  = graph_field,
                                                               legend_field  = legend_field)
+        
+    def add_curve_to_stack(self, curve_data_obj):   
+        self.stack_curve[curve_data_obj.y_name + curve_data_obj.x_name] = curve_data_obj
 
     def check_and_show_warning(self):
         if self.is_show_warning == True:

@@ -179,6 +179,7 @@ class treeWin(QWidget):
     curve_shown = pyqtSignal( object )
     curve_hide = pyqtSignal( object )
     curve_reset = pyqtSignal( object )
+    curve_created = pyqtSignal( object )
     def __init__(self, main_class = None):
         super().__init__()
         self.setMinimumSize(0,0)
@@ -316,6 +317,7 @@ class treeWin(QWidget):
                                                     x_param_name=x_name)
 
             self.curve_shown.emit(curve_data)
+            self.curve_created.emit(curve_data)
             self.add_curve(curve_data.tree_item)
             curve_data.set_full_legend_name()
 

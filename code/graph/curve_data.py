@@ -101,10 +101,11 @@ class graphData:
         if self.current_highlight:
             self.current_highlight = False
             self.plot_obj.setPen(self.saved_pen)
+            self.plot_obj.setSymbolBrush(self.saved_pen['color'])
         else:
             self.current_highlight = True
             self.plot_obj.setPen(pg.mkPen('w', width=2))
-
+            self.plot_obj.setSymbolBrush(color = 'w')
     def place_curve_on_graph(self, graph_field: pg.ViewBox, legend_field):
         """
         Places the curve on the given graph and legend fields. If the given fields

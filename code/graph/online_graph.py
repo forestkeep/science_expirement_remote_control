@@ -110,6 +110,7 @@ class GraphWindow(QMainWindow):
         self.tree_class.curve_shown.connect(self.graph_main.show_curve)
         self.tree_class.curve_hide.connect(self.graph_main.hide_curve)
         self.tree_class.curve_reset.connect(self.graph_main.reset_filters)
+        self.tree_class.curve_created.connect(self.graph_main.add_curve_to_stack)
 
         self.tabWidget.setCurrentIndex(0)
 
@@ -161,7 +162,7 @@ class GraphWindow(QMainWindow):
         """функция раз в n секунд генерирует словарь и обновляет данные"""
         self.update_graphics(next(self.gen))
         self.counter_test += 1
-        if self.counter_test == 50:
+        if self.counter_test == 10:
             self.graph_main.reconfig_state()
             self.experiment_controller.running = False
             self.timer.stop()

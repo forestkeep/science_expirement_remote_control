@@ -125,13 +125,14 @@ class test_graph:
             for channel, parameters in channels.items():
                 for key, value in parameters.items():
                     if key == "time":
-                        value.append(round(time.time() - self.start_time))
+                        value.append(round(time.time() - self.start_time, 3))
                     elif (
                         isinstance(value, list)
                         and not any(isinstance(i, list) for i in value)
                         and key != "wavech"
                     ):
-                        value.append(random.randint(1, 10))
+                        buf = value[-1] + random.randint(-10, 10)*(1 + random.uniform(-0.2, 0.2))
+                        value.append(buf)
                     elif (
                         isinstance(value, list)
                         and any(isinstance(i, list) for i in value)
