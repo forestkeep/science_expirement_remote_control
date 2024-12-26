@@ -129,8 +129,7 @@ class graphData:
         self.parent_graph_field = graph_field
         self.legend_field = legend_field
         
-        if self.plot_obj not in self.parent_graph_field.items():
-            self.parent_graph_field.addItem(self.plot_obj)
+        self.parent_graph_field.addItem(self.plot_obj)
 
         if self.legend_field.getLabel( self.plot_obj ) is None:
             self.legend_field.addItem(self.plot_obj, self.legend_name)
@@ -142,6 +141,16 @@ class graphData:
             self.is_draw = False
             self.parent_graph_field.removeItem(self.plot_obj)
             self.legend_field.removeItem(self.legend_name)
+    
+    def data_reset(self) -> bool:
+        if self.filtered_x_data is self.raw_data_x:
+            return False
+        self.filtered_x_data = self.raw_data_x
+        self.filtered_y_data = self.raw_data_y
+        return True
+
+
+
 
 class linearData(graphData):
     def __init__(self, raw_x, raw_y, device, ch, y_name, x_name, y_param_name, x_param_name) -> None:
@@ -155,21 +164,7 @@ class linearData(graphData):
         self.y_param_name = y_param_name
         self.x_param_name = x_param_name
 
-        self.tree_item.update_parameters(
-            {
-                "min_x": np.nanmin(self.raw_data_x),
-                "max_x": np.nanmax(self.raw_data_x),
-                "min_y": np.nanmin(self.raw_data_y),
-                "max_y": np.nanmax(self.raw_data_y),
-                "name": "-".join([self.y_name, self.x_name]),
-                "tip": "linear",
-                "mean": round(np.nanmean(self.raw_data_y), 3),
-                "std": round(np.nanstd(self.raw_data_y), 3),
-                "median": np.nanmedian(self.raw_data_y),
-                "count": np.count_nonzero(~np.isnan(self.raw_data_y)),  #Колиество ненулевых значений
-                "mode": stats.mode(self.raw_data_y[~np.isnan(self.raw_data_y)])[0]  #только ненулевые значения
-            }
-        )
+        self.recalc_stats_param()
 
     def set_full_legend_name(self):
         if self.legend_field:
@@ -188,6 +183,23 @@ class linearData(graphData):
 
         if self.legend_field:
             self.legend_field.addItem(self.plot_obj, self.legend_name)
+
+    def recalc_stats_param(self):
+        self.tree_item.update_parameters(
+            {
+                "min_x": np.nanmin(self.filtered_x_data),
+                "max_x": np.nanmax(self.filtered_x_data),
+                "min_y": np.nanmin(self.filtered_y_data),
+                "max_y": np.nanmax(self.filtered_y_data),
+                "name": "-".join([self.y_name, self.x_name]),
+                "tip": "linear",
+                "mean": round(np.nanmean(self.filtered_y_data), 3),
+                "std": round(np.nanstd(self.filtered_y_data), 3),
+                "median": np.nanmedian(self.filtered_y_data),
+                "count": np.count_nonzero(~np.isnan(self.filtered_y_data)),  #Колиество ненулевых значений
+                "mode": stats.mode(self.filtered_y_data[~np.isnan(self.filtered_y_data)])[0]  #только ненулевые значения
+            }
+        )
 
 class oscData(graphData):
     def __init__(self, raw_x, raw_y, device, ch, name, number) -> None:

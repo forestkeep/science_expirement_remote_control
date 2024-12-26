@@ -261,13 +261,9 @@ class graphOsc:
         self.hor_lay = QHBoxLayout()
         self.choice_device = QComboBox()
         self.choice_device_default_text = QApplication.translate('graph_win',"Выберите устройство" )
-        self.choice_device.addItems(
-            [""]
-        )
+        self.choice_device.addItems([""])
 
-        self.choice_device.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Fixed
-        )  # Расширяющийся по ширине и фиксированный по высоте
+        self.choice_device.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.choice_device.setMaximumSize(150, 20)
 
         self.choice_device.currentTextChanged.connect(lambda: self.new_dev_checked())
@@ -310,7 +306,7 @@ class graphOsc:
         splitter = QSplitter()
         splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        splitter.setOrientation(1)  # 1 - вертикальный
+        splitter.setOrientation(1)
 
         self.graphView_loop = self.setupGraphView()
 
@@ -1239,9 +1235,6 @@ class graphOsc:
 
                 osc.filtered_y_data = filter_func(osc.filtered_y_data)
                 osc.filtered_x_data = osc.filtered_x_data[-len(osc.filtered_y_data):]
-
-                print(osc.filtered_x_data)
-                print(osc.filtered_y_data)
 
                 osc.plot_obj.setData(osc.filtered_x_data, osc.filtered_y_data)
 

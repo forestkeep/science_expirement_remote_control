@@ -178,6 +178,7 @@ class treeWin(QWidget):
     curve_deleted = pyqtSignal( object )
     curve_shown = pyqtSignal( object )
     curve_hide = pyqtSignal( object )
+    curve_reset = pyqtSignal( object )
     def __init__(self, main_class = None):
         super().__init__()
         self.setMinimumSize(0,0)
@@ -294,9 +295,16 @@ class treeWin(QWidget):
                 names_x_parameters.add(curve.curve_data_obj.x_name)
                 x_name = curve.curve_data_obj.x_name
 
-            context, all_x = self.preparation_arrays(context)
+            print("препарейшн")
+
+            context, all_x, status = self.preparation_arrays(context)
+            if not status:
+                print("ошибка в расчете, таймаут, авозможно, что-то с исходными данными")
+            print("евалуейшн")
                 
             result = self.evaluate_expression(formula, context)
+
+            print("курвейшн")
 
             curve_data = self.main_class.graph_main.create_curve(y_data = result, 
                                                     x_data = all_x[0],
@@ -324,12 +332,12 @@ class treeWin(QWidget):
             all_x.append(x)
             all_y.append(y)
 
-        all_x, all_y = ArrayProcessor.combine_all_arrays(all_x, all_y)
-
+        all_x, all_y, status = ArrayProcessor.combine_all_arrays(all_x, all_y)
+        
         for i, key in enumerate(keys):
             tree_curves[key] = all_y[i]
 
-        return tree_curves, all_x
+        return tree_curves, all_x, status
 
     def evaluate_expression(self, expression, context=None):
         result = None
@@ -369,15 +377,20 @@ class treeWin(QWidget):
                 show_action.triggered.connect(lambda: self.show_curve(root_item))
 
             color_action = QAction("Изменить цвет", self)
-            show_action = QAction(text_show, self)
             delete_action = QAction("Удалить график", self)
+            reset_data_action = QAction("Сбросить фильтры", self)
             context_menu.addAction(color_action)
             context_menu.addAction(delete_action)
+            context_menu.addAction(reset_data_action)
 
             color_action.triggered.connect(lambda: self.change_color_curve(root_item))
             delete_action.triggered.connect(lambda: self.delete_curve(root_item))
+            reset_data_action.triggered.connect(lambda: self.reset_filters(root_item))
 
             context_menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
+    def reset_filters(self, item=None):
+        if item in self.curves:
+            self.curve_reset.emit(item.curve_data_obj)
 
     def delete_curve(self, item=None):
         if item is None:
@@ -420,10 +433,8 @@ class treeWin(QWidget):
             else:
                 QMessageBox.warning(self, "Ошибка", "Пожалуйста, выберите элемент для отображения.")
                 return
-        print(43434343)
         if item in self.curves:
             self.curve_hide.emit(item.curve_data_obj)
-
 
     def change_color_curve(self, item):
         color = choose_color()

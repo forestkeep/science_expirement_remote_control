@@ -149,8 +149,9 @@ class ArrayProcessor:
         return all(np.array_equal(first_array, array) for array in arrays)
     
     @staticmethod
-    def combine_all_arrays(all_x: list, all_y: list) -> list:
-
+    def combine_all_arrays(all_x: list, all_y: list, timeout = 5) -> list:
+        status = True
+        start_stamp = time.time()
         while not ArrayProcessor.are_all_arrays_equal(all_x):
             for i in range(len(all_x)-1):
                 all_y[i], all_y[i+1], main_x  = ArrayProcessor.combine_interpolate_arrays(
@@ -162,7 +163,11 @@ class ArrayProcessor:
                 all_x[i+1] = main_x
                 all_x[i] = main_x
 
-        return all_x, all_y
+            if time.time() - start_stamp >= timeout:
+                status = False
+
+
+        return all_x, all_y, status
 
 
 class TestArrayProcessor(unittest.TestCase):
@@ -215,7 +220,7 @@ class TestArrayProcessor(unittest.TestCase):
         all_x = [np.array([1, 2, 3]), np.array([1, 2, 3])]
         all_y = [np.array([10, 20, 30]), np.array([10, 20, 30])]
 
-        result_x, result_y = ArrayProcessor.combine_all_arrays(all_x, all_y)
+        result_x, result_y, _ = ArrayProcessor.combine_all_arrays(all_x, all_y)
 
         np.testing.assert_array_equal(result_x[0], result_x[1])
         np.testing.assert_array_equal(result_y[0], result_y[1])
@@ -225,7 +230,7 @@ class TestArrayProcessor(unittest.TestCase):
         all_x = [np.array([1, 3]), np.array([2, 4])]
         all_y = [np.array([10, 30]), np.array([20,40])]
 
-        result_x, result_y = ArrayProcessor.combine_all_arrays(all_x, all_y)
+        result_x, result_y, _ = ArrayProcessor.combine_all_arrays(all_x, all_y)
 
         # Проверка, что результат содержит объединенные массивы
         expected_x = [np.array([1, 2, 3, 4]),  np.array([1, 2, 3, 4])]
@@ -240,7 +245,7 @@ class TestArrayProcessor(unittest.TestCase):
         all_x = [np.array([]), np.array([])]
         all_y = [np.array([]), np.array([])]
 
-        result_x, result_y = ArrayProcessor.combine_all_arrays(all_x, all_y)
+        result_x, result_y, _ = ArrayProcessor.combine_all_arrays(all_x, all_y)
 
         # Проверка, что результат все равно пустой массив
         np.testing.assert_array_equal(result_x[0], np.array([]))
@@ -259,7 +264,7 @@ class TestArrayProcessor(unittest.TestCase):
             np.array([50, 60])
         ]
 
-        result_x, result_y = ArrayProcessor.combine_all_arrays(all_x, all_y)
+        result_x, result_y, _ = ArrayProcessor.combine_all_arrays(all_x, all_y)
 
         # Проверка на правильность объединения
         expected_x = np.array([1, 2, 3, 4, 5, 6])

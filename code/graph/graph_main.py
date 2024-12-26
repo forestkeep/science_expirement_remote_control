@@ -50,8 +50,8 @@ def time_decorator(func):
         end_time = time.time()
         print(f"Метод {func.__name__} - {end_time - start_time} с")
         return result
-
     return wrapper
+
 
 
 class graphMain(QObject):
@@ -110,6 +110,7 @@ class graphMain(QObject):
         self.dataSourceLayout = self.setupDataSourceSelectors()
         
         self.graphView = self.setupGraphView()
+        self.graphView.scene().sigMouseClicked.connect(self.click_scene_main_graph)
 
         self.graphView.plotItem.getAxis("left").linkToView(
             self.graphView.plotItem.getViewBox()
@@ -120,12 +121,9 @@ class graphMain(QObject):
         
         import_lay = QHBoxLayout()
         self.import_button = QPushButton()
-        self.selector = QSpacerItem(
-            15, 15, QSizePolicy.Expanding, QSizePolicy.Minimum
-        )
+        self.selector = QSpacerItem(15, 15, QSizePolicy.Expanding, QSizePolicy.Minimum)
         import_lay.addWidget(self.import_button)
         import_lay.addItem(self.selector)
-
 
         data_name_layout = QHBoxLayout()
         self.data_name_label = QLabel()
@@ -140,6 +138,10 @@ class graphMain(QObject):
         self.page.setLayout(self.tab1Layout)
         
         self.import_button.clicked.connect(self.import_data)
+
+        self.page.subscribe_to_key_press(key = Qt.Key_Delete, callback = self.delete_key_press)
+
+        self.page.subscribe_to_key_press(key = Qt.Key_Escape, callback = self.reset_filters)
 
         self.retranslateUi(self.page)
 
@@ -201,7 +203,7 @@ class graphMain(QObject):
                 self.set_default()
                 self.update_dict_param(dev)
                 return result
-
+        
     def setupDataSourceSelectors(self):
         # Data source selectors layout
         dataSourceLayout = QHBoxLayout()
@@ -333,8 +335,19 @@ class graphMain(QObject):
         graphView.plotItem.getAxis("bottom").linkToView(graphView.plotItem.getViewBox())
 
         self.p1 = graphView.plotItem
+        
+        self.p2 = pg.ViewBox(parent=None,
+                border=None,
+                lockAspect=False,
+                enableMouse=False,
+                invertY=False,
+                enableMenu=False,
+                name=None,
+                invertX=False,
+                defaultPadding=0.02
+                )
+        
 
-        self.p2 = pg.ViewBox()
         self.p1.showAxis("right")
         self.p1.scene().addItem(self.p2)
         self.p1.getAxis("right").linkToView(self.p2)
@@ -355,17 +368,17 @@ class graphMain(QObject):
 
     def showToolTip(self, event):
         pos = event 
-        if len(self.y) > 0 and len(self.x) > 0:
-            self.graphView.removeItem(self.tooltip)
-            x_val = round(
-                self.graphView.plotItem.vb.mapSceneToView(pos).x(), 1
-            ) 
-            y_val = round(
-                self.graphView.plotItem.vb.mapSceneToView(pos).y(), 1
-            ) 
-            text = f'<p style="font-size:{10}pt">X:{x_val} Y:{y_val}</p>'
-            # Устанавливаем текст подсказки
-            self.tooltip.setText(text)
+    
+        self.graphView.removeItem(self.tooltip)
+        x_val = round(
+            self.graphView.plotItem.vb.mapSceneToView(pos).x(), 1
+        ) 
+        y_val = round(
+            self.graphView.plotItem.vb.mapSceneToView(pos).y(), 1
+        ) 
+        text = f'<p style="font-size:{10}pt">X:{x_val} Y:{y_val}</p>'
+        # Устанавливаем текст подсказки
+        self.tooltip.setText(text)
 
     def update_dict_param(self, new: dict, is_exp_stop = False):
         if new:
@@ -473,6 +486,8 @@ class graphMain(QObject):
 
         current_items_y = list(item.text() for item in self.y_first_param_selector.selectedItems())
         current_items_y2 = list(item.text() for item in self.y_second_param_selector.selectedItems())
+
+        self.hide_second_line_grid()
 
         if string_y not in current_items_y and string_y != "Select parameter":
                 if string_y in self.y.keys():
@@ -650,7 +665,50 @@ class graphMain(QObject):
         self.check_and_show_warning()
 
     def set_filters(self, filter_func):
-        print(filter_func)
+        for curve in self.stack_curve.values():
+            if curve.current_highlight:
+
+                curve.filtered_y_data = filter_func(curve.filtered_y_data)
+                curve.filtered_x_data = curve.filtered_x_data[-len(curve.filtered_y_data):]
+
+                curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
+
+                curve.recalc_stats_param()
+
+    def reset_filters(self, curve = None):
+        if curve:
+            if not curve.data_reset():
+                self.main_class.show_tooltip(message = "Все фильтры уже сброшены, сбрасывать больше нечего.")
+            curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
+            curve.recalc_stats_param()
+        else:
+            for curve in self.stack_curve.values():
+                if curve.current_highlight:
+                    curve.data_reset()
+                    curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
+                    curve.recalc_stats_param()
+
+    def click_scene_main_graph(self, event):
+        self.__callback_click_scene( self.stack_curve.values() )
+
+    def __callback_click_scene(self, focus_objects: list):
+        is_click_plot = True
+        for graph in focus_objects:
+            if graph.i_am_click_now:
+                graph.i_am_click_now = False
+                is_click_plot = False
+
+        if is_click_plot:
+            for graph in focus_objects:
+                if graph.current_highlight:
+                        graph.current_highlight = False
+                        graph.plot_obj.setPen(graph.saved_pen)
+
+    def delete_key_press(self):
+        for curve in self.stack_curve.values():
+            if curve.current_highlight:
+                #TODO: процесс удаления
+                pass
 
     def handle_selector(self, selector, previous, string_value):
         if previous == string_value:
@@ -676,6 +734,9 @@ class graphMain(QObject):
                     data_curve.delete_curve_from_graph()
                     second_selector.addItem(data_curve.y_name)
         return False
+    
+    def hide_second_line_grid(self):
+        self.p1.getAxis("right").setGrid(0)#костыль, который необходим для того, чтобы сетка по вспомогательной оси не отображалась. При вызове меню сетки отрисоываются на всех осях
 
     def update_data(self, obj):
 
@@ -684,6 +745,8 @@ class graphMain(QObject):
         string_y2 = self.get_last_item_parameter(self.y_second_param_selector)
 
         is_multiple = self.multiple_checkbox.isChecked()
+
+        self.hide_second_line_grid()
 
         if not is_multiple:
             if obj is self.x_param_selector:
