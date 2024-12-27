@@ -73,6 +73,7 @@ class graphData:
         if highlight:
             self.current_highlight = True
             self.plot_obj.setPen(pg.mkPen('w', width=2))
+            self.plot_obj.setSymbolBrush(color = 'w')
 
     def change_color(self, color):
         self.saved_pen['color'] = color
@@ -149,9 +150,6 @@ class graphData:
         self.filtered_x_data = self.raw_data_x
         self.filtered_y_data = self.raw_data_y
         return True
-
-
-
 
 class linearData(graphData):
     def __init__(self, raw_x, raw_y, device, ch, y_name, x_name, y_param_name, x_param_name) -> None:
@@ -267,7 +265,7 @@ class hystLoop(graphData):
 
         # Интегрирование
         I2 = G2 - H2
-        J2 = np.cumsum(I2)  # Кусковая сумма
+        J2 = np.cumsum(I2)
         K2 = J2 - np.max(J2) / 2
         L2 = K2 + self.Q2
 

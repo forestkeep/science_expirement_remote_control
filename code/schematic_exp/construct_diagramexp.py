@@ -10,12 +10,15 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import sys
+import os
 from PyQt5.QtCore import Qt, QPoint, QRect
 from PyQt5.QtGui import QPainter, QPen, QColor, QBrush, QFontMetrics, QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QFrame, QSizePolicy
 import qdarktheme
 from enum import Enum
 
+
+THEME = os.getenv("APP_THEME")
 
 class Position(Enum):
     LEFT = 1
@@ -64,12 +67,16 @@ def get_center_side(widget: QWidget, side: Position):
 class connection():
     '''save connection two some objects'''
     def __init__(self, base_widget = None, name = None):
+        global THEME
         self.base_widget = base_widget
         self.first_unit = None
         self.second_unit = None
         self.name = name
         self.type_signal = None
-        self.pen = QPen(QColor(255, 255, 255), 1, Qt.SolidLine)
+        if THEME == "dark":
+            self.pen = QPen(QColor(255, 255, 255), 1, Qt.SolidLine)
+        else:
+            self.pen = QPen(QColor(0, 0, 0), 1, Qt.SolidLine)
         self.type = connectionType.SINGLE
 
     def set_type(self, type: connectionType):
@@ -216,7 +223,7 @@ class connection():
             text_width = bounding_rect.width()
             text_height = bounding_rect.height()
 
-            painter.setPen(QColor(255, 255, 255))
+            painter.setPen(self.pen)
             if is_overlap:
                 #три линии
                 midpoint = QPoint( int((start_point.x() + end_point.x()) / 2) , int((start_point.y() + end_point.y()) / 2))

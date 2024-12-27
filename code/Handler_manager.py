@@ -102,8 +102,6 @@ class messageBroker:
         self.subscribe_list = buf_list
         #print(self.subscribe_list)
                     
-        
-
     def create_subscribe(self, name_subscribe, publisher, description=""):
         new_subscribe = subscribe(
             name=name_subscribe, publiser=publisher, description=description
@@ -132,7 +130,6 @@ class messageBroker:
                     print("Ошибка, отправить публикацию может только создатель")
                     return False
 
-
 class MockSubscriber:
     def __init__(self, name):
         self.name = name
@@ -140,7 +137,6 @@ class MockSubscriber:
 
     def receive_message(self, message):
         self.received_messages.append(message)
-
 
 class TestSubscribeAndMessageBroker(unittest.TestCase):
 
@@ -193,7 +189,6 @@ class TestSubscribeAndMessageBroker(unittest.TestCase):
         self.message_broker.create_subscribe("Subscription2", self.publisher_name)
         result = self.message_broker.push_publish("Subscription2", "WrongPublisher")
         self.assertFalse(result)
-
 
 if __name__ == "__main__":
     unittest.main()

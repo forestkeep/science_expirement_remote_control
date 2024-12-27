@@ -15,7 +15,6 @@ import sys
 import ctypes
 from logging.handlers import RotatingFileHandler
 
-
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication
 import qdarktheme
@@ -31,7 +30,7 @@ from device_creator.dev_creator import deviceCreator
 from PyQt5.QtCore import QTranslator, QLocale
 from device_creator.test_commands import TestCommands
 
-version_app = "1.0.3"
+VERSION_APP = "1.0.3"
 logger = logging.getLogger(__name__)
 
 def is_admin():
@@ -42,24 +41,24 @@ def is_admin():
 
 
 class MyWindow(QtWidgets.QMainWindow):
-    global version_app
+    global VERSION_APP
     def __init__(self, device_creator):
         self.settings = QtCore.QSettings(
             QtCore.QSettings.IniFormat,
             QtCore.QSettings.UserScope,
             "misis_lab",
-            "exp_control" + version_app,
+            "exp_control" + VERSION_APP,
         )
 
         self.graph_window   = None
         self.device_creator = device_creator
 
-        logger.warning(f"Start Version {version_app}, Admin {is_admin()}")
+        logger.warning(f"Start Version {VERSION_APP}, Admin {is_admin()}")
 
         super().__init__()
         self.dict_device_class = dict_device_class
         self.available_dev = list(self.dict_device_class.keys())
-        self.ui = Ui_MainWindow(version = version_app, main_class=self)
+        self.ui = Ui_MainWindow(version = VERSION_APP, main_class=self)
         logger.debug("запуск программы")
         self.ui.setupUi(self)
         self.dict_active_local_devices = {}
@@ -70,7 +69,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.cur_install = installation_class(
             settings=self.settings, 
             dict_device_class=self.dict_device_class,
-            version = version_app
+            version = VERSION_APP
         )
         self.current_installation_list = []
 
@@ -82,6 +81,7 @@ class MyWindow(QtWidgets.QMainWindow):
         lang = self.settings.value(
             "language", defaultValue="ENG"
         )
+
 
         self.change_language(lang)
 
@@ -121,10 +121,7 @@ class MyWindow(QtWidgets.QMainWindow):
         
         self.lang = lang
         self.load_language(lang)
-
-  
         self.ui.retranslateUi(self)
-
         self.settings.setValue(
             "language",
             self.lang,
@@ -151,12 +148,13 @@ class MyWindow(QtWidgets.QMainWindow):
         self.test_commands_window.show()
 
     def load_language(self, lang):
-        if lang == 'RUS':
-            self.translator.load("translations/translation_ru.qm")
-        else:  # По умолчанию ENG
-            self.translator.load("translations/translation_en.qm")
-        
-        QtWidgets.QApplication.instance().installTranslator(self.translator)
+        file_path = {
+            'RUS': "translations/translation_ru.qm",
+        }.get(lang, next((p for p in ["translations/translation_en.qm", "translation_en.qm"] if os.path.isfile(p)), None))
+
+        if file_path is not None:
+            self.translator.load(file_path)
+            QtWidgets.QApplication.instance().installTranslator(self.translator)
 
     def toggle_key_installation(self, answer_signal):
         self.key_to_new_window_installation = not self.key_to_new_window_installation
@@ -275,6 +273,7 @@ if __name__ == "__main__":
 
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
+    os.environ["STYLE_THEME"] = "dark"
 
     device_creator = deviceCreator()
 

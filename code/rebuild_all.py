@@ -5,7 +5,7 @@ import shutil
 import PyInstaller.__main__
 
 from clear_dir import remove_pycaches
-from installation_controller import version_app
+from installation_controller import VERSION_APP
 
 def build_python_app():
     PyInstaller.__main__.run([
@@ -21,7 +21,7 @@ def build_python_app():
     ])
 
 def move_file_up_one_directory(filename):
-    global version_app
+    global VERSION_APP
     current_dir = os.getcwd()
     target_file_path = os.path.join(current_dir, filename)
 
@@ -29,7 +29,7 @@ def move_file_up_one_directory(filename):
         parent_dir = os.path.dirname(current_dir)
 
         base_name, ext = os.path.splitext(filename)
-        new_filename = f"{base_name}_v{version_app}{ext}"
+        new_filename = f"{base_name}_v{VERSION_APP}{ext}"
         new_file_path = os.path.join(parent_dir, new_filename)
 
         target_path_in_parent = os.path.join(parent_dir, new_filename)

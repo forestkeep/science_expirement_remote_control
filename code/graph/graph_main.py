@@ -878,8 +878,8 @@ class graphMain(QObject):
         curve_data_obj.delete_curve_from_graph()
         
     def calc_curve_parameter(self, string_x, string_y):
-        device_y, ch_y, parameter_y = self.decode_name_parameters_new(string_y)
-        device_x, ch_x, parameter_x = self.decode_name_parameters_new(string_x)
+        device_y, ch_y, parameter_y = self.decode_name_parameters(string_y)
+        device_x, ch_x, parameter_x = self.decode_name_parameters(string_x)
         if (string_x == "time"and string_y != "time" and string_y != "Select parameter"):
                 x1_name = string_x
                 y1_name = string_y
@@ -1142,20 +1142,8 @@ class graphMain(QObject):
                         output_list.append(f"{key}({device} {channel})")
 
         return output_list
-
+ 
     def decode_name_parameters(self, string_y):
-        buf_y = string_y.split("(")
-        if len(buf_y) > 1:
-            parameter_y = buf_y[0]
-            device_y = buf_y[1].split(" ")[0]
-            ch_y = buf_y[1].split(" ")[1][:-1]
-        else:
-            print(f"ошибка при декодиировании имени параметра {buf_y}")
-            return 1,1,1
-
-        return device_y, ch_y, parameter_y
-    
-    def decode_name_parameters_new(self, string_y):
         if string_y.upper() == "TIME" or string_y.upper() == "SELECT PARAMETER":
             return False, False, string_y
         

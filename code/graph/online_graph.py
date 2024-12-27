@@ -11,6 +11,7 @@
 
 import sys
 import time
+import os
 
 from PyQt5.QtCore import QTimer, pyqtSignal, QPoint, QTimer
 from PyQt5.QtGui import QIcon
@@ -190,7 +191,7 @@ if __name__ == "__main__":
     from test_main_graph import test_graph
     import qdarktheme
     app = QApplication(sys.argv)
-    qdarktheme.setup_theme(corner_shape="sharp")
+    qdarktheme.setup_theme("dark", corner_shape="sharp", custom_colors={"primary": "#DDBCFF"})
     mainWindow = GraphWindow()
     mainWindow.show()
     mainWindow.test_update()

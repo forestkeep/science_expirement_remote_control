@@ -11,14 +11,14 @@
 
 
 import logging
+import os
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication
+import qdarktheme
 
 logger = logging.getLogger(__name__)
-
-
 
 class Ui_MainWindow(object):
     def __init__(self, version, main_class):
@@ -102,6 +102,18 @@ class Ui_MainWindow(object):
         
         self.menu.addAction(self.language_menu.menuAction())
 
+        self.style_menu = QtWidgets.QMenu(self.menu)
+        self.action_style_dark = QtWidgets.QAction(MainWindow)
+        self.action_style_dark.triggered.connect(lambda: self.change_style("dark"))
+
+        self.action_style_light = QtWidgets.QAction(MainWindow)
+        self.action_style_light.triggered.connect(lambda: self.change_style("light"))
+        
+        self.style_menu.addAction(self.action_style_dark)
+        self.style_menu.addAction(self.action_style_light)
+
+        self.menu.addAction(self.style_menu.menuAction())
+
         self.menu.addSeparator()
         self.menu.addAction(self.debug_mode)
 
@@ -110,6 +122,13 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+    def change_style(self, style):
+        if style == "dark":
+            qdarktheme.setup_theme("dark", corner_shape="sharp", custom_colors={"primary": "#00FFFF"})
+            os.environ["STYLE_THEME"] = "dark"
+        else:
+            qdarktheme.setup_theme("light", corner_shape="sharp", custom_colors={"primary": "#505050"})
+            os.environ["STYLE_THEME"] = "light"
 
     def change_language(self, language):
         self.main_class.change_language(language)
@@ -152,3 +171,7 @@ class Ui_MainWindow(object):
         self.open_test_commands.setText(_translate("main","Тест команд"))
         self.actionEnglish.setText("English")
         self.actionRussian.setText("Русский")
+
+        self.style_menu.setTitle(_translate("main","Оформление"))
+        self.action_style_light.setText(_translate("main","Светлая тема"))
+        self.action_style_dark.setText(_translate("main","Темная тема"))

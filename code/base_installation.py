@@ -40,7 +40,6 @@ logger = logging.getLogger(__name__)
 
 class baseInstallation:
     def __init__(self) -> None:
-
         self.way_to_save_installation_file = None
         self.save_results_now = False
         self.is_search_resources = True

@@ -16,7 +16,6 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pyvisa
 
@@ -522,6 +521,8 @@ def test():
 
 
 if __name__ == "__main__":
+
+    import matplotlib.pyplot as plt
 
     # test()
     res = pyvisa.ResourceManager().list_resources()

@@ -1,10 +1,13 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QTreeWidget, QTreeWidgetItem,
-                             QMessageBox, QMenu, QAction, QDialog, QLineEdit, QColorDialog, QHeaderView)
+                             QMessageBox, QMenu, QAction, QDialog, QLineEdit, QTextEdit, QColorDialog, QHeaderView)
 from PyQt5.QtGui import QColor, QIcon, QFont, QBrush
 from PyQt5.QtCore import Qt, pyqtSignal
-from calc_values_for_graph import ArrayProcessor
+try:
+    from calc_values_for_graph import ArrayProcessor
+except:
+    from graph.calc_values_for_graph import ArrayProcessor
 import numexpr as ne
 import numpy as np
 
@@ -16,11 +19,10 @@ class CurveTreeItem(QTreeWidgetItem):
         self.font = QFont()
         self.font.setItalic(True)
         self.font.setBold(True)
-        self.font.setPointSize(12)
+        self.font.setPointSize(10)
         self.setFont(0, self.font)
 
         self.setForeground(1, QBrush(QColor("#ff30ea")))
-
 
         self.col_font = QFont()
         self.col_font.setBold(True)
@@ -71,10 +73,36 @@ class CurveTreeItem(QTreeWidgetItem):
         stats_item.addChild(QTreeWidgetItem([f"Медиана: {median}"]))
         stats_item.addChild(QTreeWidgetItem([f"Число точек: {count}"]))
 
+    def add_new_block(self, block_name, data):
+        block_item = self.findChild(block_name)
+        if block_item is None:
+            block_item = QTreeWidgetItem(self, [block_name])
+            block_item.setFont(0, self.font)
+            block_item.setExpanded(True)
+
+        for key, value in data.items():
+            block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
+
+    def update_block_data(self, block_name, data) -> bool:
+        block_item = self.findChild(block_name)
+        if block_item:
+            for i, (key, value) in enumerate(data.items()):
+                if i < block_item.childCount():
+                    block_item.child(i).setText(0, f"{key}: {value}")
+                else:
+                    # Если дочерних элементов недостаточно, добавляем новые
+                    block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
+            return True
+        return False
+
     def update_parameters(self, dict_parameters):
         for parameter_name, new_value in dict_parameters.items():
             if self.parameters.get(parameter_name, False) is not False:
-                self.parameters[parameter_name] = new_value
+                if isinstance(new_value, (int, float)):
+                    val = np.format_float_scientific(new_value, precision=5, unique=True)
+                else:
+                    val = new_value
+                self.parameters[parameter_name] = val
             else:
                 print(f"ключ {parameter_name} не найден в параметрах отображения кривой")
         self.update_display()
@@ -128,6 +156,10 @@ class CurveDialog(QDialog):
         self.formula_input.setPlaceholderText("Формула")
         layout.addWidget(self.formula_input)
 
+        self.description_input = QTextEdit(self)
+        self.description_input.setPlaceholderText("Описание")
+        layout.addWidget(self.description_input)
+
         button_layout = QHBoxLayout()
         self.ok_button = QPushButton("ОК", self)
         self.cancel_button = QPushButton("Отмена", self)
@@ -139,15 +171,13 @@ class CurveDialog(QDialog):
         self.cancel_button.clicked.connect(self.reject)
 
     def get_curve_data(self):
-        return self.name_input.text(), self.formula_input.text()
-
+        return self.name_input.text(), self.formula_input.text(), self.description_input.toPlainText()
 
 def choose_color():
     color = QColorDialog.getColor()
     if color.isValid():
         return color.name()
     return None
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -170,7 +200,6 @@ class customTreeWidget(QTreeWidget):
         self.par_class.on_item_entered(item)
         super().mouseMoveEvent(event)
     def leaveEvent(self, event):
-        # Ваш код обработки события ухода курсора
         self.par_class.on_item_entered(item = None)
         super().leaveEvent(event)
 
@@ -272,7 +301,7 @@ class treeWin(QWidget):
     def open_curve_dialog(self):
         dialog = CurveDialog(self)
         if dialog.exec_() == QDialog.Accepted:
-            name, formula = dialog.get_curve_data()
+            name, formula, description = dialog.get_curve_data()
 
             context = {}
             choised_curves = {}
@@ -296,16 +325,11 @@ class treeWin(QWidget):
                 names_x_parameters.add(curve.curve_data_obj.x_name)
                 x_name = curve.curve_data_obj.x_name
 
-            print("препарейшн")
-
             context, all_x, status = self.preparation_arrays(context)
             if not status:
                 print("ошибка в расчете, таймаут, авозможно, что-то с исходными данными")
-            print("евалуейшн")
                 
             result = self.evaluate_expression(formula, context)
-
-            print("курвейшн")
 
             curve_data = self.main_class.graph_main.create_curve(y_data = result, 
                                                     x_data = all_x[0],
@@ -320,8 +344,8 @@ class treeWin(QWidget):
             self.curve_created.emit(curve_data)
             self.add_curve(curve_data.tree_item)
             curve_data.set_full_legend_name()
+            curve_data.tree_item.update_block_data("Разное", {"Формула": formula, "Описание": description})
 
-    
     def preparation_arrays(self, tree_curves: dict):
         keys = list(tree_curves.keys())
         all_x = []
@@ -448,9 +472,6 @@ class treeWin(QWidget):
     def clear_all(self):
         for curve in self.curves:
             self.delete_curve(curve)
-
-
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
