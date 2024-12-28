@@ -200,19 +200,4 @@ if __name__ == "__main__":
     data = client.query_ascii_values(f"*IDN?\n")
     print(data)
 
-    ax = client.query_ascii_values(f"CURSor:MANual:AXValue? \n")
-    print(f"{ax=}")
-
-    bx = client.query_ascii_values(f"CURSor:MANual:BXValue? \n")
-    print(f"{bx=}")
-
-    ay = client.query_ascii_values(f"CURSor:MANual:AYValue? \n")
-    print(f"{ay=}")
-
-    by = client.query_ascii_values(f"CURSor:MANual:BYValue? \n")
-    print(f"{by=}")
-
-    vpp = client.query_ascii_values(f"MEASure:CHANnel1:ITEM? RMS\n")
-    print(f"{vpp=}")
-
     # MAX,VMIN,VPP,VTOP,VBASe,VAMP,VAVG,VRMS,OVERshoot,PREShoot,MARea,MP ARea,PERiod,FREQuency,RTIMe,FTIMe,PWIDth,NWIDth,PDUTy,NDUTy,RDELay,FDE Lay,RPHase,FPHase,TVMAX,TVMIN,PSLEWrate,NSLEWrate,VUPper, VMID,VLOWer,VARIance,PVRMS,PPULses,NPULses,PEDGes,NEDGes>

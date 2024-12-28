@@ -24,7 +24,7 @@ else:
     from device_creator.dev_template import templates
     from device_creator.test_commands import TestCommands
 
-
+TYPE_DEVICES = ['oscilloscope', 'power supply']
 class InvalidTemplate(Exception):
     pass
 
@@ -217,9 +217,9 @@ class deviceCreator(QDialog):
         self.ok_button.setParent(None)
         self.cancel_button.setParent(None)
         self.main_label.setText(QApplication.translate('device_creator',"Выберите тип добавляемого прибора"))
-        type_devices = ['oscilloscope', 'power suply']
+        global TYPE_DEVICES
         self.buttons_type = []
-        for tp in type_devices:
+        for tp in TYPE_DEVICES:
             button = QPushButton(tp, self)
             button.clicked.connect(lambda checked, num=tp: self.type_button_click(num))
             self.main_layout.addWidget(button)

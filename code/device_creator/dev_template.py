@@ -160,61 +160,73 @@ templates = {
     }
 },
 #=============
-'power suply':
-{
-    "device_type": "power suply",
-    "device_name": 'some_device',
+
+"power supply": {
+    "device_type": "power supply",
+    "device_name": "some_device",
     "number_channels": 1,
+    "channels parameters" : {
+        "max_channels_voltage": [],
+        "max_channels_current": [],
+    },
     "commands": {
         "select_channel": {
             "command": "INST CH{channel}\\n",
             "separator": ",",
-            "description": "Choise channel for measurement and settings"
+            "description": "Selects the specified channel for subsequent measurements and settings, allowing the user to operate on a particular channel."
         },
         "_get_setting_current": {
             "command": "CURR?\\n",
-            "description": "Get settings current",
+            "description": "Retrieves the current setting for the selected channel, indicating the current limit set in the device."
         },
         "_get_setting_voltage": {
             "command": "VOLT?\\n",
-            "description": "Get settings voltage",
+            "description": "Retrieves the voltage setting for the selected channel, indicating the voltage level set in the device."
         },
         "_get_current_current": {
             "command": "MEAS:CURR?\\n",
-            "description": "Meas current"
+            "description": "Measures and returns the actual current flowing through the specified channel, providing real-time current monitoring."
         },
         "_get_current_voltage": {
             "command": "MEAS:VOLT?\\n",
-            "description": "Meas voltage"
+            "description": "Measures and returns the actual voltage at the output of the specified channel, allowing for real-time voltage monitoring."
         },
         "_output_switching_off": {
             "command": "OUTP CH{ch_num},OFF\\n",
-            "description": "Off channel"
+            "description": "Turns off the output for the specified channel, preventing any current or voltage output from that channel."
         },
         "_output_switching_on": {
             "command": "OUTP CH{ch_num},ON\\n",
-            "description": "On channel"
+            "description": "Turns on the output for the specified channel, allowing current or voltage to be supplied to external circuits."
         },
         "_set_current": {
             "command": "CURR {current}\\n",
             "check_command": "CURR?\\n",
             "focus_answer": "{current}\\n",
-            "description": "Set the current value"
+            "description": "Sets the current value for the specified channel, allowing the user to define a maximum current limit."
         },
         "_set_voltage": {
             "command": "VOLT {voltage}\\n",
             "check_command": "VOLT?\\n",
             "focus_answer": "{voltage}\\n",
-            "description": "Set the voltage value"
+            "description": "Sets the voltage value for the specified channel, allowing the user to establish an output voltage level."
         }
     }
 }
-#=============
-#=============
-#=============
-#=============
-#=============
-#=============
-#=============
-#=============
+
+
+
+
 }
+
+'''
+select_channel: "Выбирает указанный канал для последующих измерений и настроек, позволяя пользователю работать с определенным каналом."
+_get_setting_current: "Получает текущее значение настройки тока для выбранного канала, указывая установленный предел тока в устройстве."
+_get_setting_voltage: "Получает текущее значение настройки напряжения для выбранного канала, указывая установленный уровень напряжения в устройстве."
+_get_current_current: "Измеряет и возвращает фактический ток, протекающий через указанный канал, обеспечивая мониторинг тока в режиме реального времени."
+_get_current_voltage: "Измеряет и возвращает фактическое напряжение на выходе указанного канала, позволяя осуществлять мониторинг напряжения в режиме реального времени."
+_output_switching_off: "Выключает выход для указанного канала, предотвращая любое выходное напряжение или ток от этого канала."
+_output_switching_on: "Включает выход для указанного канала, позволяя подавать ток или напряжение на внешние цепи."
+_set_current: "Устанавливает значение тока для указанного канала, позволяя пользователю определить максимальный предел тока."
+_set_voltage: "Устанавливает значение напряжения для указанного канала, позволяя пользователю задать уровень выходного напряжения."
+'''

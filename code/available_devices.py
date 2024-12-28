@@ -32,3 +32,6 @@ dict_device_class = {
                     #"ATF20B" : ATF20B,
                     "WPS300s" : matrixWps300s
                     }
+
+device_types = ["power suply", "oscilloscope", "Voltemeter", "signal generator"]
+

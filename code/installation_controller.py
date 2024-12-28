@@ -15,10 +15,11 @@ import os
 import sys
 from logging.handlers import RotatingFileHandler
 
-import qdarktheme
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QLocale, QTranslator
+from PyQt5.QtCore import QTranslator
 from PyQt5.QtWidgets import QApplication
+
+import qdarktheme
 
 import interface.info_window_dialog
 from available_devices import dict_device_class
