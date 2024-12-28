@@ -10,5 +10,6 @@ def remove_pycaches(start_dir):
 
 if __name__ == "__main__":
     current_directory = os.getcwd()
-    remove_pycaches(current_directory)
+    parent_directory = os.path.dirname(current_directory)
+    remove_pycaches(parent_directory)
     print("exit")

@@ -342,7 +342,6 @@ class deviceCreator(QDialog):
         if self.test_commands_window is not None:
             self.test_commands_window.entry.setText(command)
 
-
     def submit_command(self):
         input_text = self.input_field.text().strip()
         current_arguments = self.extract_arguments(input_text)

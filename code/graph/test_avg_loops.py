@@ -1,8 +1,17 @@
+# Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
+# 
+# This file may be used under the terms of the GNU General Public License
+# version 3.0 as published by the Free Software Foundation and appearing in
+# the file LICENSE included in the packaging of this file. Please review the
+# following information to ensure the GNU General Public License version 3.0
+# requirements will be met: https://www.gnu.org/copyleft/gpl.html.
+# 
+# This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+# WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
-from calc_values_for_graph import ArrayProcessor
-
 
 filtered_signal_data2=[-0.086, -0.086, -0.084, -0.084, -0.08 , -0.08 , -0.072, -0.072,
        -0.064, -0.064, -0.058, -0.058, -0.05 , -0.05 , -0.042, -0.042,

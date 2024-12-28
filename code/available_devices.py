@@ -21,14 +21,14 @@ from Devices.ATF20B import ATF20B
 from Devices.matrixWps300s import matrixWps300s
 
 dict_device_class = {
-                                    "Maisheng": maishengPowerClass, 
-                                    "SR830": sr830Class, 
-                                    "PR": relayPr1Class, 
-                                    "DP832A": rigolDp832aClass, 
-                                    "АКИП-2404": akip2404Class, 
-                                    "E7-20MNIPI": mnipiE720Class, 
-                                    "DS1104Z" : DS1104Z,
-                                    "DS1052E" : DS1052E,
-                                    #"ATF20B" : ATF20B,
-                                    "WPS300s" : matrixWps300s
-                                    }
+                    "Maisheng": maishengPowerClass, 
+                    "SR830": sr830Class, 
+                    "PR": relayPr1Class, 
+                    "DP832A": rigolDp832aClass, 
+                    "АКИП-2404": akip2404Class, 
+                    "E7-20MNIPI": mnipiE720Class, 
+                    "DS1104Z" : DS1104Z,
+                    "DS1052E" : DS1052E,
+                    #"ATF20B" : ATF20B,
+                    "WPS300s" : matrixWps300s
+                    }

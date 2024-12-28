@@ -145,9 +145,9 @@ class GraphWindow(QMainWindow):
             elif active_tab_index == 1:
                 self.graph_wave.set_filters(filter_func)
 
-            self.show_tooltip("Фильтры применены к выделенным графикам. \n Для сброса фильтров выделите графики и нажмите кнопку esc.", timeout=5000)
+            self.show_tooltip( QApplication.translate("GraphWindow","Фильтры применены к выделенным графикам. \n Для сброса фильтров выделите графики и нажмите кнопку esc."), timeout=5000)
         else:
-            self.show_tooltip("Дождитесь окончания эксперимента", timeout=3000)
+            self.show_tooltip( QApplication.translate("GraphWindow","Дождитесь окончания эксперимента"), timeout=3000)
 
     def update_graphics(self, new_data: dict, is_exp_stop = False):
         '''is_exp_stop - флаг остановки эксперимента, передается, когда эксперимент завершается, принудительно переводит окно графиков в расщиренный режим просмотра'''

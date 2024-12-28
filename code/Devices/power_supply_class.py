@@ -681,7 +681,6 @@ class power_supply(base_device):
                     else:
                         answer = ch_response_to_step.Step_fail
                         if self.is_debug:
-                            ##print(f"ошибка установки напряжения {self.name}, {self.active_channel.number}")
                             answer = ch_response_to_step.Step_done
                         continue
 
@@ -695,7 +694,6 @@ class power_supply(base_device):
                     else:
                         answer = ch_response_to_step.Step_fail
                         if self.is_debug:
-                            ##print(f"ошибка установки напряжения {self.name}, {self.active_channel.number}")
                             answer = ch_response_to_step.Step_done
                         continue
 

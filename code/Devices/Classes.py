@@ -399,7 +399,7 @@ class base_device():
             if channel:
                 channels.append(channel)
         if len(channels) > 0:
-            self.ch1_meas.is_active = True#по умолчанию для каждого прибора включен первый канал
+            self.ch1_meas.is_active = True
             self.active_channel_meas = self.ch1_meas #поле необходимо для записи параметров при настройке в нужный канал
         return channels
     
@@ -456,7 +456,6 @@ class base_device():
     def switch_channel(self, number = None, ch_name = None):
             '''переключает активный канала либо по номеру, либо по имени. Если переключение по имени, то активный канал будет доступен в 
             self.active_channel, если по номеру, то канала измерений будет в self.active_channel_meas, а канал действий в self.active_channel_act'''
-            #print(f"{number=}")
             if number is not None:
                 try:
                     number = int(number)
@@ -465,7 +464,6 @@ class base_device():
                 
                 status = False
                 for ch in self.channels:
-                    #print(f"{ch=}")
                     if number == ch.number:
                         status = True
                         if ch.ch_type == "meas":
@@ -487,12 +485,11 @@ class base_device():
     def on_next_step(self, ch, repeat = 1):
         '''активирует следующий шаг канала прибора'''
         stps = ch.dict_settable_parameters["num steps"]
-        #print(f"{self.name} {ch.ch_name} {ch.step_index = } steps = {stps}")
         answer = ch_response_to_step.Step_done
-        if ch.dict_settable_parameters["num steps"] == QApplication.translate("Device","Пока активны другие приборы"):
+        if stps == QApplication.translate("Device","Пока активны другие приборы"):
             return answer
-        if int(ch.step_index) < int(ch.dict_settable_parameters["num steps"])-1:
-            ch.step_index = ch.step_index + 1
+        if int(ch.step_index) < int(stps)-1:
+            ch.step_index += 1
         else:
             answer = ch_response_to_step.End_list_of_steps  # след шага нет
         return answer
@@ -619,12 +616,9 @@ class base_device():
 
     def get_trigger(self, ch):
         '''возвращает тип триггера, таймер или внешний сигнал'''
-        #try:
         answer = None
         if "trigger" in ch.dict_settable_parameters.keys():
             answer = ch.dict_settable_parameters["trigger"]
-        #except:
-            #answer = None
         return answer
 
     def set_client(self, client):
@@ -682,8 +676,7 @@ class base_device():
                     buf = self.active_channel_act.dict_buf_parameters["sourse/time"]
                     self.setting_window.sourse_act_enter.clear()
                     self.setting_window.sourse_act_enter.setEditable(False)
-                    # предоставьте список сигналов, я прибор под именем self.name канал self.active_channel.name
-                    #self.active_channel_act.signal_list = self.installation_class.get_signal_list(self.name, self.active_channel_act)
+
                     self.active_channel_act.signal_list = self.message_broker.get_subscribe_list(object = self.active_channel_act)
 
                     self.setting_window.sourse_act_enter.addItems(self.active_channel_act.signal_list)
@@ -701,7 +694,6 @@ class base_device():
                 if self.setting_window.triger_meas_enter.currentText() == QApplication.translate( "Device", "Таймер" ):
                     try:
                         buf = int(self.active_channel_meas.dict_buf_parameters["sourse/time"])
-                        #print(f"{buf=}")
                     except:
                         buf = 5
                     self.setting_window.sourse_meas_enter.clear()
@@ -713,9 +705,6 @@ class base_device():
                     buf = self.active_channel_meas.dict_buf_parameters["sourse/time"]
                     self.setting_window.sourse_meas_enter.clear()
                     self.setting_window.sourse_meas_enter.setEditable(False)
-                    # предоставьте список сигналов, я прибор под именем self.name канал self.active_channel.number
-                    #print(f"{self.message_broker.get_subscribe_list(object = self.active_channel_meas)=}")
-                    #self.active_channel_meas.signal_list = self.installation_class.get_signal_list(self.name, self.active_channel_meas)
                     self.active_channel_meas.signal_list = self.message_broker.get_subscribe_list(object = self.active_channel_meas)
 
                     self.setting_window.sourse_meas_enter.addItems(self.active_channel_meas.signal_list)

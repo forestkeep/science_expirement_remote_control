@@ -1,3 +1,14 @@
+# Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
+# 
+# This file may be used under the terms of the GNU General Public License
+# version 3.0 as published by the Free Software Foundation and appearing in
+# the file LICENSE included in the packaging of this file. Please review the
+# following information to ensure the GNU General Public License version 3.0
+# requirements will be met: https://www.gnu.org/copyleft/gpl.html.
+# 
+# This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+# WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
 import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QTreeWidget, QTreeWidgetItem,
@@ -52,26 +63,52 @@ class CurveTreeItem(QTreeWidgetItem):
         self.add_basic_characteristics()
 
     def add_basic_characteristics(self):
+
+
         self.addChild(QTreeWidgetItem([f"ID: {self.parameters['id']}"]))
-        self.addChild(QTreeWidgetItem([f"Тип: {self.parameters['tip']}"]))
-        self.addChild(QTreeWidgetItem([f"Область определения: ({self.parameters['min_x']}, {self.parameters['max_x']})"]))
-        self.addChild(QTreeWidgetItem([f"Область значений: ({self.parameters['min_y']}, {self.parameters['max_y']})"]))
+        
+        text = QApplication.translate("GraphWindow", "Тип: {tip}")
+        text = text.format(tip=self.parameters["tip"])
+        self.addChild(QTreeWidgetItem([text]))
+
+        text = QApplication.translate("GraphWindow", "Область определения: ({min_x}, {max_x})")
+        text = text.format(min_x=self.parameters["min_x"], max_x=self.parameters["max_x"])
+        self.addChild(QTreeWidgetItem([text]))
+
+        text = QApplication.translate("GraphWindow", "Область значений: ({min_y}, {max_y})")
+        text = text.format(min_y=self.parameters["min_y"], max_y=self.parameters["max_y"])
+        self.addChild(QTreeWidgetItem([text]))
+
         self.add_statistics(self.parameters["mean"], self.parameters["std"], 
                             self.parameters["mode"], self.parameters["median"], 
                             self.parameters["count"])
 
     def add_statistics(self, mean, std_dev, mode, median, count):
-        stats_item = self.findChild("Статистические данные")
+        stats_item = self.findChild( QApplication.translate("GraphWindow","Статистические данные") )
         if stats_item is None:
-            stats_item = QTreeWidgetItem(self, ["Статистические данные"])
+            stats_item = QTreeWidgetItem(self, [ QApplication.translate("GraphWindow","Статистические данные" )])
             stats_item.setFont(0, self.font)
             stats_item.setExpanded(True)
 
-        stats_item.addChild(QTreeWidgetItem([f"Среднее: {mean}"]))
-        stats_item.addChild(QTreeWidgetItem([f"Стандартное отклонение: {std_dev}"]))
-        stats_item.addChild(QTreeWidgetItem([f"Мода: {mode}"]))
-        stats_item.addChild(QTreeWidgetItem([f"Медиана: {median}"]))
-        stats_item.addChild(QTreeWidgetItem([f"Число точек: {count}"]))
+            text = QApplication.translate("GraphWindow", "Среднее: {mean}")
+            text = text.format(mean=self.parameters["mean"])
+            stats_item.addChild(QTreeWidgetItem([text]))
+
+            text = QApplication.translate("GraphWindow", "Стандартное отклонение: {std}")
+            text = text.format(std=self.parameters["std"])
+            stats_item.addChild(QTreeWidgetItem([text]))
+
+            text = QApplication.translate("GraphWindow", "Мода: {mode}")
+            text = text.format(mode=self.parameters["mode"])
+            stats_item.addChild(QTreeWidgetItem([text]))
+
+            text = QApplication.translate("GraphWindow", "Медиана: {median}")
+            text = text.format(median=self.parameters["median"])
+            stats_item.addChild(QTreeWidgetItem([text]))
+
+            text = QApplication.translate("GraphWindow", "Число точек: {count}")
+            text = text.format(count=self.parameters["count"])
+            stats_item.addChild(QTreeWidgetItem([text]))
 
     def add_new_block(self, block_name, data):
         block_item = self.findChild(block_name)
@@ -122,18 +159,43 @@ class CurveTreeItem(QTreeWidgetItem):
 
     def update_display(self):
         self.setText(0, f"{self.parameters['name']}")
-        self.child(0).setText(0, f"ID: {self.parameters['id']}")
-        self.child(1).setText(0, f"Тип: {self.parameters['tip']}")
-        self.child(2).setText(0, f"Область определения: ({self.parameters['min_x']}, {self.parameters['max_x']})")
-        self.child(3).setText(0, f"Область значений: ({self.parameters['min_y']}, {self.parameters['max_y']})")
+        text = QApplication.translate("GraphWindow", "ID: {id}")
+        text = text.format(id=self.parameters["id"])
+        self.child(0).setText(0, text)
 
-        stats_item = self.findChild("Статистические данные")
+        text = QApplication.translate("GraphWindow", "Тип: {tip}")
+        text = text.format(tip=self.parameters["tip"])
+        self.child(1).setText(0, text)
+
+        text = QApplication.translate("GraphWindow", "Область определения: ({min_x}, {max_x})")
+        text = text.format(min_x=self.parameters["min_x"], max_x=self.parameters["max_x"])
+        self.child(2).setText(0, text)
+
+        text = QApplication.translate("GraphWindow", "Область значений: ({min_y}, {max_y})")
+        text = text.format(min_y=self.parameters["min_y"], max_y=self.parameters["max_y"])
+        self.child(3).setText(0, text)
+
+        stats_item = self.findChild( QApplication.translate("GraphWindow","Статистические данные") )
         if stats_item:
-            stats_item.child(0).setText(0, f"Среднее: {self.parameters['mean']}")
-            stats_item.child(1).setText(0, f"Стандартное отклонение: {self.parameters['std']}")
-            stats_item.child(2).setText(0, f"Мода: {self.parameters['mode']}")
-            stats_item.child(3).setText(0, f"Медиана: {self.parameters['median']}")
-            stats_item.child(4).setText(0, f"Число точек: {self.parameters['count']}")
+            text = QApplication.translate("GraphWindow", "Среднее: {mean}")
+            text = text.format(mean=self.parameters["mean"])
+            stats_item.child(0).setText(0, text)
+
+            text = QApplication.translate("GraphWindow", "Стандартное отклонение: {std}")
+            text = text.format(std=self.parameters["std"])
+            stats_item.child(1).setText(0, text)
+
+            text = QApplication.translate("GraphWindow", "Мода: {mode}")
+            text = text.format(mode=self.parameters["mode"])
+            stats_item.child(2).setText(0, text)
+
+            text = QApplication.translate("GraphWindow", "Медиана: {median}")
+            text = text.format(median=self.parameters["median"])
+            stats_item.child(3).setText(0, text)
+
+            text = QApplication.translate("GraphWindow", "Число точек: {count}")
+            text = text.format(count=self.parameters["count"])
+            stats_item.child(4).setText(0, text)
 
     def findChild(self, title):
         for i in range(self.childCount()):
@@ -144,25 +206,25 @@ class CurveTreeItem(QTreeWidgetItem):
 class CurveDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Создать новую кривую")
+        self.setWindowTitle( QApplication.translate("GraphWindow","Создать новую кривую"))
         self.setFixedSize(300, 200)
         layout = QVBoxLayout(self)
 
         self.name_input = QLineEdit(self)
-        self.name_input.setPlaceholderText("Имя")
+        self.name_input.setPlaceholderText( QApplication.translate("GraphWindow","Имя"))
         layout.addWidget(self.name_input)
 
         self.formula_input = QLineEdit(self)
-        self.formula_input.setPlaceholderText("Формула")
+        self.formula_input.setPlaceholderText( QApplication.translate("GraphWindow","Формула"))
         layout.addWidget(self.formula_input)
 
         self.description_input = QTextEdit(self)
-        self.description_input.setPlaceholderText("Описание")
+        self.description_input.setPlaceholderText( QApplication.translate("GraphWindow","Описание"))
         layout.addWidget(self.description_input)
 
         button_layout = QHBoxLayout()
         self.ok_button = QPushButton("ОК", self)
-        self.cancel_button = QPushButton("Отмена", self)
+        self.cancel_button = QPushButton( QApplication.translate("GraphWindow","Отмена"), self)
         button_layout.addWidget(self.ok_button)
         button_layout.addWidget(self.cancel_button)
         layout.addLayout(button_layout)
@@ -225,7 +287,6 @@ class treeWin(QWidget):
         button_layout.addWidget(button)
         self.buttons.append(button)
 
-
         self.buttons[0].clicked.connect(self.open_curve_dialog)
 
         left_layout.addLayout(button_layout)
@@ -234,7 +295,7 @@ class treeWin(QWidget):
         self.visibility_button.setIcon(QIcon("eye.png"))
         self.visibility_button.setCheckable(True)
         self.visibility_button.clicked.connect(self.toggle_visibility)
-        self.visibility_button.setToolTip("Показать активные кривые")
+        self.visibility_button.setToolTip( QApplication.translate("GraphWindow","Показать активные кривые"))
         self.visibility_button.setMinimumSize(0, 30)
         self.visibility_button.setMaximumSize(30, 30)
         button_layout.addWidget(self.visibility_button)
@@ -242,7 +303,9 @@ class treeWin(QWidget):
         self.tree_widget = customTreeWidget(self)
         self.tree_widget.setColumnCount(3)
         self.tree_widget.setSortingEnabled(False)
-        self.tree_widget.setHeaderLabels(["Кривые", "Цвет", "Статус"])
+        self.tree_widget.setHeaderLabels([QApplication.translate("GraphWindow","Кривые"),
+                                          QApplication.translate("GraphWindow","Цвет"),
+                                          QApplication.translate("GraphWindow", "Статус")])
 
         left_layout.addWidget(self.tree_widget)
 
@@ -282,18 +345,17 @@ class treeWin(QWidget):
                     else:
                         curve.setHidden(False)
 
-
     def toggle_visibility(self):
         if self.visibility_button.isChecked():
             self.visibility_button.setIcon(QIcon("eye_crossed.png"))
-            self.visibility_button.setToolTip("Показать активные кривые")
+            self.visibility_button.setToolTip( QApplication.translate("GraphWindow","Показать активные кривые"))
             if self.curves:
                 for curve in self.curves:
                     if not curve.is_draw():
                         curve.setHidden(True)
         else:
             self.visibility_button.setIcon(QIcon("eye.png"))
-            self.visibility_button.setToolTip("Показать все кривые")
+            self.visibility_button.setToolTip( QApplication.translate("GraphWindow","Показать все кривые"))
             if self.curves:
                 for curve in self.curves:
                     curve.setHidden(False)
@@ -312,7 +374,6 @@ class treeWin(QWidget):
                     context[curve.parameters["id"]] = curve
                     choised_curves[curve.parameters["id"]] = curve
             if not is_consist_curve:
-                print("в формуле не обнаружено кривых")
                 return
             
             names_x_parameters = set()
@@ -344,7 +405,9 @@ class treeWin(QWidget):
             self.curve_created.emit(curve_data)
             self.add_curve(curve_data.tree_item)
             curve_data.set_full_legend_name()
-            curve_data.tree_item.update_block_data("Разное", {"Формула": formula, "Описание": description})
+            curve_data.tree_item.update_block_data( QApplication.translate("GraphWindow","Разное"),
+                                                    {QApplication.translate("GraphWindow","Формула"): formula,
+                                                     QApplication.translate("GraphWindow","Описание"): description})
 
     def preparation_arrays(self, tree_curves: dict):
         keys = list(tree_curves.keys())
@@ -402,9 +465,9 @@ class treeWin(QWidget):
                 context_menu.addAction(show_action)
                 show_action.triggered.connect(lambda: self.show_curve(root_item))
 
-            color_action = QAction("Изменить цвет", self)
-            delete_action = QAction("Удалить график", self)
-            reset_data_action = QAction("Сбросить фильтры", self)
+            color_action = QAction( QApplication.translate("GraphWindow","Изменить цвет"), self)
+            delete_action = QAction( QApplication.translate("GraphWindow","Удалить график"), self)
+            reset_data_action = QAction( QApplication.translate("GraphWindow","Сбросить фильтры"), self)
             context_menu.addAction(color_action)
             context_menu.addAction(delete_action)
             context_menu.addAction(reset_data_action)
@@ -424,7 +487,8 @@ class treeWin(QWidget):
             if selected_items:
                 item = selected_items[0]
             else:
-                QMessageBox.warning(self, "Ошибка", "Пожалуйста, выберите элемент для удаления.")
+                QMessageBox.warning(self, QApplication.translate("GraphWindow","Ошибка"),
+                                          QApplication.translate("GraphWindow","Пожалуйста, выберите элемент для удаления."))
                 return
             
         if item in self.curves:
@@ -445,7 +509,8 @@ class treeWin(QWidget):
             if selected_items:
                 item = selected_items[0]
             else:
-                QMessageBox.warning(self, "Ошибка", "Пожалуйста, выберите элемент для отображения.")
+                QMessageBox.warning(self, QApplication.translate("GraphWindow","Ошибка"),
+                                          QApplication.translate("GraphWindow", "Пожалуйста, выберите элемент для отображения."))
                 return
             
         if item in self.curves:
@@ -457,7 +522,8 @@ class treeWin(QWidget):
             if selected_items:
                 item = selected_items[0]
             else:
-                QMessageBox.warning(self, "Ошибка", "Пожалуйста, выберите элемент для отображения.")
+                QMessageBox.warning(self, QApplication.translate("GraphWindow","Ошибка"),
+                                          QApplication.translate("GraphWindow", "Пожалуйста, выберите элемент для отображения."))
                 return
         if item in self.curves:
             self.curve_hide.emit(item.curve_data_obj)

@@ -10,7 +10,6 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import copy
-import random
 import time
 import logging
 
@@ -176,7 +175,7 @@ class graphOsc:
 
         if self.main_class.experiment_controller is not None:
             if self.main_class.experiment_controller.is_experiment_running():
-                self.main_class.show_tooltip("Дождитесь окончания эксперимента", timeout=3000)
+                self.main_class.show_tooltip( QApplication.translate("GraphWindow","Дождитесь окончания эксперимента"), timeout=3000)
                 return
         
         options = QFileDialog.Options()
@@ -218,12 +217,11 @@ class graphOsc:
                 if errors_col != []:
                     res = ', '.join(errors_col)
 
-
-                    self.main_class.show_tooltip(f"В столбцах {res} обнаружены данные,\n которые не получается преобразовать в числа.\n При построение эти точки будут пропущены.", timeout=4000)
+                    text = QApplication.translate("GraphWindow","В столбцах {res} обнаружены данные,\n которые не получается преобразовать в числа.\n При построение эти точки будут пропущены.")
+                    text = text.format(res = res)
+                    self.main_class.show_tooltip( text, timeout=4000)
 
                 selected_channels.pop()
-
-                print(selected_channels)
 
                 import_time_scale_column = pd.to_numeric(df[selected_step], errors='coerce')
 
@@ -278,14 +276,6 @@ class graphOsc:
         self.graphView.scene().setClickRadius(20)
         self.legend.setParentItem(self.graphView.plotItem)
 
-        '''
-        self.graphView.plotItem.getAxis("left").linkToView(
-            self.graphView.plotItem.getViewBox()
-        )
-        self.graphView.plotItem.getAxis("bottom").linkToView(
-            self.graphView.plotItem.getViewBox()
-        )
-        '''
 
         self.graphView.setLabel("left", self.y_main_axis_label, color="#ffffff")
         self.graphView.setLabel("bottom", self.x_axis_label, color="#ffffff")
@@ -610,7 +600,6 @@ class graphOsc:
 
     def calc_avg_loop(self, loops_stack):
         '''вернет объект петли, полученный усреднением стека петель'''
-        print("вычисляем среднюю петлю")
         if len(loops_stack) == 0:
             return False
         elif len(loops_stack) == 1:
@@ -850,7 +839,6 @@ class graphOsc:
 
             else:
                 if obj.plot_obj != None:
-                    print(f"destroy {obj}")
                     self.graphView.removeItem(obj.plot_obj)
                     obj.plot_obj = None
                 
@@ -1161,7 +1149,6 @@ class graphOsc:
                     status = False
                     print("time scale сигнала и поля должны быть равны")
                     
-
             if status:
                 try:
                     x_vert_2 = float(self.right_coord.line_edit.text())
@@ -1175,8 +1162,7 @@ class graphOsc:
                 
                 raw_x = sig_arr[left_ind:right_ind]
                 raw_y = field_arr[left_ind:right_ind]
-                
-                
+                  
                 if len(raw_y) > len(raw_x):
                     raw_y = raw_y[0: len(raw_x)]
                 elif len(raw_y) < len(raw_x):

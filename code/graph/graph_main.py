@@ -149,13 +149,13 @@ class graphMain(QObject):
 
         if self.main_class.experiment_controller is not None:
             if self.main_class.experiment_controller.is_experiment_running():
-                self.main_class.show_tooltip("Дождитесь окончания эксперимента", timeout = 3000)
+                self.main_class.show_tooltip( QApplication.translate("GraphWindow","Дождитесь окончания эксперимента"), timeout = 3000)
                 return
         
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         fileName, ans = QFileDialog.getOpenFileName(
-            caption=QApplication.translate("GraphWindow","укажите путь импорта"),
+            caption=QApplication.translate("GraphWindow", "укажите путь импорта"),
             directory="",
             filter="Книга Excel (*.xlsx)",
             options=options,
@@ -247,17 +247,7 @@ class graphMain(QObject):
         self.x_param_selector.setCurrentItem( item )
         self.y_first_param_selector.setCurrentItem( item )
         self.y_second_param_selector.setCurrentItem( item )
-        '''
-        self.y_first_param_selector.itemPressed.connect(
-            lambda: self.update_plot()
-        )
-        self.y_second_param_selector.itemPressed.connect(
-            lambda: self.update_plot()
-        )
-        self.x_param_selector.itemPressed.connect(lambda: self.update_plot())
-        self.second_check_box.stateChanged.connect(lambda: self.update_plot())
-        '''
-        #===============================================
+
         self.y_first_param_selector.itemPressed.connect( lambda: self.update_plot( self.y_first_param_selector ) )
         self.y_second_param_selector.itemPressed.connect( lambda: self.update_plot( self.y_second_param_selector ) )
         self.x_param_selector.itemPressed.connect( lambda: self.update_plot( self.x_param_selector ) )
@@ -269,18 +259,13 @@ class graphMain(QObject):
         layout = QVBoxLayout()
         label = QLabel(label_text)
         listWidget = QListWidget()
-        #listWidget.setVisible(True)
         listWidget.setSelectionMode(QListWidget.SingleSelection)
 
-        # Создаем виджет-обертку
         hover_widget = QWidget()
         hover_widget.setLayout(layout)
-        #hover_widget.setStyleSheet("background-color: transparent;")  # Прозрачный фон
-        hover_widget.setAttribute(Qt.WA_Hover, True)
-        #hover_widget.enterEvent = lambda event: self.onHoverShowList(event, listWidget)
-        #hover_widget.leaveEvent = lambda event: self.onHoverHideList(event, listWidget)
 
-        # Добавляем виджеты в layout
+        hover_widget.setAttribute(Qt.WA_Hover, True)
+
         layout.addWidget(label)
         layout.addWidget(listWidget)
 
@@ -377,7 +362,6 @@ class graphMain(QObject):
             self.graphView.plotItem.vb.mapSceneToView(pos).y(), 1
         ) 
         text = f'<p style="font-size:{10}pt">X:{x_val} Y:{y_val}</p>'
-        # Устанавливаем текст подсказки
         self.tooltip.setText(text)
 
     def update_dict_param(self, new: dict, is_exp_stop = False):
@@ -423,7 +407,6 @@ class graphMain(QObject):
             for index in range(qlistwidget.count()):
                 if qlistwidget.item(index).text() == parameter:
                     qlistwidget.takeItem(index)
-                    #print(f"удалили {parameter} из {qlistwidget}")
                     break
 
     def update_param_in_comboxes(self, new_param = None):
@@ -655,11 +638,9 @@ class graphMain(QObject):
             self.y2.clear()
 
         if len(self.y.keys()) > 1:
-            #если множественное построение, то лейбл не ставим
             self.y_main_axis_label = ""
 
         if len(self.y2.keys()) > 1:
-            #если множественное построение, то лейбл не ставим
             self.y_second_axis_label = ""
 
         self.check_and_show_warning()
@@ -670,7 +651,6 @@ class graphMain(QObject):
 
                 curve.filtered_y_data = filter_func(curve.filtered_y_data)
                 curve.filtered_x_data = curve.filtered_x_data[-len(curve.filtered_y_data):]
-
                 curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
 
                 curve.recalc_stats_param()
@@ -678,7 +658,7 @@ class graphMain(QObject):
     def reset_filters(self, curve = None):
         if curve:
             if not curve.data_reset():
-                self.main_class.show_tooltip(message = "Все фильтры уже сброшены, сбрасывать больше нечего.")
+                self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Все фильтры уже сброшены, сбрасывать больше нечего." ) )
             curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
             curve.recalc_stats_param()
         else:
@@ -872,7 +852,7 @@ class graphMain(QObject):
             curve_data_obj.place_curve_on_graph(graph_field  = self.graphView,
                                                 legend_field = self.legend)
         else:
-            self.main_class.show_tooltip(message = "Кривая принадлежит другому пространству")
+            self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Кривая принадлежит другому пространству") )
     
     def hide_curve(self, curve_data_obj:linearData):
         curve_data_obj.delete_curve_from_graph()

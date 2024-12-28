@@ -505,9 +505,6 @@ def decode_raw_data(raw_data):
 //0A 06 03 E7 00 08 - команда модбас для выключения реле
 """
 
-
-
-# pyinstaller --onefile relay_class.py
 if __name__ == "__main__":
     from pymodbus.client import ModbusSerialClient
     from pymodbus.exceptions import (
@@ -547,30 +544,6 @@ if __name__ == "__main__":
         decoded_numbers = decode_raw_data(raw_data)
         print(decoded_numbers)
         time.sleep(10)
-
-
-    """
-
-    while True:
-        values = client.read_input_registers(address=40060, count=1, unit=unit)
-        # or client.read_holding_registers(...)
-        if isinstance(values, ModbusIOException):
-            print(values)
-        else:
-            # here if values is not an ModbusIOException
-            print("Values:", values)
-            if values[0] == 0xFFFF:
-                print("Error detected")
-            elif values[0] == 2002:
-                print("Data ready")
-                result = client.read_input_registers(
-                    address=40051, count=9, unit=unit)
-                if isinstance(result, ModbusIOException):
-                    print("Could not read result")
-                    print("Maybe client.read_holding_registers?")
-                else:
-                    print("Got a result:", result)
-    """
 
 """Error code 04 = Slave Device Failure
 
