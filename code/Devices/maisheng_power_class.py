@@ -10,15 +10,16 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import logging
-import time
-import sys
 import os
+import sys
+import time
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from pymodbus.client import ModbusSerialClient
 
-from Devices.power_supply_class import chActPowerSupply, chMeasPowerSupply, power_supply
+from Devices.power_supply_class import (chActPowerSupply, chMeasPowerSupply,
+                                        power_supply)
 
 logger = logging.getLogger(__name__)
 # 3Регулируемый блок питания MAISHENG WSD-20H15 (200В, 15А)

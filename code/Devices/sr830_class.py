@@ -12,19 +12,12 @@
 import copy
 import logging
 import time
-import sys
-import os
 
 from PyQt5.QtCore import pyqtSlot
 
-from Devices.Classes import (
-    base_ch,
-    base_device,
-    ch_response_to_step,
-    not_ready_style_border,
-    ready_style_border,
-    which_part_in_ch,
-)
+from Devices.Classes import (base_ch, base_device, ch_response_to_step,
+                             not_ready_style_border, ready_style_border,
+                             which_part_in_ch)
 from Devices.commandsSR830 import commandsSR830
 from Devices.interfase.set_sr830_window import Ui_Set_sr830
 

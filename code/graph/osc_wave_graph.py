@@ -10,44 +10,29 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import copy
-import time
 import logging
+import time
 
 import numpy as np
-import pyqtgraph as pg
 import pandas as pd
+import pyqtgraph as pg
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (
-    QCheckBox,
-    QComboBox,
-    QFrame,
-    QGridLayout,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QSizePolicy,
-    QSplitter,
-    QVBoxLayout,
-    QWidget,
-    QApplication,
-    QFileDialog,
-    QDialog
-)
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
+                             QFileDialog, QFrame, QGridLayout, QHBoxLayout,
+                             QLabel, QLineEdit, QPushButton, QSizePolicy,
+                             QSplitter, QVBoxLayout, QWidget)
 
 try:
-    from calc_values_for_graph import ArrayProcessor
-    from Message_graph import messageDialog
-    from Link_data_import_win import Check_data_import_win
-    from curve_data import hystLoop, oscData
     from colors import GColors
+    from curve_data import hystLoop, oscData
+    from Link_data_import_win import Check_data_import_win
+    from Message_graph import messageDialog
 except:
-    from graph.calc_values_for_graph import ArrayProcessor
-    from graph.Message_graph import messageDialog
-    from graph.Link_data_import_win import Check_data_import_win
-    from graph.curve_data import hystLoop, oscData
     from graph.colors import GColors
+    from graph.curve_data import hystLoop, oscData
+    from graph.Link_data_import_win import Check_data_import_win
+    from graph.Message_graph import messageDialog
 
 logger = logging.getLogger(__name__)
 
@@ -449,11 +434,9 @@ class graphOsc:
         self.name_field = QLabel(QApplication.translate("GraphWindow","Поле"))
         self.field_ch_choice = QComboBox()
 
-
         self.name_sig = QLabel(QApplication.translate("GraphWindow","Сигнал"))
         
         self.sig_ch_choice = QComboBox()
-
 
         self.sig_ch_choice.setMaximumSize(250, 40)
         self.field_ch_choice.setMaximumSize(250, 40)
@@ -516,7 +499,6 @@ class graphOsc:
 
         self.avg_loop_button.clicked.connect(lambda: self.avg_loop())
 
-    #-----------------------------------------
         self.hyst_loop_layer = QFrame()
         main_lay = QHBoxLayout(self.hyst_loop_layer)
 
@@ -568,6 +550,7 @@ class graphOsc:
         main_lay.addLayout(buttons_lay)
 
         return self.hyst_loop_layer
+    
     def avg_loop(self):
         buf = []
 
@@ -1030,7 +1013,6 @@ class graphOsc:
                 print("Нельзя найти точки пересечения или она всего одна")
 
         if self.vertical_lines.is_data_setted == True:
-
             status, x_vert_1, x_vert_2 = self.vertical_lines.get_next_data()
             if status:
                 self.right_coord.line_edit.setText(str(x_vert_2))

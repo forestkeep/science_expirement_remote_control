@@ -11,17 +11,20 @@
 
 import copy
 import logging
-import sys
 import os
+import sys
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 logger = logging.getLogger(__name__)
+from PyQt5.QtWidgets import QApplication
+
 from Adapter import Adapter
 from base_installation import baseInstallation
-from Devices.Classes import not_ready_style_border, ready_style_border, warning_style_border
-from PyQt5.QtWidgets import QApplication
+from Devices.Classes import (not_ready_style_border, ready_style_border,
+                             warning_style_border)
+
 
 class analyse(baseInstallation):
     def __init__(self) -> None:
@@ -215,7 +218,6 @@ class analyse(baseInstallation):
 
     def get_subscribers(self, signals, trig) -> list[list[str, str]]:
         """возвращает массив пар [имя прибора, имя канала] подписчиков данного сигнала-триггера и всех последующих подписчиков, рекурсивная функция"""
-
 
         subscribers = signals
         for device, ch in self.get_active_ch_and_device():

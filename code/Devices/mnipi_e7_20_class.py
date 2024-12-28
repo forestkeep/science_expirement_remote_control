@@ -13,17 +13,14 @@ import copy
 import logging
 import math
 import time
-import sys
-import os
-
 
 import serial
 import serial.tools.list_ports
 from PyQt5.QtWidgets import QApplication
+
 from Devices.Classes import (base_ch, base_device, ch_response_to_step,
-                     not_ready_style_border,
-                     ready_style_border,
-                     which_part_in_ch)
+                             not_ready_style_border, ready_style_border,
+                             which_part_in_ch)
 from Devices.interfase.Set_immitance_window import Ui_Set_immitans
 
 logger = logging.getLogger(__name__)
@@ -431,7 +428,6 @@ class mnipiE720Class(base_device):
 
         onchange = buffer[20]
         crc = buffer[21]
-
 
         return [offset, level, frequency, flags, mode, limit, imparam, secparam, secparam_value, imparam_value, onchange, crc]
     

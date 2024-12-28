@@ -12,21 +12,16 @@
 import copy
 import enum
 import logging
-import time
 import struct
+import time
 
 from pymodbus.client import ModbusSerialClient
-from pymodbus.exceptions import (
-    ModbusIOException,
-)
+from pymodbus.exceptions import ModbusIOException
 from pymodbus.pdu import ExceptionResponse
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QApplication
 
-# importing libraries
-from PyQt5.QtWidgets import *
-
-from Devices.Classes import base_ch, base_device, ch_response_to_step, which_part_in_ch
+from Devices.Classes import (base_ch, base_device, ch_response_to_step,
+                             which_part_in_ch)
 from Devices.interfase.relay_set_window import Ui_Set_relay
 
 logger = logging.getLogger(__name__)
@@ -34,16 +29,13 @@ logger = logging.getLogger(__name__)
 # sourse_enter -> sourse_act_enter || sourse_meas_enter
 # triger_enter -> triger_act_enter || triger_meas_enter
 
-
 class out_state(enum.Enum):
     on = 1
     off = 2
 
-
 class current_polarity(enum.Enum):
     pol_1 = 1
     pol_2 = 2
-
 
 class relayPr1Class(base_device):
     def __init__(self, name, installation_class) -> None:
@@ -448,7 +440,6 @@ class relayPr1Class(base_device):
             # print("Ошибка модбас модуля или клиента")
             return False
 
-
 class chActPR(base_ch):
     def __init__(self, number, device_class) -> None:
         super().__init__(number, ch_type="act", device_class=device_class)
@@ -507,14 +498,10 @@ def decode_raw_data(raw_data):
 
 if __name__ == "__main__":
     from pymodbus.client import ModbusSerialClient
-    from pymodbus.exceptions import (
-        MessageRegisterException,
-        ModbusException,
-        ModbusIOException,
-        NoSuchSlaveException,
-        NotImplementedException,
-        ParameterException,
-    )
+    from pymodbus.exceptions import (MessageRegisterException, ModbusException,
+                                     ModbusIOException, NoSuchSlaveException,
+                                     NotImplementedException,
+                                     ParameterException)
     from pymodbus.pdu import ExceptionResponse, ModbusRequest, ModbusResponse
 
     port = "COM4"

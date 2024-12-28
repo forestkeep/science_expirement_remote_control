@@ -15,20 +15,19 @@ import sys
 import threading
 import time
 from datetime import datetime
-import sys
-import os
 
+import qdarktheme
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication
-import qdarktheme
+
 from Analyse_in_installation import analyse
-from Devices.Classes import (not_ready_style_background, not_ready_style_border,
-                     ready_style_background)
+from Devices.Classes import (not_ready_style_background,
+                             not_ready_style_border, ready_style_background)
 from experiment_control import experimentControl
 from Handler_manager import messageBroker
 from interface.installation_window import Ui_Installation
-from schematic_exp.construct_diagramexp import expDiagram, create_objects, main_dict1
+from schematic_exp.construct_diagramexp import expDiagram
 from schematic_exp.exp_time_line import callStack
 
 logger = logging.getLogger(__name__)
@@ -413,8 +412,6 @@ class installation_class(experimentControl, analyse):
                     self.repeat_meas = int(
                         self.gen_set_class.repeat_meas
                     )
-                    #print(f"repeat_experiment - {self.repeat_experiment}")
-                    #print(f"repeat_meas - {self.repeat_meas}")
                     self.add_text_to_log(QApplication.translate('main install',"Создан файл") + " " + self.buf_file)
                     logger.debug("Эксперимент начат" + "Создан файл " + self.buf_file)
                     self.measurement_parameters = {}
@@ -705,7 +702,8 @@ if __name__ == "__main__":
     import logging
     import os
     from logging.handlers import RotatingFileHandler
-    from PyQt5.QtCore import QTranslator, QLocale
+
+    from PyQt5.QtCore import QLocale, QTranslator
 
     logger = logging.getLogger(__name__)
     FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"

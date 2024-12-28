@@ -16,20 +16,14 @@ import time
 
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QApplication
-from Devices.Classes import (
-    base_ch,
-    base_device,
-    ch_response_to_step,
-    not_ready_style_border,
-    ready_style_border,
-    warning_style_border,
-    which_part_in_ch,
-)
+
+from Devices.Classes import (base_device, ch_response_to_step,
+                             not_ready_style_border, ready_style_border,
+                             warning_style_border, which_part_in_ch)
 from Devices.interfase.Set_oscilloscope_window import setWinOscilloscope
 from Devices.osc_rigol_commands import oscRigolCommands
 
 logger = logging.getLogger(__name__)
-
 
 class oscilloscopeClass(base_device):
     def __init__(self, name, type_connection, installation_class) -> None:

@@ -9,14 +9,15 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-import sys
 import os
-from PyQt5.QtCore import Qt, QPoint, QRect
-from PyQt5.QtGui import QPainter, QPen, QColor, QBrush, QFontMetrics, QFont
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QFrame, QSizePolicy
-import qdarktheme
+import sys
 from enum import Enum
 
+import qdarktheme
+from PyQt5.QtCore import QPoint, QRect, Qt
+from PyQt5.QtGui import QBrush, QColor, QFont, QPainter, QPen
+from PyQt5.QtWidgets import (QApplication, QFrame, QLabel, QSizePolicy,
+                             QVBoxLayout, QWidget)
 
 THEME = os.getenv("APP_THEME")
 

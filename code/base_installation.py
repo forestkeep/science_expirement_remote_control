@@ -10,9 +10,9 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import logging
+import sys
 import threading
 from datetime import datetime
-import sys
 
 from pymodbus.client import ModbusSerialClient
 from PyQt5 import QtGui, QtWidgets
@@ -20,20 +20,17 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
 from Adapter import Adapter, instrument
-from Devices.Classes import (
-    not_ready_style_background,
-    not_ready_style_border,
-    ready_style_border,
-)
+from available_devices import dict_device_class
+from Devices.Classes import (not_ready_style_background,
+                             not_ready_style_border, ready_style_border)
 from graph.online_graph import GraphWindow
-from interface.experiment_settings_window import settigsDialog, experimentSettings
+from interface.experiment_settings_window import (experimentSettings,
+                                                  settigsDialog)
 from interface.installation_check_devices import installation_Ui_Dialog
 from interface.Message import messageDialog
 from saving_data.Parse_data import process_and_export, type_save_file
-from available_devices import dict_device_class
 
 logger = logging.getLogger(__name__)
-
 
 class baseInstallation:
     def __init__(self) -> None:
@@ -411,7 +408,6 @@ class baseInstallation:
                 value = True
         return value
 
-
     def open_general_settings(self):
 
         (is_change,
@@ -426,13 +422,10 @@ class baseInstallation:
                                                             self.repeat_experiment,
                                                             self.repeat_meas
                                                            )
-        print(f"{self.way_to_save_file=}")
 
         if is_change:
             self.settings.setValue("is_exp_run_anywhere", self.is_exp_run_anywhere)
             self.settings.setValue("is_delete_buf_file", self.is_delete_buf_file)
-
-
 
     def open_general_settings_old(self):
         set_dialog = settigsDialog()
@@ -645,8 +638,6 @@ class baseInstallation:
 
                     self.clients.append(dict_modbus_clients[list_COMs[i]])
         self.is_search_resources = True
-
-
 
 if __name__ == "__main__":
     import sys

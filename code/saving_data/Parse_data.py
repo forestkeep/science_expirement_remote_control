@@ -13,8 +13,8 @@ import copy
 import enum
 import logging
 import os
-from datetime import datetime
 import threading
+from datetime import datetime
 
 import pandas
 from pandas.io.excel import ExcelWriter

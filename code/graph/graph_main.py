@@ -12,37 +12,25 @@
 import time
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 import pyqtgraph as pg
-import numpy as np
-from PyQt5.QtCore import pyqtSignal, Qt, QItemSelectionModel, QObject
+from PyQt5.QtCore import QItemSelectionModel, QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (
-    QListWidgetItem,
-    QListWidget,
-    QWidget,
-    QApplication,
-    QCheckBox,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QSizePolicy,
-    QSpacerItem,
-    QVBoxLayout,
-    QPushButton,
-    QFileDialog
-)
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QFileDialog, QHBoxLayout,
+                             QLabel, QListWidget, QListWidgetItem, QPushButton,
+                             QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
 
 try:
     from calc_values_for_graph import ArrayProcessor
-    from Message_graph import messageDialog
+    from colors import GColors, cold_colors, warm_colors
     from curve_data import linearData
-    from colors import cold_colors, warm_colors, GColors
+    from Message_graph import messageDialog
 except:
     from graph.calc_values_for_graph import ArrayProcessor
-    from graph.Message_graph import messageDialog
+    from graph.colors import GColors, cold_colors, warm_colors
     from graph.curve_data import linearData
-    from graph.colors import cold_colors, warm_colors, GColors
+    from graph.Message_graph import messageDialog
 
 def time_decorator(func):
     def wrapper(*args, **kwargs):
@@ -52,8 +40,6 @@ def time_decorator(func):
         print(f"Метод {func.__name__} - {end_time - start_time} с")
         return result
     return wrapper
-
-
 
 class graphMain(QObject):
     new_curve_selected = pyqtSignal()
@@ -303,7 +289,6 @@ class graphMain(QObject):
             self.y_second_param_selector.clearSelection()
             self.y_first_param_selector.clearSelection()
 
-
             for data in self.stack_curve.values():
                 if data.is_draw == True:
                     data.delete_curve_from_graph()
@@ -333,7 +318,6 @@ class graphMain(QObject):
                 defaultPadding=0.02
                 )
         
-
         self.p1.showAxis("right")
         self.p1.scene().addItem(self.p2)
         self.p1.getAxis("right").linkToView(self.p2)
@@ -925,6 +909,7 @@ class graphMain(QObject):
             name_ch1 = ch_y
 
         return x1, y1, x1_name, y1_name, name_device1, name_ch1, parameter_y, parameter_x
+    
     def create_curve(self, y_data, x_data, name_device, name_ch, y_name, x_name, y_param_name, x_param_name) -> linearData:
             new_data = linearData(raw_x   = x_data,
                                     raw_y   = y_data,
@@ -960,6 +945,7 @@ class graphMain(QObject):
                                   pen      = buf_pen)
             
             return new_data
+    
     def create_and_place_curve(self, y_data, x_data, name_device, name_ch, y_name, x_name, y_param_name, x_param_name, graph_field, legend_field):
         if self.stack_curve.get(y_name + x_name) is None:
             new_data = self.create_curve(y_data, x_data, name_device, name_ch, y_name, x_name, y_param_name, x_param_name)

@@ -11,14 +11,8 @@
 
 import sys
 
-from PyQt5.QtWidgets import (
-    QApplication,
-    QCheckBox,
-    QDialog,
-    QLabel,
-    QPushButton,
-    QVBoxLayout,
-)
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QDialog, QLabel,
+                             QPushButton, QVBoxLayout)
 
 
 class messageDialog(QDialog):

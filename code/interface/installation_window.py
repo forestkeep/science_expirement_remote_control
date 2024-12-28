@@ -13,12 +13,13 @@ import enum
 import logging
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtGui import QColor, QFont, QIcon
-from PyQt5.QtWidgets import QToolTip, QSizePolicy
+from PyQt5.QtGui import QFont, QIcon
 
-from Devices.Classes import (not_ready_style_background, not_ready_style_border,
-                     ready_style_background, ready_style_border,
-                     warning_style_background, warning_style_border)
+from Devices.Classes import (not_ready_style_background,
+                             not_ready_style_border, ready_style_background,
+                             ready_style_border, warning_style_background,
+                             warning_style_border)
+
 logger = logging.getLogger(__name__)
 
 

@@ -15,14 +15,11 @@ import logging
 import time
 
 import numpy
+from PyQt5.QtWidgets import QApplication
 
 from Analyse_in_installation import analyse
-from Devices.Classes import (
-    ch_response_to_step,
-    not_ready_style_background,
-    ready_style_background,
-)
-from PyQt5.QtWidgets import QApplication
+from Devices.Classes import (ch_response_to_step, not_ready_style_background,
+                             ready_style_background)
 
 logger = logging.getLogger(__name__)
 
@@ -550,7 +547,6 @@ class experimentControl(analyse):
                                                                 ''' )
                             self.exp_call_stack.set_data(self.meta_data_exp)
 
-
         self.finalize_experiment(error=error, error_start_exp=error_start_exp)
         self.prepare_for_reexperiment()
 
@@ -764,8 +760,7 @@ class experimentControl(analyse):
             ans = dev.action_end_experiment(ch)
 
         self.pbar_percent = 0  # сбрасываем прогресс бар
-        
-        
+         
         self.meta_data_exp.exp_stop_time = time.time()
         
         #self.meta_data_exp.print_meta_data()
@@ -840,8 +835,6 @@ def print_data(data):
                     print(
                         f"  {parameter}: {', '.join([str(value) for value in values])}"
                     )
-
-
 
 class metaDataExp():
     def __init__(self):

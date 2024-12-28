@@ -9,11 +9,11 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
+import copy
 import logging
 import math
 import time
 from enum import Enum
-import copy
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QTimer
@@ -660,7 +660,6 @@ class base_device():
 
                 #Для чего оно здесь???????
                 #self.active_channel_act.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_act_enter.currentText()
-
 
                 if self.setting_window.triger_act_enter.currentText() == QApplication.translate( "Device", "Таймер" ):
                     try:

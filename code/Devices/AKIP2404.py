@@ -12,11 +12,11 @@
 import copy
 import logging
 import time
-import sys
-import os
 
 from PyQt5.QtWidgets import QApplication
-from Devices.Classes import base_ch, base_device, ch_response_to_step, which_part_in_ch
+
+from Devices.Classes import (base_ch, base_device, ch_response_to_step,
+                             which_part_in_ch)
 from Devices.interfase.set_voltmeter_window import Ui_Set_voltmeter
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,6 @@ IDN?	                               Получить строку идентиф
 :TRIGger:SOURce { BUS	IMMediate}     Установить триггер начала измерения.  BUS - по команде с шины данных
 :READ?	                               Получить измеренные данные
 """
-
 
 class akip2404Class(base_device):
     def __init__(self, name, installation_class) -> None:
@@ -139,7 +138,6 @@ class akip2404Class(base_device):
                 if ch.is_ch_active():
                     ch.step_index = -1
 
-
     def action_before_experiment(
         self, number_of_channel
     ) -> bool:  # менять для каждого прибора
@@ -175,7 +173,7 @@ class akip2404Class(base_device):
                 logger.warning(f"ошибка: {str(e)}")
         else:
             pass
-            # TODO: проверить, включен ли режим авто, если нет, то включить
+            # TODO: проверить, включен ли режим авто на приборе, если нет, то включить
             # [:SENSe]:VOLTage:AC:RANGe:AUTO 	Включить/выключить авторазбор диапазона
             # [:SENSe]:VOLTage:AC:RANGe:AUTO?
 
@@ -277,7 +275,6 @@ class akip2404Class(base_device):
         command = bytes(f":VOLTage:AC:CH{channel}\n", "ascii")
         self.client.write( command )
 
-
 class ch_meas_akip_class(base_ch):
     def __init__(self, number, device_class) -> None:
         super().__init__(number, ch_type="meas", device_class=device_class)
@@ -288,9 +285,3 @@ class ch_meas_akip_class(base_ch):
 
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
-
-if __name__ == "__main__":
-
-
-
-    pass

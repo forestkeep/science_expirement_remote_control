@@ -9,9 +9,10 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-import numpy as np
-import matplotlib.pyplot as plt
 import copy
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 filtered_signal_data2=[-0.086, -0.086, -0.084, -0.084, -0.08 , -0.08 , -0.072, -0.072,
        -0.064, -0.064, -0.058, -0.058, -0.05 , -0.05 , -0.042, -0.042,

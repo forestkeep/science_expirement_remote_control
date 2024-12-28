@@ -9,10 +9,10 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-import random
 import logging
-import sys
 import os
+import random
+import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -20,7 +20,6 @@ import numpy as np
 import pyvisa
 
 logger = logging.getLogger(__name__)
-
 
 class oscRigolCommands:
     def __init__(self, device) -> None:
@@ -452,7 +451,6 @@ class oscRigolCommands:
         plt.grid(True)
         plt.show()
 
-
 def derivative_at_each_point(x, dx):
     derivative = np.zeros_like(x)
 
@@ -465,7 +463,6 @@ def derivative_at_each_point(x, dx):
 
     return derivative
 
-
 def find_sign_change(derivative):
     sign_changes = []
     for i in range(1, len(derivative)):
@@ -475,7 +472,6 @@ def find_sign_change(derivative):
         ):
             sign_changes.append(i)  # Индекс точки, где происходит смена знака
     return sign_changes
-
 
 def test():
     x = np.linspace(0, 6 * np.pi, 100)  # Создание массива x от 0 до 2π
@@ -518,7 +514,6 @@ def test():
 
     plt.tight_layout()
     plt.show()
-
 
 if __name__ == "__main__":
 

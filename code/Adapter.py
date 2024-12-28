@@ -20,7 +20,6 @@ from serial.tools import list_ports
 
 logger = logging.getLogger(__name__)
 
-
 class resourse(enum.Enum):
     serial = 1
     pyvisa = 2
@@ -166,7 +165,6 @@ class Adapter:
         else:
             raise AdapterException("unknown resource")
 
-
 class instrument:
 
     @staticmethod
@@ -208,11 +206,9 @@ class instrument:
 
         return ports
 
-
 class AdapterException(Exception):
     def __init__(self, message):
         super().__init__(message)
-
 
 if __name__ == "__main__":
     print(instrument.get_resourses())

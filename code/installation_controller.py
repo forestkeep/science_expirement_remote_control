@@ -9,26 +9,27 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
+import ctypes
 import logging
 import os
 import sys
-import ctypes
 from logging.handlers import RotatingFileHandler
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QApplication
 import qdarktheme
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import QLocale, QTranslator
+from PyQt5.QtWidgets import QApplication
+
 import interface.info_window_dialog
-from graph.online_graph import GraphWindow
 from available_devices import dict_device_class
+from device_creator.dev_creator import deviceCreator
+from device_creator.test_commands import TestCommands
+from Devices.svps34_control import Ui_SVPS34_control
+from graph.online_graph import GraphWindow
 from Installation_class import installation_class
 from interface.installation_check_devices import installation_Ui_Dialog
 from interface.main_window import Ui_MainWindow
 from interface.selectdevice_window import Ui_Selectdevice
-from Devices.svps34_control import Ui_SVPS34_control
-from device_creator.dev_creator import deviceCreator
-from PyQt5.QtCore import QTranslator, QLocale
-from device_creator.test_commands import TestCommands
 
 VERSION_APP = "1.0.3"
 logger = logging.getLogger(__name__)
@@ -38,7 +39,6 @@ def is_admin():
         return ctypes.windll.shell32.IsUserAnAdmin()
     else:  # Linux/Unix
         return os.geteuid() == 0
-
 
 class MyWindow(QtWidgets.QMainWindow):
     global VERSION_APP
@@ -81,7 +81,6 @@ class MyWindow(QtWidgets.QMainWindow):
         lang = self.settings.value(
             "language", defaultValue="ENG"
         )
-
 
         self.change_language(lang)
 
@@ -225,7 +224,6 @@ class MyWindow(QtWidgets.QMainWindow):
         else:
             self.dict_active_local_devices[name].show()
             # del self.dict_active_local_devices[name]
-
 
     def closeEvent(self, event):
         """Событие закрытия окна"""

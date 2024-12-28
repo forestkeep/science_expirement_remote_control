@@ -10,7 +10,10 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import sys
-from PyQt5.QtWidgets import QApplication, QVBoxLayout, QLabel, QComboBox, QVBoxLayout, QHBoxLayout, QCheckBox, QDialog, QPushButton
+
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
+                             QHBoxLayout, QLabel, QPushButton, QVBoxLayout)
+
 
 class Check_data_import_win(QDialog):
     def __init__(self, strings, callback):
@@ -52,8 +55,6 @@ class Check_data_import_win(QDialog):
         layout_vert_main.addWidget(ok_button)
     def on_ok(self):
         self.accept()
-
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

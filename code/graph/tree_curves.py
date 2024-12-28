@@ -10,17 +10,23 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import sys
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-                             QHBoxLayout, QPushButton, QTreeWidget, QTreeWidgetItem,
-                             QMessageBox, QMenu, QAction, QDialog, QLineEdit, QTextEdit, QColorDialog, QHeaderView)
-from PyQt5.QtGui import QColor, QIcon, QFont, QBrush
+
 from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QBrush, QColor, QFont, QIcon
+from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QDialog,
+                             QHBoxLayout, QHeaderView, QLineEdit, QMainWindow,
+                             QMenu, QMessageBox, QPushButton, QTextEdit,
+                             QTreeWidget, QTreeWidgetItem, QVBoxLayout,
+                             QWidget)
+
 try:
     from calc_values_for_graph import ArrayProcessor
 except:
     from graph.calc_values_for_graph import ArrayProcessor
+
 import numexpr as ne
 import numpy as np
+
 
 class CurveTreeItem(QTreeWidgetItem):
     def __init__(self, curve_data_obj=None, parent=None, name=None):

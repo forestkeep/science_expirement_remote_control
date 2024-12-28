@@ -14,10 +14,10 @@ import time
 
 import pyvisa
 
-from Devices.power_supply_class import chActPowerSupply, chMeasPowerSupply, power_supply
+from Devices.power_supply_class import (chActPowerSupply, chMeasPowerSupply,
+                                        power_supply)
 
 logger = logging.getLogger(__name__)
-
 
 class rigolDp832aClass(power_supply):
     def __init__(self, name, installation_class) -> None:
@@ -179,7 +179,6 @@ class rigolDp832aClass(power_supply):
         self.open_port()
         # self.client.write(f'INST CH{channel}\n'.encode())
         self.client.write(f"INST CH{channel}\n")
-
 
 if __name__ == "__main__":
     # print("тестирование ригола")

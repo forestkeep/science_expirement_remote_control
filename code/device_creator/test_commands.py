@@ -9,22 +9,16 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-import sys
-from PyQt5.QtWidgets import (
-    QApplication,
-    QWidget,
-    QLineEdit,
-    QPushButton,
-    QLabel,
-    QComboBox,
-    QGridLayout,
-    QMainWindow,
-)
-from Adapter import instrument
-from PyQt5.QtCore import QTimer
 import logging
+import sys
 import threading
+
 import pyvisa
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import (QApplication, QComboBox, QGridLayout, QLabel,
+                             QLineEdit, QMainWindow, QPushButton, QWidget)
+
+from Adapter import instrument
 
 NOT_READY_STYLE_BORDER = "border: 1px solid rgb(180, 0, 0); border-radius: 5px;"
 READY_STYLE_BORDER = "border: 1px solid rgb(0, 150, 0); border-radius: 5px;"

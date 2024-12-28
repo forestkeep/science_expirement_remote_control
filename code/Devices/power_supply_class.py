@@ -15,14 +15,10 @@ import random
 import time
 
 from PyQt5.QtWidgets import QApplication
-from Devices.Classes import (
-    base_ch,
-    base_device,
-    ch_response_to_step,
-    not_ready_style_border,
-    ready_style_border,
-    which_part_in_ch,
-)
+
+from Devices.Classes import (base_ch, base_device, ch_response_to_step,
+                             not_ready_style_border, ready_style_border,
+                             which_part_in_ch)
 from Devices.interfase.set_power_supply_window import Ui_Set_power_supply
 
 logger = logging.getLogger(__name__)
@@ -555,9 +551,6 @@ class power_supply(base_device):
             self.active_channel_act.dict_settable_parameters["num steps"] = int(
                 len(self.active_channel_act.steps_voltage)
             )
-
-            #print(self.active_channel_act.steps_voltage)
-            #print(self.active_channel_act.steps_current)
 
     # действия перед стартом эксперимента, включить, настроить, подготовить и т.д.
     def action_before_experiment(self, number_of_channel) -> bool:

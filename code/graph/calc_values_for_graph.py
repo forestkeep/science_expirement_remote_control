@@ -25,7 +25,6 @@ def time_decorator(func):
 
     return wrapper
 
-
 class ArrayProcessor:
     @staticmethod
     def combine_and_sort_arrays(array1, array2):
@@ -169,7 +168,6 @@ class ArrayProcessor:
 
         return all_x, all_y, status
 
-
 class TestArrayProcessor(unittest.TestCase):
     def setUp(self):
         pass
@@ -239,7 +237,6 @@ class TestArrayProcessor(unittest.TestCase):
         np.testing.assert_array_equal(result_x, expected_x)
         np.testing.assert_array_equal(result_y, expected_y)
 
-
     def test_combine_all_arrays_empty(self):
         # Тест на пустые массивы
         all_x = [np.array([]), np.array([])]
@@ -273,8 +270,6 @@ class TestArrayProcessor(unittest.TestCase):
         np.testing.assert_array_equal(result_x[0], expected_x)
         self.assertTrue(np.all(np.isin(result_y[0], expected_y)) and np.all(np.isin(result_y[1], expected_y)))
 
-
-
 if __name__ == "__main__":
 
     unittest.main()
@@ -295,11 +290,5 @@ if __name__ == "__main__":
     calculator = ArrayProcessor()
     arr1, arr2, gen_x = calculator.combine_interpolate_arrays(arrx1, arrx2, arry1, arry2)
     '''
-
-
-
-
-    
-
 
 # kernprof -l -v C:\Users\zahidovds\Desktop\virtual_for_uswindsens\main\graph\calc_values_for_graph.py

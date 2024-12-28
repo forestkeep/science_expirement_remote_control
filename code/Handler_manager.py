@@ -11,7 +11,6 @@
 
 import unittest
 
-
 class subscribe:
     def __init__(self, name, publiser, description) -> None:
         self.publisher = publiser
@@ -43,7 +42,6 @@ class subscribe:
 
     def get_name(self):
         return self.name
-
 
 class messageBroker:
     def __init__(self) -> None:

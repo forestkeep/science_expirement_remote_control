@@ -12,13 +12,10 @@
 import json
 import re
 import sys
-import os
 
-
-from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QInputDialog, QLabel,
-                             QLineEdit, QMessageBox, QPushButton, QVBoxLayout,
-                             QDialog)
-
+from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QInputDialog,
+                             QLabel, QLineEdit, QMessageBox, QPushButton,
+                             QVBoxLayout)
 
 if __name__ == '__main__':
     from dev_template import templates

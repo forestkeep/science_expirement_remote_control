@@ -9,12 +9,9 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-from PyQt5.QtCore import QTimer, QPropertyAnimation,  Qt, QTimer
-from PyQt5.QtWidgets import (
-    QFrame,
-    QVBoxLayout,
-    QLabel
-)
+from PyQt5.QtCore import QPropertyAnimation, Qt, QTimer
+from PyQt5.QtWidgets import QFrame, QLabel, QVBoxLayout
+
 
 class NotificationWidget(QFrame):
     def __init__(self, parent=None):

@@ -11,7 +11,6 @@
 
 import time
 
-
 class commandsSR830:
     def __init__(self, device) -> None:
         self.COMM_ID = "*IDN"

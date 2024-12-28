@@ -13,23 +13,15 @@ import copy
 import logging
 import random
 import time
-import sys
-import os
-
 
 from PyQt5.QtWidgets import QApplication
-from Devices.Classes import (
-    base_ch,
-    base_device,
-    ch_response_to_step,
-    not_ready_style_border,
-    ready_style_border,
-    which_part_in_ch,
-)
+
+from Devices.Classes import (base_ch, base_device, ch_response_to_step,
+                             not_ready_style_border, ready_style_border,
+                             which_part_in_ch)
 from Devices.interfase.set_power_supply_window import Ui_Set_power_supply
 
 logger = logging.getLogger(__name__)
-
 
 class chActFreqGen(base_ch):
     def __init__(
@@ -69,7 +61,6 @@ class chMeasFreqGen(base_ch):
         self.dict_buf_parameters["meas_set_ampl"] = False
 
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
-
 
 class FreqGen(base_device):
 

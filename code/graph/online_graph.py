@@ -11,35 +11,26 @@
 
 import sys
 import time
-import os
 
-from PyQt5.QtCore import QTimer, pyqtSignal, QPoint, QTimer
+from PyQt5.QtCore import QPoint, QTimer, pyqtSignal
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QTabWidget,
-    QHBoxLayout,
-    QWidget,
-    QSplitter,
-    QSizePolicy,
-)
+from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
+                             QSizePolicy, QSplitter, QTabWidget, QWidget)
 
 if __name__ == "__main__":
+    from filters_win import filtersClass
     from graph_main import graphMain
+    from notification import NotificationWidget
     from osc_wave_graph import graphOsc
     from tabPage_win import tabPage
-    from filters_win import filtersClass
-    from notification import NotificationWidget
     from tree_curves import treeWin
 else:
+    from graph.filters_win import filtersClass
     from graph.graph_main import graphMain
+    from graph.notification import NotificationWidget
     from graph.osc_wave_graph import graphOsc
     from graph.tabPage_win import tabPage
-    from graph.filters_win import filtersClass
-    from graph.notification import NotificationWidget
     from graph.tree_curves import treeWin
-
 
 def time_decorator(func):
     def wrapper(*args, **kwargs):
@@ -74,7 +65,6 @@ class GraphWindow(QMainWindow):
 
         self.tabWidget = QTabWidget()
 
-        #---------------------------------
         splitter = QSplitter()
         splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
@@ -91,8 +81,6 @@ class GraphWindow(QMainWindow):
         splitter.setStretchFactor(2, 1)
 
         self.filter_class.set_filter_slot(self.filters_callback)#при нажатии кнопок в фильтре будет вызываться эта функция
-
-        #---------------------------------
 
         self.mainLayout.addWidget(splitter)
 
@@ -180,6 +168,7 @@ class GraphWindow(QMainWindow):
 
     def closeEvent(self, event):
         self.graph_win_close_signal.emit(1)
+
 class exprEmul():
     def __init__(self):
         self.running = True
@@ -188,8 +177,8 @@ class exprEmul():
         return self.running
 
 if __name__ == "__main__":
-    from test_main_graph import test_graph
     import qdarktheme
+    from test_main_graph import test_graph
     app = QApplication(sys.argv)
     qdarktheme.setup_theme("dark", corner_shape="sharp", custom_colors={"primary": "#DDBCFF"})
     mainWindow = GraphWindow()

@@ -9,25 +9,15 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-import sys
 import enum
+import sys
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (
-    QApplication,
-    QCheckBox,
-    QComboBox,
-    QDialog,
-    QDialogButtonBox,
-    QHBoxLayout,
-    QPushButton,
-    QVBoxLayout,
-    QLabel,
-    QSizePolicy,
-    QLineEdit, 
-    QFileDialog
-)
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
+                             QDialogButtonBox, QFileDialog, QHBoxLayout,
+                             QLabel, QLineEdit, QPushButton, QVBoxLayout)
+
 
 class type_save_file(enum.Enum):
     txt = 1

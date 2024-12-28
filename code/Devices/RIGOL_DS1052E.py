@@ -10,6 +10,7 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import copy
+
 from Devices.Classes import base_ch
 from Devices.oscilloscope import oscilloscopeClass
 

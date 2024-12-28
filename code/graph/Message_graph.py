@@ -11,14 +11,8 @@
 
 import sys
 
-from PyQt5.QtWidgets import (
-    QApplication,
-    QCheckBox,
-    QDialog,
-    QLabel,
-    QPushButton,
-    QVBoxLayout,
-)
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QDialog, QLabel,
+                             QPushButton, QVBoxLayout)
 
 
 class messageDialog(QDialog):
@@ -45,7 +39,6 @@ class messageDialog(QDialog):
             layout.addWidget(self.check_not_show)
         layout.addWidget(ok_button)
         self.setLayout(layout)
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -10,22 +10,18 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import logging
-import time
-import sys
 import os
+import sys
+import time
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from Devices.Classes import (
-    base_ch,
-    base_device,
-    ch_response_to_step,
-    not_ready_style_border,
-    ready_style_border,
-    which_part_in_ch,
-)
+from Devices.Classes import (base_ch, base_device, ch_response_to_step,
+                             not_ready_style_border, ready_style_border,
+                             which_part_in_ch)
+from Devices.freq_gen_class import FreqGen, chActFreqGen, chMeasFreqGen
 from Devices.interfase.set_power_supply_window import Ui_Set_power_supply
-from Devices.freq_gen_class import chActFreqGen, chMeasFreqGen, FreqGen
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,7 +67,6 @@ class ATF20B(FreqGen):
 
         if status:
             self.client.write(f"CH{channel}:AFREQ:{frequency}:{unit}\r\n")
-
 
 if __name__ == "__main__":
     import serial

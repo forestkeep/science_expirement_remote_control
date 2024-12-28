@@ -10,15 +10,14 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import json
-import random
 import logging
+import random
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pyvisa
 
 logger = logging.getLogger(__name__)
-
 
 class oscRigolCommands:
     def __init__(self, device) -> None:
@@ -144,8 +143,7 @@ class oscRigolCommands:
         self.set_start_point(start_point)
         self.set_end_point(end_point)
         self.device.client.write(":WAV:DATA?\r\n")
-        
-        
+         
         status = True
         try:
             data = self.device.client.read_raw()
@@ -271,7 +269,6 @@ class oscRigolCommands:
 
         return self.check_parameters(command=check_command, focus_answer=focus_answer)
 
-
     def set_trigger_edge_level(self, level) -> bool:
         try:
             level = float(level)
@@ -289,7 +286,6 @@ class oscRigolCommands:
         focus_answer = self.commands["set_trigger_edge_level"]["focus_answer"].format(level=level)
 
         return self.check_parameters(command=check_command, focus_answer=focus_answer)
-
 
     def get_meas_parameter(
         self, parameter: str, channels: list, is_debug: bool = False
@@ -574,7 +570,6 @@ def derivative_at_each_point(x, dx):
 
     return derivative
 
-
 def find_sign_change(derivative):
     sign_changes = []
     for i in range(1, len(derivative)):
@@ -627,7 +622,6 @@ def test():
 
     plt.tight_layout()
     plt.show()
-
 
 class R:
     def __init__(self, client):

@@ -11,13 +11,14 @@
 
 import numpy as np
 import pyqtgraph as pg
+from PyQt5.QtGui import QBrush, QColor
 from scipy import stats
 
-from PyQt5.QtGui import QColor, QBrush
 try:
     from tree_curves import CurveTreeItem
 except:
     from graph.tree_curves import CurveTreeItem
+    
 class graphData:
     def __init__(self, raw_x, raw_y) -> None:
         """

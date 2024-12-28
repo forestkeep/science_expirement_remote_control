@@ -9,12 +9,15 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSpinBox, QPushButton, QDoubleSpinBox
+from typing import Union
+
+import numpy as np
+import pandas as pd
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
-import pandas as pd
-import numpy as np
-from typing import Union
+from PyQt5.QtWidgets import (QApplication, QDoubleSpinBox, QHBoxLayout, QLabel,
+                             QPushButton, QSpinBox, QVBoxLayout, QWidget)
+
 
 class filterWin(QWidget):
     def __init__(self):
@@ -95,7 +98,6 @@ class filterWin(QWidget):
         for spin in spinboxes:
             parameter_layout.addWidget(spin)
 
-
         filter_layout.addLayout(parameter_layout)
         filter_layout.addWidget(button)
 
@@ -105,7 +107,6 @@ class filtersClass():
     def __init__(self):
         self.filters_callbacks = []
         self.filt_window = filterWin()
-
 
         self.filt_window.median_button.clicked.connect( lambda: self.prepare_filters(self.med_filt) )
         self.filt_window.average_button.clicked.connect( lambda: self.prepare_filters(self.average_filt) )      

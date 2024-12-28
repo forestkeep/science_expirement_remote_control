@@ -10,8 +10,10 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton
+
 from dev_creator import deviceCreator
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton
+
 
 class MainWindow(QMainWindow):
     def __init__(self, device_creator):
