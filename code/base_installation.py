@@ -13,8 +13,6 @@ import logging
 import threading
 from datetime import datetime
 import sys
-import os
-
 
 from pymodbus.client import ModbusSerialClient
 from PyQt5 import QtGui, QtWidgets
@@ -26,7 +24,6 @@ from Devices.Classes import (
     not_ready_style_background,
     not_ready_style_border,
     ready_style_border,
-    time_decorator,
 )
 from graph.online_graph import GraphWindow
 from interface.experiment_settings_window import settigsDialog, experimentSettings

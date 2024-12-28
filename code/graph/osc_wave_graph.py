@@ -1201,8 +1201,8 @@ class graphOsc:
     def set_filters(self, filter_func):
         for loop in self.loops_stack:
             if loop.current_highlight:
-                loop.filtered_x_data = filter_func(loop.filtered_x_data)
-                loop.filtered_y_data = filter_func(loop.filtered_y_data)
+                loop.filtered_x_data, _ = filter_func(loop.filtered_x_data)
+                loop.filtered_y_data, _ = filter_func(loop.filtered_y_data)
 
                 self.graphView_loop.removeItem(loop.plot_obj)
 
@@ -1219,7 +1219,7 @@ class graphOsc:
         for osc in self.stack_osc.values():
             if osc.current_highlight:
 
-                osc.filtered_y_data = filter_func(osc.filtered_y_data)
+                osc.filtered_y_data, _ = filter_func(osc.filtered_y_data)
                 osc.filtered_x_data = osc.filtered_x_data[-len(osc.filtered_y_data):]
 
                 osc.plot_obj.setData(osc.filtered_x_data, osc.filtered_y_data)

@@ -120,14 +120,26 @@ class CurveTreeItem(QTreeWidgetItem):
         for key, value in data.items():
             block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
 
-    def update_block_data(self, block_name, data) -> bool:
+    def update_block_data(self, block_name, data, is_add_force=False) -> bool:
+        
+        """
+        Обновляет данные блока block_name
+
+        :param block_name: имя блока
+        :param data: словарь с данными для обновления
+        :param is_add_force: если True, то добавляет новые элементы,
+            если False, то обновляет существующие
+        :return: True, если блок найден, False - если нет
+        """
         block_item = self.findChild(block_name)
         if block_item:
             for i, (key, value) in enumerate(data.items()):
-                if i < block_item.childCount():
-                    block_item.child(i).setText(0, f"{key}: {value}")
+                if not is_add_force:
+                    if i < block_item.childCount():
+                        block_item.child(i).setText(0, f"{key}: {value}")
+                    else:
+                        block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
                 else:
-                    # Если дочерних элементов недостаточно, добавляем новые
                     block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
             return True
         return False
@@ -405,7 +417,7 @@ class treeWin(QWidget):
             self.curve_created.emit(curve_data)
             self.add_curve(curve_data.tree_item)
             curve_data.set_full_legend_name()
-            curve_data.tree_item.update_block_data( QApplication.translate("GraphWindow","Разное"),
+            curve_data.tree_item.add_new_block( QApplication.translate("GraphWindow","Разное"),
                                                     {QApplication.translate("GraphWindow","Формула"): formula,
                                                      QApplication.translate("GraphWindow","Описание"): description})
 

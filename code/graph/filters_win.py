@@ -14,6 +14,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 import pandas as pd
 import numpy as np
+from typing import Union
 
 class filterWin(QWidget):
     def __init__(self):
@@ -119,11 +120,11 @@ class filtersClass():
         self.range_avg = int(self.filt_window.spin_average.value())
         self.range_median = int(self.filt_window.spin_median.value())
         self.alpha_exp = float(self.filt_window.spin_exp_mean.value())
-        #TODO:reading coeff for filters
+
         for callback in self.filters_callbacks:
             callback(func)
 
-    def med_filt(self, data):
+    def med_filt(self, data : Union[list, np.ndarray]):
         """
         Applies a median filter to the input data.
 
@@ -147,21 +148,24 @@ class filtersClass():
             y[:j,i] = data[0]
             y[:-j,-(i+1)] = data[j:]
             y[-j:,-(i+1)] = data[-1]
-        return np.median(y, axis=1)
+        return np.median(y, axis=1), QApplication.translate("GraphWindow","Медиана({})").format(self.range_median)
 
-    def exp_mean_filt(self, data):
+    def exp_mean_filt(self, data : Union[list, np.ndarray]):
 
         data = pd.Series(data)
         ema = data.ewm(alpha=self.alpha_exp, adjust=False).mean()
-        return ema
+
+        ema_array = ema.to_numpy()
+
+        return ema_array, QApplication.translate("GraphWindow", "экспоненциальное среднее(alpha = {})").format( round(self.alpha_exp, 2) )
 
     def calman_filt(self, data):
         return data
 
-    def average_filt(self, data):
+    def average_filt(self, data: Union[list, np.ndarray]):
         N = self.range_avg
 
-        return np.convolve(data, np.ones(N)/N, 'valid') #same #full #valid
+        return np.convolve(data, np.ones(N)/N, 'valid'), QApplication.translate("GraphWindow","Скользящее среднее({})").format(N) #same #full #valid
 
 
 def test_filters():

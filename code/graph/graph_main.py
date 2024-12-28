@@ -10,6 +10,7 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import time
+from datetime import datetime
 
 import pandas as pd
 import pyqtgraph as pg
@@ -648,12 +649,25 @@ class graphMain(QObject):
     def set_filters(self, filter_func):
         for curve in self.stack_curve.values():
             if curve.current_highlight:
-
-                curve.filtered_y_data = filter_func(curve.filtered_y_data)
+                curve.filtered_y_data, message = filter_func(curve.filtered_y_data)
                 curve.filtered_x_data = curve.filtered_x_data[-len(curve.filtered_y_data):]
                 curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
 
                 curve.recalc_stats_param()
+
+                name_block = QApplication.translate("GraphWindow","История изменения")
+
+                status = curve.tree_item.update_block_data( 
+                        block_name   = name_block,
+                        data         = {str(datetime.now().strftime("%H:%M:%S")): message,},
+                        is_add_force = True
+                                                    )
+
+                if not status:
+                    curve.tree_item.add_new_block(
+                    block_name   = name_block,
+                    data         = {str(datetime.now().strftime("%H:%M:%S")): message,},
+                                                 )
 
     def reset_filters(self, curve = None):
         if curve:
@@ -683,6 +697,7 @@ class graphMain(QObject):
                 if graph.current_highlight:
                         graph.current_highlight = False
                         graph.plot_obj.setPen(graph.saved_pen)
+                        graph.plot_obj.setSymbolBrush(color = graph.saved_pen['color'])
 
     def delete_key_press(self):
         for curve in self.stack_curve.values():
@@ -1052,7 +1067,6 @@ class graphMain(QObject):
             self._is_exp_running = new_state
             if self._is_exp_running == False:
                 self.reconfig_state()
-    
 
     def update_plot(self, obj = None, is_exp_stop = False):
         if self.key_to_update_plot:
