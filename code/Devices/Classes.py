@@ -658,9 +658,6 @@ class base_device():
         if self.key_to_signal_func:
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
 
-                #Для чего оно здесь???????
-                #self.active_channel_act.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_act_enter.currentText()
-
                 if self.setting_window.triger_act_enter.currentText() == QApplication.translate( "Device", "Таймер" ):
                     try:
                         buf = int(self.active_channel_act.dict_buf_parameters["sourse/time"])
@@ -686,9 +683,6 @@ class base_device():
                 self.setting_window.sourse_act_enter.setStyleSheet(current_style + "background-color: rgb(70, 70, 70);" )
 
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
-
-                #Для чего оно здесь???????
-                #self.active_channel_meas.dict_buf_parameters["sourse/time"] = self.setting_window.sourse_meas_enter.currentText()
 
                 if self.setting_window.triger_meas_enter.currentText() == QApplication.translate( "Device", "Таймер" ):
                     try:

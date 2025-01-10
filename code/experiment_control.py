@@ -9,6 +9,7 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
+
 import copy
 import enum
 import logging
@@ -71,7 +72,7 @@ class experimentControl(analyse):
                     self.update_pbar()
                 else:
 
-                    if self.exp_th_connect.is_update_pbar == True:
+                    if self.exp_th_connect.is_update_pbar :
                         self.pbar_percent = (
                             ((time.time() - self.start_exp_time) / self.max_exp_time)
                         ) * 100
@@ -137,7 +138,7 @@ class experimentControl(analyse):
                 self.pause_start_time = time.time()
 
     def show_th_window(self):
-        if self.exp_th_connect.flag_show_message == True:
+        if self.exp_th_connect.flag_show_message :
             self.exp_th_connect.flag_show_message = False
             if self.exp_th_connect.message_status == message_status.info:
                 self.show_information_window(self.exp_th_connect.message)
@@ -154,7 +155,7 @@ class experimentControl(analyse):
     def calc_last_exp_time(self):
         buf_time = [0]
         for device, ch in self.get_active_ch_and_device():
-            if ch.am_i_active_in_experiment == True:
+            if ch.am_i_active_in_experiment :
                 trig = device.get_trigger(ch)
                 if trig == "Таймер":
                     steps = device.get_steps_number(ch) - ch.number_meas
@@ -176,7 +177,7 @@ class experimentControl(analyse):
         # во время эксперимента после каждого измерения пересчитывается максимальное время каждого прибора и выбирается максимум, от этого максимума рассчитывается оставшийся процент времени
 
         self.is_experiment_endless = self.analyse_endless_exp()
-        if self.is_experiment_endless == True:
+        if self.is_experiment_endless :
             return True  # вернем правду в случае бесконечного эксперимента
 
         max_exp_time = 0
@@ -202,8 +203,7 @@ class experimentControl(analyse):
 
                 if buf_time is not False:
 
-                    if buf_time > max_exp_time:
-                        max_exp_time = copy.deepcopy(buf_time)
+                    max_exp_time = max(max_exp_time, buf_time)
 
         return max_exp_time
 
@@ -243,7 +243,7 @@ class experimentControl(analyse):
             for ch in device.channels:
                 if ch.is_ch_active():
                     if ch.am_i_active_in_experiment:
-                        if device.get_status_step(ch_name=ch.get_name()) == True:
+                        if device.get_status_step(ch_name=ch.get_name()) :
                             if ch.get_priority() < target_priority:
                                 target_execute = [device, ch]
                                 target_priority = ch.get_priority()
@@ -337,7 +337,7 @@ class experimentControl(analyse):
                 logger.warning(
                     f"Ошибка действия прибора {dev} перед экспериментом: {str(ex)}"
                 )
-            if ans == False:
+            if not ans:
                 logger.debug(
                     "ошибка при настройке " + dev.get_name() + " перед экспериментом"
                 )
@@ -370,7 +370,7 @@ class experimentControl(analyse):
             is_connect = dev.check_connect()
 
 
-            if is_connect == False:
+            if not is_connect:
                 status = False
                 logger.warning(f"Нет ответа прибора {dev.get_name()}")
                 self.add_text_to_log(
@@ -428,13 +428,13 @@ class experimentControl(analyse):
         error = not status  # флаг ошибки, будет поднят при ошибке во время эксперимента
         error_start_exp = not status
 
-        if error is False and self.stop_experiment == False:
+        if error is False and self.stop_experiment is False:
 
             self.max_exp_time = self.calculate_exp_time()
-            if self.max_exp_time == True:
+            if self.max_exp_time is True:
                 # эксперимент бесконечен
                 pass
-            elif self.max_exp_time == False:
+            elif self.max_exp_time is False:
                 self.max_exp_time = 100000
                 # не определено время
 
@@ -450,14 +450,14 @@ class experimentControl(analyse):
         #----------------------------------------------------------------------------------------------
         if not error_start_exp:
             for i in range(self.repeat_experiment):
-                if error == True:
+                if error :
                     break
                 if i > 0:
                     logger.info("подготовка к повтору эксперименте")
                     self.stop_experiment = False
                     self.set_between_experiments()
                     
-                while not self.stop_experiment and error == False:
+                while not self.stop_experiment and not error:
 
                     if not self.pause_flag:
                         self.set_state_text(QApplication.translate('exp_flow',"Продолжение эксперимента, приборов:") + str(number_active_device))
@@ -466,7 +466,7 @@ class experimentControl(analyse):
                         number_device_which_act_while = 0
 
                         for device, ch in self.get_active_ch_and_device():
-                            if device.get_steps_number(ch) == False:
+                            if not device.get_steps_number(ch) :
                                 if not ch.do_last_step:
                                     number_device_which_act_while += 1
 
@@ -555,12 +555,12 @@ class experimentControl(analyse):
             publisher=ch, name_subscribe=ch.do_operation_trigger
         )
 
-        if ch.am_i_active_in_experiment == False:
+        if not ch.am_i_active_in_experiment :
             """останавливаем подписчиков, которые срабатывали по завершению операции"""
 
             for subscriber in subscribers_do_operation:
                 
-                if subscriber.am_i_active_in_experiment == True:
+                if subscriber.am_i_active_in_experiment :
                     
                     dev = subscriber.device_class
                     if "do_operation" in dev.get_trigger_value(subscriber):
@@ -643,7 +643,7 @@ class experimentControl(analyse):
                 + str(ch.get_name()),
                 "err",
             )
-            if self.is_exp_run_anywhere == False:
+            if not self.is_exp_run_anywhere:
                 error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
         else:
             pass
@@ -748,7 +748,7 @@ class experimentControl(analyse):
                         + str(ch.get_name()),
                         "err",
                     )
-                    if self.is_exp_run_anywhere == False:
+                    if not self.is_exp_run_anywhere :
                         ch.am_i_active_in_experiment = False
                         error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
                     break
@@ -771,7 +771,7 @@ class experimentControl(analyse):
             self.add_text_to_log(QApplication.translate('exp_flow',"Эксперимент прерван из-за ошибки"), "err")
             logger.debug("Эксперимент прерван из-за ошибки")
             # вывод окна с сообщением в другом потоке
-            if error_start_exp == True:
+            if error_start_exp :
                 self.exp_th_connect.message = (
                     QApplication.translate('exp_flow',"Эксперимент прерван из-за ошибки при настройке прибора")
                 )
@@ -789,10 +789,10 @@ class experimentControl(analyse):
         # ждем, пока ббудет показано сообщение в основном потоке
         self.exp_th_connect.is_message_show = False
         self.exp_th_connect.flag_show_message = True
-        while self.exp_th_connect.is_message_show == False:
+        while not self.exp_th_connect.is_message_show:
             pass
         self.set_state_text(QApplication.translate('exp_flow',"Сохранение результатов"))
-        if error_start_exp == False:
+        if not error_start_exp :
             try:
                 self.save_results()
             except:

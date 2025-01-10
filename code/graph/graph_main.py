@@ -790,6 +790,14 @@ class graphMain(QObject):
                         self.stack_curve[string_y + string_x].delete_curve_from_graph()
 
         elif obj is self.y_second_param_selector or obj is self.second_check_box:
+
+            if self.second_check_box.isChecked():
+                self.p1.getAxis("right").setStyle(showValues=True)
+            else:
+                self.p1.getAxis("right").setStyle(showValues=False)
+                self.y_second_axis_label = ""
+
+
             if not self.second_check_box.isChecked() or not check_second:
                 for data_curve in self.stack_curve.values():
                     if data_curve.is_draw and data_curve.parent_graph_field is self.p2:
@@ -822,6 +830,7 @@ class graphMain(QObject):
             else:
                     if self.stack_curve.get(string_y2 + string_x) is not None:
                         self.stack_curve[string_y2 + string_x].delete_curve_from_graph()
+
      
         #==========================================================================
         self.x_axis_label = string_x
