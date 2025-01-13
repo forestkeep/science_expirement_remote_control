@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QDialog,
                              QHBoxLayout, QHeaderView, QLineEdit, QMainWindow,
                              QMenu, QMessageBox, QPushButton, QTextEdit,
                              QTreeWidget, QTreeWidgetItem, QVBoxLayout,
-                             QWidget)
+                             QWidget, QInputDialog)
 
 try:
     from calc_values_for_graph import ArrayProcessor
@@ -161,6 +161,15 @@ class CurveTreeItem(QTreeWidgetItem):
             else:
                 print(f"ключ {parameter_name} не найден в параметрах отображения кривой")
         self.update_display()
+    def get_description(self):
+        block_item = self.findChild( QApplication.translate("GraphWindow","Разное") )
+        if block_item:
+            for i in range(block_item.childCount()):
+                text = block_item.child(i).text(0)
+                if QApplication.translate("GraphWindow","Описание") in text:
+                    text = text.replace(QApplication.translate("GraphWindow","Описание") + ": ", "")
+                    return text
+        return ""
 
     def this_choise(self):
         self.curve_data_obj.higlight_curve()
@@ -486,18 +495,31 @@ class treeWin(QWidget):
             color_action = QAction( QApplication.translate("GraphWindow","Изменить цвет"), self)
             delete_action = QAction( QApplication.translate("GraphWindow","Удалить график"), self)
             reset_data_action = QAction( QApplication.translate("GraphWindow","Сбросить фильтры"), self)
+            add_note_action = QAction( QApplication.translate("GraphWindow","Добавить заметку"), self)
             context_menu.addAction(color_action)
             context_menu.addAction(delete_action)
             context_menu.addAction(reset_data_action)
+            context_menu.addAction(add_note_action)
 
             color_action.triggered.connect(lambda: self.change_color_curve(root_item))
             delete_action.triggered.connect(lambda: self.delete_curve(root_item))
             reset_data_action.triggered.connect(lambda: self.reset_filters(root_item))
+            add_note_action.triggered.connect(lambda: self.add_note(root_item))
 
             context_menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
     def reset_filters(self, item=None):
         if item in self.curves:
             self.curve_reset.emit(item.curve_data_obj)
+
+    def add_note(self, item):
+        description = item.get_description()
+        text, ok = QInputDialog().getText(self, QApplication.translate("GraphWindow","Описание"),
+                                     QApplication.translate("GraphWindow","Описание"), QLineEdit.Normal, description)
+        if ok and text:
+            if not item.update_block_data(  QApplication.translate("GraphWindow","Разное"),
+                                {QApplication.translate("GraphWindow","Описание"): text} ):
+                item.add_new_block( QApplication.translate("GraphWindow","Разное"),
+                                {QApplication.translate("GraphWindow","Описание"): text} )
 
     def delete_curve(self, item=None):
         if item is None:
