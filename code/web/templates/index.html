@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+
+<html lang="ru">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Тест</title>
+
+    <script>
+
+        function updateTime() {
+
+            const now = new Date()
+
+            const options = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+
+            document.getElementById('currentTime').innerText = now.toLocaleTimeString('ru-RU', options);
+
+        }
+
+
+        setInterval(updateTime, 1000);
+
+    </script>
+
+</head>
+
+<body onload="updateTime()">
+
+    <h1>Тест</h1>
+
+    <p>Тест</p>
+
+    <p>Текущее время: <span id="currentTime"></span></p>
+
+</body>
+
+</html>
