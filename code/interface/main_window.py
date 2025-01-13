@@ -28,7 +28,8 @@ class Ui_MainWindow(object):
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.setWindowIcon(QIcon('picture/key.png'))
+        icon = QIcon('picture/key_dark.png')
+        MainWindow.setWindowIcon(icon)
         self.mother_class = MainWindow
 
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -125,10 +126,10 @@ class Ui_MainWindow(object):
     def change_style(self, style):
         if style == "dark":
             qdarktheme.setup_theme("dark", corner_shape="sharp", custom_colors={"primary": "#00FFFF"})
-            os.environ["STYLE_THEME"] = "dark"
+            os.environ["APP_THEME"] = "dark"
         else:
             qdarktheme.setup_theme("light", corner_shape="sharp", custom_colors={"primary": "#505050"})
-            os.environ["STYLE_THEME"] = "light"
+            os.environ["APP_THEME"] = "light"
 
     def change_language(self, language):
         self.main_class.change_language(language)

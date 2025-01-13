@@ -12,7 +12,7 @@
 import sys
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QBrush, QColor, QFont, QIcon
+from PyQt5.QtGui import QBrush, QColor, QFont, QIcon, QPixmap
 from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QDialog,
                              QHBoxLayout, QHeaderView, QLineEdit, QMainWindow,
                              QMenu, QMessageBox, QPushButton, QTextEdit,
@@ -318,8 +318,11 @@ class treeWin(QWidget):
 
         left_layout.addLayout(button_layout)
 
-        self.visibility_button = QPushButton("eye")
-        self.visibility_button.setIcon(QIcon("eye.png"))
+        icon = QIcon()
+        icon.addPixmap(QPixmap("picture/close_eye_light.png"), QIcon.Normal, QIcon.On)
+
+        self.visibility_button = QPushButton()
+        self.visibility_button.setIcon(icon)
         self.visibility_button.setCheckable(True)
         self.visibility_button.clicked.connect(self.toggle_visibility)
         self.visibility_button.setToolTip( QApplication.translate("GraphWindow","Показать активные кривые"))
@@ -374,14 +377,15 @@ class treeWin(QWidget):
 
     def toggle_visibility(self):
         if self.visibility_button.isChecked():
-            self.visibility_button.setIcon(QIcon("eye_crossed.png"))
+
+            self.visibility_button.setIcon(QIcon("picture/open_eye_light.png"))
             self.visibility_button.setToolTip( QApplication.translate("GraphWindow","Показать активные кривые"))
             if self.curves:
                 for curve in self.curves:
                     if not curve.is_draw():
                         curve.setHidden(True)
         else:
-            self.visibility_button.setIcon(QIcon("eye.png"))
+            self.visibility_button.setIcon(QIcon("picture/close_eye_light.png"))
             self.visibility_button.setToolTip( QApplication.translate("GraphWindow","Показать все кривые"))
             if self.curves:
                 for curve in self.curves:

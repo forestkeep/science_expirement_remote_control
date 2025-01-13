@@ -19,8 +19,6 @@ from PyQt5.QtGui import QBrush, QColor, QFont, QPainter, QPen
 from PyQt5.QtWidgets import (QApplication, QFrame, QLabel, QSizePolicy,
                              QVBoxLayout, QWidget)
 
-THEME = os.getenv("APP_THEME")
-
 class Position(Enum):
     LEFT = 1
     RIGHT = 2
@@ -68,13 +66,12 @@ def get_center_side(widget: QWidget, side: Position):
 class connection():
     '''save connection two some objects'''
     def __init__(self, base_widget = None, name = None):
-        global THEME
         self.base_widget = base_widget
         self.first_unit = None
         self.second_unit = None
         self.name = name
         self.type_signal = None
-        if THEME == "dark":
+        if os.getenv("APP_THEME") == "dark":
             self.pen = QPen(QColor(255, 255, 255), 1, Qt.SolidLine)
         else:
             self.pen = QPen(QColor(0, 0, 0), 1, Qt.SolidLine)
@@ -163,6 +160,7 @@ class connection():
         return (start_point, end_point, direction_first, (is_overlap_x or is_overlap_y) )
        
     def setStyle(self, new_pen : QPen):
+        print("setStyle")
         self.pen = new_pen
 
     def add_in_simbol(self, coords: QPoint):

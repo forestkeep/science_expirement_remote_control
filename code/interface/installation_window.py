@@ -11,6 +11,7 @@
 
 import enum
 import logging
+import os
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QFont, QIcon
@@ -353,7 +354,13 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.clear_log_button = QtWidgets.QPushButton(self.central_widget)
 
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("picture/clean.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
+
+        if os.environ["APP_THEME"] == "dark":
+            pic = "picture/clean_light.png"
+        else:
+            pic = "picture/clean_dark.png"
+
+        icon.addPixmap(QtGui.QPixmap( pic ), QtGui.QIcon.Normal, QtGui.QIcon.On)
         self.clear_log_button.setIcon(icon)
         #self.clear_log_button.setIconSize(QtCore.QSize(15, 15))
         self.horizontalSpacer = QtWidgets.QSpacerItem(15, 15, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)

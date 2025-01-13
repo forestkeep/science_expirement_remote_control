@@ -272,7 +272,7 @@ if __name__ == "__main__":
 
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
-    os.environ["STYLE_THEME"] = "dark"
+    os.environ["APP_THEME"] = "dark"
 
     device_creator = deviceCreator()
 
