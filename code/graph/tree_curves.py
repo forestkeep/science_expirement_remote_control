@@ -133,20 +133,25 @@ class CurveTreeItem(QTreeWidgetItem):
 
         :param block_name: имя блока
         :param data: словарь с данными для обновления
-        :param is_add_force: если True, то добавляет новые элементы,
+        :param is_add_force: если True, то добавляет новые элементы без проверки,
             если False, то обновляет существующие
         :return: True, если блок найден, False - если нет
         """
         block_item = self.findChild(block_name)
         if block_item:
-            for i, (key, value) in enumerate(data.items()):
-                if not is_add_force:
-                    if i < block_item.childCount():
-                        block_item.child(i).setText(0, f"{key}: {value}")
-                    else:
-                        block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
-                else:
+            for key, value in data.items():
+                if is_add_force:
                     block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
+                else:
+                    exists = False
+                    for i in range(block_item.childCount()):
+                        if block_item.child(i).text(0).startswith(f"{key}:"):
+                            block_item.child(i).setText(0, f"{key}: {value}")
+                            exists = True
+                            break
+                    
+                    if not exists:
+                        block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
             return True
         return False
 
