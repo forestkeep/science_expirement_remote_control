@@ -126,6 +126,13 @@ class CurveTreeItem(QTreeWidgetItem):
         for key, value in data.items():
             block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
 
+    def delete_block(self, block_name) -> bool:
+        block_item = self.findChild(block_name)
+        if block_item:
+            self.takeChild(self.indexOfChild(block_item))
+            return True
+        return False
+
     def update_block_data(self, block_name, data, is_add_force=False) -> bool:
         
         """

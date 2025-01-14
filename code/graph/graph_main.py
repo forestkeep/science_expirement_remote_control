@@ -659,12 +659,18 @@ class graphMain(QObject):
                 self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Все фильтры уже сброшены, сбрасывать больше нечего." ) )
             curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
             curve.recalc_stats_param()
+            if hasattr(curve, "tree_item"):
+                name_block = QApplication.translate("GraphWindow","История изменения")
+                curve.tree_item.delete_block(name_block)
         else:
             for curve in self.stack_curve.values():
                 if curve.current_highlight:
                     curve.data_reset()
                     curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
                     curve.recalc_stats_param()
+                    if hasattr(curve, "tree_item"):
+                        name_block = QApplication.translate("GraphWindow","История изменения")
+                        curve.tree_item.delete_block(name_block)
 
     def click_scene_main_graph(self, event):
         self.__callback_click_scene( self.stack_curve.values() )
