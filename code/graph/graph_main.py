@@ -675,6 +675,8 @@ class graphMain(QObject):
     def click_scene_main_graph(self, event):
         self.__callback_click_scene( self.stack_curve.values() )
 
+        self.hide_second_line_grid()
+
     def __callback_click_scene(self, focus_objects: list):
         is_click_plot = True
         for graph in focus_objects:
@@ -1064,7 +1066,6 @@ class graphMain(QObject):
     @is_exp_running.setter
     def is_exp_running(self, new_state):
         if new_state != self._is_exp_running:
-            print(f"Значение изменилось с {self._is_exp_running} на {new_state}")
             self._is_exp_running = new_state
             if self._is_exp_running == False:
                 self.reconfig_state()

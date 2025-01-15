@@ -243,7 +243,7 @@ class CurveTreeItem(QTreeWidgetItem):
         return None
 
 class CurveDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, description=None, formula=None, name=None):
         super().__init__(parent)
         self.setWindowTitle( QApplication.translate("GraphWindow","Создать новую кривую"))
         self.setFixedSize(300, 200)
@@ -267,6 +267,13 @@ class CurveDialog(QDialog):
         button_layout.addWidget(self.ok_button)
         button_layout.addWidget(self.cancel_button)
         layout.addLayout(button_layout)
+
+        if description is not None:
+            self.description_input.setText(description)
+        if formula is not None:
+            self.formula_input.setText(formula)
+        if name is not None:
+            self.name_input.setText(name)
 
         self.ok_button.clicked.connect(self.accept)
         self.cancel_button.clicked.connect(self.reject)
@@ -329,6 +336,10 @@ class treeWin(QWidget):
         self.buttons[0].clicked.connect(self.open_curve_dialog)
 
         left_layout.addLayout(button_layout)
+
+        self.buf_formula = None
+        self.buf_description = None
+        self.buf_new_curve_name = None
 
         icon = QIcon()
         icon.addPixmap(QPixmap("picture/close_eye_light.png"), QIcon.Normal, QIcon.On)
@@ -404,15 +415,15 @@ class treeWin(QWidget):
                     curve.setHidden(False)
 
     def open_curve_dialog(self):
-        dialog = CurveDialog(self)
+        dialog = CurveDialog(self, self.buf_description, self.buf_formula, self.buf_new_curve_name)
         if dialog.exec_() == QDialog.Accepted:
-            name, formula, description = dialog.get_curve_data()
+            self.buf_new_curve_name, self.buf_formula, self.buf_description = dialog.get_curve_data()
 
             context = {}
             choised_curves = {}
             is_consist_curve = False
             for curve in self.curves:
-                if curve.parameters["id"] in formula:
+                if curve.parameters["id"] in self.buf_formula:
                     is_consist_curve = True
                     context[curve.parameters["id"]] = curve
                     choised_curves[curve.parameters["id"]] = curve
@@ -424,7 +435,7 @@ class treeWin(QWidget):
             for id, curve in choised_curves.items():
                 if curve.curve_data_obj.x_name not in names_x_parameters and names_x_parameters:
                     print(f"Выбранные кривые построены в различных пространствах. {names_x_parameters}")
-                    #TODO: вывести предупреждение пользователю и сообщить о конкретных кривых из разных пространств
+                    self.main_class.show_tooltip( QApplication.translate("GraphWindow","Выбранные кривые находятся в разных пространствах. Построение невозможно."), timeout=3000)
                     return
                 names_x_parameters.add(curve.curve_data_obj.x_name)
                 x_name = curve.curve_data_obj.x_name
@@ -432,16 +443,18 @@ class treeWin(QWidget):
             context, all_x, status = self.preparation_arrays(context)
             if not status:
                 print("ошибка в расчете, таймаут, авозможно, что-то с исходными данными")
+                self.main_class.show_tooltip( QApplication.translate("GraphWindow","Таймаут при расчете параметров. Возможно, исходные данные содержат некорректные значенияю."), timeout=3000)
+                return
                 
-            result = self.evaluate_expression(formula, context)
+            result = self.evaluate_expression(self.buf_formula, context)
 
             curve_data = self.main_class.graph_main.create_curve(y_data = result, 
                                                     x_data = all_x[0],
                                                     name_device ="gene",
                                                     name_ch ="rate",
-                                                    y_name =name,
+                                                    y_name =self.buf_new_curve_name,
                                                     x_name =x_name,
-                                                    y_param_name =name,
+                                                    y_param_name =self.buf_new_curve_name,
                                                     x_param_name=x_name)
 
             self.curve_shown.emit(curve_data)
@@ -449,8 +462,13 @@ class treeWin(QWidget):
             self.add_curve(curve_data.tree_item)
             curve_data.set_full_legend_name()
             curve_data.tree_item.add_new_block( QApplication.translate("GraphWindow","Разное"),
-                                                    {QApplication.translate("GraphWindow","Формула"): formula,
-                                                     QApplication.translate("GraphWindow","Описание"): description})
+                                                    {QApplication.translate("GraphWindow","Формула"): self.buf_formula,
+                                                     QApplication.translate("GraphWindow","Описание"): self.buf_description})
+            
+            #если построение успешно, то очищаем буфер
+            self.buf_formula = None
+            self.buf_description = None
+            self.buf_new_curve_name = None
 
     def preparation_arrays(self, tree_curves: dict):
         keys = list(tree_curves.keys())

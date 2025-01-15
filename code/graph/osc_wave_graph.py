@@ -228,7 +228,6 @@ class graphOsc:
                 for col in selected_channels:
                     df[col] = (pd.to_numeric(df[col], errors='coerce'))
                 df = df.dropna()
-                print(df)
                 for col in selected_channels:
                     col_ = col.replace('(', '[').replace(')', ']') + ' wavech'
                     volt_val = np.array( df[col].tolist() )
