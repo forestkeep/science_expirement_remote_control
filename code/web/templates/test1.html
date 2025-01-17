@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment Monitor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .block {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            min-width: 250px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-light {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        .status-green {
+            background-color: green;
+        }
+
+        .status-red {
+            background-color: red;
+        }
+
+        .status-yellow {
+            background-color: yellow;
+        }
+
+        .status-blue {
+            background-color: blue;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .start {
+            background-color: lightgreen;
+        }
+
+        .pause {
+            background-color: lightcoral;
+        }
+
+        .stop {
+            background-color: lightblue;
+        }
+
+        .error {
+            background-color: lightcoral;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="block">
+            <h2>Статус эксперимента</h2>
+            <p id="status-text">В процессе</p>
+            <div class="status-light" id="status-light"></div>
+        </div>
+
+        <div class="block">
+            <h2>Осталось времени</h2>
+            <p id="timer">10:00</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="block">
+            <h2>Схема эксперимента</h2>
+            <img id="experiment-scheme" src="path/to/image.jpg" alt="Схема эксперимента" style="max-width: 100%;">
+        </div>
+
+        <div class="block">
+            <h2>Управление экспериментом</h2>
+            <div class="buttons">
+                <button class="button start" onclick="startExperiment()">Старт</button>
+                <button class="button pause" onclick="pauseExperiment()">Пауза</button>
+                <button class="button stop" onclick="stopExperiment()">Окончить</button>
+                <button class="button error" onclick="setError()">Ошибка</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="block">
+            <h2>Список приборов</h2>
+            <ol id="instrument-list"></ol>
+        </div>
+
+        <div class="block">
+            <h2>Измеряемые параметры</h2>
+            <ol id="parameters-list"></ol>
+        </div>
+    </div>
+
+    <script>
+        async function fetchInstruments() {
+            const response = await fetch('/instruments/');
+            const data = await response.json();
+            const instrumentList = document.getElementById('instrument-list');
+            instrumentList.innerHTML = data.map((inst, index) => `<li>${index + 1}. ${inst.name}</li>`).join('');
+        }
+
+        async function fetchParameters() {
+            const response = await fetch('/parameters/');
+            const data = await response.json();
+            const parametersList = document.getElementById('parameters-list');
+            parametersList.innerHTML = data.map((param, index) => `<li>${index + 1}. ${param.name}</li>`).join('');
+        }
+
+        async function fetchExperimentState() {
+            const response = await fetch('/experiment_state/');
+            const state = await response.json();
+            document.getElementById('status-text').innerText = state.status;
+            document.getElementById('timer').innerText = formatTime(state.time_left);
+            document.getElementById('experiment-scheme').src = state.image_url;
+
+            const statusLight = document.getElementById('status-light');
+            statusLight.className = 'status-light';
+            switch (state.status) {
+                case "Ошибка":
+                    statusLight.classList.add('status-red');
+                    break;
+                case "Активен":
+                    statusLight.classList.add('status-green');
+                    break;
+                case "Пауза":
+                    statusLight.classList.add('status-yellow');
+                    break;
+                case "Окончен":
+                    statusLight.classList.add('status-blue');
+                    break;
+                case "Настройка":
+                    statusLight.classList.add('status-blue');
+                    break;
+            }
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+
+        async function startExperiment() {
+            console.log("Эксперимент начат");
+            await fetch('/experiment/start/', { method: 'POST' });
+            await fetchExperimentState();  
+        }
+
+        async function pauseExperiment() {
+            console.log("Эксперимент приостановлен");
+            await fetch('/experiment/pause/', { method: 'POST' });
+            await fetchExperimentState();  
+        }
+
+        async function stopExperiment() {
+            console.log("Эксперимент завершен");
+            await fetch('/experiment/stop/', { method: 'POST' });
+            await fetchExperimentState();  
+        }
+
+        async function setError() {
+            console.log("Ошибка в эксперименте");
+            await fetch('/experiment/error/', { method: 'POST' });
+            await fetchExperimentState();  
+        }
+
+        setInterval(async () => {
+            await fetchInstruments();
+            await fetchParameters();
+            await fetchExperimentState();
+        }, 1000);
+
+        window.onload = async () => {
+            await fetchInstruments();
+            await fetchParameters();
+            await fetchExperimentState();
+        };
+    </script>
+</body>
+
+</html>
+
