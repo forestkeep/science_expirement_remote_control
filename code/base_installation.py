@@ -625,7 +625,7 @@ class baseInstallation:
                 else:  # иначе создаем новый клиент и добавляем в список клиентов и список модбас клиентов
 
                     dict_modbus_clients[list_COMs[i]] = ModbusSerialClient(
-                            method="rtu",
+                            framer="rtu",
                             port=list_COMs[i],
                             baudrate=int(list_baud[i]),
                             stopbits=1,
@@ -633,7 +633,6 @@ class baseInstallation:
                             parity="E",
                             timeout=0.3,
                             retries=1,
-                            retry_on_empty=True,
                     )
 
                     self.clients.append(dict_modbus_clients[list_COMs[i]])

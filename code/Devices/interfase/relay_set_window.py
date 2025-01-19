@@ -44,6 +44,7 @@ class Ui_Set_relay(base_settings_window):
         self.hall2_meas = QtWidgets.QCheckBox()
         self.hall3_meas = QtWidgets.QCheckBox()
         self.hall4_meas = QtWidgets.QCheckBox()
+        self.temp_meas = QtWidgets.QCheckBox()
 
         self.meas_label = QtWidgets.QLabel()
         self.meas_label.setFont(self.font)
@@ -53,6 +54,7 @@ class Ui_Set_relay(base_settings_window):
         self.Layout_set_dev_meas.addWidget(self.hall2_meas, 2, 0, 1, 1)
         self.Layout_set_dev_meas.addWidget(self.hall3_meas, 3, 0, 1, 1)
         self.Layout_set_dev_meas.addWidget(self.hall4_meas, 4, 0, 1, 1)
+        self.Layout_set_dev_meas.addWidget(self.temp_meas, 5, 0, 1, 1)
 
         self.retranslateUi(self)
 
@@ -72,6 +74,7 @@ class Ui_Set_relay(base_settings_window):
         self.hall2_meas.setText(_translate("Device", "Датчик холла 2"))
         self.hall3_meas.setText(_translate("Device", "Датчик холла 3"))
         self.hall4_meas.setText(_translate("Device", "Датчик холла 4"))
+        self.temp_meas.setText(_translate("Device", "Температурный датчик"))
 
 
 # sourse_enter -> sourse_act_enter || sourse_meas_enter

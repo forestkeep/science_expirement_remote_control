@@ -90,6 +90,9 @@ class relayPr1Class(base_device):
         self.setting_window.hall4_meas.setChecked(
             self.active_channel_meas.dict_settable_parameters["hall4"] == True
         )
+        self.setting_window.temp_meas.setChecked(
+            self.active_channel_meas.dict_settable_parameters["temp"] == True
+        )
 
         self.key_to_signal_func = True
 
@@ -123,6 +126,9 @@ class relayPr1Class(base_device):
             )
             self.active_channel_meas.dict_buf_parameters["hall4"] = (
                 self.setting_window.hall4_meas.isChecked()
+            )
+            self.active_channel_meas.dict_buf_parameters["temp"] = (
+                self.setting_window.temp_meas.isChecked()
             )
 
     def send_signal_ok(
@@ -288,6 +294,17 @@ class relayPr1Class(base_device):
                     val = [QApplication.translate("Device","Выход") + "=" + str(2)]
             parameters.append(val)
 
+            if self.active_channel_meas.dict_settable_parameters["temp"] == True:
+                temp_values = self.read_temp_sensor()
+                if temp_values:
+                    val = ["temperature=" + str(temp_values)]
+                else:
+                    val = ["temperature=" + "fail"]
+                    is_correct = False
+                parameters.append(val)
+
+
+
             hall_values = self.read_hall_sensors()
             #print(f"{hall_values=}")
             decoded_numbers = False
@@ -345,10 +362,30 @@ class relayPr1Class(base_device):
         response = self._read_reg(adr=0x03F1, slave=0x0A, num_registers=0x0014)
 
         return response
+    
+    def read_temp_sensor(self):
+        response = self._read_reg(adr=0x0405, slave=0x0A, num_registers=0x0007)
+        print(f"{response=}")
+        if response:
+            response = struct.pack('> ' + 'H' * len(response.registers), *response.registers)
+            print(f"{len(response)=}")
+            if len(response) >= 7:
+                    # Извлекаем 7 байтов
+                    segment = response[0:7]
+                    sign = segment[0]
+                    hundr = segment[1]
+                    tent = segment[2]
+                    integer_part = segment[3]
+                    tenths = segment[4]
+                    hundredths = segment[5]
+                    thousandths = segment[6]
+                    # Собираем число
+                    response = (1 if sign == 1 else -1) * (hundr*100 + tent*10+ integer_part + tenths / 10 + hundredths / 100 + thousandths / 1000)
+            else:
+                response = False
+        print(f"{response=}")
+        return response
 
-    def decode_hall_registers(self, data):
-        logger.info(f"response read hall sensors: {data}")
-        return 1, 1, 1, 1
 
     def _set_polarity_1(self, number_of_channel) -> bool:
         self.switch_channel(number_of_channel)
@@ -462,6 +499,7 @@ class chMeasPR(base_ch):
         self.dict_buf_parameters["hall2"] = False
         self.dict_buf_parameters["hall3"] = False
         self.dict_buf_parameters["hall4"] = False
+        self.dict_buf_parameters["temp"] = False
 
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
