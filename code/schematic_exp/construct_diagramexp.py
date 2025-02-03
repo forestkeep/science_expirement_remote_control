@@ -639,7 +639,6 @@ class expDiagram(QWidget):
     def auto_place_group(self, groups):
         packing = Packing(groups)
         focus_widht, focus_height = packing.pack_rectangles( width = self.height(), height= self.width())#90 degrees
-        print(f"{focus_height=} {focus_widht=}")
         self.setMinimumSize(focus_widht, focus_height)
 
     def delete_old_draw(self):
