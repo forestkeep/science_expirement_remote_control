@@ -255,8 +255,9 @@ class power_supply(base_device):
                     self.active_channel_act.is_start_value_correct
                     and self.active_channel_act.is_stop_value_correct
                 ):
-                    if enter_step > abs(high_value - low_value):
-                        self.active_channel_act.is_step_correct = False
+                    if self.active_channel_act.is_step_correct:
+                        if enter_step > abs(high_value - low_value) or enter_step < min:
+                            self.active_channel_act.is_step_correct = False
 
             if (
                 self.active_channel_act.is_second_value_correct
@@ -617,6 +618,7 @@ class power_supply(base_device):
         ):
             focus_funk = self._set_current
             step = int(self.active_channel_act.steps_current[0] / 5)
+            
         else:
             return False
         param = 0
