@@ -43,7 +43,7 @@ def is_admin():
 
 class MyWindow(QtWidgets.QMainWindow):
     global VERSION_APP
-    def __init__(self, device_creator):
+    def __init__(self):
         self.settings = QtCore.QSettings(
             QtCore.QSettings.IniFormat,
             QtCore.QSettings.UserScope,
@@ -52,7 +52,7 @@ class MyWindow(QtWidgets.QMainWindow):
         )
 
         self.graph_window   = None
-        self.device_creator = device_creator
+        self.device_creator = deviceCreator()
 
         logger.warning(f"Start Version {VERSION_APP}, Admin {is_admin()}")
 
@@ -132,8 +132,6 @@ class MyWindow(QtWidgets.QMainWindow):
             pass
         else:
             self.graph_window = GraphWindow()
-            #self.graph_window.graph_win_close_signal.connect(self.graph_win_closed)
-            #self.graph_window.update_graphics(self.measurement_parameters)
         self.graph_window.show()
         self.cur_install.stop_scan_thread = True#stop scanning thread
         self.close()
@@ -159,8 +157,12 @@ class MyWindow(QtWidgets.QMainWindow):
     def toggle_key_installation(self, answer_signal):
         self.key_to_new_window_installation = not self.key_to_new_window_installation
 
-    def open_create_new_device(self):
+    def open_create_new_device(self):  
+        self.device_creator.cancel_click.connect(self.build_new_creator)
         self.device_creator.show()
+
+    def build_new_creator(self):
+        self.device_creator = deviceCreator()
 
     def unlock_to_create_new_installation(self, somewhere):
         self.key_to_new_window_installation = False
@@ -274,12 +276,10 @@ if __name__ == "__main__":
     qdarktheme.setup_theme(corner_shape="sharp")
     os.environ["APP_THEME"] = "dark"
 
-    device_creator = deviceCreator()
-
     translator = QTranslator()
     
     QtWidgets.QApplication.instance().installTranslator(translator)
 
-    start_window = MyWindow(device_creator=device_creator)
+    start_window = MyWindow()
     start_window.show()
     sys.exit(app.exec_())

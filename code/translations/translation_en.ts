@@ -1532,7 +1532,7 @@ Please note that the device must support SCPI command format; otherwise, it cann
     <message>
         <location filename="../device_creator/dev_creator.py" line="283"/>
         <source>Слишком много каналов, число не больше</source>
-        <translation>Too many channels, the number must not exceed </translation>
+        <translation>Too many channels, the number must not exceed</translation>
     </message>
     <message>
         <location filename="../device_creator/dev_creator.py" line="290"/>
@@ -1773,7 +1773,7 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../experiment_control.py" line="572"/>
         <source> завершил работу</source>
-        <translation>finished work</translation>
+        <translation> finished work</translation>
     </message>
     <message>
         <location filename="../experiment_control.py" line="466"/>
@@ -2042,7 +2042,7 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../interface/experiment_settings_window.py" line="139"/>
         <source>Место сохранения результатов</source>
-        <translation>Path for saving results.</translation>
+        <translation>Path for saving results</translation>
     </message>
     <message>
         <location filename="../interface/experiment_settings_window.py" line="141"/>

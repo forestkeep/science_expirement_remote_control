@@ -166,8 +166,12 @@ templates = {
     "device_name": "some_device",
     "number_channels": 1,
     "channels parameters" : {
-        "max_channels_voltage": [],
-        "max_channels_current": [],
+        "max_channels_voltage": [30, int],
+        "max_channels_current": [5, 'int'],
+        "max_channels_power": [50, int],
+        "voltage_resolution": [0.01, 'float'],
+        "current_resolution": [0.01, "<class 'float'>"],
+        "power_resolution": [0.01, float],
     },
     "commands": {
         "select_channel": {

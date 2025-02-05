@@ -1,0 +1,80 @@
+{
+    "device_type": "power supply",
+    "device_name": "qweqe",
+    "number_channels": 2,
+    "channels parameters": {
+        "max_channels_voltage": [
+            "<class 'int'>",
+            "30",
+            "30"
+        ],
+        "max_channels_current": [
+            "<class 'int'>",
+            "5",
+            "5"
+        ],
+        "max_channels_power": [
+            "<class 'int'>",
+            "50",
+            "50"
+        ],
+        "voltage_resolution": [
+            "<class 'float'>",
+            "0.01",
+            "0.01"
+        ],
+        "current_resolution": [
+            "<class 'float'>",
+            "0.01",
+            "0.01"
+        ],
+        "power_resolution": [
+            "<class 'float'>",
+            "0.01",
+            "0.01"
+        ]
+    },
+    "commands": {
+        "select_channel": {
+            "command": "INST CH{ch_num}\r\n",
+            "separator": ",",
+            "description": "Selects the specified channel for subsequent measurements and settings, allowing the user to operate on a particular channel."
+        },
+        "_get_setting_current": {
+            "command": "CURR?\r\n",
+            "description": "Retrieves the current setting for the selected channel, indicating the current limit set in the device."
+        },
+        "_get_setting_voltage": {
+            "command": "VOLT?\r\n",
+            "description": "Retrieves the voltage setting for the selected channel, indicating the voltage level set in the device."
+        },
+        "_get_current_current": {
+            "command": "MEAS:CURR?\r\n",
+            "description": "Measures and returns the actual current flowing through the specified channel, providing real-time current monitoring."
+        },
+        "_get_current_voltage": {
+            "command": "MEAS:VOLT?\r\n",
+            "description": "Measures and returns the actual voltage at the output of the specified channel, allowing for real-time voltage monitoring."
+        },
+        "_output_switching_off": {
+            "command": "OUTP CH{ch_num},OFF\r\n",
+            "description": "Turns off the output for the specified channel, preventing any current or voltage output from that channel."
+        },
+        "_output_switching_on": {
+            "command": "OUTP CH{ch_num},ON\r\n",
+            "description": "Turns on the output for the specified channel, allowing current or voltage to be supplied to external circuits."
+        },
+        "_set_current": {
+            "command": "CURR {current}\r\n",
+            "check_command": "CURR?\r\n",
+            "focus_answer": "{current}\n",
+            "description": "Sets the current value for the specified channel, allowing the user to define a maximum current limit."
+        },
+        "_set_voltage": {
+            "command": "VOLT {voltage}\r\n",
+            "check_command": "VOLT?\r\n",
+            "focus_answer": "{voltage}\n",
+            "description": "Sets the voltage value for the specified channel, allowing the user to establish an output voltage level."
+        }
+    }
+}

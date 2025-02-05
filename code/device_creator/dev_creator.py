@@ -13,9 +13,17 @@ import json
 import re
 import sys
 
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QInputDialog,
                              QLabel, QLineEdit, QMessageBox, QPushButton,
                              QVBoxLayout)
+import sys
+from PyQt5.QtWidgets import (
+    QApplication, QDialog, QTableWidget, QTableWidgetItem,
+    QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QMessageBox,
+    QSizePolicy, QHeaderView
+)
+from PyQt5.QtGui import QColor
 
 if __name__ == '__main__':
     from dev_template import templates
@@ -29,13 +37,23 @@ class InvalidTemplate(Exception):
     pass
 
 class deviceCreator(QDialog):
+    cancel_click = QtCore.pyqtSignal()
     def __init__(self):
         super().__init__()
+        self.initial_setup()
+
+    def initial_setup(self):
         self.check_command_line = None
         self.focus_answer_line = None
         self.new_commands = {}
         self.is_first_test = True
-        self.initUI()
+        self.device_name = None
+        self.device_type = None
+        self.number_of_channels = None
+        self.result_parameters = None
+        self.commands = []
+        self.current_index = 0
+        self.initUI() 
 
     def initUI(self):
         self.setWindowTitle('Конструктор')
@@ -73,7 +91,6 @@ class deviceCreator(QDialog):
         self.ok_button.clicked.connect(self.get_type_device)
         self.cancel_button.clicked.connect(self.on_cancel_clicked)
 
-
     def first_ok_clicked(self):
         self.hide()
         self.device_name = self.get_device_name()
@@ -86,14 +103,112 @@ class deviceCreator(QDialog):
         if not self.number_of_channels:
             self.close()
             QApplication.quit()
-        
+
+        data = templates[self.device_type]
+        type_data = {"float": float, "int": int, "str": str, "bool": bool, "<class 'float'>": float, "<class 'int'>": int, "<class 'str'>": str, "<class 'bool'>": bool}
+        if data.get("channels parameters", None):
+            self.buf = data["channels parameters"]
+            self.parameters = {}
+            self.result_parameters = {}
+            for key, value in self.buf.items():
+                self.result_parameters[key] = []
+                try:
+                    self.parameters[key] = value[1](value[0])
+                    self.result_parameters[key].append(str(value[1]))
+                except Exception as e:
+                    self.parameters[key] = type_data[value[1]](value[0])
+                    self.result_parameters[key].append(str(type_data[value[1]]))
+
+            self.get_channels_parameters()
+        else:
+            print("no channels parameters")
+            self.start_questions()
+
+    def get_channels_parameters(self):
+        print("get_channels_parameters")
+        self.ok_button.setParent(None)
+        self.cancel_button.setParent(None)
+
+        self.correct_color = QColor(40, 150, 0, 40)
+        self.default_values = list(self.parameters.values())
+
+        row = len(self.parameters)
+        col = self.number_of_channels
+        self.table = QTableWidget(int(row), int(col) )
+        self.table.setHorizontalHeaderItem(0, QTableWidgetItem('Параметры'))
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        self.table.setSelectionMode(QTableWidget.NoSelection)
+
+        for i in range(int(self.number_of_channels)):
+            self.table.setHorizontalHeaderItem(i, QTableWidgetItem(f'Канал {i + 1}'))
+
+        for row, (param, default_value) in enumerate(self.parameters.items()):
+            self.table.setVerticalHeaderItem(row, QTableWidgetItem(f'{param}'))
+            for col in range(0, int(self.number_of_channels)):
+                self.table.setItem(row, col, QTableWidgetItem(str(default_value)))
+                item = self.table.item(row, col)
+                item.setBackground(self.correct_color)
+
+        self.table.cellChanged.connect(self.check_value)
+        self.table.cellClicked.connect(self.choise_cell)
+        self.first_lay = QVBoxLayout()
+        self.first_lay.addWidget(self.table)
+        self.main_layout.addLayout(self.first_lay)
+
+        self.add_ok_cancel_buttons()
+        self.ok_button.setText("Ок")
+        self.ok_button.clicked.connect(self.on_ok)
+        self.cancel_button.clicked.connect(self.on_cancel_clicked)
+        self.show()
+
+    def on_ok(self):
+        for row in range(len(self.parameters)):
+            for column in range(1, int(self.number_of_channels) + 1):  # Проверяем только столбцы с данными
+                item = self.table.item(row, column)
+                if item is not None and item.background() != self.correct_color:
+                    QMessageBox.warning(self, 'Ошибка', 'Пожалуйста, проверьте корректность введенных данных.')
+                    return
+
+        for row, key in enumerate(self.result_parameters.keys()):
+            row_results = []
+            for column in range(self.number_of_channels):
+                item = self.table.item(row, column)
+                if item is not None:
+                    row_results.append(item.text())
+            for res in row_results:
+                self.result_parameters[key].append(res)
+
+        print(self.result_parameters)
+
+        self.first_lay.removeWidget(self.table)
+        self.table.setParent(None)
+        self.first_lay.setParent(None)
         self.start_questions()
+
+    def choise_cell(self, row, column):
+        self.table.editItem(self.table.item(row, column))
+
+    def check_value(self, row, column):
+        item = self.table.item(row, column)
+        value = item.text()
+        default_value = self.default_values[row]
+        focus_type = type(default_value)
+        if focus_type == int:
+            focus_type = float
+
+        try:
+            transformed_value = focus_type(value)
+            item.setBackground(self.correct_color)
+        except ValueError:
+            item.setBackground(QColor("red"))
 
     def start_questions(self):
         #перестроить основное поле
         self.ok_button.setParent(None)
         self.cancel_button.setParent(None)
-        
+     
         self.main_layout.addLayout(self.twice_lay)
         self.add_ok_cancel_buttons()
         self.ok_button.setText("Ок")
@@ -111,7 +226,6 @@ class deviceCreator(QDialog):
             self.close()
 
     def load_next_command(self):
-        print("след команда")
         if self.current_index < len(self.commands):
             command_template = self.commands[self.current_index]
             example_input = command_template['command']
@@ -195,13 +309,21 @@ class deviceCreator(QDialog):
         return cleaned_str + newline_char
 
     def finalize_commands(self):
-
-        final_commands = {
-            "device_type": self.device_type,
-            "device_name": self.device_name,
-            "number_channels":int(self.number_of_channels),
-            "commands": self.new_commands
-        }
+        if self.result_parameters:
+            final_commands = {
+                "device_type": self.device_type,
+                "device_name": self.device_name,
+                "number_channels":int(self.number_of_channels),
+                "channels parameters": self.result_parameters,
+                "commands": self.new_commands
+            }
+        else:
+            final_commands = {
+                "device_type": self.device_type,
+                "device_name": self.device_name,
+                "number_channels":int(self.number_of_channels),
+                "commands": self.new_commands
+            }
 
         file_name = self.device_name
         with open(f"{file_name}.json", 'w') as outfile:
@@ -211,6 +333,7 @@ class deviceCreator(QDialog):
         text = text.format(file_name=file_name)
 
         QMessageBox.information(self, QApplication.translate('device_creator',"Готово"), text)
+        self.cancel_click.emit()
         self.close()
 
     def get_type_device(self):
@@ -269,7 +392,7 @@ class deviceCreator(QDialog):
 
             if status:#число не число
                 try:
-                    num_ch = float(num_ch)
+                    num_ch = int(num_ch)
                 except:
                     QMessageBox.critical(self, QApplication.translate('device_creator',"Ошибка"), QApplication.translate('device_creator',"Введите число"))
                     status = False
@@ -281,16 +404,16 @@ class deviceCreator(QDialog):
                     status = False
                     
         return num_ch
-
+    
     def add_ok_cancel_buttons(self):
         '''Создает кнопки окей и отмена и добавляет их в конец главного слоя'''
+
         self.ok_button = QPushButton(QApplication.translate('device_creator','Поехали!'), self)
         self.cancel_button = QPushButton(QApplication.translate('device_creator','Отмена'), self)
         buf_lay = QHBoxLayout()
         buf_lay.addWidget(self.cancel_button)
         buf_lay.addWidget(self.ok_button)
         self.main_layout.addLayout(buf_lay)
-
         
     def get_device_name(self):
         status = False
@@ -305,9 +428,11 @@ class deviceCreator(QDialog):
             else:
                 status = True
         return device_name
-
+    
     def on_cancel_clicked(self):
-        self.close()  # Закрыть окно после нажатия Отмена
+        self.cancel_click.emit()
+        self.close()
+        del self
 
     def test_function(self):
 
@@ -358,10 +483,7 @@ class deviceCreator(QDialog):
             command_template['focus_answer'] = self.ensure_line_endings(input_focus, "\n")
 
         self.new_commands[ self.commands_name[self.current_index] ] = command_template
-
-        print(f"{command_template=}")
-
-        
+      
         self.current_index += 1
         self.load_next_command()
 
