@@ -151,7 +151,7 @@ class GraphWindow(QMainWindow):
         """функция раз в n секунд генерирует словарь и обновляет данные"""
         self.update_graphics(next(self.gen))
         self.counter_test += 1
-        if self.counter_test == 10:
+        if self.counter_test == 1000:
             self.graph_main.reconfig_state()
             self.experiment_controller.running = False
             self.timer.stop()
