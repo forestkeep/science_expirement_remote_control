@@ -3,6 +3,7 @@
 ## Application Description
 The application is a software suite for conducting automated experiments using external electronic devices controlled through various digital interfaces, processing received data, and constructing dependencies. It is developed in Python and is available for free. The application's interface is graphical, intuitive, and allows for convenient management of experimental processes, including device configuration and procedure building.
 The application supports the possibility of flexible configuration of device interaction scenarios. The user can define the order of data collection, send control commands, and sequence the actions of devices. All settings of the experimental procedure are displayed as an interactive diagram, showing the signal flows and interactions between devices.
+During the experiment, the results are available in the form of graphs. After the experiment is completed, the data can be processed using built-in filters and saved in various formats.
 
 ![Image alt](https://github.com/forestkeep/some_picture/blob/main/installation_controller/running_results.gif)
 
@@ -43,7 +44,7 @@ The application supports two languages: Russian and English. The user can select
 ## Описание приложения
 Приложение представляет собой программный комплекс для проведения автоматизированных экспериментов с использованием внешних электронных приборов, управляемых через различные цифровые интерфейсы, обработки получаемых данных и построения зависимостей.
  Оно разработано на языке программирования Python и распространяется бесплатно. Интерфейс приложения является графическим, интуитивно понятным и позволяет удобно управлять процессами эксперимента, включая настройку приборов и построение процедур.
-Приложение поддерживает возможность гибкой настройки сценариев взаимодействия приборов. Пользователь может определить порядок снятия данных, отправку команд управления и последовательность действий устройств. Все настройки процедуры эксперимента отображаются в виде интерактивной диаграммы, на которой показаны потоки сигналов и взаимодействия между приборами.
+Приложение поддерживает возможность гибкой настройки сценариев взаимодействия приборов. Пользователь может определить порядок снятия данных, отправку команд управления и последовательность действий устройств. Все настройки процедуры эксперимента отображаются в виде интерактивной диаграммы, на которой показаны потоки сигналов и взаимодействия между приборами. Во время проведения эксперимента пользователю доступен вывод результатов в виде графиков. После окончания эксперимента данные можно обработать с помощью встроенных фильтров и сохранить в различных форматах.
 
 ### Настройка приборов:
 - Приложение автоматически сканирует доступные интерфейсы, что устраняет необходимость ручного поиска и ввода портов.
