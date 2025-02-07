@@ -1,7 +1,10 @@
 # Installation Controller
+
 ## Application Description
 The application is a software suite for conducting automated experiments using external electronic devices controlled through various digital interfaces, processing received data, and constructing dependencies. It is developed in Python and is available for free. The application's interface is graphical, intuitive, and allows for convenient management of experimental processes, including device configuration and procedure building.
 The application supports the possibility of flexible configuration of device interaction scenarios. The user can define the order of data collection, send control commands, and sequence the actions of devices. All settings of the experimental procedure are displayed as an interactive diagram, showing the signal flows and interactions between devices.
+
+![Image alt](https://github.com/forestkeep/science_expirement_remote_control/blob/main/pictures/running_results.gif)
 
 ### Devices Configuration:
 The application automatically scans available interfaces, eliminating the need for manual port search and entry.
@@ -42,6 +45,7 @@ The application supports two languages: Russian and English. The user can select
 - Приложение автоматически сканирует доступные интерфейсы, что устраняет необходимость ручного поиска и ввода портов.
 - При задании конфигурации приборов проводится анализ на наличие коллизий и ошибок при назначении портов. Эксперимент возможен только после корректного завершения настройки.
 - Встроен модуль для создания новых приборов. Пользователь с помощью диалогового интерфейса может настроить систему команд нового устройства и протестировать их. Все необходимые инструменты для этого интегрированы в приложение.
+  
 ### Взаимодействие и управление приборами:
 - Сценарии работы основываются на концепции сигналов: приборы выполняют действие при получении соответствующего сигнала. Сигналы могут поступать от таймеров или других приборов.
 - Пользователь может настроить обработку ошибок приборов – например, выбрать, продолжать эксперимент при сбое или же прерывать его.
@@ -73,5 +77,18 @@ The application supports two languages: Russian and English. The user can select
 4.	После завершения процесса установки вы получите уведомление о его успешном завершении.
 Теперь приложение готово к использованию.
 
+# Скриншоты приложения
+
+## Диаграмма взаимодействия приборов
+![Image alt](https://github.com/forestkeep/science_expirement_remote_control/blob/main/pictures/diagram_devices.JPG)
+
+## Отображения осциллограммы
+![Image alt](https://github.com/forestkeep/science_expirement_remote_control/blob/main/pictures/oscillogramm.JPG)
+
+## Предупреждение о том, что некоторые приборы не могут иметь один и тот же интерфейс подключения
+![Image alt](https://github.com/forestkeep/science_expirement_remote_control/blob/main/pictures/warning%20settings.JPG)
+
+## Этап создания нового прибора
+![Image alt](https://github.com/forestkeep/science_expirement_remote_control/blob/main/pictures/creating_new_device.JPG)
 
 
