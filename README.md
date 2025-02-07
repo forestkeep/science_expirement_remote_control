@@ -4,7 +4,7 @@
 The application is a software suite for conducting automated experiments using external electronic devices controlled through various digital interfaces, processing received data, and constructing dependencies. It is developed in Python and is available for free. The application's interface is graphical, intuitive, and allows for convenient management of experimental processes, including device configuration and procedure building.
 The application supports the possibility of flexible configuration of device interaction scenarios. The user can define the order of data collection, send control commands, and sequence the actions of devices. All settings of the experimental procedure are displayed as an interactive diagram, showing the signal flows and interactions between devices.
 
-![Image alt](https://github.com/forestkeep/science_expirement_remote_control/blob/main/pictures/running_results.gif)
+![Image alt](https://github.com/forestkeep/some_picture/blob/main/installation_controller/running_results.gif)
 
 ### Devices Configuration:
 The application automatically scans available interfaces, eliminating the need for manual port search and entry.
@@ -14,15 +14,18 @@ Interaction and Control of Devices:
 The working scenarios are based on the concept of signals: devices perform actions upon receiving the corresponding signal. Signals can come from timers or other devices.
 The user can configure error handling for devices – for example, choose to continue the experiment in case of a failure or to interrupt it.
 At any moment during the experiment, there is an option to pause it.
+
 ### Experiment Execution:
 - The current status of the process is displayed in text format.
 - A visual gauge shows the remaining time until the experiment's completion in minutes and percentages.
 - Measured parameters are displayed in real-time on an interactive graph. The list of displayed data can be customized as desired.
 - As operations are performed, diagrams with metadata about device actions are generated. If any device stops responding, the user is immediately notified.
+- 
 ### Additional Features:
 - A built-in mathematical toolkit allows for calculations and the construction of dependencies between parameters.
 - The obtained data is automatically recorded in a file in case of power outages or computer malfunctions. This ensures the preservation of all information.
 - Upon completing the experiment, the program will provide several options for data export: for example, they can be saved in Excel table format.
+- 
 ### Miscellaneous
 The application includes a built-in module for viewing and processing experiment results. Data obtained from devices can not only be recorded in a file but also analyzed within the program. Additionally, users can import their own data for analysis within the module. Configured experimental setups can be saved and loaded as needed, eliminating the need to reconfigure all similar experiments.
 The application supports two languages: Russian and English. The user can select the appropriate language in the settings.
@@ -41,6 +44,7 @@ The application supports two languages: Russian and English. The user can select
 Приложение представляет собой программный комплекс для проведения автоматизированных экспериментов с использованием внешних электронных приборов, управляемых через различные цифровые интерфейсы, обработки получаемых данных и построения зависимостей.
  Оно разработано на языке программирования Python и распространяется бесплатно. Интерфейс приложения является графическим, интуитивно понятным и позволяет удобно управлять процессами эксперимента, включая настройку приборов и построение процедур.
 Приложение поддерживает возможность гибкой настройки сценариев взаимодействия приборов. Пользователь может определить порядок снятия данных, отправку команд управления и последовательность действий устройств. Все настройки процедуры эксперимента отображаются в виде интерактивной диаграммы, на которой показаны потоки сигналов и взаимодействия между приборами.
+
 ### Настройка приборов:
 - Приложение автоматически сканирует доступные интерфейсы, что устраняет необходимость ручного поиска и ввода портов.
 - При задании конфигурации приборов проводится анализ на наличие коллизий и ошибок при назначении портов. Эксперимент возможен только после корректного завершения настройки.
@@ -50,6 +54,7 @@ The application supports two languages: Russian and English. The user can select
 - Сценарии работы основываются на концепции сигналов: приборы выполняют действие при получении соответствующего сигнала. Сигналы могут поступать от таймеров или других приборов.
 - Пользователь может настроить обработку ошибок приборов – например, выбрать, продолжать эксперимент при сбое или же прерывать его.
 - В любой момент эксперимента есть возможность поставить его на паузу.
+- 
 ### Ход выполнения эксперимента:
 - Текущий статус процесса отображается в текстовом формате.
 - Визуальная шкала показывает оставшееся время до завершения эксперимента в минутах и процентах.
@@ -80,15 +85,15 @@ The application supports two languages: Russian and English. The user can select
 # Скриншоты приложения
 
 ## Диаграмма взаимодействия приборов
-![Image alt](https://github.com/forestkeep/science_expirement_remote_control/blob/main/pictures/diagram_devices.JPG)
+![Image alt](https://github.com/forestkeep/some_picture/blob/main/installation_controller/diagram_devices.JPG)
 
 ## Отображения осциллограммы
-![Image alt](https://github.com/forestkeep/science_expirement_remote_control/blob/main/pictures/oscillogramm.JPG)
+![Image alt](https://github.com/forestkeep/some_picture/blob/main/installation_controller/oscillogramm.JPG)
 
 ## Предупреждение о том, что некоторые приборы не могут иметь один и тот же интерфейс подключения
-![Image alt](https://github.com/forestkeep/science_expirement_remote_control/blob/main/pictures/warning%20settings.JPG)
+![Image alt](https://github.com/forestkeep/some_picture/blob/main/installation_controller/warning%20settings.JPG)
 
 ## Этап создания нового прибора
-![Image alt](https://github.com/forestkeep/science_expirement_remote_control/blob/main/pictures/creating_new_device.JPG)
+![Image alt](https://github.com/forestkeep/some_picture/blob/main/installation_controller/creating_new_device.JPG)
 
 
