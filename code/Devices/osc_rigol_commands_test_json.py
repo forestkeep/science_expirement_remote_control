@@ -633,12 +633,7 @@ if __name__ == "__main__":
     device = R
     res = pyvisa.ResourceManager().list_resources()
     rm = pyvisa.ResourceManager()
-    try:
-        client = rm.open_resource(res[0])
-    except:
-        client = "fake"
+    client = rm.open_resource(res[0])
 
-    device = R(client)
-    osc = oscRigolCommands(device=device)
-    osc.load_commands("DS1104.json")
-    print(osc.set_meas_source(3)) 
+    print(client.query(":CHANnel2:BWLimit?"))
+

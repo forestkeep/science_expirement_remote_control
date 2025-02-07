@@ -29,6 +29,7 @@ templates = {
             "command": ":WAV:STOP {point}\\r\\n",
             "description": "Set the end point for waveform data retrieval"
         },
+        
         "get_sample_rate": {
             "command": "ACQ:SRATe?\\r\\n",
             "description": "Get the current sample rate"
