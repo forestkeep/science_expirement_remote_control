@@ -1,6 +1,7 @@
 import sys
 import json
 import re
+import os
 from PyQt5 import QtWidgets
 
 class localDeviceControl(QtWidgets.QWidget):
@@ -25,7 +26,8 @@ class localDeviceControl(QtWidgets.QWidget):
             commands = self.device_data["commands"]
             command_keys = list(commands.keys())
 
-            current_vert_lay = QtWidgets.QVBoxLayout()
+            command_group_with_params = []
+            command_group_without_params = []
 
             for index, key in enumerate(command_keys):
                 command_group = QtWidgets.QGroupBox(key.replace("_", " ") )
@@ -35,10 +37,13 @@ class localDeviceControl(QtWidgets.QWidget):
                 has_param = self.extract_parameters(command_info['command'])
                 
                 if has_param:
-                    param_name = has_param[0]
-                    spin_box = QtWidgets.QSpinBox()
-                    spin_box.setPrefix(f"{param_name}: ")
-                    command_layout.addWidget(spin_box)
+                    for param_name in has_param:
+                        spin_box = QtWidgets.QSpinBox()
+                        spin_box.setPrefix(f"{param_name}: ")
+                        command_layout.addWidget(spin_box)
+                    command_group_with_params.append(command_group)
+                else:
+                    command_group_without_params.append(command_group)
 
                 button = QtWidgets.QPushButton('Execute')
                 button.clicked.connect(lambda ch, cmd=key, spin=spin_box if has_param else None: self.execute_command(cmd, spin))
@@ -47,8 +52,12 @@ class localDeviceControl(QtWidgets.QWidget):
                 result_label = QtWidgets.QLabel("Result:")
                 command_layout.addWidget(result_label)
 
+
+            current_vert_lay = QtWidgets.QVBoxLayout()
+            command_group_without_params.extend(command_group_with_params)
+            for index, command_group in enumerate(command_group_without_params):
                 current_vert_lay.addWidget(command_group)
-                if index % 4 == 0 and index != 0:
+                if (index+1) % 4 == 0 and index != 0:
                     layout.addLayout(current_vert_lay)
                     current_vert_lay = QtWidgets.QVBoxLayout()
 
@@ -75,8 +84,11 @@ class localDeviceControl(QtWidgets.QWidget):
         print(f"Executing command: {command_str}")
 
 if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    window = localDeviceControl('device_config_test.json')
-    window.resize(800, 600)
-    window.show()
-    sys.exit(app.exec_())
+    stre = "{reer} yyyy {eeeee} 125"
+    print(re.findall(r'\{(.*?)\}', stre))
+    if False:
+        app = QtWidgets.QApplication(sys.argv)
+        window = localDeviceControl('device_config_test.json')
+        window.resize(800, 600)
+        window.show()
+        sys.exit(app.exec_())

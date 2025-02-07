@@ -1,7 +1,9 @@
 import os
 import subprocess
 
-directory = os.path.dirname(os.path.abspath(__file__))
+current_directory = os.path.dirname(os.path.abspath(__file__))
+
+directory = os.path.dirname(current_directory)
 
 common_ts_file = os.path.join(directory, r'translations\translation_en.ts')
 
@@ -21,6 +23,7 @@ def find_python_files_and_generate_common_ts():
         for file in files:
             if file.endswith('.py') and not should_exclude(os.path.join(root, file)):
                 python_files.append(os.path.join(root, file))
+                print(file)
 
     if python_files:
 

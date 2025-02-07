@@ -66,7 +66,7 @@ class graphOsc:
         self.x_axis_label = ""
 
         self.y_second_axis_label = "V"
-        self.x_axis_label = "s"
+        self.x_axis_label = "dots"
         self.y_main_axis_label = "V"
 
         self.key = True  # ключ предназначен для манипулирования данными в виджетах без вызова функций обработчиков, если ключ установлен в False, то обработчик не будет испольняться
@@ -749,6 +749,8 @@ class graphOsc:
                         self.legend_ch_names[ch_name] = ch_name
 
                         scale = self.dict_param[device][ch_name]["scale"][num_wave]
+
+                        #TODO:добавить десятичные приставки к подписям осей, вертикальной и горизонтальной
 
                         y = np.array(self.dict_param[device][ch_name][key_wave][num_wave])
                         x = np.array([scale*i for i in range(1, len(y)+1)])

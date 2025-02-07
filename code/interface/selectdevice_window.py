@@ -10,6 +10,8 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import logging
+import os
+import json
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -19,7 +21,7 @@ logger = logging.getLogger(__name__)
 class Ui_Selectdevice(QtWidgets.QDialog):
     signal_to_main_window = QtCore.pyqtSignal(str)
 
-    def setupUi(self, Selectdevice, mother_window):
+    def setupUi(self, Selectdevice, mother_window, path_device_templates = None):
         self.signal_to_main_window.connect(
             mother_window.message_from_new_device_local_control
         )
@@ -35,25 +37,30 @@ class Ui_Selectdevice(QtWidgets.QDialog):
         font = QtGui.QFont()
         font.setPointSize(12)
         self.pushButton.setFont(font)
-        self.pushButton.setObjectName("pushButton")
         self.verticalLayout.addWidget(self.pushButton)
+
+        self.generic_buttons = []
 
         self.retranslateUi(Selectdevice)
         QtCore.QMetaObject.connectSlotsByName(Selectdevice)
 
         self.pushButton.clicked.connect(lambda: self.send_signal(self.pushButton.text()))
 
+        if path_device_templates is not None:
+            self.dict_device_templates = mother_window.search_devices_json(path_device_templates)
+            for name in self.dict_device_templates.keys():   
+                button = QtWidgets.QPushButton(name)
+                button.setFont(font)
+                self.verticalLayout.addWidget(button)
+                self.generic_buttons.append(button)
+
+                button.clicked.connect(lambda checked, key=name: self.send_signal(self.dict_device_templates[key])) 
 
     def retranslateUi(self, Selectdevice):
         _translate = QtCore.QCoreApplication.translate
         Selectdevice.setWindowTitle(_translate("Selectdevice", "Выбор прибора"))
         self.pushButton.setText("SVPS34")
-
-    def set_color(self, mother_window):
-        if "SVPS34" in mother_window.dict_active_local_devices:
-            self.pushButton.setStyleSheet("background-color: rgb(255, 85, 127);")
-        else:
-            self.pushButton.setStyleSheet("background-color: rgb(85, 255, 127);")
-        
+     
     def send_signal(self, text):
         self.signal_to_main_window.emit(text)
+

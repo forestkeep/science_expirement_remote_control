@@ -17,7 +17,7 @@ from logging.handlers import RotatingFileHandler
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QTranslator
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QMessageBox
 
 import qdarktheme
 
@@ -25,12 +25,15 @@ import interface.info_window_dialog
 from available_devices import dict_device_class
 from device_creator.dev_creator import deviceCreator
 from device_creator.test_commands import TestCommands
+from device_creator.dev_template import templates
 from Devices.svps34_control import Ui_SVPS34_control
 from graph.online_graph import GraphWindow
 from Installation_class import installation_class
 from interface.installation_check_devices import installation_Ui_Dialog
 from interface.main_window import Ui_MainWindow
 from interface.selectdevice_window import Ui_Selectdevice
+from controlDevicesJSON import search_devices_json, validate_json_schema
+from localJSONControl import localDeviceControl
 
 VERSION_APP = "1.0.3"
 logger = logging.getLogger(__name__)
@@ -50,6 +53,8 @@ class MyWindow(QtWidgets.QMainWindow):
             "misis_lab",
             "exp_control" + VERSION_APP,
         )
+        current_dir =os.path.dirname(os.path.realpath(__file__))
+        self.directory_devices = os.path.join(current_dir, "Devices", "JSONDevices")
 
         self.graph_window   = None
         self.device_creator = deviceCreator()
@@ -170,7 +175,8 @@ class MyWindow(QtWidgets.QMainWindow):
     def open_select_device_window(self):
         self.select_local_device = QtWidgets.QDialog()
         self.ui_window_local_device = Ui_Selectdevice()
-        self.ui_window_local_device.setupUi(self.select_local_device, self)
+        
+        self.ui_window_local_device.setupUi(self.select_local_device, self, self.directory_devices)
         self.select_local_device.show()
 
     def open_installation_window(self):
@@ -223,7 +229,18 @@ class MyWindow(QtWidgets.QMainWindow):
                 self.dict_active_local_devices[name].setupUi()
                 self.dict_active_local_devices[name].show()
             else:
-                pass
+                if os.path.exists(name):
+                    answer, message = validate_json_schema(name, templates=templates)
+                    if answer:
+                        self.dict_active_local_devices[name] = localDeviceControl(name)
+                        self.dict_active_local_devices[name].show()
+                    else:
+                        QMessageBox.critical(None, QApplication.translate('device_creator',"Ошибка"), QApplication.translate('device_creator',"Формат файла не верен, создайте файл прибора с помощью конструктора."))
+                else:
+                    text=QApplication.translate('main install',"{path} не найден. Проверьте расположение.")
+                    text = text.format(path = name)
+                    QMessageBox.critical(None, QApplication.translate('device_creator',"Ошибка"), text)
+
         else:
             self.dict_active_local_devices[name].show()
             # del self.dict_active_local_devices[name]
@@ -243,6 +260,9 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def quit_application(self):
         QtWidgets.QApplication.quit()
+
+    def search_devices_json(self, directory):
+        return search_devices_json(directory)
 
 def get_installation_controller_path():
 

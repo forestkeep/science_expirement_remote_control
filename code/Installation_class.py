@@ -107,13 +107,13 @@ class installation_class(experimentControl, analyse):
         self.measurement_parameters = {}
 
         for i, device_name in enumerate(installation_list):
-            #try:
+            try:
                 device = self.dict_device_class[device_name](
                     name=f"{device_name}_{i+1}", installation_class=self
                 )
                 self.dict_active_device_class[f"{device_name}_{i+1}"] = device
-            #except Exception as e:
-            #    logger.error(f"Failed to create instance of {device_name} {e}")
+            except Exception as e:
+                logger.error(f"Failed to create instance of {device_name} {e}")
                 
         self.exp_diagram = expDiagram()
         self.exp_call_stack = callStack()

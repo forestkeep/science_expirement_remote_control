@@ -127,7 +127,7 @@ class experimentControl(analyse):
                 self.start_exp_time += time.time() - self.pause_start_time
                 for device, ch in self.get_active_ch_and_device():
                     if ch.am_i_active_in_experiment:
-                        if device.get_trigger(ch) == "Таймер":
+                        if device.get_trigger(ch) == QApplication.translate('exp_flow', "Таймер"):
                             ch.previous_step_time += time.time() - self.pause_start_time
 
             else:
@@ -157,7 +157,7 @@ class experimentControl(analyse):
         for device, ch in self.get_active_ch_and_device():
             if ch.am_i_active_in_experiment :
                 trig = device.get_trigger(ch)
-                if trig == "Таймер":
+                if trig == QApplication.translate('exp_flow', "Таймер"):
                     steps = device.get_steps_number(ch) - ch.number_meas
                     if steps is not False:
                         t = (
@@ -184,18 +184,22 @@ class experimentControl(analyse):
 
         for device in self.dict_active_device_class.values():
             for ch in device.channels:
+                print(device, ch)
                 buf_time = False
                 if ch.is_ch_active():
                     trig = device.get_trigger(ch)
-                    if trig == "Таймер":
+                    print(trig)
+                    if trig == QApplication.translate('exp_flow', "Таймер"):
                         steps = device.get_steps_number(ch)
+                        print(f"{steps=}")
                         if steps is not False:
+                            print(device.get_trigger_value(ch), ch.base_duration_step)
                             buf_time = (
                                 steps
                                 * (device.get_trigger_value(ch) + ch.base_duration_step)
                             ) * float(self.repeat_meas) * float(self.repeat_experiment)
 
-                    elif trig == "Внешний сигнал":
+                    elif trig == QApplication.translate('exp_flow', "Внешний сигнал"):
                         # TODO: рассчитать время в случае срабатывания цепочек приборов. Найти корень цепочки и смотреть на его параметры, значение таймера и количество повторов, затем рассчитать длительность срабатывания цепочки и сравнить со значением таймера, вернуть наибольшее
                         continue
                     else:
@@ -204,6 +208,7 @@ class experimentControl(analyse):
                 if buf_time is not False:
 
                     max_exp_time = max(max_exp_time, buf_time)
+        print(f"{max_exp_time=}")
 
         return max_exp_time
 
@@ -472,7 +477,7 @@ class experimentControl(analyse):
 
                             if ch.am_i_active_in_experiment:
                                 number_active_device += 1
-                                if device.get_trigger(ch) == "Таймер":
+                                if device.get_trigger(ch) == QApplication.translate('exp_flow', "Таймер"):
                                     if time.time() - ch.previous_step_time >= ch.pause_time:
                                         ch.previous_step_time = time.time()
                                         device.set_status_step(ch.get_name(), True)
