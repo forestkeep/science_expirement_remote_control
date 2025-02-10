@@ -10,15 +10,15 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import logging
-import sys
-import threading
 
 import pyvisa
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QThread, pyqtSignal
 from PyQt5.QtWidgets import (QApplication, QComboBox, QGridLayout, QLabel,
-                             QLineEdit, QMainWindow, QPushButton, QWidget)
-
-from Adapter import instrument
+                             QTextEdit, QLineEdit, QMainWindow, QPushButton, QWidget)
+try:
+    from Adapter import instrument
+except:
+    pass
 
 NOT_READY_STYLE_BORDER = "border: 1px solid rgb(180, 0, 0); border-radius: 5px;"
 READY_STYLE_BORDER = "border: 1px solid rgb(0, 150, 0); border-radius: 5px;"
@@ -28,6 +28,23 @@ SCAN_INTERVAL = 2000
 DEFAULT_TIMEOUT = 2000
 
 
+class queryCommand(QThread):
+    finished = pyqtSignal(str)
+
+    def __init__(self, client, command):
+        super().__init__()
+        self.command = command
+        self.client = client
+
+    def run(self):
+        print(self.command)
+        try:
+            answer = self.client.query(self.command)
+        except pyvisa.errors.VisaIOError:
+            answer = ""
+        self.finished.emit(answer)
+        
+
 class TestCommands(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -36,15 +53,11 @@ class TestCommands(QMainWindow):
         self.active_ports = []
         self.client = None
         self.setWindowTitle(QApplication.translate("create_dev_window", "Тест команд"))
-        
-        self.read_ans_thread = threading.Thread(target=self.read_answer_new)
-        self.read_ans_thread.daemon = True
-        
         self.timer_for_scan_com_port = QTimer(self)
         self.timer_for_scan_com_port.timeout.connect(self._scan_com_ports)
         self.timer_for_scan_com_port.start(100)
+        self.is_reading = False 
         
-
         layout = QGridLayout()
         self._create_widgets(layout)
         self.main_widget.setLayout(layout)
@@ -61,7 +74,7 @@ class TestCommands(QMainWindow):
 
         self.answ_label = QLabel(QApplication.translate("create_dev_window", "Ответ:"), self)
         layout.addWidget(self.answ_label, 1, 0)
-        self.answer = QLineEdit(self)
+        self.answer = QTextEdit(self)
         self.answer.setText("-------")
         self.answer.setReadOnly(True)
         layout.addWidget(self.answer, 1, 1)
@@ -116,15 +129,28 @@ class TestCommands(QMainWindow):
                 self.answ_label.setText(QApplication.translate("create_dev_window", "Принимаем"))
                 self.entry.setEnabled(False)
                 self.send_button.setEnabled(False)
-                self.read_ans_thread = threading.Thread(target=self.read_answer_new)
-                self.read_ans_thread.daemon = True
-                self.client.write(self.entry.text())
                 self.timer_for_scan_com_port.stop()
+                self.is_reading = True
+                self.read_ans_thread = queryCommand(self.client, self.entry.text())
+                self.read_ans_thread.finished.connect(self.callback_query)
                 self.read_ans_thread.start()
 
             except Exception as e:
                 logging.error(f"Error in send_action: {e}")
                 self._handle_client_error()
+    def callback_query(self, answer):
+        self.is_reading = False
+        print("callback_query", answer)
+        if answer:
+            self.answer.setStyleSheet(READY_STYLE_BORDER)
+        else:
+            answer = QApplication.translate("create_dev_window","Истек таймаут")
+            self.answer.setStyleSheet(NOT_READY_STYLE_BORDER)
+
+        self.answer.setText(answer)
+        self.entry.setEnabled(True)
+        self.send_button.setEnabled(True)
+        self.answ_label.setText(QApplication.translate("create_dev_window", "Ответ"))
 
     def _update_client(self):
         current_port = self.source_combo.currentText()
@@ -132,6 +158,7 @@ class TestCommands(QMainWindow):
             rm = pyvisa.ResourceManager()
             try:
                 self.client = rm.open_resource(current_port)
+                print(f"{self.client=}")
             except:
                 self._handle_client_error()
         else:
@@ -142,32 +169,14 @@ class TestCommands(QMainWindow):
     def _handle_client_error(self):
         self.client = None
         self.source_combo.setStyleSheet(NOT_READY_STYLE_BORDER)
-
-    def read_answer_new(self):
-        self.entry.setEnabled(False)
-        try:
-            answer = self.client.read()
-            self.answer.setStyleSheet(READY_STYLE_BORDER)
-        except:
-            answer = QApplication.translate("create_dev_window","Истек таймаут")
-            self.answer.setStyleSheet(NOT_READY_STYLE_BORDER)
-        if "..." in self.answ_label.text():
-            self.answ_label.setText(QApplication.translate("create_dev_window", "Принимаем") )
-        else:
-            self.answ_label.setText(self.answ_label.text() + ".")
-
-            self.answer.setText(answer)
-        self.entry.setEnabled(True)
-        self.send_button.setEnabled(True)
-        self.answ_label.setText(QApplication.translate("create_dev_window", "Ответ"))
-        
+     
     def retranslateuI(self, creat_window):
         _translate = QApplication.translate
         creat_window.setWindowTitle(_translate("creat_dev_window", "Тест команд"))
 
     def _scan_com_ports(self):
         self.timer_for_scan_com_port.stop()
-        if not self.read_ans_thread.is_alive():
+        if not self.is_reading:
             local_list_com_ports = []
             for port in instrument.get_visa_resourses():
                 try:
@@ -199,14 +208,22 @@ class TestCommands(QMainWindow):
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger(__name__)
-    FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
-    console = logging.StreamHandler()
-    console.setLevel(logging.ERROR)
-    console.setFormatter(logging.Formatter(FORMAT))
-    logging.basicConfig(handlers=[console], level=logging.DEBUG)
 
+    rm = pyvisa.ResourceManager()
+    name = rm.list_resources()
+
+    #using with allows to close explicitly the resource at the end of the script
+    with rm.open_resource(name[0]) as Power_Analyser:
+        print(Power_Analyser)
+
+        Power_Analyser.timeout = 25000
+
+        Data = Power_Analyser.query(":DDS:ARB:DAC16:BIN#504096")
+        print(Data)
+
+    '''
     app = QApplication(sys.argv)
     window = TestCommands()
     window.show()
     sys.exit(app.exec_())
+    '''
