@@ -463,11 +463,16 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.open_installation_button.setObjectName("open_installation_button")
         self.add_device_button = QtWidgets.QAction(base_window)
         self.add_device_button.setObjectName("add_device_button")
+
+        self.convert_buf_button = QtWidgets.QAction(base_window)
+
         self.menu.addAction(self.save_installation_button)
         self.menu.addAction(self.save_installation_button_as)
         self.menu.addAction(self.open_installation_button)
         self.menu.addSeparator()
         self.menu.addAction(self.add_device_button)
+        self.menu.addSeparator()
+        self.menu.addAction(self.convert_buf_button)
         self.menubar.addAction(self.menu.menuAction())
 
         self.set = QtWidgets.QMenu(self.menubar)
@@ -567,3 +572,6 @@ class Ui_Installation(QtWidgets.QMainWindow):
         
         self.label_time.setText(_translate(
             "settings_save", ""))
+        
+        self.convert_buf_button.setText(_translate(
+            "settings_save", "Сохранить результаты из buf файла"))

@@ -212,6 +212,8 @@ class baseInstallation:
 
     def answer_save_results(self, status, output_file_path, message = None):
 
+        print(f"{message=}")
+
         self.way_to_save_file = output_file_path
 
         if status == True:
@@ -232,7 +234,7 @@ class baseInstallation:
         else:
             text = QApplication.translate('base_install',"Не удалось сохранить результаты в {file}")
             if message is not None:
-                text+="\n" + message
+                text+="\n" + str(message)
             text = text.format(file = self.way_to_save_file)
             self.add_text_to_log(
                 text=text,

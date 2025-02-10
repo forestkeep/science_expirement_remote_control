@@ -29,6 +29,7 @@ from Handler_manager import messageBroker
 from interface.installation_window import Ui_Installation
 from schematic_exp.construct_diagramexp import expDiagram
 from schematic_exp.exp_time_line import callStack
+from saving_data.Parse_data import process_and_export, type_save_file
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +140,7 @@ class installation_class(experimentControl, analyse):
         self.installation_window.installation_close_signal.connect(self.close_other_windows)
         self.installation_window.general_settings.triggered.connect(self.open_general_settings)
 
+        self.installation_window.convert_buf_button.triggered.connect(self.convert_buf_file)
 
         self.installation_window.save_installation_button.triggered.connect(
             self.push_button_save_installation
@@ -697,6 +699,43 @@ class installation_class(experimentControl, analyse):
                                         # self.get_device_widget(device.get_name()).click_change_ch(num = chann.number, is_open = True)
                             device.set_parameters(channel_name=chann.get_name(), parameters=parameters)
             self.get_device_widget(device.get_name()).update_widgets()
+
+    def convert_buf_file(self):
+        default_path_buf = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")
+
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        buf_file, ans = QtWidgets.QFileDialog.getOpenFileName(
+            self.installation_window,
+            "Выберите buf файл",
+            default_path_buf,
+            "text(*.txt)",
+            options=options,
+        )
+        if ans == "text(*.txt)":
+            options = QtWidgets.QFileDialog.Options()
+            options |= QtWidgets.QFileDialog.DontUseNativeDialog
+            result_file, ans = QtWidgets.QFileDialog.getSaveFileName(
+                self.installation_window,
+                QApplication.translate('base_install',"укажите путь сохранения результатов"),
+                "",
+                "Книга Excel (*.xlsx)",
+                #"Text Files(*.txt);; Книга Excel (*.xlsx);;Origin (*.opju)",
+                options=options,
+            )
+            if result_file:
+                if ans == "Книга Excel (*.xlsx)":
+                    process_and_export(
+                    buf_file,
+                    result_file,
+                    type_save_file.excel,
+                    False,
+                    self.answer_save_results
+                )
+            else:
+                print("не выбран файл сохранения результатов")
+        else:
+            print("Не выбран баф файл")
 
 if __name__ == "__main__":
     import logging
