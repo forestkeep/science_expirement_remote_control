@@ -386,6 +386,9 @@ class base_device():
     def set_debug(self, state):
         self.is_debug = state
 
+    def confirm_parameters(self):
+        pass
+
     def create_channel_array(self):
         channels = []
         channels = self.create_act_channel_array(channels)

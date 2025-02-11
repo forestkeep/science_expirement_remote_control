@@ -211,8 +211,7 @@ class AdapterException(Exception):
         super().__init__(message)
 
 if __name__ == "__main__":
-    print(instrument.get_resourses())
-    client = Serial(instrument.get_resourses()[0], 9600, timeout=1000)
-    client2 = Serial("COM8", 9600, timeout=1000)
-    client.write(1254)
+    client1 = Adapter("COM3", 9600, 1000)
+    print(client1.query("MEAS:T?\n"))
+    
     pass

@@ -40,10 +40,10 @@ class queryCommand(QThread):
         print(self.command)
         try:
             answer = self.client.query(self.command)
-        except pyvisa.errors.VisaIOError:
+        except Exception as e:
+            print(e)
             answer = ""
         self.finished.emit(answer)
-        
 
 class TestCommands(QMainWindow):
     def __init__(self):

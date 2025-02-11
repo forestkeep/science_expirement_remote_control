@@ -19,6 +19,7 @@ from Devices.RIGOL_DS1104Z import DS1104Z
 from Devices.sr830_class import sr830Class
 from Devices.ATF20B import ATF20B
 from Devices.matrixWps300s import matrixWps300s
+from Devices.pig_in_a_poke_device import pigInAPoke
 
 dict_device_class = {
                     "Maisheng": maishengPowerClass, 
@@ -30,7 +31,8 @@ dict_device_class = {
                     "DS1104Z" : DS1104Z,
                     "DS1052E" : DS1052E,
                     #"ATF20B" : ATF20B,
-                    "WPS300s" : matrixWps300s
+                    "WPS300s" : matrixWps300s,
+                    "pig_in_a_poke": pigInAPoke
                     }
 
 device_types = ["power suply", "oscilloscope", "Voltemeter", "signal generator"]
