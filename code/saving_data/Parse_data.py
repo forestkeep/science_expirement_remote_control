@@ -19,9 +19,9 @@ from datetime import datetime
 import pandas
 from pandas.io.excel import ExcelWriter
 from PyQt5.QtWidgets import QApplication
+from openpyxl import load_workbook
 
 logger = logging.getLogger(__name__)
-
 
 class osc_data:
     def __init__(self) -> None:
@@ -29,7 +29,6 @@ class osc_data:
         self.name = None
         self.time = None
         self.step = None
-
 
 class saved_data:
     """класс хранения данных для отдельно взятого канала устройства"""
@@ -41,18 +40,17 @@ class saved_data:
         self.data = {}
         self.osc_data = []
 
-
 class type_save_file(enum.Enum):
     txt = 1
     excel = 2
     origin = 3
-
 
 class saving_data:
     def __init__(self) -> None:
         saving_thread = threading.Thread(target=self.save_data)
 
     def __save_excell(self, output_file_path):
+        start1 = time.time()
         column_number = 0
         max_dev_data_len = 0
         max_dev_set_len = 0
@@ -133,62 +131,74 @@ class saving_data:
                         h += 1
                     d += 1
             h = 0
-
         waves_frames = []
+        max_rows = 950000-2
         for dev in self.devices:
-            waves_dict = {" ": [QApplication.translate("parse_data","Время") , QApplication.translate("parse_data","Шаг")]}
+            waves_dict = {" ": [QApplication.translate("parse_data", "Время"), QApplication.translate("parse_data", "Шаг")]}
 
             for wave in dev.osc_data:
-                key = wave.name
-                waves_dict[key] = [wave.time, wave.step]
-                for val in wave.data:
-                    waves_dict[key].append(val)
+                num_splits = (len(wave.data) // max_rows) + 1
+                for i in range(num_splits):
+                    key = wave.name + f"({i})"
+                    start_idx = i*max_rows
+                    end_idx = min((i+1)*max_rows, len(wave.data) )
+                    waves_dict[key] = [wave.time, wave.step]
+                    for j in range(start_idx, end_idx, 1):
+                        waves_dict[key].append(wave.data[j])
 
             if waves_dict != {" ": [QApplication.translate("parse_data","Время") , QApplication.translate("parse_data","Шаг")]}:
                 data = waves_dict
                 df = pandas.DataFrame(
                     dict([(k, pandas.Series(v)) for k, v in data.items()])
                 )
-                waves_frames.append(df)#TODO: если строк в данном дата фрейме больше 1000000 то нужно дробить его на несколько
-
-        #========================
-        for frame in waves_frames:
-            if len(frame) > 1000000:
-                raise Exception("число строк больше одного миллиона, сохранение в эксель невозможно.")
-        #========================
+                waves_frames.append(df)
 
         df = pandas.DataFrame(data_frame)
         waves_frames.insert(0, df)
         result_df = pandas.concat(waves_frames, axis=1)
 
-        daytime = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-
-        print(df.columns)
-
         if os.path.exists(output_file_path):
             mode = "a"
+            excel_writer = pandas.ExcelWriter(
+                output_file_path, 
+                engine='openpyxl', 
+                mode=mode,
+                if_sheet_exists='new'
+            )
         else:
             mode = "w"
+            excel_writer = pandas.ExcelWriter(
+                output_file_path, 
+                engine='openpyxl', 
+                mode=mode
+            )
+
         try:
-            with ExcelWriter(
-                output_file_path, engine="openpyxl", mode=mode
-            ) as excel_writer:
-                result_df.to_excel(excel_writer, sheet_name=daytime)
-        except PermissionError:
+            daytime = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+            result_df.to_excel(excel_writer, sheet_name=daytime, index=False)
+
+        except:
             logger.warning(
                 f"Эксель файл не записан {output_file_path=} {self.input_file=} меняем название"
             )
             output_file_path = output_file_path[:-5] + "(0).xlsx"
             for i in range(1, 100):
-                output_file_path = output_file_path[:-8] + f"({str(i)}).xlsx"
+                output_file_path = output_file_path[:-8] + f"({i}).xlsx"
                 if os.path.exists(output_file_path):
                     if i == 99:
                         pass
                     continue
                 else:
-                    with ExcelWriter(output_file_path, mode="w") as excel_writer:
-                        result_df.to_excel(excel_writer, sheet_name=daytime)
+                    mode = "w"
+                    excel_writer = pandas.ExcelWriter(
+                        output_file_path, 
+                        engine='openpyxl', 
+                        mode=mode
+                    )
+                    result_df.to_excel(excel_writer, sheet_name=daytime)
                     break
+        finally:
+            excel_writer.close()
 
         return output_file_path
 
@@ -407,6 +417,7 @@ class saving_data_processing:
                 status = False
                 pass
             self.adress_return(status, self.output_file_path, message)
+            print("конец потока")
         
 def process_and_export(
     input_file_path, output_file_path, output_type, is_delete_buf_file, func_result
@@ -420,12 +431,19 @@ def process_and_export(
     )
     save.set_adress_return(func_result)
     save.saving_data.start()
+
+import time
+
+start = time.time()
     
 def func_answer_test(status, output_file_path, message):
+    global start
     if status == True:  
         print(f"Результаты сохранены в {output_file_path}")
     else:
         print("Ошибка сохранения.", message)
+
+    print(f"Время выполнения {time.time() - start}")
 
 if __name__ == "__main__":
     input_file = "rig_test_data.txt"
