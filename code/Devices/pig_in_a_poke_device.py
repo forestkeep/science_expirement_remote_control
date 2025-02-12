@@ -106,8 +106,13 @@ class pigInAPoke(base_device):
         if self.key_to_signal_func:
             text = self.setting_window.command_text.toPlainText()
             text = text.split("\n")
+            commands = []
+            for command in text:
+                if command:
+                    command = command.replace("\\n", "\n")
+                    commands.append(command)
 
-            self.active_channel_meas.dict_buf_parameters["commands"] = (text)
+            self.active_channel_meas.dict_buf_parameters["commands"] = commands
             self.active_channel_meas.dict_buf_parameters["commands_file"] = (
                 self.setting_window.downloaded_file_lable.text()
             )
@@ -179,7 +184,6 @@ class pigInAPoke(base_device):
             is_correct = True
             for command in ch.dict_settable_parameters["commands"]:
                 print(f"{command=}")
-                command = "MEAS:T?\n"
                 answer = self.client.query(command, 1000)
                 if answer:
                     val = [f"{command}=" + str(answer)]
@@ -202,4 +206,3 @@ class pigInAPoke(base_device):
 
     def reset_test_mode( self ):
         self.is_test = False
-

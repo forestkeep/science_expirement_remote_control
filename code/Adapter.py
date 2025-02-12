@@ -124,6 +124,7 @@ class Adapter:
         '''timeout - ms'''
         if self.which_resourse == resourse.serial:
             try:
+                print("send", command)
                 self.client.write(command)
             except:
                 self.client.write(command.encode())
@@ -211,7 +212,10 @@ class AdapterException(Exception):
         super().__init__(message)
 
 if __name__ == "__main__":
-    client1 = Adapter("COM3", 9600, 1000)
-    print(client1.query("MEAS:T?\n"))
+    client1 = Adapter("COM12", 9600, 1000)
+    comm = "MEAS:T?\\n"
+    comm = comm.replace("\\n", "\n")
+    print(client1.query(comm))
+    fdr = r"drt\\n"
     
     pass
