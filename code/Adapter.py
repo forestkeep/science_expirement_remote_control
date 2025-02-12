@@ -120,11 +120,12 @@ class Adapter:
         else:
             raise AdapterException("unknown resource")
 
-    def query(self, command, timeout=False):
+    def query(self, command, timeout=False, end_symbol=False):
         '''timeout - ms'''
+        if end_symbol:
+            command = command + end_symbol
         if self.which_resourse == resourse.serial:
             try:
-                print("send", command)
                 self.client.write(command)
             except:
                 self.client.write(command.encode())
@@ -211,11 +212,3 @@ class AdapterException(Exception):
     def __init__(self, message):
         super().__init__(message)
 
-if __name__ == "__main__":
-    client1 = Adapter("COM12", 9600, 1000)
-    comm = "MEAS:T?\\n"
-    comm = comm.replace("\\n", "\n")
-    print(client1.query(comm))
-    fdr = r"drt\\n"
-    
-    pass

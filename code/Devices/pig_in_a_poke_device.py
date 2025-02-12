@@ -55,16 +55,6 @@ class pigInAPoke(base_device):
         self.setting_window.num_act_label.setParent(None)
         self.setting_window.num_act_enter.setParent(None)
 
-    def time_decorator(func):
-        def wrapper(*args, **kwargs):
-            start_time = time.time()
-            result = func(*args, **kwargs)
-            end_time = time.time()
-            print(f"Метод {func.__name__} - {end_time - start_time} с")
-            return result
-
-        return wrapper
-
     @base_device.base_show_window
     def show_setting_window(self, number_of_channel):
         #print(f"показываем окно настройки для канала {number_of_channel}")
@@ -108,8 +98,6 @@ class pigInAPoke(base_device):
             text = text.split("\n")
             commands = []
             for command in text:
-                if command:
-                    command = command.replace("\\n", "\n")
                     commands.append(command)
 
             self.active_channel_meas.dict_buf_parameters["commands"] = commands
@@ -136,7 +124,7 @@ class pigInAPoke(base_device):
             is_parameters_correct = self._is_correct_parameters()
 
         #print(f"{self.active_channel_act.dict_settable_parameters=} {self.active_channel_act}")
-        print(f"{self.active_channel_meas.dict_settable_parameters=} {self.active_channel_meas}")
+        #print(f"{self.active_channel_meas.dict_settable_parameters=} {self.active_channel_meas}")
 
         self.installation_class.message_from_device_settings(
             name_device=self.name,
@@ -183,13 +171,22 @@ class pigInAPoke(base_device):
 
             is_correct = True
             for command in ch.dict_settable_parameters["commands"]:
-                print(f"{command=}")
-                answer = self.client.query(command, 1000)
+                answer = self.client.query(command, 1000, "\n")
                 if answer:
-                    val = [f"{command}=" + str(answer)]
+                    val = [f"{command}raw=" + str(answer)]
+                    parameters.append(val)
+                    number_pattern = r'-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?'
+                    numbers = re.findall(number_pattern, str(answer))
+                    for index,nm in enumerate(numbers):
+                        try:
+                            nm = float(nm)
+                        except:
+                            pass
+                        val = [f"{command}{index}=" + str(nm)]
+                        parameters.append(val)
                 else:
                     val = [f"{command}=" + "fail"]
-                parameters.append(val)
+                    parameters.append(val)
 
             if is_correct:
                 ans = ch_response_to_step.Step_done

@@ -165,6 +165,7 @@ class saving_data:
                 mode=mode,
                 if_sheet_exists='new'
             )
+            
         else:
             mode = "w"
             excel_writer = pandas.ExcelWriter(

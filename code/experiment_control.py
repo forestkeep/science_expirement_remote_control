@@ -184,16 +184,12 @@ class experimentControl(analyse):
 
         for device in self.dict_active_device_class.values():
             for ch in device.channels:
-                print(device, ch)
                 buf_time = False
                 if ch.is_ch_active():
                     trig = device.get_trigger(ch)
-                    print(trig)
                     if trig == QApplication.translate('exp_flow', "Таймер"):
                         steps = device.get_steps_number(ch)
-                        print(f"{steps=}")
                         if steps is not False:
-                            print(device.get_trigger_value(ch), ch.base_duration_step)
                             buf_time = (
                                 steps
                                 * (device.get_trigger_value(ch) + ch.base_duration_step)
@@ -208,7 +204,6 @@ class experimentControl(analyse):
                 if buf_time is not False:
 
                     max_exp_time = max(max_exp_time, buf_time)
-        print(f"{max_exp_time=}")
 
         return max_exp_time
 
@@ -252,19 +247,26 @@ class experimentControl(analyse):
                             if ch.get_priority() < target_priority:
                                 target_execute = [device, ch]
                                 target_priority = ch.get_priority()
-        # if target_execute is not False:
-        #    print(f"{target_execute=}")
         return target_execute
     
     def update_parameters(self, data, entry, time):
             try:
                 device, channel = entry[0].split()
             except:
-                pass
+                device, channel = "unknown_dev_1", "unknown_ch-1"
             parameter_pairs = entry[1:]
             status = True
 
-            # checking number
+            if "pig_in_a_poke" in device:
+                #костыль, этот тип прибора обрабатываем отдельно, потому что знаем, 
+                #что в качестве первого параметра он всегда будет иметь строку
+                #и потом остальные значения не попадут в числовые отображаемые параметры см. ниже
+                new_pairs = []
+                for index, pair in enumerate(parameter_pairs):
+                    if (index+1)%2==0:
+                        new_pairs.append(pair)
+                parameter_pairs = new_pairs
+
             for parameter_pair in parameter_pairs:
                 name, value = parameter_pair[0].split("=")
                 if "wavech" in name:  # oscilloscope wave
@@ -279,6 +281,12 @@ class experimentControl(analyse):
                     try:
                         value = float(value)
                     except:
+                        # Этот блок необходим потому, что все полученные данные имеют одинаковую метку времени, а она записывается в отдельный массив
+                        # если хоть один из них не преобразовывается в число,
+                        # а другие преобразовываются. то в будущем возникнет сдвиг в данных.
+                        # Это не учтено при обработке.
+                        #TODO: проанализировать, можно ли преобразовывать данные в числа и добавлять в файл результатов, если хотя бы один из них не преобразуется в число
+                        #исправить это
                         status = False
                         break
             if status:
@@ -306,7 +314,6 @@ class experimentControl(analyse):
                 if "time" not in data[device][channel]:
                     data[device][channel]["time"] = []
                 data[device][channel]["time"].append(time)
-            #print(f"{data=}")
             return status, data
 
     def set_start_priorities(self):
@@ -328,7 +335,6 @@ class experimentControl(analyse):
         ch_done = {}
         status = True
         for dev, ch in self.get_active_ch_and_device():
-            # print(ch.number, "канал состояние")
 
             if ch.number in ch_done.values() and dev.get_name() in ch_done.keys():
                 continue
@@ -504,6 +510,8 @@ class experimentControl(analyse):
                             device.set_status_step(ch_name=ch.get_name(), status=False)
                             t = time.time()
                             ans_device = device.on_next_step(ch, repeat=3)
+
+                            ans_request = False
 
                             if ans_device == ch_response_to_step.Step_done:
                                 t = (
@@ -768,7 +776,6 @@ class experimentControl(analyse):
          
         self.meta_data_exp.exp_stop_time = time.time()
         
-        #self.meta_data_exp.print_meta_data()
         if self.graph_window is not None:
             self.graph_window.update_graphics(self.measurement_parameters, is_exp_stop = True)#сообщаем окну просмотра, что эксперимент завершен
 

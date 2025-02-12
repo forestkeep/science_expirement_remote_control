@@ -387,7 +387,9 @@ class base_device():
         self.is_debug = state
 
     def confirm_parameters(self):
-        pass
+        for ch in self.channels:
+            if ch.is_ch_active():
+                ch.step_index = -1
 
     def create_channel_array(self):
         channels = []
