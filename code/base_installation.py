@@ -210,40 +210,32 @@ class baseInstallation:
             self.type_file_for_result = False
         self.is_window_save_dialog_showing = False
 
-    def answer_save_results(self, status, output_file_path, message = None):
+    def answer_save_results(self, status, output_file_path, message = None, deleted_buf_file = False):
 
-        print(f"{message=}")
-
-        self.way_to_save_file = output_file_path
-
+        message_status = "ok"
+        text = ""
         if status == True:
-            if self.is_delete_buf_file == True:
+            if deleted_buf_file:
                 try:
                     text=QApplication.translate('base_install',"Результаты сохранены в {way}, файл {file} был удален")
-                    text = text.format(way = self.way_to_save_file, file = self.buf_file)
+                    text = text.format(way = output_file_path, file = deleted_buf_file)
                 except:
                     text=QApplication.translate('base_install',"Результаты сохранены в {way}")
-                    text = text.format(way = self.way_to_save_file)
-                self.add_text_to_log(
-                    text=text,
-                    status="ok",
-                )
+                    text = text.format(way = output_file_path)
             else:
-                text = QApplication.translate('base_install',"Результаты сохранены в {file}")
-                text = text.format(file = self.way_to_save_file)
-                self.add_text_to_log(
-                    text=text,
-                    status="ok",
-                )
+                text = QApplication.translate('base_install',"Результаты сохранены в {way}")
+                text = text.format(way = output_file_path)
         else:
-            text = QApplication.translate('base_install',"Не удалось сохранить результаты в {file}")
+            text = QApplication.translate('base_install',"Не удалось сохранить результаты в {way}")
             if message is not None:
                 text+="\n" + str(message)
-            text = text.format(file = self.way_to_save_file)
-            self.add_text_to_log(
+            text = text.format(way = output_file_path)
+            message_status = "err"
+
+        self.add_text_to_log(
                 text=text,
-                status="err"
-            )
+                status=message_status
+        )
 
     def save_results(self):
         if (

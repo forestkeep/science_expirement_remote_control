@@ -416,9 +416,11 @@ class saving_data_processing:
             except Exception as e:
                 message = e
                 status = False
-                pass
-            self.adress_return(status, self.output_file_path, message)
-            print("конец потока")
+            if self.is_delete_buf_file == False:
+                self.input_file_path = False
+                self.adress_return(status = status, output_file_path = self.output_file_path, message = message)
+            else:
+                self.adress_return(status = status, output_file_path = self.output_file_path, message = message, deleted_buf_file = self.input_file_path)
         
 def process_and_export(
     input_file_path, output_file_path, output_type, is_delete_buf_file, func_result
