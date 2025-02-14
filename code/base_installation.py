@@ -218,8 +218,12 @@ class baseInstallation:
 
         if status == True:
             if self.is_delete_buf_file == True:
-                text=QApplication.translate('base_install',"Результаты сохранены в {way}, файл {file} был удален")
-                text = text.format(way = self.way_to_save_file, file = self.buf_file)
+                try:
+                    text=QApplication.translate('base_install',"Результаты сохранены в {way}, файл {file} был удален")
+                    text = text.format(way = self.way_to_save_file, file = self.buf_file)
+                except:
+                    text=QApplication.translate('base_install',"Результаты сохранены в {way}")
+                    text = text.format(way = self.way_to_save_file)
                 self.add_text_to_log(
                     text=text,
                     status="ok",
