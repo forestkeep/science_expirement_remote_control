@@ -4,28 +4,26 @@ import os
 from device_creator.dev_creator import templates
 
 def validate_json_schema(file_path, templates):
-    # Чтение JSON файла
     with open(file_path, 'r') as file:
         data = json.load(file)
 
     device_type = data.get("device_type")
     if device_type not in templates:
-        return False, "Неверный device_type"
+        return False, "Неверный device_type", data
 
     template = templates[device_type]
 
     # Сравнение полей
     for key in template.keys():
         if key not in data:
-            return False, f"Отсутствует поле: {key}"
+            return False, f"Отсутствует поле: {key}", data
 
-        # Проверка вложенных словарей
         if isinstance(template[key], dict):
             for sub_key in template[key].keys():
                 if sub_key not in data[key]:
-                    return False, f"Отсутствует подполе: {sub_key} в поле {key}"
+                    return False, f"Отсутствует подполе: {sub_key} в поле {key}", data
 
-    return True, "JSON валиден"
+    return (True, "JSON валиден", data)
 
 def search_devices_json(directory) -> dict:
     """

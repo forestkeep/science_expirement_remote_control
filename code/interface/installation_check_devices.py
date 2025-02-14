@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class installation_Ui_Dialog(QtWidgets.QDialog):
     signal_to_main_window = QtCore.pyqtSignal(list, list)
 
-    def setupUi(self, Dialog, mother_window, available_devices, path_device_templates = None):
+    def setupUi(self, Dialog, mother_window, available_devices, json_devices = None):
         self.signal_to_main_window.connect(mother_window.message_from_new_installation)
         Dialog.setObjectName("Dialog")
         Dialog.resize(330, 243)
@@ -55,10 +55,8 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
             self.checkBoxes.append(checkBox)
             self.widget1_layout.addWidget(checkBox)
 
-        if path_device_templates is not None:
-            print(path_device_templates)
-            self.dict_device_templates = mother_window.search_devices_json(path_device_templates)
-            for name in self.dict_device_templates.keys():   
+        if json_devices is not None:
+            for name in json_devices:   
                 checkBox = QtWidgets.QCheckBox(name)
                 checkBox.setFont(font)
                 self.widget1_layout.addWidget(checkBox)

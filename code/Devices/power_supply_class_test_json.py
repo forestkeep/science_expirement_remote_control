@@ -17,11 +17,17 @@ import json
 
 from PyQt5.QtWidgets import QApplication
 
-from Classes import (base_ch, base_device, ch_response_to_step,
+try:
+    from Devices.Classes import (base_ch, base_device, ch_response_to_step,
                              not_ready_style_border, ready_style_border,
                              which_part_in_ch)
-from interfase.set_power_supply_window import Ui_Set_power_supply
-
+    from Devices.interfase.set_power_supply_window import Ui_Set_power_supply
+except:
+    from Classes import (base_ch, base_device, ch_response_to_step,
+                             not_ready_style_border, ready_style_border,
+                             which_part_in_ch)
+    from interfase.set_power_supply_window import Ui_Set_power_supply
+    
 logger = logging.getLogger(__name__)
 
 
@@ -74,8 +80,8 @@ class chMeasPowerSupply(base_ch):
 
 class power_supply(base_device):
 
-    def __init__(self, installation_class) -> None:
-        super().__init__("name", "type_connection", installation_class)
+    def __init__(self, name, installation_class) -> None:
+        super().__init__(name, "type_connection", installation_class)
         self.part_ch = (which_part_in_ch.bouth)
         self.setting_window = Ui_Set_power_supply()
         self.message_broker = installation_class.message_broker
@@ -916,12 +922,11 @@ class power_supply(base_device):
         self.open_port()
         self.client.write(self.select_CH_cmd.format(ch_num = channel))
 
-    def load_json(self, json_file: str):
+    def load_json(self, json_data: dict):
         try:
-            with open(json_file, 'r') as file:
-                data = json.load(file)
+                data = json_data
                 self.channels_number = int(data["number_channels"])
-                self.device_name = data["device_name"]
+                #self.device_name = data["device_name"]
                 channels_parameters = data["channels parameters"]
                 self.create_channels(channels_parameters=channels_parameters)
 
@@ -948,18 +953,19 @@ class power_supply(base_device):
                 self.select_CH_cmd = self.commands["select_channel"]["command"]
 
         except Exception as e:
-            logger.error(f"Не удалось загрузить команды из {json_file}: {e}")
+            logger.error(f"Не удалось загрузить команды из {json_data}: {e}")
 
     def create_channels(self, channels_parameters: dict):
         for ch in range(self.channels_number):
             setattr(self, f'ch{ch+1}_act', chActPowerSupply(ch+1,
                                                             self,
-                                                            max_current=channels_parameters["max_channels_current"][ch+1],
-                                                            max_voltage=channels_parameters["max_channels_voltage"][ch+1],
-                                                            max_power=channels_parameters["max_channels_power"][ch+1],
-                                                            min_step_A=channels_parameters["current_resolution"][ch+1],
-                                                            min_step_V=channels_parameters["voltage_resolution"][ch+1],
-                                                            min_step_W=channels_parameters["power_resolution"][ch+1],))
+                                                            max_current=float(channels_parameters["max_channels_current"][ch+1]),
+                                                            max_voltage=float(channels_parameters["max_channels_voltage"][ch+1]),
+                                                            max_power=float(channels_parameters["max_channels_power"][ch+1]),
+                                                            min_step_A=float(channels_parameters["current_resolution"][ch+1]),
+                                                            min_step_V=float(channels_parameters["voltage_resolution"][ch+1]),
+                                                            min_step_W=float(channels_parameters["power_resolution"][ch+1])
+                                                            ))
             setattr(self, f'ch{ch+1}_meas', chMeasPowerSupply(ch+1, self))
         self.channels = self.create_channel_array()
 
@@ -1008,9 +1014,10 @@ if __name__ == "__main__":
     import sys
     app = QApplication(sys.argv)
     msg = messageBrokerFake()
+    data = json.load(open("Devices\JSONDevices\device_config_test.json", "r"))
     fake_inst = install_fake(msg)
     test_block = power_supply(fake_inst)
-    test_block.load_json("Devices\JSONDevices\device_config_test.json")
+    test_block.load_json(data)
 
     for cmd in test_block.commands:
         print(cmd)

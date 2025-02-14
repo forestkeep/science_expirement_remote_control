@@ -368,7 +368,6 @@ class baseInstallation:
                     self.dict_active_device_class[key_dev] = (dev)
                     new_added_device[key_dev] = (dev)
 
-                    #self.current_installation_list.append(key_dev)
                     number_device = number_device + 1
                 except:
                     logger.debug("под прибор |" + key + "| не удалось создать экземпляр")

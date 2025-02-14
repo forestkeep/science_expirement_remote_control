@@ -5,10 +5,9 @@ import os
 from PyQt5 import QtWidgets
 
 class localDeviceControl(QtWidgets.QWidget):
-    def __init__(self, json_file):
+    def __init__(self, json_data):
         super().__init__()
-        with open(json_file, 'r') as file:
-            self.device_data = json.load(file)
+        self.device_data = json_data
         self.setWindowTitle(self.get_device_name())
         self.init_ui()
 

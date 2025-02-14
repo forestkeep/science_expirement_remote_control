@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class Ui_Selectdevice(QtWidgets.QDialog):
     signal_to_main_window = QtCore.pyqtSignal(str)
 
-    def setupUi(self, Selectdevice, mother_window, path_device_templates = None):
+    def setupUi(self, Selectdevice, mother_window, JSON_devices = None):
         self.signal_to_main_window.connect(
             mother_window.message_from_new_device_local_control
         )
@@ -46,16 +46,14 @@ class Ui_Selectdevice(QtWidgets.QDialog):
 
         self.pushButton.clicked.connect(lambda: self.send_signal(self.pushButton.text()))
 
-        if path_device_templates is not None:
-            print(path_device_templates)
-            self.dict_device_templates = mother_window.search_devices_json(path_device_templates)
-            for name in self.dict_device_templates.keys():   
+        if JSON_devices is not None:
+            for name in JSON_devices:   
                 button = QtWidgets.QPushButton(name)
                 button.setFont(font)
                 self.verticalLayout.addWidget(button)
                 self.generic_buttons.append(button)
 
-                button.clicked.connect(lambda checked, key=name: self.send_signal(self.dict_device_templates[key])) 
+                button.clicked.connect(lambda checked, key=name: self.send_signal(key)) 
 
     def retranslateUi(self, Selectdevice):
         _translate = QtCore.QCoreApplication.translate
@@ -64,4 +62,3 @@ class Ui_Selectdevice(QtWidgets.QDialog):
      
     def send_signal(self, text):
         self.signal_to_main_window.emit(text)
-

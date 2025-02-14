@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 version_app = "1.0.3"
 class installation_class(experimentControl, analyse):
-    def __init__(self, settings, dict_device_class, version) -> None:
+    def __init__(self, settings, dict_device_class,JSON_dict_device_class = None, version = None) -> None:
         super().__init__()
         logger.info("запуск установки")
 
@@ -44,6 +44,7 @@ class installation_class(experimentControl, analyse):
         self.load_settings()  # reading settings
 
         self.dict_device_class   = dict_device_class
+        self.JSON_dict_device_class = JSON_dict_device_class
 
         self.timer_for_pause_exp = QTimer()
         self.timer_for_pause_exp.timeout.connect(lambda: self.pause_actions())
@@ -101,13 +102,13 @@ class installation_class(experimentControl, analyse):
 
         return wrapper
 
-    def reconstruct_installation(self, installation_list):
+    def reconstruct_installation(self, installation_list, json_devices = None):
         """Reconstruct installation from list of device names"""
         self.dict_active_device_class = {}
         self.graph_window = None
         self.measurement_parameters = {}
-
-        for i, device_name in enumerate(installation_list):
+        i = 0
+        for device_name in installation_list:
             try:
                 device = self.dict_device_class[device_name](
                     name=f"{device_name}_{i+1}", installation_class=self
@@ -115,7 +116,20 @@ class installation_class(experimentControl, analyse):
                 self.dict_active_device_class[f"{device_name}_{i+1}"] = device
             except Exception as e:
                 logger.error(f"Failed to create instance of {device_name} {e}")
-                
+            i += 1
+
+        if json_devices:
+            for name, data in json_devices.items():
+                try:
+                    device_class = self.JSON_dict_device_class[ data['device_type'] ](
+                        name=f"{name}_{i+1}", installation_class=self
+                        )
+                    device_class.load_json(data)
+                    self.dict_active_device_class[f"{name}_{i+1}"] = device_class
+                except Exception as e:
+                    logger.error(f"Failed to create instance of {name} {e}")
+                i += 1
+
         self.exp_diagram = expDiagram()
         self.exp_call_stack = callStack()
         

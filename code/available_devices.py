@@ -20,6 +20,7 @@ from Devices.sr830_class import sr830Class
 from Devices.ATF20B import ATF20B
 from Devices.matrixWps300s import matrixWps300s
 from Devices.pig_in_a_poke_device import pigInAPoke
+from Devices.power_supply_class_test_json import power_supply
 
 dict_device_class = {
                     "Maisheng": maishengPowerClass, 
@@ -34,6 +35,8 @@ dict_device_class = {
                     "WPS300s" : matrixWps300s,
                     "pig_in_a_poke": pigInAPoke
                     }
+JSON_dict_device_class = {
+	                "power_supply": power_supply
+}
 
-device_types = ["power suply", "oscilloscope", "Voltemeter", "signal generator"]
-
+device_types = ["power_suply", "oscilloscope", "Voltemeter", "signal generator"]

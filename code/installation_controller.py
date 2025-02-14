@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import QApplication, QMessageBox
 import qdarktheme
 
 import interface.info_window_dialog
-from available_devices import dict_device_class
+from available_devices import dict_device_class, JSON_dict_device_class
 from device_creator.dev_creator import deviceCreator
 from device_creator.test_commands import TestCommands
 from device_creator.dev_template import templates
@@ -60,9 +60,9 @@ class MyWindow(QtWidgets.QMainWindow):
 
         json_devices = search_devices_json(self.directory_devices)
         for device, file_path in json_devices.items():
-            result, message = validate_json_schema(file_path, templates)
+            result, message, data = validate_json_schema(file_path, templates)
             if result:
-                self.JSON_devices[device] = file_path
+                self.JSON_devices[device] = data
             print(device,result, message)
 
         self.graph_window   = None
@@ -73,6 +73,7 @@ class MyWindow(QtWidgets.QMainWindow):
         super().__init__()
 
         self.dict_device_class = dict_device_class
+        self.JSON_dict_device_class = JSON_dict_device_class
         self.available_dev = list(self.dict_device_class.keys())
 
         self.ui = Ui_MainWindow(version = VERSION_APP, main_class=self)
@@ -86,9 +87,10 @@ class MyWindow(QtWidgets.QMainWindow):
         self.cur_install = installation_class(
             settings=self.settings, 
             dict_device_class=self.dict_device_class,
+            JSON_dict_device_class = self.JSON_dict_device_class,
             version = VERSION_APP
         )
-        self.current_installation_list = []
+        #self.current_installation_list = []
 
         #======================languages load==========================
 
@@ -187,11 +189,12 @@ class MyWindow(QtWidgets.QMainWindow):
         self.select_local_device = QtWidgets.QDialog()
         self.ui_window_local_device = Ui_Selectdevice()
         
-        self.ui_window_local_device.setupUi(self.select_local_device, self, self.directory_devices)
+        self.ui_window_local_device.setupUi(self.select_local_device, self, self.JSON_devices.keys())
         self.select_local_device.show()
 
     def set_json_device_directory(self, directory):
         self.directory_devices = directory
+
 
     def choice_json_devices_directory(self):
         options = QtWidgets.QFileDialog.Options()
@@ -209,17 +212,20 @@ class MyWindow(QtWidgets.QMainWindow):
         else:
             self.new_window = QtWidgets.QDialog()
             self.ui_window = installation_Ui_Dialog()
-            self.ui_window.setupUi(self.new_window, self, self.available_dev, self.directory_devices)
+            self.ui_window.setupUi(self.new_window, self, self.available_dev, self.JSON_devices.keys())
             # self.key_to_new_window_installation = True
             self.new_window.show()
 
     def message_from_new_installation(self, device_list, json_device_list):
         if device_list or json_device_list:
+
+            json_dev = {}
+            for dev in json_device_list:
+                json_dev[dev] = self.JSON_devices[dev]
+
             self.key_to_new_window_installation = True
-            self.current_installation_list = device_list
-            self.cur_install.reconstruct_installation(
-                self.current_installation_list
-            )
+            #self.current_installation_list = device_list
+            self.cur_install.reconstruct_installation(device_list, json_dev)
             self.cur_install.show_window_installation()
 
             if self.ui.is_design_mode:
@@ -253,10 +259,10 @@ class MyWindow(QtWidgets.QMainWindow):
                 self.dict_active_local_devices[name].setupUi()
                 self.dict_active_local_devices[name].show()
             else:
-                if os.path.exists(name):
-                    answer, message = validate_json_schema(name, templates=templates)
+                if name:
+                    answer = True
                     if answer:
-                        self.dict_active_local_devices[name] = localDeviceControl(name)
+                        self.dict_active_local_devices[name] = localDeviceControl(self.JSON_devices[name])
                         self.dict_active_local_devices[name].show()
                     else:
                         QMessageBox.critical(None, QApplication.translate('device_creator',"Ошибка"), QApplication.translate('device_creator',"Формат файла не верен, создайте файл прибора с помощью конструктора."))
