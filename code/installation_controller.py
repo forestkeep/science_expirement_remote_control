@@ -54,7 +54,16 @@ class MyWindow(QtWidgets.QMainWindow):
             "exp_control" + VERSION_APP,
         )
         current_dir =os.path.dirname(os.path.realpath(__file__))
-        self.directory_devices = os.path.join(current_dir, "Devices", "JSONDevices")
+        #self.directory_devices = os.path.join(current_dir, "Devices", "JSONDevices")#for tests
+        self.directory_devices = os.path.join(current_dir, "my_devices")
+        self.JSON_devices = {}
+
+        json_devices = search_devices_json(self.directory_devices)
+        for device, file_path in json_devices.items():
+            result, message = validate_json_schema(file_path, templates)
+            if result:
+                self.JSON_devices[device] = file_path
+            print(device,result, message)
 
         self.graph_window   = None
         self.device_creator = deviceCreator()
@@ -62,8 +71,10 @@ class MyWindow(QtWidgets.QMainWindow):
         logger.warning(f"Start Version {VERSION_APP}, Admin {is_admin()}")
 
         super().__init__()
+
         self.dict_device_class = dict_device_class
         self.available_dev = list(self.dict_device_class.keys())
+
         self.ui = Ui_MainWindow(version = VERSION_APP, main_class=self)
         logger.debug("запуск программы")
         self.ui.setupUi(self)
@@ -179,18 +190,31 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui_window_local_device.setupUi(self.select_local_device, self, self.directory_devices)
         self.select_local_device.show()
 
+    def set_json_device_directory(self, directory):
+        self.directory_devices = directory
+
+    def choice_json_devices_directory(self):
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        ans = QtWidgets.QFileDialog.getExistingDirectory(
+            self,
+            QApplication.translate('base_install',"Выберите папку с приборами"),
+            options=options,
+        )
+        self.set_json_device_directory(ans)
+
     def open_installation_window(self):
         if self.key_to_new_window_installation:
             self.info_window(QApplication.translate( "MyWindow" , "установка уже собрана"))
         else:
             self.new_window = QtWidgets.QDialog()
             self.ui_window = installation_Ui_Dialog()
-            self.ui_window.setupUi(self.new_window, self, self.available_dev)
+            self.ui_window.setupUi(self.new_window, self, self.available_dev, self.directory_devices)
             # self.key_to_new_window_installation = True
             self.new_window.show()
 
-    def message_from_new_installation(self, device_list):
-        if device_list:
+    def message_from_new_installation(self, device_list, json_device_list):
+        if device_list or json_device_list:
             self.key_to_new_window_installation = True
             self.current_installation_list = device_list
             self.cur_install.reconstruct_installation(

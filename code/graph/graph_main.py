@@ -748,13 +748,12 @@ class graphMain(QObject):
         #блок проверки параметров
 
         block_parameters = ("time", "Select parameter")
-        check_main = not (string_x in block_parameters and string_y in block_parameters)
-        check_second = not (string_x in block_parameters and string_y2 in block_parameters)
+        check_main = not (string_x in block_parameters or string_y in block_parameters)
+        check_second = not (string_x in block_parameters or string_y2 in block_parameters)
 
         if not check_second and not check_main:
             print("block parameters error")
             return
-        
 
         #==========================================================================
         if obj is None:
@@ -780,13 +779,11 @@ class graphMain(QObject):
                     
                 if self.previous_y != None or is_multiple:
                     if self.stack_curve.get(string_y + string_x) is not None:
-                        print(f"задаем отрисовку {string_y + string_x} в блоке 1")
                         self.stack_curve[string_y + string_x].place_curve_on_graph(graph_field  = self.graphView,
                                                                                     legend_field = self.legend)
 
                         self.y_main_axis_label = self.stack_curve[string_y + string_x].y_param_name
                     else:
-                        print(f"создаем и рисуем кривую {string_y + string_x} в блоке 1 ")
                         x1, y1, x1_name, y1_name, name_device1, name_ch1, parameter_y1, parameter_x1 = self.calc_curve_parameter(string_x, string_y)
                         self.create_and_place_curve(y1, x1, name_device1, name_ch1, y1_name, x1_name,parameter_y1, parameter_x1, self.graphView, self.legend)
 
@@ -819,7 +816,6 @@ class graphMain(QObject):
 
             if self.previous_y2 != None or is_multiple:
                 if self.stack_curve.get(string_y2 + string_x) is not None:
-                    print(f"задаем отрисовку {string_y2 + string_x} в блоке 2")
 
                     self.stack_curve[string_y2 + string_x].place_curve_on_graph(graph_field  = self.p2,
                                                                                 legend_field = self.legend2)
@@ -828,7 +824,6 @@ class graphMain(QObject):
                     self.y_second_axis_label = self.stack_curve[string_y2 + string_x].y_param_name
 
                 else:
-                    print(f"создаем кривую {string_y2 + string_x} в блоке 2")
                     x2, y2, x2_name, y2_name, name_device2, name_ch2, parameter_y2, parameter_x2 = self.calc_curve_parameter(string_x, string_y2)
                     self.create_and_place_curve(y2, x2, name_device2, name_ch2, y2_name, x2_name, parameter_y2, parameter_x2, self.p2, self.legend2)
 
@@ -876,6 +871,7 @@ class graphMain(QObject):
     def calc_curve_parameter(self, string_x, string_y):
         device_y, ch_y, parameter_y = self.decode_name_parameters(string_y)
         device_x, ch_x, parameter_x = self.decode_name_parameters(string_x)
+        
         if (string_x == "time"and string_y != "time" and string_y != "Select parameter"):
                 x1_name = string_x
                 y1_name = string_y

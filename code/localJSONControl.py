@@ -84,9 +84,6 @@ class localDeviceControl(QtWidgets.QWidget):
         print(f"Executing command: {command_str}")
 
 if __name__ == "__main__":
-    stre = "{reer} yyyy {eeeee} 125"
-    print(re.findall(r'\{(.*?)\}', stre))
-    if False:
         app = QtWidgets.QApplication(sys.argv)
         window = localDeviceControl('device_config_test.json')
         window.resize(800, 600)

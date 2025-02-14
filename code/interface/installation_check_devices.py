@@ -17,9 +17,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 logger = logging.getLogger(__name__)
 
 class installation_Ui_Dialog(QtWidgets.QDialog):
-    signal_to_main_window = QtCore.pyqtSignal(list)
+    signal_to_main_window = QtCore.pyqtSignal(list, list)
 
-    def setupUi(self, Dialog, mother_window, available_devices):
+    def setupUi(self, Dialog, mother_window, available_devices, path_device_templates = None):
         self.signal_to_main_window.connect(mother_window.message_from_new_installation)
         Dialog.setObjectName("Dialog")
         Dialog.resize(330, 243)
@@ -47,12 +47,22 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
         font.setPointSize(12)
 
         self.checkBoxes = []
+        self.checkBoxes_create_dev = []
 
         for dev in available_devices:
-            self.checkBox = QtWidgets.QCheckBox(dev)
-            self.checkBox.setFont(font)
-            self.checkBoxes.append(self.checkBox)
-            self.widget1_layout.addWidget(self.checkBox)
+            checkBox = QtWidgets.QCheckBox(dev)
+            checkBox.setFont(font)
+            self.checkBoxes.append(checkBox)
+            self.widget1_layout.addWidget(checkBox)
+
+        if path_device_templates is not None:
+            print(path_device_templates)
+            self.dict_device_templates = mother_window.search_devices_json(path_device_templates)
+            for name in self.dict_device_templates.keys():   
+                checkBox = QtWidgets.QCheckBox(name)
+                checkBox.setFont(font)
+                self.widget1_layout.addWidget(checkBox)
+                self.checkBoxes_create_dev.append(checkBox)
 
         self.splitter.addWidget(self.widget1)
 
@@ -73,7 +83,11 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
 
     def send_signal(self):
         device_list = []
+        json_device_list = []
         for check in self.checkBoxes:
             if check.isChecked():
                 device_list.append(check.text())
-        self.signal_to_main_window.emit(device_list)
+        for check in self.checkBoxes_create_dev:
+            if check.isChecked():
+                json_device_list.append(check.text())
+        self.signal_to_main_window.emit(device_list, json_device_list)

@@ -27,7 +27,7 @@ def validate_json_schema(file_path, templates):
 
     return True, "JSON валиден"
 
-def search_devices_json(directory):
+def search_devices_json(directory) -> dict:
     """
     Scans the specified directory for .json files.
     
@@ -52,8 +52,8 @@ def search_devices_json(directory):
                     result[device_name] = file_path
     return result
 
-
 if __name__ == "__main__":
-    file_path = "device_config_test.json"
-    result, message = validate_json_schema(file_path, templates)
-    print(result, message)
+    json_devices = search_devices_json("Devices/JSONDevices")
+    for device, file_path in json_devices.items():
+        result, message = validate_json_schema(file_path, templates)
+        print(device,result, message)

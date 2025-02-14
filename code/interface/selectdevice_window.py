@@ -47,6 +47,7 @@ class Ui_Selectdevice(QtWidgets.QDialog):
         self.pushButton.clicked.connect(lambda: self.send_signal(self.pushButton.text()))
 
         if path_device_templates is not None:
+            print(path_device_templates)
             self.dict_device_templates = mother_window.search_devices_json(path_device_templates)
             for name in self.dict_device_templates.keys():   
                 button = QtWidgets.QPushButton(name)
