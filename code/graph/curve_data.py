@@ -253,6 +253,7 @@ class hystLoop(graphData):
         noise_level1 = self.threshold_mean_std(C)
         noise_level2 = self.threshold_median(C)
         noise_level = noise_level2
+        #TODO: сделать выбор порога ПОЛЬЗОВАТЕЛЕМ
 
         n = len(C)
 
