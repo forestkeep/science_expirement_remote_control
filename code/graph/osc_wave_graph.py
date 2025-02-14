@@ -88,9 +88,12 @@ class graphOsc:
         self.list_vert_curve = []
         self.initUI()
 
-    def update_dict_param(self, new: dict, is_exp_stop = False):
+    def update_dict_param(self, new: dict, is_exp_stop = False, is_remove_old = True):
         if new:
-            self.dict_param = new
+            if is_remove_old:
+                self.dict_param = new
+            else:
+                self.dict_param.update(new)
             channel_keys = self.extract_wavech_devices(self.dict_param)
             #print(f"{channel_keys=}")
 
@@ -222,8 +225,9 @@ class graphOsc:
                         text= QApplication.translate("GraphWindow","Выбранный шаг не является числом или равен нулю, проверьте столбец с шагом времени")
                     )
                     return
-                             
-                dev = {'import_data': {}}
+                
+
+                dev = {fileName: {}}
                 df = df[[col for col in df.columns if col in selected_channels]]
                 for col in selected_channels:
                     df[col] = (pd.to_numeric(df[col], errors='coerce'))
@@ -231,9 +235,9 @@ class graphOsc:
                 for col in selected_channels:
                     col_ = col.replace('(', '[').replace(')', ']') + ' wavech'
                     volt_val = np.array( df[col].tolist() )
-                    dev["import_data"][col] = {col_: {0 : volt_val}, "scale": [import_time_scale for i in range(len(volt_val))]}
+                    dev[fileName][col] = {col_: {0 : volt_val}, "scale": [import_time_scale for i in range(len(volt_val))]}
 
-                self.update_dict_param(dev)
+                self.update_dict_param(new = dev, is_remove_old = False)
                 self.new_dev_checked()
             
     def initUI(self):
@@ -669,8 +673,12 @@ class graphOsc:
                 self.key = True
 
     def new_dev_checked(self):
-        """функция считывает имя устройства, на основании имени перестраивает поле выбора каналов и осциллограмм"""
+        """функция считывает имя устройства, на основании имени перестраивает поле выбора каналов и осциллограмм, отмечает, чтобы построенные осциллограммы не отображались при новом построении"""
         if self.key:
+            for osc in self.stack_osc.values():
+                osc.is_draw = False
+                osc.current_highlight = False
+
             dev_name = self.choice_device.currentText()
 
             if dev_name == self.choice_device_default_text:
