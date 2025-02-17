@@ -924,6 +924,7 @@ class power_supply(base_device):
 
     def load_json(self, json_data: dict):
         try:
+                self.JSON_temp = json_data
                 data = json_data
                 self.channels_number = int(data["number_channels"])
                 #self.device_name = data["device_name"]

@@ -14,6 +14,7 @@ import os
 import sys
 import threading
 import time
+import json
 from datetime import datetime
 
 import qdarktheme
@@ -102,7 +103,7 @@ class installation_class(experimentControl, analyse):
 
         return wrapper
 
-    def reconstruct_installation(self, installation_list, json_devices = None):
+    def reconstruct_installation(self, installation_list: list, json_devices: dict = None):
         """Reconstruct installation from list of device names"""
         self.dict_active_device_class = {}
         self.graph_window = None
@@ -528,190 +529,145 @@ class installation_class(experimentControl, analyse):
             self.installation_window.setWindowTitle("Experiment control - " + fileName + " " + self.version_app)
 
     def extract_saved_installlation(self, fileName):
-        status, install_list = self.read_info_by_saved_installation(fileName)
+        status, buffer = self.read_info_by_saved_installation(fileName)
         self.show_window_installation()
         self.timer_open = QTimer()
-        self.timer_open.timeout.connect(lambda: self.timer_open_timeout(install_list))
+        self.timer_open.timeout.connect(lambda: self.timer_open_timeout(buffer))
         self.timer_open.start(800)
 
-    def timer_open_timeout(self, install_list):
+    def timer_open_timeout(self, buffer):
         self.timer_open.stop()
-        self.add_parameter_devices(install_list)
+        self.add_parameter_devices(buffer)
 
     # Saving data functions
 
-    def write_data_to_save_installation_file(self, way):
-        with open(way, "w") as file:
-            file.write(str(len(self.dict_active_device_class.keys())))
-            for dev in self.dict_active_device_class.keys():
-                file.write("|")
-                file.write(dev[0 : len(dev) : 1])
-            file.write("\n")
+    def write_data_to_save_installation_file(self, file_path: str):
 
-            for device_class in self.dict_active_device_class.values():
+        """
+        Сохраняет данные об установке устройств в JSON файл.
 
-                file.write("Настройки " + str(device_class.get_name()) + "\r")
-                settings = device_class.get_settings()
-                for set, key in zip(settings.values(), settings.keys()):
-                    file.write(str(key) + "|" + str(set) + "\r")
+        Args:
+            file_path (str): Путь к файлу для сохранения данных.
+        """
 
-                for ch in device_class.channels:
-                    file.write("Настройки " + str(ch.get_name()) + "\r")
-                    if ch.is_ch_active():
-                        if (
-                            self.get_channel_widget(
-                                device_class.get_name(), ch.get_number()
-                            ).label_settings_channel.text()
-                            == QApplication.translate('main install',"Не настроено")
-                        ):
-                            file.write("Не настроено" + "\n")
-                        else:
-                            settings = ch.get_settings()
-                            for set, key in zip(settings.values(), settings.keys()):
-                                file.write(str(key) + "|" + str(set) + "\r")
-                    else:
-                        file.write("not active" + "\n")
-                # file.write("--------------------\n")
+        install_dict: dict[str, dict[str, any]] = {}
 
-    def read_info_by_saved_installation(self, filename):
-        logger.info(f"парсим файл {filename}")
-        with open(filename, "r") as file:
-            buffer = file.readlines()
+        for device_class in self.dict_active_device_class.values():
 
-        for i in range(len(buffer)):
-            buffer[i] = buffer[i][:-1]
-        buffer[0] = buffer[0].split("|")
-        new_installation_list = {}
-        count = 0
-        for device in buffer[0][1::]:
-            if device[:-2] not in self.dict_device_class.keys():
-                logger.warning(
-                    rf"ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку"
-                )
-                text = QApplication.translate('main install', "ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку")
-                text = text.format(device = device)
-                self.add_text_to_log(
-                    text = text,
-                    status="err",
-                )
-                self.show_critical_window(
-                    message=QApplication.translate('main install',"Ошибка при открытии сохраненной установки.\n Вероятно, содержимое файла имеет не верный формат.")
-                )
-                raise ValueError(
-                    rf"ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку"
-                )
-            else:
-                # создаем в качестве значения список, сюда поместим словари с каналами в виде ключей
-                new_installation_list[device] = {}
-                new_installation_list[device]["set"] = []
-            count += 1
+            dev_name = device_class.get_name()
+            install_dict[dev_name] = {"settings": device_class.get_settings(), "channels": {}}
 
-        settings_devices = []
-        is_set_dev_added = False
-        adding_set_dev = False
-        adding_set_ch = False
-        is_create_ch = True
-        is_add_info = False
-        for i in range(1, len(buffer), 1):
+            if hasattr(device_class, "JSON_temp"):
+                install_dict[dev_name]["JSON_temp"] = device_class.JSON_temp
 
-            if "Настройки" in buffer[i]:
-                name = buffer[i].split()[1]
-                if "ch-" in name:
-                    name_ch = name
-                    adding_set_ch = True
-                    adding_set_dev = False
-                    new_installation_list[name_dev][name_ch] = {}
-                    new_installation_list[name_dev][name_ch]["set"] = []
-                    logger.info("настройки канала при считывании в файл " + name_ch)
+            for ch in device_class.channels:
+                ch_name = ch.get_name()
+                install_dict[dev_name]["channels"][ch_name] = {"settings": ch.get_settings()}
+
+                is_ch_active = ch.is_ch_active()
+                widget = self.get_channel_widget(dev_name, ch.get_number())
+                state_text = widget.label_settings_channel.text()
+
+                if is_ch_active:
+                    install_dict[dev_name]["channels"][ch_name]["state"] = (
+                        "active" if state_text != QApplication.translate('main install', "Не настроено") else "not settings"
+                    )
                 else:
-                    name_dev = name
-                    adding_set_dev = True
-                    adding_set_ch = False
-                    logger.info("настройки прибора при считывании в файл " + name_dev)
+                    install_dict[dev_name]["channels"][ch_name]["state"] = "not active"
+
+        try:
+            with open(file_path, 'w') as outfile:
+                json.dump(install_dict, outfile, ensure_ascii=False, indent=4)
+        except Exception as e:
+            print(f"Ошибка при записи в файл: {e}")
+
+    def read_info_by_saved_installation(self, filename: str) -> tuple[bool, dict[str, any]]:
+
+        """
+        Читает информацию об установке из сохраненного JSON файла.
+        Args:
+            filename (str): Путь к файлу.
+        Returns:
+            Tuple[bool, Dict[str, Any]]: Кортеж, содержащий статус (True в случае успеха) и данные из файла.
+        """
+
+        try:
+            with open(filename, "r") as file:
+                buffer: dict[str, any] = json.load(file)
+
+        except FileNotFoundError:
+            logger.error(f"Файл {filename} не найден.")
+            return False, {}
+
+        except json.JSONDecodeError:
+            logger.error(f"Ошибка декодирования JSON в файле {filename}.")
+            return False, {}
+
+        except Exception as e:
+            logger.error(f"Произошла ошибка при чтении файла: {e}")
+            return False, {}
+
+        installation_list: list[str] = []
+        json_devices: dict[str, any] = {}
+
+        for device, data in buffer.items():
+            device_name = device[:-2]
+            if "JSON_temp" in data:
+                json_devices[device_name] = data["JSON_temp"]
+            else:
+                installation_list.append(device_name)
+
+        self.dict_active_device_class.clear()
+        self.message_broker.clear_all()
+        logger.info(f"Закрыто окно установки {self.installation_window}, реконструируем новое")
+
+        self.close_window_installation()
+
+        self.reconstruct_installation(installation_list, json_devices)
+
+
+        return True, buffer
+
+    def add_parameter_devices(self, buffer: dict[str, any]):
+
+        """
+        Добавляет параметры устройств и каналов на основе данных из буфера.
+        Args:
+            buffer (Dict[str, Any]): Словарь с данными об устройствах и каналах.
+        """
+
+        for key, data in buffer.items():
+
+            if key not in self.dict_active_device_class:
+                logger.warning(f"Устройство с ключом {key} не найдено в dict_active_device_class.")
                 continue
 
-            if adding_set_dev:
-                buf = buffer[i].split("|")
-                if len(buf) != 2:
-                    pass
-                else:
-                    new_installation_list[name_dev]["set"].append([buf[0], buf[1]])
 
-            elif adding_set_ch:
-                if buffer[i] == "not active" or buffer[i] == "Не настроено":
-                    new_installation_list[name_dev][name_ch]["set"].append(buffer[i])
-                else:
-                    buf = buffer[i].split("|")
-                    if len(buf) != 2:
-                        logger.warning(
-                            "Ошибка определения ключа и значение параметра"
-                            + str(buffer[i])
-                        )
-                        self.show_critical_window(
-                            message=QApplication.translate('main install',"Ошибка при открытии сохраненной установки.\n Вероятно, содержимое файла имеет не верный формат.")
-                        )
-                        raise ValueError(
-                            "Ошибка определения ключа и значение параметра"
-                            + str(buffer[i])
-                        )
-                    else:
-                        new_installation_list[name_dev][name_ch]["set"].append(
-                            [buf[0], buf[1]]
-                        )
-
-        if True:
-            new_install = []
-            for dev in new_installation_list.keys():
-                new_install.append(dev[:-2])
-
-            self.dict_active_device_class = {}
-            self.message_broker.clear_all()
-            logger.info(
-                f"закрыто окно установки {self.installation_window}, реконструируем новое"
-            )
-
-            self.close_window_installation()
-
-            self.reconstruct_installation(new_install)
-            return True, new_installation_list
-
-    def add_parameter_devices(self, new_installation_list):
-        for key in new_installation_list.keys():
             device = self.dict_active_device_class[key]
-            for ch in new_installation_list[key].keys():
-                if ch == "set":  
-                    for param in new_installation_list[key][ch]:
-                        device.dict_buf_parameters[param[0]] = param[1]
-                        device.dict_settable_parameters[param[0]] = param[1]
+            settings_dev = data["settings"]
+            device.set_parameters(settings_dev)
+
+
+            for ch in device.channels:
+
+                ch_name = ch.get_name()
+
+                if "channels" not in data or ch_name not in data["channels"]:
+
+                    log_message = QApplication.translate(
+                        'main install',
+                        f"Не найдены настройки канала {ch_name} у прибора {device.get_name()}"
+
+                    )
+                    self.add_text_to_log(text=log_message, status="err")
+
                 else:
-                    for chann in device.channels:
-                        if chann.get_name() == ch:
-                            parameters = {}
-                            set_open = True
-                            for param in new_installation_list[key][ch]["set"]:
-                                if param == "not active":
-                                    parameters[param] = ""
-                                    if set_open:
-                                        set_open = False
-                                        self.get_device_widget(device.get_name()).set_state_ch_widget(chann.number, False)
-                                        # self.get_device_widget(device.get_name()).click_change_ch(num = chann.number, is_open = False)
-                                elif param == QApplication.translate('main install',"Не настроено"):
-                                    parameters[param] = ""
-                                    if set_open:
-                                        set_open = False
-                                        self.get_device_widget(
-                                            device.get_name()
-                                        ).set_state_ch_widget(chann.number, True)
-                                        # self.get_device_widget(device.get_name()).click_change_ch(num = chann.number, is_open = True)
-                                else:
-                                    parameters[param[0]] = param[1]
-                                    if set_open:
-                                        set_open = False
-                                        self.get_device_widget(
-                                            device.get_name()
-                                        ).set_state_ch_widget(chann.number, True)
-                                        # self.get_device_widget(device.get_name()).click_change_ch(num = chann.number, is_open = True)
-                            device.set_parameters(channel_name=chann.get_name(), parameters=parameters)
+
+                    ch_data = data["channels"][ch_name]
+                    is_open = ch_data.get("state") != "not active"
+                    self.get_device_widget(device.get_name()).set_state_ch_widget(ch.number, is_open)
+                    device.set_parameters_ch(ch_name, ch_data)
+
             self.get_device_widget(device.get_name()).update_widgets()
 
     def convert_buf_file(self):
