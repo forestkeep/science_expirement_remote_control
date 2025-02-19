@@ -120,15 +120,15 @@ class installation_class(experimentControl, analyse):
             i += 1
 
         if json_devices:
-            for name, data in json_devices.items():
+            for dev in json_devices.values():
                 try:
-                    device_class = self.JSON_dict_device_class[ data['device_type'] ](
-                        name=f"{name}_{i+1}", installation_class=self
+                    device_class = self.JSON_dict_device_class[ dev.json_data['device_type'] ](
+                        name=f"{dev.name}_{i+1}", installation_class=self
                         )
-                    device_class.load_json(data)
-                    self.dict_active_device_class[f"{name}_{i+1}"] = device_class
+                    device_class.load_json(dev.json_data)
+                    self.dict_active_device_class[f"{dev.name}_{i+1}"] = device_class
                 except Exception as e:
-                    logger.error(f"Failed to create instance of {name} {e}")
+                    logger.error(f"Failed to create instance of {dev.name} {e}")
                 i += 1
 
         self.exp_diagram = expDiagram()

@@ -14,6 +14,7 @@ import logging
 import os
 import sys
 from logging.handlers import RotatingFileHandler
+from dataclasses import dataclass
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QTranslator
@@ -43,6 +44,14 @@ def is_admin():
         return ctypes.windll.shell32.IsUserAnAdmin()
     else:  # Linux/Unix
         return os.geteuid() == 0
+    
+@dataclass
+class devFile:
+    path: str
+    name: str
+    message: str
+    status: bool
+    json_data: dict
 
 class MyWindow(QtWidgets.QMainWindow):
     global VERSION_APP
@@ -56,17 +65,12 @@ class MyWindow(QtWidgets.QMainWindow):
         current_dir =os.path.dirname(os.path.realpath(__file__))
         #self.directory_devices = os.path.join(current_dir, "Devices", "JSONDevices")#for tests
         self.directory_devices = os.path.join(current_dir, "my_devices")
-        self.JSON_devices = {}
-
-        json_devices = search_devices_json(self.directory_devices)
-        for device, file_path in json_devices.items():
-            result, message, data = validate_json_schema(file_path, templates)
-            if result:
-                self.JSON_devices[device] = data
-            print(device,result, message)
+        self.JSON_devices = self.get_new_JSON_devs(self.directory_devices)
 
         self.graph_window   = None
         self.device_creator = deviceCreator()
+
+        self.select_local_device = None
 
         logger.warning(f"Start Version {VERSION_APP}, Admin {is_admin()}")
 
@@ -145,6 +149,14 @@ class MyWindow(QtWidgets.QMainWindow):
             self.lang,
         )
 
+    def get_new_JSON_devs(self, directory) -> dict:
+        new_devs = {}
+        json_devices = search_devices_json(directory)
+        for device, file_path in json_devices.items():
+            result, message, data = validate_json_schema(file_path, templates)
+            new_devs[device] = devFile(path=file_path, name=device, message=message, status=result, json_data=data)
+        return new_devs
+
     def open_graph_in_exp(self):
         if self.graph_window is not None:
             pass
@@ -186,15 +198,26 @@ class MyWindow(QtWidgets.QMainWindow):
         self.key_to_new_window_installation = False
 
     def open_select_device_window(self):
-        self.select_local_device = QtWidgets.QDialog()
-        self.ui_window_local_device = Ui_Selectdevice()
-        
-        self.ui_window_local_device.setupUi(self.select_local_device, self, self.JSON_devices.keys())
+        self.select_local_device = Ui_Selectdevice()
+        self.select_local_device.setupUi(self, self.JSON_devices)
+        self.select_local_device.open_new_path.clicked.connect(self.callback_select_device)
         self.select_local_device.show()
 
     def set_json_device_directory(self, directory):
         self.directory_devices = directory
 
+    def callback_select_device(self):
+        directory = self.choice_json_devices_directory()
+        if directory:
+            self.set_json_device_directory(directory)
+            self.JSON_devices = self.get_new_JSON_devs(directory)
+            print(self.JSON_devices.keys())
+            if self.select_local_device and self.select_local_device.isVisible():
+                self.select_local_device.reload_json_dev(self.JSON_devices)
+
+            if self.ui_window and self.ui_window.isVisible():
+                print(directory)
+                self.ui_window.reload_json_dev(self.JSON_devices)
 
     def choice_json_devices_directory(self):
         options = QtWidgets.QFileDialog.Options()
@@ -204,17 +227,19 @@ class MyWindow(QtWidgets.QMainWindow):
             QApplication.translate('base_install',"Выберите папку с приборами"),
             options=options,
         )
-        self.set_json_device_directory(ans)
+        if ans:
+            logger.info(f"Выбран путь {ans} для приборов")
+        return ans
 
     def open_installation_window(self):
         if self.key_to_new_window_installation:
             self.info_window(QApplication.translate( "MyWindow" , "установка уже собрана"))
         else:
-            self.new_window = QtWidgets.QDialog()
             self.ui_window = installation_Ui_Dialog()
-            self.ui_window.setupUi(self.new_window, self, self.available_dev, self.JSON_devices.keys())
-            # self.key_to_new_window_installation = True
-            self.new_window.show()
+            self.ui_window.setupUi(self, self.available_dev, self.JSON_devices)
+            self.ui_window.signal_to_main_window.connect(self.message_from_new_installation)
+            self.ui_window.open_new_path.clicked.connect(self.callback_select_device)
+            self.ui_window.show()
 
     def message_from_new_installation(self, device_list, json_device_list):
         if device_list or json_device_list:
