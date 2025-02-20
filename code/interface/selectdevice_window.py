@@ -21,11 +21,12 @@ logger = logging.getLogger(__name__)
 class Ui_Selectdevice(QtWidgets.QDialog):
     signal_to_main_window = QtCore.pyqtSignal(str)
 
-    def setupUi(self, mother_window, JSON_devices = None):
-        self.signal_to_main_window.connect(
-            mother_window.message_from_new_device_local_control
-        )
-        self.setObjectName("Selectdevice")
+    def __init__(self,JSON_devices = None):
+        super().__init__()
+        self.setupUi(JSON_devices)
+
+    def setupUi(self, JSON_devices):
+
         self.resize(234, 261)
         self.widget = QtWidgets.QWidget(self)
         self.widget.setGeometry(QtCore.QRect(10, 20, 221, 231))
@@ -39,6 +40,11 @@ class Ui_Selectdevice(QtWidgets.QDialog):
         self.pushButton.setFont(self.font)
         self.verticalLayout.addWidget(self.pushButton)
 
+        separator = QtWidgets.QFrame()
+        separator.setFrameShape(QtWidgets.QFrame.HLine)
+        separator.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.verticalLayout.addWidget(separator)
+
         self.generic_buttons = []
         self.generic_label_dev = []
 
@@ -50,7 +56,6 @@ class Ui_Selectdevice(QtWidgets.QDialog):
         self.open_new_path = QtWidgets.QPushButton()
         self.verticalLayout.addWidget( self.open_new_path )
 
-        not_correct_devices = []
         if JSON_devices is not None:
             self.reload_json_dev(JSON_devices)
         
@@ -100,4 +105,5 @@ class Ui_Selectdevice(QtWidgets.QDialog):
         self.uncorrect_label.setText(_translate("Dialog", "Нераспознанные приборы:"))
      
     def send_signal(self, text):
-        self.signal_to_main_window.emit(text)
+        self.choised_device = text
+        self.accept()

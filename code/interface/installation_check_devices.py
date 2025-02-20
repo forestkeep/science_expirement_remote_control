@@ -19,7 +19,11 @@ logger = logging.getLogger(__name__)
 class installation_Ui_Dialog(QtWidgets.QDialog):
     signal_to_main_window = QtCore.pyqtSignal(list, list)
 
-    def setupUi(self, mother_window, available_devices, json_devices = None):
+    def __init__(self, available_devices, json_devices = None):
+        super().__init__()
+        self.setupUi(available_devices, json_devices)
+
+    def setupUi(self, available_devices, json_devices):
         self.setObjectName("Dialog")
         self.resize(330, 243)
         self.setSizeGripEnabled(True)
@@ -56,6 +60,11 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
             checkBox.setFont(self.font)
             self.checkBoxes.append(checkBox)
             self.widget1_layout.addWidget(checkBox)
+        
+        separator = QtWidgets.QFrame()
+        separator.setFrameShape(QtWidgets.QFrame.HLine)
+        separator.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.widget1_layout.addWidget(separator)
 
         if json_devices is not None:
             self.reload_json_dev(json_devices)

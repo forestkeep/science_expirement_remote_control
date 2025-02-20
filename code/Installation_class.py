@@ -31,12 +31,13 @@ from interface.installation_window import Ui_Installation
 from schematic_exp.construct_diagramexp import expDiagram
 from schematic_exp.exp_time_line import callStack
 from saving_data.Parse_data import process_and_export, type_save_file
+from available_devices import dict_device_class, JSON_dict_device_class
 
 logger = logging.getLogger(__name__)
 
 version_app = "1.0.3"
 class installation_class(experimentControl, analyse):
-    def __init__(self, settings, dict_device_class,JSON_dict_device_class = None, version = None) -> None:
+    def __init__(self, settings, version = None) -> None:
         super().__init__()
         logger.info("запуск установки")
 
@@ -44,7 +45,7 @@ class installation_class(experimentControl, analyse):
         self.version_app         = version
         self.load_settings()  # reading settings
 
-        self.dict_device_class   = dict_device_class
+        self.dict_device_class  = dict_device_class
         self.JSON_dict_device_class = JSON_dict_device_class
 
         self.timer_for_pause_exp = QTimer()

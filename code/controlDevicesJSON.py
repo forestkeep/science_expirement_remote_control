@@ -1,7 +1,15 @@
 import json
 import os
-
+from dataclasses import dataclass
 from device_creator.dev_creator import templates
+
+@dataclass
+class devFile:
+    path: str
+    name: str
+    message: str
+    status: bool
+    json_data: dict
 
 def validate_json_schema(file_path, templates):
     with open(file_path, 'r') as file:
@@ -24,6 +32,15 @@ def validate_json_schema(file_path, templates):
                     return False, f"Отсутствует подполе: {sub_key} в поле {key}", data
 
     return (True, "JSON валиден", data)
+
+
+def get_new_JSON_devs(directory) -> dict:
+        new_devs = {}
+        json_devices = search_devices_json(directory)
+        for device, file_path in json_devices.items():
+            result, message, data = validate_json_schema(file_path, templates)
+            new_devs[device] = devFile(path=file_path, name=device, message=message, status=result, json_data=data)
+        return new_devs
 
 def search_devices_json(directory) -> dict:
     """
