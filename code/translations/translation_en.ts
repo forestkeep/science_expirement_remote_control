@@ -20,17 +20,17 @@
 <context>
     <name>Device</name>
     <message>
-        <location filename="../Devices/power_supply_class.py" line="368"/>
+        <location filename="../Devices/power_supply_class_test_json.py" line="373"/>
         <source>Таймер</source>
         <translation>Timer</translation>
     </message>
     <message>
-        <location filename="../Devices/power_supply_class.py" line="365"/>
+        <location filename="../Devices/power_supply_class_test_json.py" line="370"/>
         <source>Внешний сигнал</source>
         <translation>External signal</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="489"/>
+        <location filename="../Devices/Classes.py" line="494"/>
         <source>Пока активны другие приборы</source>
         <translation>While other devices are active</translation>
     </message>
@@ -52,19 +52,19 @@
         <translation type="obsolete">external signal</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="696"/>
+        <location filename="../Devices/Classes.py" line="701"/>
         <source>Время(с)</source>
         <translation>Time(sec)</translation>
     </message>
     <message>
-        <location filename="../Devices/Classes.py" line="706"/>
+        <location filename="../Devices/Classes.py" line="711"/>
         <source>Источник сигнала</source>
         <translation>Signal source</translation>
     </message>
     <message>
         <location filename="../Devices/Classes.py" line="740"/>
         <source>Не настроено</source>
-        <translation>Not configured</translation>
+        <translation type="obsolete">Not configured</translation>
     </message>
     <message>
         <location filename="../Devices/Classes.py" line="805"/>
@@ -77,12 +77,12 @@
         <translation type="obsolete">The device channel has completed its work in the experiment</translation>
     </message>
     <message>
-        <location filename="../Devices/power_supply_class.py" line="609"/>
+        <location filename="../Devices/power_supply_class_test_json.py" line="614"/>
         <source>Стабилизация напряжения</source>
         <translation>Constant voltage</translation>
     </message>
     <message>
-        <location filename="../Devices/power_supply_class.py" line="615"/>
+        <location filename="../Devices/power_supply_class_test_json.py" line="620"/>
         <source>Стабилизация тока</source>
         <translation>Constant current</translation>
     </message>
@@ -92,37 +92,37 @@
         <translation>No trigger stop occurred; stopping forcibly</translation>
     </message>
     <message>
-        <location filename="../Devices/power_supply_class.py" line="534"/>
+        <location filename="../Devices/power_supply_class_test_json.py" line="539"/>
         <source>Заданный шаг</source>
         <translation>Specified step</translation>
     </message>
     <message>
-        <location filename="../Devices/power_supply_class.py" line="99"/>
+        <location filename="../Devices/power_supply_class_test_json.py" line="105"/>
         <source>Доступен фиксированный шаг. Адаптивный находится в разработке.</source>
         <translation>Fixed step is available. Adaptive step is under development.</translation>
     </message>
     <message>
-        <location filename="../Devices/power_supply_class.py" line="102"/>
+        <location filename="../Devices/power_supply_class_test_json.py" line="108"/>
         <source>При активации этого пункта источник питания пройдет по шагам от стартого значения до конечного и обратно.</source>
         <translation>When this item is activated, the power source will step from the start value to the end value and back.</translation>
     </message>
     <message>
-        <location filename="../Devices/power_supply_class.py" line="336"/>
+        <location filename="../Devices/power_supply_class_test_json.py" line="341"/>
         <source>Ток не выше (А)</source>
         <translation>Current not higher than (A)</translation>
     </message>
     <message>
-        <location filename="../Devices/power_supply_class.py" line="341"/>
+        <location filename="../Devices/power_supply_class_test_json.py" line="346"/>
         <source>Напряжение не выше (V)</source>
         <translation>Voltage not higher than (V)</translation>
     </message>
     <message>
-        <location filename="../Devices/power_supply_class.py" line="530"/>
+        <location filename="../Devices/power_supply_class_test_json.py" line="535"/>
         <source>Стабилизация мощности</source>
         <translation>Constant power</translation>
     </message>
     <message>
-        <location filename="../Devices/power_supply_class.py" line="359"/>
+        <location filename="../Devices/power_supply_class_test_json.py" line="364"/>
         <source>Адаптивный шаг</source>
         <translation>Adaptive step</translation>
     </message>
@@ -307,11 +307,16 @@ the selected source completes its work in the experiment.</translation>
         <source>Температурный датчик</source>
         <translation>Temperature sensor</translation>
     </message>
+    <message>
+        <location filename="../Devices/pig_in_a_poke_device.py" line="52"/>
+        <source>Введите команды построчно, на каждом шаге прибора команды будут построчно выполнены, а полученные от них данные записаны в качесве результатов.</source>
+        <translation>Enter the commands line by line, at each step of the device the commands will be executed line by line, and the data received from them will be recorded as results.</translation>
+    </message>
 </context>
 <context>
     <name>Dialog</name>
     <message>
-        <location filename="../interface/installation_check_devices.py" line="71"/>
+        <location filename="../interface/installation_check_devices.py" line="121"/>
         <source>Мастер создания установки</source>
         <translation>Setup creation wizard</translation>
     </message>
@@ -326,15 +331,25 @@ the selected source completes its work in the experiment.</translation>
         <translation>Installation was created. Do you want to create new installation?</translation>
     </message>
     <message>
-        <location filename="../interface/installation_check_devices.py" line="72"/>
+        <location filename="../interface/installation_check_devices.py" line="122"/>
         <source>Выберите приборы для установки</source>
         <translation>Select devices for the setup</translation>
+    </message>
+    <message>
+        <location filename="../interface/selectdevice_window.py" line="104"/>
+        <source>Укажите папку с приборами</source>
+        <translation>Specify the folder with devices</translation>
+    </message>
+    <message>
+        <location filename="../interface/selectdevice_window.py" line="105"/>
+        <source>Нераспознанные приборы:</source>
+        <translation>Unrecognized devices:</translation>
     </message>
 </context>
 <context>
     <name>GraphWindow</name>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="168"/>
+        <location filename="../graph/osc_wave_graph.py" line="171"/>
         <source>укажите путь импорта</source>
         <translation>Specify the import path</translation>
     </message>
@@ -345,28 +360,28 @@ the selected source completes its work in the experiment.</translation>
         <translation>Columns {res} contain data that cannot be converted to numbers. These points will be skipped during plotting.</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="220"/>
+        <location filename="../graph/osc_wave_graph.py" line="223"/>
         <source>Сообщение</source>
         <translation>Message</translation>
     </message>
     <message>
-        <location filename="../graph/graph_main.py" line="983"/>
+        <location filename="../graph/graph_main.py" line="979"/>
         <source>Число точек превысило {points_num}, расчет зависимости одного параметра от другого может занимать некоторое время.
  Особенно, на слабых компьютерах. Рекомендуется выводить графики в зависимости от времени.</source>
         <translation>The number of points exceeded {points_num}, calculating the dependence of one parameter on another may take some time, especially on weak computers. It is recommended to display graphs as a function of time.</translation>
     </message>
     <message>
-        <location filename="../graph/graph_main.py" line="1162"/>
+        <location filename="../graph/graph_main.py" line="1158"/>
         <source>Импортировать..</source>
         <translation>Import data..</translation>
     </message>
     <message>
-        <location filename="../graph/graph_main.py" line="1163"/>
+        <location filename="../graph/graph_main.py" line="1159"/>
         <source>Экспериментальные данные</source>
         <translation>Experimental data</translation>
     </message>
     <message>
-        <location filename="../graph/graph_main.py" line="1164"/>
+        <location filename="../graph/graph_main.py" line="1160"/>
         <source>Множественное построение</source>
         <translation>Multiple plotting</translation>
     </message>
@@ -386,17 +401,17 @@ the selected source completes its work in the experiment.</translation>
         <translation>Oscillograms</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="1210"/>
+        <location filename="../graph/osc_wave_graph.py" line="1220"/>
         <source>Построение петель гистерезиса</source>
         <translation>Plotting hysteresis loops</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="1211"/>
+        <location filename="../graph/osc_wave_graph.py" line="1221"/>
         <source>Отображаемый канал</source>
         <translation>Showing  channel</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="1212"/>
+        <location filename="../graph/osc_wave_graph.py" line="1222"/>
         <source>Номер осциллограммы</source>
         <translation>Oscillogram number</translation>
     </message>
@@ -406,67 +421,67 @@ the selected source completes its work in the experiment.</translation>
         <translation type="obsolete">Clear loops</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="1214"/>
+        <location filename="../graph/osc_wave_graph.py" line="1224"/>
         <source>Построить петлю</source>
         <translation>Create loop</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="1215"/>
+        <location filename="../graph/osc_wave_graph.py" line="1225"/>
         <source>Сопротивление провода(Ом)</source>
         <translation>Wire resistance (Ω)</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="1216"/>
+        <location filename="../graph/osc_wave_graph.py" line="1226"/>
         <source>Площадь провода(мкм)</source>
         <translation>Wire cross-sectional area (µm²)</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="1217"/>
+        <location filename="../graph/osc_wave_graph.py" line="1227"/>
         <source>Координата справа</source>
         <translation>Right coordinate</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="1218"/>
+        <location filename="../graph/osc_wave_graph.py" line="1228"/>
         <source>Координата слева</source>
         <translation>Left coordinate</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="1219"/>
+        <location filename="../graph/osc_wave_graph.py" line="1229"/>
         <source>Авто</source>
         <translation>Auto</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="1220"/>
+        <location filename="../graph/osc_wave_graph.py" line="1230"/>
         <source>Сигнал</source>
         <translation>Signal</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="1221"/>
+        <location filename="../graph/osc_wave_graph.py" line="1231"/>
         <source>Поле</source>
         <translation>Field</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="220"/>
+        <location filename="../graph/osc_wave_graph.py" line="223"/>
         <source>Выбранный шаг не является числом или равен нулю, проверьте столбец с шагом времени</source>
         <translation>The selected step is not a number or is zero, check the time step column</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="1222"/>
+        <location filename="../graph/osc_wave_graph.py" line="1232"/>
         <source>Импортировать...</source>
         <translation>Import...</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="449"/>
+        <location filename="../graph/osc_wave_graph.py" line="453"/>
         <source>Усреднить петли</source>
         <translation>Average loops</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="1213"/>
+        <location filename="../graph/osc_wave_graph.py" line="1223"/>
         <source>Очистить все</source>
         <translation>Clear all</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="163"/>
+        <location filename="../graph/osc_wave_graph.py" line="166"/>
         <source>Дождитесь окончания эксперимента</source>
         <translation>Wait for the end of the experiment</translation>
     </message>
@@ -476,7 +491,7 @@ the selected source completes its work in the experiment.</translation>
         <translation>All filters have already been reset, there&apos;s nothing else to reset.</translation>
     </message>
     <message>
-        <location filename="../graph/graph_main.py" line="871"/>
+        <location filename="../graph/graph_main.py" line="866"/>
         <source>Кривая принадлежит другому пространству</source>
         <translation>The curve belongs to another space</translation>
     </message>
@@ -503,7 +518,7 @@ the selected source completes its work in the experiment.</translation>
  To reset the filters, highlight the charts and press esc.</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="205"/>
+        <location filename="../graph/osc_wave_graph.py" line="208"/>
         <source>В столбцах {res} обнаружены данные,
  которые не получается преобразовать в числа.
  При построение эти точки будут пропущены.</source>
@@ -685,77 +700,77 @@ the selected source completes its work in the experiment.</translation>
 <context>
     <name>Installation</name>
     <message>
-        <location filename="../interface/installation_window.py" line="538"/>
+        <location filename="../interface/installation_window.py" line="543"/>
         <source>Запуск</source>
         <translation>Start</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="539"/>
+        <location filename="../interface/installation_window.py" line="544"/>
         <source>Пауза</source>
         <translation>Pause</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="541"/>
+        <location filename="../interface/installation_window.py" line="546"/>
         <source>Меню</source>
         <translation>Menu</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="542"/>
+        <location filename="../interface/installation_window.py" line="547"/>
         <source>Расширенные настройки</source>
         <translation>Advanced settings</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="543"/>
+        <location filename="../interface/installation_window.py" line="548"/>
         <source>Инфо</source>
         <translation>Info</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="544"/>
+        <location filename="../interface/installation_window.py" line="549"/>
         <source>Сохранить установку</source>
         <translation>Save installation</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="546"/>
+        <location filename="../interface/installation_window.py" line="551"/>
         <source>Сохранить установку как...</source>
         <translation>Save installation as...</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="548"/>
+        <location filename="../interface/installation_window.py" line="553"/>
         <source>Открыть установку</source>
         <translation>Open installation</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="550"/>
+        <location filename="../interface/installation_window.py" line="555"/>
         <source>Добавить прибор</source>
         <translation>Add device</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="553"/>
+        <location filename="../interface/installation_window.py" line="558"/>
         <source>Вкл режим разработчика</source>
         <translation>Debug mode on</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="555"/>
+        <location filename="../interface/installation_window.py" line="560"/>
         <source>Настройки эксперимента</source>
         <translation>Experiment settings</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="557"/>
+        <location filename="../interface/installation_window.py" line="562"/>
         <source>Инструкция</source>
         <translation>Instruction</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="559"/>
+        <location filename="../interface/installation_window.py" line="564"/>
         <source>Об авторах</source>
         <translation>About autors</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="561"/>
+        <location filename="../interface/installation_window.py" line="566"/>
         <source>Версия приложения</source>
         <translation>App version</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="537"/>
+        <location filename="../interface/installation_window.py" line="542"/>
         <source>показать график</source>
         <translation>show graph</translation>
     </message>
@@ -763,7 +778,7 @@ the selected source completes its work in the experiment.</translation>
 <context>
     <name>MyWindow</name>
     <message>
-        <location filename="../installation_controller.py" line="184"/>
+        <location filename="../installation_controller.py" line="209"/>
         <source>установка уже собрана</source>
         <translation>The setup is already assembled</translation>
     </message>
@@ -827,7 +842,7 @@ the selected source completes its work in the experiment.</translation>
 <context>
     <name>Selectdevice</name>
     <message>
-        <location filename="../interface/selectdevice_window.py" line="61"/>
+        <location filename="../interface/selectdevice_window.py" line="102"/>
         <source>Выбор прибора</source>
         <translation>Select device</translation>
     </message>
@@ -875,7 +890,7 @@ the selected source completes its work in the experiment.</translation>
         <translation>Time (sec)</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="145"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="147"/>
         <source>Триггер</source>
         <translation>Trigger</translation>
     </message>
@@ -895,82 +910,82 @@ the selected source completes its work in the experiment.</translation>
         <translation>Number of measurements</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="170"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="172"/>
         <source>Действия</source>
         <translation>Actions</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="162"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="164"/>
         <source>Измерения</source>
         <translation>Measurements</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="142"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="144"/>
         <source>настройка источника питания</source>
         <translation>Power supply settings</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="146"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="148"/>
         <source>V/A не больше</source>
         <translation>V/A no more than</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="149"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="151"/>
         <source>Пройти туда-обратно?</source>
         <translation>Go straight and back?</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="150"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="152"/>
         <source>Мягкий старт</source>
         <translation>Soft start</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="151"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="153"/>
         <source>Плавное выключение</source>
         <translation>Soft shootdown</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="153"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="155"/>
         <source>Тип шага</source>
         <translation>Type step</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="154"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="156"/>
         <source>Режим работы</source>
         <translation>Operating mode</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="155"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="157"/>
         <source>Шаг</source>
         <translation>Step</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="156"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="158"/>
         <source>Конечное значение</source>
         <translation>End value</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="157"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="159"/>
         <source>Начальное значение</source>
         <translation>Start value</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="163"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="165"/>
         <source>Ток</source>
         <translation>Current</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="164"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="166"/>
         <source>Установка тока</source>
         <translation>Current setting</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="165"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="167"/>
         <source>Напряжение</source>
         <translation>Voltage</translation>
     </message>
     <message>
-        <location filename="../Devices/interfase/set_power_supply_window.py" line="166"/>
+        <location filename="../Devices/interfase/set_power_supply_window.py" line="168"/>
         <source>Установка напряжения</source>
         <translation>Voltage settings</translation>
     </message>
@@ -1117,17 +1132,17 @@ the selected source completes its work in the experiment.</translation>
         <translation>Looping by branch</translation>
     </message>
     <message>
-        <location filename="../Analyse_in_installation.py" line="283"/>
+        <location filename="../Analyse_in_installation.py" line="282"/>
         <source>Не удалось открыть порт {com}</source>
         <translation>Failed to open port {com}</translation>
     </message>
     <message>
-        <location filename="../Analyse_in_installation.py" line="324"/>
+        <location filename="../Analyse_in_installation.py" line="323"/>
         <source>{device1} и {device2} не могут иметь один COM порт</source>
         <translation>{device1} and {device2} cannot share the same COM port</translation>
     </message>
     <message>
-        <location filename="../Analyse_in_installation.py" line="363"/>
+        <location filename="../Analyse_in_installation.py" line="362"/>
         <source>{device1} и {device2} не могут иметь разную скорость подключения</source>
         <translation>{device1} и {device2} не могут иметь разную скорость подключения</translation>
     </message>
@@ -1140,12 +1155,12 @@ the selected source completes its work in the experiment.</translation>
 <context>
     <name>base_install</name>
     <message>
-        <location filename="../base_installation.py" line="172"/>
+        <location filename="../Installation_class.py" line="689"/>
         <source>укажите путь сохранения результатов</source>
         <translation>Specify the results saving path</translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="273"/>
+        <location filename="../base_installation.py" line="271"/>
         <source>
         Автор:
 
@@ -1167,17 +1182,17 @@ the selected source completes its work in the experiment.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="283"/>
+        <location filename="../base_installation.py" line="281"/>
         <source>Информация об авторах</source>
         <translation>about autors</translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="289"/>
+        <location filename="../base_installation.py" line="287"/>
         <source>Версия приложения</source>
         <translation>App version</translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="297"/>
+        <location filename="../base_installation.py" line="295"/>
         <source>
                 Настройте каждый прибор, нажав кнопку &quot;Настроить&quot; под его каналом. 
                 Открывайте (кнопка +) и закрывайте каналы, а также добавляйте и удаляйте приборы по необходимости.
@@ -1224,69 +1239,84 @@ For detailed instructions on using the application, click the &quot;Info&quot; -
 </translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="329"/>
+        <location filename="../base_installation.py" line="327"/>
         <source>Инструкция по настройке</source>
         <translation>Instructions for setup</translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="385"/>
+        <location filename="../base_installation.py" line="381"/>
         <source>Выкл режим разработчика</source>
         <translation>Debug mode off</translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="386"/>
+        <location filename="../base_installation.py" line="382"/>
         <source>Режим разработчика включен. В этом режиме корректность показаний с приборов не гарантируется</source>
         <translation>Developer mode is enabled. In this mode, the accuracy of the readings from the devices is not guaranteed</translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="391"/>
+        <location filename="../base_installation.py" line="387"/>
         <source>Вкл режим разработчика</source>
         <translation>debug mode on</translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="392"/>
+        <location filename="../base_installation.py" line="388"/>
         <source>Режим разработчика выключен</source>
         <translation>Debug mode off</translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="498"/>
+        <location filename="../base_installation.py" line="494"/>
         <source>Старт</source>
         <translation>Start</translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="566"/>
+        <location filename="../base_installation.py" line="562"/>
         <source>Не настроено</source>
         <translation>Not setting</translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="219"/>
+        <location filename="../base_installation.py" line="220"/>
         <source>Результаты сохранены в {way}, файл {file} был удален</source>
         <translation>Results saved to {way}, file {file} has been deleted</translation>
     </message>
     <message>
         <location filename="../base_installation.py" line="226"/>
         <source>Результаты сохранены в {file}</source>
-        <translation>Results saved to {way}</translation>
+        <translation type="obsolete">Results saved to {way}</translation>
     </message>
     <message>
         <location filename="../base_installation.py" line="233"/>
         <source>Не удалось сохранить результаты в {file}</source>
-        <translation>Failed to save results to {file}</translation>
+        <translation type="obsolete">Failed to save results to {file}</translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="287"/>
+        <location filename="../base_installation.py" line="285"/>
         <source>Текущая версия - {version}</source>
         <translation>Current version - {version}</translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="486"/>
+        <location filename="../base_installation.py" line="482"/>
         <source>соединение установлено</source>
         <translation>Connection established</translation>
     </message>
     <message>
-        <location filename="../base_installation.py" line="488"/>
+        <location filename="../base_installation.py" line="484"/>
         <source>соединение не установлено, проверьте подлючение</source>
         <translation>Connection not established, please check the connection</translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="226"/>
+        <source>Результаты сохранены в {way}</source>
+        <translation>Results saved in {way}</translation>
+    </message>
+    <message>
+        <location filename="../base_installation.py" line="229"/>
+        <source>Не удалось сохранить результаты в {way}</source>
+        <translation>Failed to save results to {way}</translation>
+    </message>
+    <message>
+        <location filename="../installation_controller.py" line="198"/>
+        <source>Выберите папку с приборами</source>
+        <translation>Select the folder with devices</translation>
     </message>
 </context>
 <context>
@@ -1318,7 +1348,7 @@ For detailed instructions on using the application, click the &quot;Info&quot; -
 <context>
     <name>creat_dev_window</name>
     <message>
-        <location filename="../device_creator/test_commands.py" line="166"/>
+        <location filename="../device_creator/test_commands.py" line="175"/>
         <source>Тест команд</source>
         <translation>Test commands</translation>
     </message>
@@ -1326,52 +1356,52 @@ For detailed instructions on using the application, click the &quot;Info&quot; -
 <context>
     <name>create_dev_window</name>
     <message>
-        <location filename="../device_creator/test_commands.py" line="38"/>
+        <location filename="../device_creator/test_commands.py" line="55"/>
         <source>Тест команд</source>
         <translation>Test commands</translation>
     </message>
     <message>
-        <location filename="../device_creator/test_commands.py" line="58"/>
+        <location filename="../device_creator/test_commands.py" line="71"/>
         <source>Отправить</source>
         <translation>Send</translation>
     </message>
     <message>
-        <location filename="../device_creator/test_commands.py" line="62"/>
+        <location filename="../device_creator/test_commands.py" line="75"/>
         <source>Ответ:</source>
         <translation>Answer:</translation>
     </message>
     <message>
-        <location filename="../device_creator/test_commands.py" line="71"/>
+        <location filename="../device_creator/test_commands.py" line="84"/>
         <source>Таймаут(мс)</source>
         <translation>Timeout(ms)</translation>
     </message>
     <message>
-        <location filename="../device_creator/test_commands.py" line="106"/>
+        <location filename="../device_creator/test_commands.py" line="119"/>
         <source>Нет подключенных портов</source>
         <translation>No connected ports</translation>
     </message>
     <message>
-        <location filename="../device_creator/test_commands.py" line="76"/>
+        <location filename="../device_creator/test_commands.py" line="89"/>
         <source>Порт</source>
         <translation>Port</translation>
     </message>
     <message>
-        <location filename="../device_creator/test_commands.py" line="102"/>
+        <location filename="../device_creator/test_commands.py" line="115"/>
         <source>Скорость(бод)</source>
         <translation>Baudrate</translation>
     </message>
     <message>
-        <location filename="../device_creator/test_commands.py" line="155"/>
+        <location filename="../device_creator/test_commands.py" line="129"/>
         <source>Принимаем</source>
         <translation>Receiving</translation>
     </message>
     <message>
-        <location filename="../device_creator/test_commands.py" line="152"/>
+        <location filename="../device_creator/test_commands.py" line="147"/>
         <source>Истек таймаут</source>
         <translation>Timeout expired</translation>
     </message>
     <message>
-        <location filename="../device_creator/test_commands.py" line="162"/>
+        <location filename="../device_creator/test_commands.py" line="153"/>
         <source>Ответ</source>
         <translation>Answer</translation>
     </message>
@@ -1660,7 +1690,7 @@ Then our command in the sending field will look like:
     <message>
         <location filename="../installation_controller.py" line="238"/>
         <source>Формат файла не верен, создайте файл прибора с помощью конструктора.</source>
-        <translation>The file format is incorrect, create the device file using the constructor.</translation>
+        <translation type="obsolete">The file format is incorrect, create the device file using the constructor.</translation>
     </message>
 </context>
 <context>
@@ -1691,12 +1721,12 @@ Then our command in the sending field will look like:
         <translation>Resume</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="361"/>
+        <location filename="../experiment_control.py" line="367"/>
         <source>Остановка, ошибка</source>
         <translation>Error, stopping</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="365"/>
+        <location filename="../experiment_control.py" line="371"/>
         <source> настроен</source>
         <translation> seted</translation>
     </message>
@@ -1706,42 +1736,42 @@ Then our command in the sending field will look like:
         <translation type="obsolete">Continuation of the experiment</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="776"/>
+        <location filename="../experiment_control.py" line="783"/>
         <source>Эксперимент прерван из-за ошибки</source>
         <translation>The experiment was interrupted due to an  error</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="780"/>
+        <location filename="../experiment_control.py" line="787"/>
         <source>Эксперимент прерван из-за ошибки при настройке прибора</source>
         <translation>The experiment was interrupted due to a device setup error</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="784"/>
+        <location filename="../experiment_control.py" line="791"/>
         <source>Эксперимент прерван из-за ошибки при опросе прибора</source>
         <translation>The experiment was interrupted due to a device pollingl error</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="792"/>
+        <location filename="../experiment_control.py" line="799"/>
         <source>Эксперимент завершен</source>
         <translation>Finish experiment</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="799"/>
+        <location filename="../experiment_control.py" line="806"/>
         <source>Сохранение результатов</source>
         <translation>Saving results</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="808"/>
+        <location filename="../experiment_control.py" line="815"/>
         <source>Подготовка к эксперименту</source>
         <translation>Preparation for the experiment</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="812"/>
+        <location filename="../experiment_control.py" line="819"/>
         <source>Старт</source>
         <translation>Start</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="820"/>
+        <location filename="../experiment_control.py" line="827"/>
         <source>Ожидание старта</source>
         <translation>Waiting start</translation>
     </message>
@@ -1756,82 +1786,82 @@ Then our command in the sending field will look like:
         <translation>Waiting for continuation</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="349"/>
+        <location filename="../experiment_control.py" line="355"/>
         <source>Ошибка настройки</source>
         <translation>Error settings</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="349"/>
+        <location filename="../experiment_control.py" line="355"/>
         <source>перед экспериментом</source>
         <translation>before experiment</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="381"/>
+        <location filename="../experiment_control.py" line="387"/>
         <source>Прибор</source>
         <translation>Device</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="381"/>
+        <location filename="../experiment_control.py" line="387"/>
         <source>не отвечает</source>
         <translation>don&apos;t answer</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="389"/>
+        <location filename="../experiment_control.py" line="395"/>
         <source>Ответ</source>
         <translation>Answer</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="489"/>
+        <location filename="../experiment_control.py" line="495"/>
         <source>Остановка эксперимента</source>
         <translation>Experiment is stopping</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="534"/>
+        <location filename="../experiment_control.py" line="542"/>
         <source>завершил работу</source>
         <translation>finished work</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="617"/>
+        <location filename="../experiment_control.py" line="625"/>
         <source>Выполняется действие</source>
         <translation>Action is being executed</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="737"/>
+        <location filename="../experiment_control.py" line="745"/>
         <source>шаг</source>
         <translation>Step</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="737"/>
+        <location filename="../experiment_control.py" line="745"/>
         <source>сделан за</source>
         <translation>completed in</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="749"/>
+        <location filename="../experiment_control.py" line="757"/>
         <source>Ошибка опроса</source>
         <translation>Polling error</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="661"/>
+        <location filename="../experiment_control.py" line="669"/>
         <source>Выполняется измерение</source>
         <translation>Measurement is doing</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="573"/>
+        <location filename="../experiment_control.py" line="581"/>
         <source> завершил работу</source>
         <translation> finished work</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="468"/>
+        <location filename="../experiment_control.py" line="474"/>
         <source>Продолжение эксперимента, приборов:</source>
         <translation>Continuation of the experiment, devices:</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="192"/>
+        <location filename="../experiment_control.py" line="486"/>
         <source>Таймер</source>
         <translation>Timer</translation>
     </message>
     <message>
-        <location filename="../experiment_control.py" line="202"/>
+        <location filename="../experiment_control.py" line="198"/>
         <source>Внешний сигнал</source>
         <translation>External signal</translation>
     </message>
@@ -1839,12 +1869,12 @@ Then our command in the sending field will look like:
 <context>
     <name>graph_win</name>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="245"/>
+        <location filename="../graph/osc_wave_graph.py" line="249"/>
         <source>Выберите устройство</source>
         <translation>Select device</translation>
     </message>
     <message>
-        <location filename="../graph/osc_wave_graph.py" line="269"/>
+        <location filename="../graph/osc_wave_graph.py" line="273"/>
         <source>Импорт данных</source>
         <translation>Import data</translation>
     </message>
@@ -1852,17 +1882,17 @@ Then our command in the sending field will look like:
 <context>
     <name>main</name>
     <message>
-        <location filename="../installation_controller.py" line="102"/>
+        <location filename="../installation_controller.py" line="113"/>
         <source>Развернуть</source>
         <translation>Expand</translation>
     </message>
     <message>
-        <location filename="../installation_controller.py" line="103"/>
+        <location filename="../installation_controller.py" line="114"/>
         <source>Закрыть приложение</source>
         <translation>Close application</translation>
     </message>
     <message>
-        <location filename="../installation_controller.py" line="110"/>
+        <location filename="../installation_controller.py" line="121"/>
         <source>Управление экспериментальной установкой</source>
         <translation>Control of the experimental installation</translation>
     </message>
@@ -1950,90 +1980,95 @@ Then our command in the sending field will look like:
 <context>
     <name>main install</name>
     <message>
-        <location filename="../Installation_class.py" line="158"/>
+        <location filename="../Installation_class.py" line="176"/>
         <source>Очистить лог</source>
         <translation>Clear log</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="159"/>
+        <location filename="../Installation_class.py" line="177"/>
         <source>Ожидание настройки приборов</source>
         <translation>Waiting setting devices</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="215"/>
+        <location filename="../Installation_class.py" line="233"/>
         <source>Запрещено добавлять или отключать канал во время эксперимента</source>
         <translation>It is prohibited to add or disconnect the channel during the experiment</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="326"/>
+        <location filename="../Installation_class.py" line="344"/>
         <source>Запрещено удалять прибор во время эксперимента</source>
         <translation>It is prohibited to remove the device during the experiment</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="343"/>
+        <location filename="../Installation_class.py" line="361"/>
         <source>Запрещено менять параметры во время эксперимента</source>
         <translation>It is prohibited to change parameters during the experiment</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="356"/>
+        <location filename="../Installation_class.py" line="374"/>
         <source>{device_name} {ch_name} не имеет источника сигнала, проверьте его настройки</source>
         <translation>{device_name} {ch_name} don&apos;t has sourse signal, check it</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="371"/>
+        <location filename="../Installation_class.py" line="389"/>
         <source>Остановка</source>
         <translation>Stopping</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="382"/>
+        <location filename="../Installation_class.py" line="400"/>
         <source>Старт эксперимента</source>
         <translation>Experiment is starting</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="390"/>
+        <location filename="../Installation_class.py" line="408"/>
         <source>Стоп</source>
         <translation>Stop</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="415"/>
+        <location filename="../Installation_class.py" line="433"/>
         <source>Создан файл</source>
         <translation>File was created</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="423"/>
+        <location filename="../Installation_class.py" line="441"/>
         <source>настройка приборов</source>
         <translation>settings devices</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="682"/>
+        <location filename="../Installation_class.py" line="573"/>
         <source>Не настроено</source>
         <translation>Not setting</translation>
     </message>
     <message>
         <location filename="../Installation_class.py" line="575"/>
         <source>ошибка, прибора {device} нет в списке доступных приборов, не удалось открыть установку</source>
-        <translation>error</translation>
+        <translation type="obsolete">error</translation>
     </message>
     <message>
         <location filename="../Installation_class.py" line="634"/>
         <source>Ошибка при открытии сохраненной установки.
  Вероятно, содержимое файла имеет не верный формат.</source>
-        <translation>Error opening the saved installation. The file contents are likely in an incorrect format.</translation>
+        <translation type="obsolete">Error opening the saved installation. The file contents are likely in an incorrect format.</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="133"/>
+        <location filename="../Installation_class.py" line="150"/>
         <source>Старт</source>
         <translation>Start</translation>
     </message>
     <message>
-        <location filename="../Installation_class.py" line="352"/>
+        <location filename="../Installation_class.py" line="370"/>
         <source>Таймер</source>
         <translation>Timer</translation>
     </message>
     <message>
         <location filename="../installation_controller.py" line="240"/>
         <source>{path} не найден. Проверьте расположение.</source>
-        <translation>{path} not found. Check the location.</translation>
+        <translation type="obsolete">{path} not found. Check the location.</translation>
+    </message>
+    <message>
+        <location filename="../Installation_class.py" line="658"/>
+        <source>Не найдены настройки канала {ch_name} у прибора {device.get_name()}</source>
+        <translation>Channel settings {ch_name} not found for device {device.get_name()}</translation>
     </message>
 </context>
 <context>
@@ -2047,29 +2082,52 @@ Then our command in the sending field will look like:
 <context>
     <name>parse_data</name>
     <message>
-        <location filename="../saving_data/Parse_data.py" line="203"/>
+        <location filename="../saving_data/Parse_data.py" line="214"/>
         <source>Прибор:{device} канал:{ch}</source>
         <translation>Device:{device} channel:{ch}</translation>
     </message>
     <message>
-        <location filename="../saving_data/Parse_data.py" line="147"/>
+        <location filename="../saving_data/Parse_data.py" line="149"/>
         <source>Время</source>
         <translation>Time</translation>
     </message>
     <message>
-        <location filename="../saving_data/Parse_data.py" line="147"/>
+        <location filename="../saving_data/Parse_data.py" line="149"/>
         <source>Шаг</source>
         <translation>Step</translation>
     </message>
     <message>
-        <location filename="../saving_data/Parse_data.py" line="293"/>
+        <location filename="../saving_data/Parse_data.py" line="304"/>
         <source>Запущена установка</source>
         <translation>Installation has started</translation>
     </message>
     <message>
-        <location filename="../saving_data/Parse_data.py" line="325"/>
+        <location filename="../saving_data/Parse_data.py" line="336"/>
         <source>Настройки</source>
         <translation>Settings</translation>
+    </message>
+</context>
+<context>
+    <name>pigInAPoke</name>
+    <message>
+        <location filename="../Devices/interfase/pig_in_a_poke_window.py" line="49"/>
+        <source>Настройка прибора Кот в мешке</source>
+        <translation>Setting up the Pig in a Poke device</translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/pig_in_a_poke_window.py" line="52"/>
+        <source>Впишите или загрузите команды построчно</source>
+        <translation>Type or download commands line by line</translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/pig_in_a_poke_window.py" line="53"/>
+        <source>Загрузить файл</source>
+        <translation>Upload file</translation>
+    </message>
+    <message>
+        <location filename="../Devices/interfase/pig_in_a_poke_window.py" line="54"/>
+        <source>Введите команды построчно, на каждом шаге прибора команды будут построчно выполнены, а полученные от них данные записаны в качесве результатов.</source>
+        <translation>Enter the commands line by line, at each step of the device the commands will be executed line by line, and the data received from them will be recorded as results.</translation>
     </message>
 </context>
 <context>
@@ -2136,12 +2194,12 @@ If this option is activated, the buffer file will be deleted after successful sa
 <context>
     <name>settings_save</name>
     <message>
-        <location filename="../interface/installation_window.py" line="564"/>
+        <location filename="../interface/installation_window.py" line="569"/>
         <source>Схема взаимодействия приборов</source>
         <translation>Diagram of device interaction</translation>
     </message>
     <message>
-        <location filename="../interface/installation_window.py" line="565"/>
+        <location filename="../interface/installation_window.py" line="570"/>
         <source>Состояние</source>
         <translation>State</translation>
     </message>
@@ -2164,6 +2222,11 @@ If this option is activated, the buffer file will be deleted after successful sa
         <location filename="../interface/save_repeat_set_window.py" line="105"/>
         <source>Сохранение</source>
         <translation>Save</translation>
+    </message>
+    <message>
+        <location filename="../interface/installation_window.py" line="576"/>
+        <source>Сохранить результаты из buf файла</source>
+        <translation>Save results from buf file</translation>
     </message>
 </context>
 </TS>
