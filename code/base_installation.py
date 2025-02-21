@@ -348,13 +348,13 @@ class baseInstallation:
 
     def add_new_device(self):
         logger.debug("нажата кнопка добавления нового прибора")
-        self.new_window = QtWidgets.QDialog()
-        self.ui_window = installation_Ui_Dialog()
-        self.ui_window.setupUi(self.new_window, self, dict_device_class)
+        self.new_window = installation_Ui_Dialog()
+        self.new_window.setupUi(self, dict_device_class)
+        self.new_window.signal_to_main_window.connect(self.message_from_new_installation)
         self.key_to_new_window_installation = True
         self.new_window.show()
 
-    def message_from_new_installation(self, device_list):
+    def message_from_new_installation(self, device_list, json_device_list):
 
         new_added_device = {}
         if device_list:
@@ -368,13 +368,11 @@ class baseInstallation:
                     self.dict_active_device_class[key_dev] = (dev)
                     new_added_device[key_dev] = (dev)
 
-                    #self.current_installation_list.append(key_dev)
                     number_device = number_device + 1
                 except:
                     logger.debug("под прибор |" + key + "| не удалось создать экземпляр")
                     
             self.installation_window.add_new_devices(new_added_device)
-
 
     def change_check_debug(self):
         if not self.is_experiment_running():

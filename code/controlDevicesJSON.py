@@ -1,31 +1,46 @@
 import json
 import os
-
+from dataclasses import dataclass
 from device_creator.dev_creator import templates
 
+@dataclass
+class devFile:
+    path: str
+    name: str
+    message: str
+    status: bool
+    json_data: dict
+
 def validate_json_schema(file_path, templates):
-    # Чтение JSON файла
     with open(file_path, 'r') as file:
         data = json.load(file)
 
     device_type = data.get("device_type")
     if device_type not in templates:
-        return False, "Неверный device_type"
+        return False, "Неверный device_type", data
 
     template = templates[device_type]
 
     # Сравнение полей
     for key in template.keys():
         if key not in data:
-            return False, f"Отсутствует поле: {key}"
+            return False, f"Отсутствует поле: {key}", data
 
-        # Проверка вложенных словарей
         if isinstance(template[key], dict):
             for sub_key in template[key].keys():
                 if sub_key not in data[key]:
-                    return False, f"Отсутствует подполе: {sub_key} в поле {key}"
+                    return False, f"Отсутствует подполе: {sub_key} в поле {key}", data
 
-    return True, "JSON валиден"
+    return (True, "JSON валиден", data)
+
+
+def get_new_JSON_devs(directory) -> dict:
+        new_devs = {}
+        json_devices = search_devices_json(directory)
+        for device, file_path in json_devices.items():
+            result, message, data = validate_json_schema(file_path, templates)
+            new_devs[device] = devFile(path=file_path, name=device, message=message, status=result, json_data=data)
+        return new_devs
 
 def search_devices_json(directory) -> dict:
     """

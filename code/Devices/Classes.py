@@ -240,7 +240,7 @@ class base_device():
                         num_act_list.append( QApplication.translate("Device","Пока активны другие приборы") )
                     self.setting_window.num_act_enter.clear()
                     self.setting_window.num_act_enter.addItems(num_act_list)
-                    self.setting_window.num_act_enter.setCurrentText(str(self.active_channel_act.dict_buf_parameters["num steps"]))
+                    self.setting_window.num_act_enter.setCurrentText(str(int(self.active_channel_act.dict_buf_parameters["num steps"])))
                 except:
                     pass
 
@@ -252,7 +252,7 @@ class base_device():
                     num_meas_list.append( QApplication.translate("Device","Пока активны другие приборы") )
                 self.setting_window.num_meas_enter.clear()
                 self.setting_window.num_meas_enter.addItems(num_meas_list)
-                self.setting_window.num_meas_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["num steps"]))
+                self.setting_window.num_meas_enter.setCurrentText(str(int(self.active_channel_meas.dict_buf_parameters["num steps"])))
 
             self.key_to_signal_func = True
             return func(self, *args, **kwargs)
@@ -736,31 +736,38 @@ class base_device():
 
     def open_port(self):
         self.client.open()
+    def set_parameters(self, parameters):
+        self.dict_settable_parameters = parameters
 
-    def set_parameters(self, channel_name, parameters):
+    def set_parameters_ch(self, channel_name, parameters):
         """функция необходима для настройки параметров канала в установке при добавлении прибора извне или при открытии сохраненной установки, передаваемый словарь гарантированно должен содержать параметры именно для данного канала"""
         self.switch_channel(ch_name = channel_name)
-        status = True
-        for param in parameters.keys():
-            if param == QApplication.translate( "Device", "Не настроено" ):
-                self.active_channel.set_active(True)
-                status = False
-                continue
-            elif param == "not active":
-                status = False
-                self.active_channel.set_active(False)
-                break
+        status = False
+
+        if parameters["state"] == "not active":
+            self.active_channel.set_active(False)
+            
+        else:
+            self.active_channel.set_active(True)
+            if parameters["state"] == "not settings":
+                pass
             else:
-                self.active_channel.set_active(True)
-                if parameters[param] == "False":
-                    self.active_channel.dict_buf_parameters[param] = False
-                elif parameters[param] == "True":
-                    self.active_channel.dict_buf_parameters[param] = True
-                else:
-                    self.active_channel.dict_buf_parameters[param] = parameters[param]
+                status = True
 
+        for param, value in parameters["settings"].items():
+            if value == "false":
+                self.active_channel.dict_buf_parameters[param] = False
+            elif value == "true":
+                self.active_channel.dict_buf_parameters[param] = True
+            else:
+                try:
+                    value = float(value)
+                except:
+                    pass
 
-                self.active_channel.dict_settable_parameters = copy.deepcopy(self.active_channel.dict_buf_parameters)
+                self.active_channel.dict_buf_parameters[param] = value
+
+            self.active_channel.dict_settable_parameters = copy.deepcopy(self.active_channel.dict_buf_parameters)
 
 
         if self.part_ch == which_part_in_ch.bouth:

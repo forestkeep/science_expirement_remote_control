@@ -12,7 +12,7 @@
 templates = {
 'oscilloscope':
 {
-    "device_type": "oScilloscope",
+    "device_type": 'oscilloscope',
     "device_name": 'some_device',
     "number_channels": 4,
     "commands": {
@@ -162,8 +162,8 @@ templates = {
 },
 #=============
 
-"power supply": {
-    "device_type": "power supply",
+"power_supply": {
+    "device_type": "power_supply",
     "device_name": "some_device",
     "number_channels": 1,
     "channels parameters" : {

@@ -5,25 +5,24 @@ import os
 from PyQt5 import QtWidgets
 
 class localDeviceControl(QtWidgets.QWidget):
-    def __init__(self, json_file):
+    def __init__(self, dev_file):
         super().__init__()
-        with open(json_file, 'r') as file:
-            self.device_data = json.load(file)
+        self.device_data = dev_file
         self.setWindowTitle(self.get_device_name())
         self.init_ui()
 
     def get_device_name(self):
-        device_type = self.device_data["device_type"]
-        device_name = self.device_data["device_name"]
+        device_type = self.device_data.json_data["device_type"]
+        device_name = self.device_data.json_data["device_name"]
         return f"{device_type} - {device_name}"
 
     def init_ui(self):
-        number_channels = self.device_data["number_channels"]
+        number_channels = self.device_data.json_data["number_channels"]
         self.tabs = QtWidgets.QTabWidget(self)
         for i in range(1):
             channel_tab = QtWidgets.QWidget()
             layout = QtWidgets.QHBoxLayout(channel_tab)
-            commands = self.device_data["commands"]
+            commands = self.device_data.json_data["commands"]
             command_keys = list(commands.keys())
 
             command_group_with_params = []
@@ -71,7 +70,7 @@ class localDeviceControl(QtWidgets.QWidget):
         return re.findall(r'\{(.*?)\}', input_string)
 
     def execute_command(self, command_key, spin_box=None):
-        command = self.device_data["commands"][command_key]
+        command = self.device_data.json_data["commands"][command_key]
         command_str = command["command"]
         if spin_box:
             parameter_value = spin_box.value()

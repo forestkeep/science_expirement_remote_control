@@ -14,6 +14,7 @@ import logging
 import os
 import sys
 from logging.handlers import RotatingFileHandler
+from dataclasses import dataclass
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QTranslator
@@ -22,7 +23,7 @@ from PyQt5.QtWidgets import QApplication, QMessageBox
 import qdarktheme
 
 import interface.info_window_dialog
-from available_devices import dict_device_class
+#from available_devices import dict_device_class, JSON_dict_device_class
 from device_creator.dev_creator import deviceCreator
 from device_creator.test_commands import TestCommands
 from device_creator.dev_template import templates
@@ -32,8 +33,9 @@ from Installation_class import installation_class
 from interface.installation_check_devices import installation_Ui_Dialog
 from interface.main_window import Ui_MainWindow
 from interface.selectdevice_window import Ui_Selectdevice
-from controlDevicesJSON import search_devices_json, validate_json_schema
+from controlDevicesJSON import search_devices_json, validate_json_schema, get_new_JSON_devs
 from localJSONControl import localDeviceControl
+from device_selector import deviceSelector
 
 VERSION_APP = "1.0.3"
 logger = logging.getLogger(__name__)
@@ -43,6 +45,14 @@ def is_admin():
         return ctypes.windll.shell32.IsUserAnAdmin()
     else:  # Linux/Unix
         return os.geteuid() == 0
+    
+@dataclass
+class devFile:
+    path: str
+    name: str
+    message: str
+    status: bool
+    json_data: dict
 
 class MyWindow(QtWidgets.QMainWindow):
     global VERSION_APP
@@ -54,26 +64,18 @@ class MyWindow(QtWidgets.QMainWindow):
             "exp_control" + VERSION_APP,
         )
         current_dir =os.path.dirname(os.path.realpath(__file__))
-        #self.directory_devices = os.path.join(current_dir, "Devices", "JSONDevices")#for tests
         self.directory_devices = os.path.join(current_dir, "my_devices")
-        self.JSON_devices = {}
-
-        json_devices = search_devices_json(self.directory_devices)
-        for device, file_path in json_devices.items():
-            result, message = validate_json_schema(file_path, templates)
-            if result:
-                self.JSON_devices[device] = file_path
-            print(device,result, message)
+        self.JSON_devices = get_new_JSON_devs(self.directory_devices)
 
         self.graph_window   = None
         self.device_creator = deviceCreator()
+        self.device_selector = None
+
+        self.select_local_device = None
 
         logger.warning(f"Start Version {VERSION_APP}, Admin {is_admin()}")
 
         super().__init__()
-
-        self.dict_device_class = dict_device_class
-        self.available_dev = list(self.dict_device_class.keys())
 
         self.ui = Ui_MainWindow(version = VERSION_APP, main_class=self)
         logger.debug("запуск программы")
@@ -85,10 +87,8 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.actionCreateNew.triggered.connect(self.open_create_new_device)
         self.cur_install = installation_class(
             settings=self.settings, 
-            dict_device_class=self.dict_device_class,
             version = VERSION_APP
         )
-        self.current_installation_list = []
 
         #======================languages load==========================
 
@@ -184,12 +184,11 @@ class MyWindow(QtWidgets.QMainWindow):
         self.key_to_new_window_installation = False
 
     def open_select_device_window(self):
-        self.select_local_device = QtWidgets.QDialog()
-        self.ui_window_local_device = Ui_Selectdevice()
-        
-        self.ui_window_local_device.setupUi(self.select_local_device, self, self.directory_devices)
-        self.select_local_device.show()
-
+        if not self.device_selector:
+            self.device_selector = deviceSelector()
+        device = self.device_selector.get_single_device()
+        self.message_from_new_device_local_control( device )
+            
     def set_json_device_directory(self, directory):
         self.directory_devices = directory
 
@@ -201,25 +200,25 @@ class MyWindow(QtWidgets.QMainWindow):
             QApplication.translate('base_install',"Выберите папку с приборами"),
             options=options,
         )
-        self.set_json_device_directory(ans)
+        if ans:
+            logger.info(f"Выбран путь {ans} для приборов")
+        return ans
 
     def open_installation_window(self):
         if self.key_to_new_window_installation:
             self.info_window(QApplication.translate( "MyWindow" , "установка уже собрана"))
         else:
-            self.new_window = QtWidgets.QDialog()
-            self.ui_window = installation_Ui_Dialog()
-            self.ui_window.setupUi(self.new_window, self, self.available_dev, self.directory_devices)
-            # self.key_to_new_window_installation = True
-            self.new_window.show()
+            if not self.device_selector:
+                self.device_selector = deviceSelector()
+            device_list, json_device_dict = self.device_selector.get_multiple_devices()
 
-    def message_from_new_installation(self, device_list, json_device_list):
-        if device_list or json_device_list:
+            self.message_from_new_installation(device_list, json_device_dict)
+
+    def message_from_new_installation(self, device_list, json_device_dict):
+        if device_list or json_device_dict:
+
             self.key_to_new_window_installation = True
-            self.current_installation_list = device_list
-            self.cur_install.reconstruct_installation(
-                self.current_installation_list
-            )
+            self.cur_install.reconstruct_installation(device_list, json_device_dict)
             self.cur_install.show_window_installation()
 
             if self.ui.is_design_mode:
@@ -245,37 +244,22 @@ class MyWindow(QtWidgets.QMainWindow):
             self.cur_install.close_window_installation()
             self.open_installation_window()
 
-    def message_from_new_device_local_control(self, name):
-        self.select_local_device.close()
-        if name not in self.dict_active_local_devices.keys():
-            if name == "SVPS34":
-                self.dict_active_local_devices[name] = Ui_SVPS34_control()
-                self.dict_active_local_devices[name].setupUi()
-                self.dict_active_local_devices[name].show()
+    def message_from_new_device_local_control(self, device):
+        if isinstance(device, str):
+            if device not in self.dict_active_local_devices.keys():
+                if device == "SVPS34":
+                    self.dict_active_local_devices[device] = Ui_SVPS34_control()
+                    self.dict_active_local_devices[device].setupUi()
+                    self.dict_active_local_devices[device].show()
             else:
-                if os.path.exists(name):
-                    answer, message = validate_json_schema(name, templates=templates)
-                    if answer:
-                        self.dict_active_local_devices[name] = localDeviceControl(name)
-                        self.dict_active_local_devices[name].show()
-                    else:
-                        QMessageBox.critical(None, QApplication.translate('device_creator',"Ошибка"), QApplication.translate('device_creator',"Формат файла не верен, создайте файл прибора с помощью конструктора."))
+                self.dict_active_local_devices[device].show()
+
+        else: #этот пункт на случай переданного json прибора
+                if device.name not in self.dict_active_local_devices.keys():
+                        self.dict_active_local_devices[device.name] = localDeviceControl(device)
+                        self.dict_active_local_devices[device.name].show()
                 else:
-                    text=QApplication.translate('main install',"{path} не найден. Проверьте расположение.")
-                    text = text.format(path = name)
-                    QMessageBox.critical(None, QApplication.translate('device_creator',"Ошибка"), text)
-
-        else:
-            self.dict_active_local_devices[name].show()
-            # del self.dict_active_local_devices[name]
-
-    def closeEvent(self, event):
-        """Событие закрытия окна"""
-        # эти пункты испльзуются при добавлении в трей
-        # event.ignore()  # Игнорируем событие закрытия
-        # self.hide()     # Скрываем окно
-
-        event.accept()  # Закрытие окна
+                    self.dict_active_local_devices[device.name].show()
 
     def tray_icon_activated(self, reason):
         if reason == QtWidgets.QSystemTrayIcon.Trigger:

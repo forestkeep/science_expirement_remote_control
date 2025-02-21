@@ -160,7 +160,6 @@ class analyse(baseInstallation):
 
     def cycle_analyse(self):
         """проводим анализ на предмет зацикливания, если оно обнаружено, то необходимо установить флаг готовности одного прибора из цикла, чтобы цикл начался."""
-        #names = copy.deepcopy(self.current_installation_list)
 
         names = copy.deepcopy(list(self.dict_active_device_class.keys()))
         sourse = []

@@ -5,8 +5,8 @@
     "channels parameters": {
         "max_channels_voltage": [
             "<class 'int'>",
-            "33",
-            "29"
+            "30",
+            "30"
         ],
         "max_channels_current": [
             "<class 'int'>",
