@@ -416,6 +416,7 @@ class baseInstallation:
                                                             self.is_exp_run_anywhere,
                                                             self.is_delete_buf_file,
                                                             self.way_to_save_file,
+                                                            self.type_file_for_result,
                                                             self.repeat_experiment,
                                                             self.repeat_meas
                                                            )

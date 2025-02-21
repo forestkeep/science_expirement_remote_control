@@ -151,10 +151,11 @@ class experimentSettings():
                     is_exp_run_anywhere,
                     is_delete_buf_file,
                     way_to_save,
+                    type_file_for_result,
                     repeat_exp,
                     repeat_meas
                     ):
-
+        self.type_file_for_result = type_file_for_result
         self.window_dialog.repeat_measurement_enter.setCurrentText(str(repeat_meas))
         self.window_dialog.repeat_exp_enter.setCurrentText( str(repeat_exp) )
         self.window_dialog.check_boxes_1[0].setChecked( is_exp_run_anywhere == True )
