@@ -42,11 +42,12 @@ class deviceSelector():
 
         answer = self.single_select_win.exec_()
         if answer:
-            print(self.single_select_win.choised_device)
             try:
                 answer = self.JSON_devices[ self.single_select_win.choised_device ]
             except:
                 answer = self.single_select_win.choised_device
+        if answer == 0:
+            answer = None
 
         return answer
 

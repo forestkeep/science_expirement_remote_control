@@ -46,7 +46,7 @@ class baseInstallation:
         self.is_experiment_endless = False
         self.pbar_percent = 0
         self.way_to_save_file = False
-        self.type_file_for_result = type_save_file.txt
+        self.type_file_for_result = type_save_file.excel
 
         self.dict_active_device_class = {}
         self.clients = []
@@ -173,7 +173,7 @@ class baseInstallation:
             self.installation_window,
             QApplication.translate('base_install',"укажите путь сохранения результатов"),
             "",
-            "Книга Excel (*.xlsx)",
+            "Книга Excel (*.xlsx);; Text Files(*.txt)",
             #"Text Files(*.txt);; Книга Excel (*.xlsx);;Origin (*.opju)",
             options=options,
         )
@@ -195,7 +195,7 @@ class baseInstallation:
                 pass
 
             self.way_to_save_file = fileName
-            #self.installation_window.way_save_text.setText(str(self.way_to_save_file))
+
             if self.save_results_now == True:
                 self.save_results_now = False
 
@@ -410,6 +410,7 @@ class baseInstallation:
         self.is_exp_run_anywhere,
         self.is_delete_buf_file,
         self.way_to_save_file,
+        self.type_file_for_result,
         self.repeat_experiment,
         self.repeat_meas) = self.gen_set_class.read_settings(
                                                             self.is_exp_run_anywhere,

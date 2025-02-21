@@ -17,7 +17,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 logger = logging.getLogger(__name__)
 
 class installation_Ui_Dialog(QtWidgets.QDialog):
-    signal_to_main_window = QtCore.pyqtSignal(list, list)
 
     def __init__(self, available_devices, json_devices = None):
         super().__init__()
@@ -74,7 +73,6 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
         self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
         self.verticalLayout_2.addWidget(self.buttonBox)
         
-        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).clicked.connect(self.send_signal)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
         
@@ -132,4 +130,3 @@ class installation_Ui_Dialog(QtWidgets.QDialog):
         for check in self.checkBoxes_create_dev:
             if check.isChecked():
                 json_device_list.append(check.text())
-        self.signal_to_main_window.emit(device_list, json_device_list)

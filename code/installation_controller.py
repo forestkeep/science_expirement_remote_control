@@ -245,21 +245,22 @@ class MyWindow(QtWidgets.QMainWindow):
             self.open_installation_window()
 
     def message_from_new_device_local_control(self, device):
-        if isinstance(device, str):
-            if device not in self.dict_active_local_devices.keys():
-                if device == "SVPS34":
-                    self.dict_active_local_devices[device] = Ui_SVPS34_control()
-                    self.dict_active_local_devices[device].setupUi()
-                    self.dict_active_local_devices[device].show()
-            else:
-                self.dict_active_local_devices[device].show()
-
-        else: #этот пункт на случай переданного json прибора
-                if device.name not in self.dict_active_local_devices.keys():
-                        self.dict_active_local_devices[device.name] = localDeviceControl(device)
-                        self.dict_active_local_devices[device.name].show()
+        if device:
+            if isinstance(device, str):
+                if device not in self.dict_active_local_devices.keys():
+                    if device == "SVPS34":
+                        self.dict_active_local_devices[device] = Ui_SVPS34_control()
+                        self.dict_active_local_devices[device].setupUi()
+                        self.dict_active_local_devices[device].show()
                 else:
-                    self.dict_active_local_devices[device.name].show()
+                    self.dict_active_local_devices[device].show()
+
+            else: #этот пункт на случай переданного json прибора
+                    if device.name not in self.dict_active_local_devices.keys():
+                            self.dict_active_local_devices[device.name] = localDeviceControl(device)
+                            self.dict_active_local_devices[device.name].show()
+                    else:
+                        self.dict_active_local_devices[device.name].show()
 
     def tray_icon_activated(self, reason):
         if reason == QtWidgets.QSystemTrayIcon.Trigger:
