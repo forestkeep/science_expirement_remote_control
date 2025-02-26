@@ -745,14 +745,24 @@ class graphMain(QObject):
             elif obj is self.y_second_param_selector:
                 self.previous_y2 = self.handle_selector(self.y_second_param_selector, self.previous_y2, string_y2)
 
+        print(f"{string_x=} {string_y=} {string_y2=}")
+        print(f"{self.previous_x=} {self.previous_y=} {self.previous_y2=}")
+
         #блок проверки параметров
-
         block_parameters = ("time", "Select parameter")
-        check_main = not (string_x in block_parameters or string_y in block_parameters)
-        check_second = not (string_x in block_parameters or string_y2 in block_parameters)
 
-        if not check_second and not check_main:
-            print("block parameters error")
+        is_x_correct = (string_x != "Select parameter")
+        is_y_correct = (string_y not in block_parameters)
+        is_y2_correct = (string_y2 not in block_parameters)
+
+        if not is_x_correct:
+            print("x не корректен")
+            return
+        if obj is self.y_first_param_selector and not is_y_correct:
+            print("y не корректен")
+            return
+        if obj is self.y_second_param_selector and not is_y2_correct:
+            print("y2 не корректен")
             return
 
         #==========================================================================
@@ -772,7 +782,7 @@ class graphMain(QObject):
                 self.y_second_param_selector.setCurrentItem(item, QItemSelectionModel.Clear)
                 self.y_first_param_selector.addItem(item.text())
 
-        elif obj is self.y_first_param_selector and check_main:
+        elif obj is self.y_first_param_selector:
                 ret = self.handle_skip_draw(self.y_first_param_selector, self.y_second_param_selector, self.graphView, string_x, string_y, is_multiple)
                 if ret:
                     return
@@ -803,7 +813,7 @@ class graphMain(QObject):
                 self.y_second_axis_label = ""
 
 
-            if not self.second_check_box.isChecked() or not check_second:
+            if not self.second_check_box.isChecked():
                 for data_curve in self.stack_curve.values():
                     if data_curve.is_draw and data_curve.parent_graph_field is self.p2:
                         data_curve.delete_curve_from_graph()
