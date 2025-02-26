@@ -45,6 +45,8 @@ class installation_class(experimentControl, analyse):
         self.version_app         = version
         self.load_settings()  # reading settings
 
+        self.device_selector = None
+
         self.dict_device_class  = dict_device_class
         self.JSON_dict_device_class = JSON_dict_device_class
 

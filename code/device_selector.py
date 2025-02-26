@@ -6,9 +6,9 @@ import logging
 
 from interface.installation_check_devices import installation_Ui_Dialog
 from interface.selectdevice_window import Ui_Selectdevice
-from available_devices import dict_device_class, JSON_dict_device_class
+from available_devices import dict_device_class
 from controlDevicesJSON import search_devices_json, validate_json_schema, get_new_JSON_devs
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtWidgets
 from dataclasses import dataclass
 from device_creator.dev_template import templates
 
@@ -55,6 +55,12 @@ class deviceSelector():
         if not self.multiple_select_win:
             self.multiple_select_win = installation_Ui_Dialog( available_devices=dict_device_class.keys() )
             self.multiple_select_win.open_new_path.clicked.connect(self.callback_select_device)
+
+        for check in self.multiple_select_win.checkBoxes_create_dev:
+            check.setChecked(False)
+            
+        for check in self.multiple_select_win.checkBoxes:
+            check.setChecked(False)
 
         self.selection_type = 'multiple'
 
