@@ -23,18 +23,17 @@ from PyQt5.QtWidgets import QApplication
 import qdarktheme
 
 import interface.info_window_dialog
-#from available_devices import dict_device_class, JSON_dict_device_class
 from device_creator.dev_creator import deviceCreator
 from device_creator.test_commands import TestCommands
 from Devices.svps34_control import Ui_SVPS34_control
 from graph.online_graph import GraphWindow
 from Installation_class import installation_class
 from interface.main_window import Ui_MainWindow
-from controlDevicesJSON import search_devices_json, get_new_JSON_devs
+from controlDevicesJSON import search_devices_json
 from localJSONControl import localDeviceControl
 from device_selector import deviceSelector
 
-VERSION_APP = "1.0.3"
+VERSION_APP = "1.0.5"
 logger = logging.getLogger(__name__)
 
 def is_admin():
@@ -60,9 +59,6 @@ class MyWindow(QtWidgets.QMainWindow):
             "misis_lab",
             "exp_control" + VERSION_APP,
         )
-        current_dir =os.path.dirname(os.path.realpath(__file__))
-        self.directory_devices = os.path.join(current_dir, "my_devices")
-        self.JSON_devices = get_new_JSON_devs(self.directory_devices)
 
         self.graph_window   = None
         self.device_creator = deviceCreator()

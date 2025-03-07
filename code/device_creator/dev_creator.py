@@ -20,19 +20,18 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QInputDialog,
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QDialog, QTableWidget, QTableWidgetItem,
-    QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QMessageBox,
-    QSizePolicy, QHeaderView
+    QVBoxLayout, QPushButton, QHBoxLayout, QMessageBox, QHeaderView
 )
 from PyQt5.QtGui import QColor
 
-if __name__ == '__main__':
+try:
     from dev_template import templates
     from test_commands import TestCommands
-else:
+except:
     from device_creator.dev_template import templates
     from device_creator.test_commands import TestCommands
 
-TYPE_DEVICES = ['oscilloscope', 'power supply']
+TYPE_DEVICES = ['power_supply']
 class InvalidTemplate(Exception):
     pass
 
@@ -69,7 +68,6 @@ class deviceCreator(QDialog):
                         Обратите внимание, что устройство должно поддерживать SCPI формат команд,
                           в ином случае добавить его не получится.""" )
         self.main_label = QLabel(welcome_message, self)
-        #self.main_label.setAlignment(Qt.AlignCenter)
         
         self.test_commands_window = None
         self.test_button = QPushButton(QApplication.translate('device_creator',"Протестировать команду"))
@@ -179,8 +177,6 @@ class deviceCreator(QDialog):
                     row_results.append(item.text())
             for res in row_results:
                 self.result_parameters[key].append(res)
-
-        print(self.result_parameters)
 
         self.first_lay.removeWidget(self.table)
         self.table.setParent(None)

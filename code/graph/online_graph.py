@@ -17,14 +17,14 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
                              QSizePolicy, QSplitter, QTabWidget, QWidget)
 
-if __name__ == "__main__":
+try:
     from filters_win import filtersClass
     from graph_main import graphMain
     from notification import NotificationWidget
     from osc_wave_graph import graphOsc
     from tabPage_win import tabPage
     from tree_curves import treeWin
-else:
+except:
     from graph.filters_win import filtersClass
     from graph.graph_main import graphMain
     from graph.notification import NotificationWidget
