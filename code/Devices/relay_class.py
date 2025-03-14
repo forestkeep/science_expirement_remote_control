@@ -217,7 +217,7 @@ class relayPr1Class(base_device):
     def do_action(self, ch, repeat=3) -> bool:  # переопределена
         """Производит действие приборра"""
         parameters = [self.name + " " + str(ch.get_name())]
-        start_time = time.time()
+        start_time = time.perf_counter()
         if ch.get_type() == "act":
             self.switch_channel(number=ch.get_number())
             do_next = True
@@ -269,12 +269,12 @@ class relayPr1Class(base_device):
                 if answer != ch_response_to_step.End_list_of_steps:
                     answer = ch_response_to_step.Step_done
 
-            return answer, parameters, time.time() - start_time
-        return ch_response_to_step.Incorrect_ch, parameters, time.time() - start_time
+            return answer, parameters, time.perf_counter() - start_time
+        return ch_response_to_step.Incorrect_ch, parameters, time.perf_counter() - start_time
 
     def do_meas(self, ch):
         self.switch_channel(number=ch.get_number())
-        start_time = time.time()
+        start_time = time.perf_counter()
         parameters = [self.name + " " + str(ch.get_name())]
         if ch.get_type() == "meas":
             is_correct = True
@@ -355,8 +355,8 @@ class relayPr1Class(base_device):
                 if ans != ch_response_to_step.End_list_of_steps:
                     ans = ch_response_to_step.Step_done
 
-            return ans, parameters, time.time() - start_time
-        return ch_response_to_step.Incorrect_ch, parameters, time.time() - start_time
+            return ans, parameters, time.perf_counter() - start_time
+        return ch_response_to_step.Incorrect_ch, parameters, time.perf_counter() - start_time
 
     def read_hall_sensors(self):
         response = self._read_reg(adr=0x03F1, slave=0x0A, num_registers=0x0014)

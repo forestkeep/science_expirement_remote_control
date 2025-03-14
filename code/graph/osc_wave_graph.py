@@ -38,9 +38,9 @@ logger = logging.getLogger(__name__)
 
 def time_decorator(func):
     def wrapper(*args, **kwargs):
-        start_time = time.time()
+        start_time = time.perf_counter()
         result = func(*args, **kwargs)
-        end_time = time.time()
+        end_time = time.perf_counter()
         return result
     return wrapper
 

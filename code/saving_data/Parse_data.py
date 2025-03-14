@@ -400,7 +400,7 @@ def process_and_export(
 
 import time
 
-start = time.time()
+start = time.perf_counter()
     
 def func_answer_test(status, output_file_path, message, deleted_buf_file = False):
     global start
@@ -410,7 +410,7 @@ def func_answer_test(status, output_file_path, message, deleted_buf_file = False
     else:
         print("Ошибка сохранения.", message)
 
-    print(f"Время выполнения {time.time() - start}")
+    print(f"Время выполнения {time.perf_counter() - start}")
 
 if __name__ == "__main__":
     input_file = "pig_in_a_poke_1_2025-02-21 17-45-00.txt"

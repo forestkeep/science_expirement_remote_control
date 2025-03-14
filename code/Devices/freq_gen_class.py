@@ -98,9 +98,9 @@ class FreqGen(base_device):
 
     def time_decorator(func):
         def wrapper(*args, **kwargs):
-            start_time = time.time()
+            start_time = time.perf_counter()
             result = func(*args, **kwargs)
-            end_time = time.time()
+            end_time = time.perf_counter()
             print(f"Метод {func.__name__} - {end_time - start_time} с")
             return result
 
@@ -638,7 +638,7 @@ class FreqGen(base_device):
     def do_action(self, ch, repeat=3) -> bool:
         """активирует следующие значение тока, напряжения прибора, если текущие значения максимальны, то возвращает ложь"""
         parameters = [self.name + " " + str(ch.get_name())]
-        start_time = time.time()
+        start_time = time.perf_counter()
         if ch.get_type() == "act":
             if ch.step_index < len(ch.steps_voltage) - 1:
                 if (
@@ -653,7 +653,7 @@ class FreqGen(base_device):
                         return (
                             ch_response_to_step.Step_fail,
                             parameters,
-                            time.time() - start_time,
+                            time.perf_counter() - start_time,
                         )
 
                 i = 0
@@ -697,12 +697,12 @@ class FreqGen(base_device):
                 if answer != ch_response_to_step.End_list_of_steps:
                     answer = ch_response_to_step.Step_done
 
-            return answer, parameters, time.time() - start_time
-        return ch_response_to_step.Incorrect_ch, parameters, time.time() - start_time
+            return answer, parameters, time.perf_counter() - start_time
+        return ch_response_to_step.Incorrect_ch, parameters, time.perf_counter() - start_time
 
     def do_meas(self, ch):
         """прочитать текущие и настроенные значения"""
-        start_time = time.time()
+        start_time = time.perf_counter()
         parameters = [self.name + " " + str(ch.get_name())]
         if ch.get_type() == "meas":
 
@@ -779,9 +779,9 @@ class FreqGen(base_device):
             else:
                 ans = ch_response_to_step.Step_fail
 
-            return ans, parameters, time.time() - start_time
+            return ans, parameters, time.perf_counter() - start_time
 
-        return ch_response_to_step.Incorrect_ch, parameters, time.time() - start_time
+        return ch_response_to_step.Incorrect_ch, parameters, time.perf_counter() - start_time
 
     def __fill_arrays(self, start_value, stop_value, step, constant_value):
         steps_1 = []

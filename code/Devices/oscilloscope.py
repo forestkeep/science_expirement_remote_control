@@ -1016,7 +1016,7 @@ class oscilloscopeClass(base_device):
     def do_meas(self, ch):
         """прочитать текущие и настроенные значения"""
         self.switch_channel(ch_name=ch.get_name())
-        start_time = time.time()
+        start_time = time.perf_counter()
         parameters = [self.name + " " + str(ch.get_name())]
         message = False
         if ch.get_type() == "meas":
@@ -1027,9 +1027,9 @@ class oscilloscopeClass(base_device):
                 timeout = 3
 
                 self.command.single()
-                time_stamp = time.time()
+                time_stamp = time.perf_counter()
                 while self.command.get_status() != "STOP\n":
-                    if time.time() - time_stamp > timeout:
+                    if time.perf_counter() - time_stamp > timeout:
                         message = QApplication.translate("Device","Остановки по триггеру не произошло, останавливаем принудительно")
                         self.command.stop()
             else:
@@ -1052,8 +1052,8 @@ class oscilloscopeClass(base_device):
 
             # print(f"{parameters=}")
 
-            return ans, parameters, time.time() - start_time, message
-        return ch_response_to_step.Incorrect_ch, parameters, time.time() - start_time
+            return ans, parameters, time.perf_counter() - start_time, message
+        return ch_response_to_step.Incorrect_ch, parameters, time.perf_counter() - start_time
 
     def distribute_parameters(self, input_array):
         """функция делит входной массив с параметрами на массивы с параметрами соответствующих каналов, возвращает словарь, ключи - номера каналов. общие параметры добавляются к каждому массиву"""

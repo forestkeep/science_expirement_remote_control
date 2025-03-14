@@ -182,7 +182,7 @@ class akip2404Class(base_device):
     def do_meas(self, ch):
         """прочитать текущие и настроенные значения"""
         self.switch_channel(ch_name=ch.get_name())
-        start_time = time.time()
+        start_time = time.perf_counter()
         parameters = [self.name + " " + str(ch.get_name())]
         if ch.get_type() == "meas":
             #print("делаем измерение", self.name, str(ch.get_name()))
@@ -212,8 +212,8 @@ class akip2404Class(base_device):
 
                 ans = ch_response_to_step.Step_fail
 
-            return ans, parameters, time.time() - start_time
-        return ch_response_to_step.Incorrect_ch, parameters, time.time() - start_time
+            return ans, parameters, time.perf_counter() - start_time
+        return ch_response_to_step.Incorrect_ch, parameters, time.perf_counter() - start_time
 
     def _get_current_voltage(self, ch_num) -> float:
         """возвращает значение установленного напряжения канала"""
@@ -240,8 +240,8 @@ class akip2404Class(base_device):
             bytes(command, "ascii") + b" " + bytes(param, "ascii") + b"\r\n"
         )
 
-        start_time = time.time()
-        while time.time() - start_time < timeout:
+        start_time = time.perf_counter()
+        while time.perf_counter() - start_time < timeout:
             line = self.client.readline().decode().strip()
             if line:
                 return line
@@ -255,8 +255,8 @@ class akip2404Class(base_device):
             param = str(param)
             self.client.write(bytes(command, "ascii") + b"? " + bytes(param, "ascii") + b"\r\n")
 
-        start_time = time.time()
-        while time.time() - start_time < timeout:
+        start_time = time.perf_counter()
+        while time.perf_counter() - start_time < timeout:
             line = self.client.readline().decode().strip()
             if line:
                 return line

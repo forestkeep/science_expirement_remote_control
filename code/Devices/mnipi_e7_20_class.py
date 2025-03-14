@@ -242,7 +242,7 @@ class mnipiE720Class(base_device):
         self.switch_channel(ch_name=ch.get_name())
         #print("делаем измерение", self.name)
 
-        start_time = time.time()
+        start_time = time.perf_counter()
         parameters = [self.name + " " + str(ch.get_name())]
         is_correct = True
 
@@ -291,7 +291,7 @@ class mnipiE720Class(base_device):
             #ans = ch_response_to_step.Step_fail
             ans = ch_response_to_step.Step_done
 
-        return ans, parameters, time.time() - start_time
+        return ans, parameters, time.perf_counter() - start_time
 
 
     def meas_focus_parameter(self, focus_val, attempts):
@@ -434,7 +434,7 @@ class mnipiE720Class(base_device):
     def read_parameters(self, client, is_debug):
             is_reading = True
             timeout = 1#sec
-            timestamp = time.time()
+            timestamp = time.perf_counter()
             parameters =[]
             first_read_byte = False
             status_read = False
@@ -455,7 +455,7 @@ class mnipiE720Class(base_device):
                 if is_debug:
                     is_reading = False
 
-                if time.time() - timestamp >= timeout:
+                if time.perf_counter() - timestamp >= timeout:
                     is_reading = False
 
             #============================
@@ -515,7 +515,7 @@ if __name__ == "__main__":
             flag = False
             status_read = False
             i = 0
-            timestamp = time.time()
+            timestamp = time.perf_counter()
             while is_reading:
                 data = client.read()  # Читаем один байт данных
                 if data:
@@ -529,7 +529,7 @@ if __name__ == "__main__":
 
                     if flag:
                         mass.append(binary_data)
-                if time.time() - timestamp >= timeout:
+                if time.perf_counter() - timestamp >= timeout:
                     is_reading = False
 
 #0xAA 1, Offset 2, Level 1, Frequency 3, Flags 1, Mode 1, Limit 1, ImParam 1, SecParam 1, SecParam_Value 4, ImParam_Value 4, onChange 1, CS1,

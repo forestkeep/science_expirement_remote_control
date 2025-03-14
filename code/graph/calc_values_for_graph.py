@@ -17,9 +17,9 @@ import numpy as np
 
 def time_decorator(func):
     def wrapper(*args, **kwargs):
-        start_time = time.time()
+        start_time = time.perf_counter()
         result = func(*args, **kwargs)
-        end_time = time.time()
+        end_time = time.perf_counter()
         print(f"Метод {func.__name__} - {end_time - start_time} с")
         return result
 
@@ -150,7 +150,7 @@ class ArrayProcessor:
     @staticmethod
     def combine_all_arrays(all_x: list, all_y: list, timeout = 5) -> list:
         status = True
-        start_stamp = time.time()
+        start_stamp = time.perf_counter()
         while not ArrayProcessor.are_all_arrays_equal(all_x):
             for i in range(len(all_x)-1):
                 all_y[i], all_y[i+1], main_x  = ArrayProcessor.combine_interpolate_arrays(
@@ -162,7 +162,7 @@ class ArrayProcessor:
                 all_x[i+1] = main_x
                 all_x[i] = main_x
 
-            if time.time() - start_stamp >= timeout:
+            if time.perf_counter() - start_stamp >= timeout:
                 status = False
 
 
