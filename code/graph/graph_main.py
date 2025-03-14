@@ -19,16 +19,18 @@ from PyQt5.QtCore import QItemSelectionModel, QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QFileDialog, QHBoxLayout,
                              QLabel, QListWidget, QListWidgetItem, QPushButton,
-                             QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
+                             QSizePolicy, QSpacerItem, QVBoxLayout, QWidget, QDialog)
 
 try:
     from calc_values_for_graph import ArrayProcessor
     from colors import GColors, cold_colors, warm_colors
+    from Link_data_import_win import Check_data_import_win
     from curve_data import linearData
     from Message_graph import messageDialog
 except:
     from graph.calc_values_for_graph import ArrayProcessor
     from graph.colors import GColors, cold_colors, warm_colors
+    from graph.Link_data_import_win import Check_data_import_win
     from graph.curve_data import linearData
     from graph.Message_graph import messageDialog
 
@@ -156,12 +158,19 @@ class graphMain(QObject):
                 if 'time' not in df.columns:
                     self.is_time_column = False
 
-                df = df.dropna(axis=1, how='all')#удаление пустых столбцов
+                df = df.dropna(axis=1, how='all')
+
+                window = Check_data_import_win([col for col in df.columns], self.update_dict_param)
+                ans = window.exec_()
+                if ans == QDialog.Accepted: 
+                    selected_columns = [cb.text() for cb in window.checkboxes if cb.isChecked()]
+                else:
+                    return
 
                 result = {}
                 errors_col = []
 
-                for col in df.columns:
+                for col in selected_columns:
                     try:
                         df[col] = pd.to_numeric(df[col], errors='raise')
                     except ValueError:
@@ -178,7 +187,7 @@ class graphMain(QObject):
                     )
                     message.exec_()
                     
-                for col in df.columns:
+                for col in selected_columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
                     col_ = col.replace('(', '[').replace(')', ']')
                     result[col_] = np.array( df[col].tolist() )

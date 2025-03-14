@@ -165,6 +165,7 @@ class graphOsc:
             if self.main_class.experiment_controller.is_experiment_running():
                 self.main_class.show_tooltip( QApplication.translate("GraphWindow","Дождитесь окончания эксперимента"), timeout=3000)
                 return
+            
         
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
@@ -184,7 +185,7 @@ class graphOsc:
 
                 df = df.dropna(axis=1, how='all')
 
-                window = Check_data_import_win([col for col in df.columns], self.update_dict_param)
+                window = Check_data_import_win([col for col in df.columns], self.update_dict_param, True)
                 ans = window.exec_()
                 if ans == QDialog.Accepted: 
                     selected_step = window.step_combo.currentText()
