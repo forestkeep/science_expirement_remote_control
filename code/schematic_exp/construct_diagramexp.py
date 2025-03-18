@@ -160,7 +160,6 @@ class connection():
         return (start_point, end_point, direction_first, (is_overlap_x or is_overlap_y) )
        
     def setStyle(self, new_pen : QPen):
-        print("setStyle")
         self.pen = new_pen
 
     def add_in_simbol(self, coords: QPoint):
@@ -206,6 +205,11 @@ class connection():
         
         start_point, end_point, direction_first, is_overlap = self.get_coords()
 
+        if os.getenv("APP_THEME") == "dark":
+            sourse_color = QColor(120, 120, 0)
+        else:
+            sourse_color = QColor(200, 200, 200)
+
         if direction_first != False:
 
             try:
@@ -231,19 +235,18 @@ class connection():
                     painter.drawLine(midpoint.x(), start_point.y(), midpoint.x(), end_point.y())
                     painter.drawLine(midpoint.x(), end_point.y(), end_point.x(), end_point.y())
 
-                    painter.setPen(QColor(120, 120, 0))
+                    painter.setPen(sourse_color)
                     if direction_first == Position.LEFT:
                         painter.drawText(end_point.x()-text_width-10, end_point.y()-3, str(sig_text))
                     else:
                         painter.drawText(end_point.x()+10, end_point.y() + text_height, str(sig_text))
-
 
                 else:
                     painter.drawLine(start_point.x(), start_point.y(), start_point.x(), midpoint.y())
                     painter.drawLine(start_point.x(), midpoint.y(), end_point.x(), midpoint.y())
                     painter.drawLine(end_point.x(), midpoint.y(), end_point.x(), end_point.y())
 
-                    painter.setPen(QColor(120, 120, 0))
+                    painter.setPen(sourse_color)
                     painter.drawText(end_point.x()+10, end_point.y(), str(sig_text))
             else:
                 #две линии
@@ -254,10 +257,9 @@ class connection():
                     painter.drawLine(start_point.x(), start_point.y(), start_point.x(), end_point.y())
                     painter.drawLine(start_point.x(), end_point.y(), end_point.x(), end_point.y())
 
-                painter.setPen(QColor(120, 120, 0))
+                painter.setPen(sourse_color)
                 painter.drawText(end_point.x()+10, end_point.y(), str(sig_text))
 
-        
             self.add_in_simbol(end_point)
         
     def draw( self ):
@@ -675,7 +677,6 @@ class expDiagram(QWidget):
             lb = blockDevice(ch.get_name(), dev.get_name(), self)
             lb.type_trigger = dev.get_trigger(ch)
             lb.value_trigger = dev.get_trigger_value(ch)
-            #print(lb.value_trigger)
             lb.number_meas = dev.get_steps_number(ch)
             lb.show()
             lb.setStyleSheet(f"background-color: {color};")

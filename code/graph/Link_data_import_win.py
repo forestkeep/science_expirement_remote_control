@@ -15,27 +15,36 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                              QHBoxLayout, QLabel, QPushButton, QVBoxLayout)
 
 
+
 class Check_data_import_win(QDialog):
-    def __init__(self, strings, callback):
+    def __init__(self, strings, callback, is_osc=False):
         super().__init__()
         self.callback = callback
-        self.initUI(strings)
+        self.initUI(strings, is_osc)
 
-    def initUI(self, strings):
+    def initUI(self, strings, is_osc):
         layout_vert_main = QVBoxLayout()
         layout_hor = QHBoxLayout()
-        lay_combo = QVBoxLayout() 
         lay_columns = QVBoxLayout() 
+        if is_osc:
+            title_text = QApplication.translate("GraphWindow","Выберите столбец с шагом времени и отметьте столбцы для импорта")
+        else:
+            title_text = QApplication.translate("GraphWindow","Выберите столбцы для импорта")
 
-        title_label = QLabel( QApplication.translate("GraphWindow","Выберите столбец с шагом времени и отметьте столбцы для импорта") )
+        title_label = QLabel( title_text)
         layout_vert_main.addWidget(title_label)
 
-        step_label = QLabel( QApplication.translate("GraphWindow","Шаг времени"))
+        
         self.step_combo = QComboBox()
         self.step_combo.addItems(strings)
+        if is_osc:
+            lay_combo = QVBoxLayout() 
+            step_label = QLabel( QApplication.translate("GraphWindow","Шаг времени"))
+            lay_combo.addWidget(step_label)
+            lay_combo.addWidget(self.step_combo)
 
-        lay_combo.addWidget(step_label)
-        lay_combo.addWidget(self.step_combo)
+            layout_hor.addLayout(lay_combo)
+
         self.checkboxes = []
 
         for string in strings:
@@ -43,7 +52,6 @@ class Check_data_import_win(QDialog):
             lay_columns.addWidget(checkbox)
             self.checkboxes.append(checkbox)
 
-        layout_hor.addLayout(lay_combo)
         layout_hor.addLayout(lay_columns)
         layout_vert_main.addLayout(layout_hor)
 
@@ -56,9 +64,13 @@ class Check_data_import_win(QDialog):
     def on_ok(self):
         self.accept()
 
+    def retranslateUi(self):
+        self.setWindowTitle( QApplication.translate("GraphWindow","Мастер импорта") )
+        
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     sample_strings = ["sec", "Ch 2", "CH 3"]  # Пример строк
-    window = Check_data_import_win(sample_strings, None)
+    window = Check_data_import_win(sample_strings, None, True)
     window.show()
     sys.exit(app.exec_())

@@ -1,3 +1,14 @@
+# Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
+# 
+# This file may be used under the terms of the GNU General Public License
+# version 3.0 as published by the Free Software Foundation and appearing in
+# the file LICENSE included in the packaging of this file. Please review the
+# following information to ensure the GNU General Public License version 3.0
+# requirements will be met: https://www.gnu.org/copyleft/gpl.html.
+# 
+# This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+# WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
 import json
 import os
 from dataclasses import dataclass
@@ -12,8 +23,11 @@ class devFile:
     json_data: dict
 
 def validate_json_schema(file_path, templates):
-    with open(file_path, 'r') as file:
-        data = json.load(file)
+    try:
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        return False, f"Файл {file_path} не был найден", None
 
     device_type = data.get("device_type")
     if device_type not in templates:

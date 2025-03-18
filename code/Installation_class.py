@@ -45,6 +45,8 @@ class installation_class(experimentControl, analyse):
         self.version_app         = version
         self.load_settings()  # reading settings
 
+        self.device_selector = None
+
         self.dict_device_class  = dict_device_class
         self.JSON_dict_device_class = JSON_dict_device_class
 
@@ -96,9 +98,9 @@ class installation_class(experimentControl, analyse):
 
     def time_decorator(func):
         def wrapper(*args, **kwargs):
-            start_time = time.time()
+            start_time = time.perf_counter()
             result = func(*args, **kwargs)
-            end_time = time.time()
+            end_time = time.perf_counter()
             print(f"Метод {func.__name__} - {end_time - start_time} с")
             return result
 
@@ -419,12 +421,12 @@ class installation_class(experimentControl, analyse):
                     self.stop_experiment = False
                     
                     self.buf_file = self.create_buf_file()
-                    self.write_data_to_buf_file(message="Запущена установка \n\r")
+                    self.write_data_to_buf_file(message="installation start" + "\n\r")
                     lst_dev = ""
                     for dev in self.dict_active_device_class.values():
                         lst_dev += dev.get_name() + " "
                     self.write_data_to_buf_file(
-                        message="Список_приборов: " + lst_dev + "\r\n"
+                        message="device list: " + lst_dev + "\r\n"
                     )
                     self.write_settings_to_buf_file()
 
@@ -464,7 +466,7 @@ class installation_class(experimentControl, analyse):
     def write_settings_to_buf_file(self):
         for device_class in self.dict_active_device_class.values():
             self.write_data_to_buf_file(
-                message="Настройки " + str(device_class.get_name()) + "\r"
+                message="Settings " + str(device_class.get_name()) + "\r"
             )
             settings = device_class.get_settings()
             for set, key in zip(settings.values(), settings.keys()):
@@ -476,7 +478,7 @@ class installation_class(experimentControl, analyse):
                 if ch.is_ch_active():
 
                     self.write_data_to_buf_file(
-                        message="Настройки " + str(ch.get_name()) + "\r"
+                        message="Settings " + str(ch.get_name()) + "\r"
                     )
                     settings = ch.get_settings()
                     for set, key in zip(settings.values(), settings.keys()):
@@ -694,7 +696,7 @@ class installation_class(experimentControl, analyse):
                 self.installation_window,
                 QApplication.translate('base_install',"укажите путь сохранения результатов"),
                 "",
-                "Книга Excel (*.xlsx)",
+                "Книга Excel (*.xlsx);; Text Files(*.txt)",
                 #"Text Files(*.txt);; Книга Excel (*.xlsx);;Origin (*.opju)",
                 options=options,
             )

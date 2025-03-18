@@ -524,7 +524,7 @@ class sr830Class(base_device):
     def do_meas(self, ch):
         """прочитать текущие и настроенные значения"""
         self.switch_channel(ch_name=ch.get_name())
-        start_time = time.time()
+        start_time = time.perf_counter()
         parameters = [self.name + " " + str(ch.get_name())]
         if ch.get_type() == "meas":
             is_correct = True
@@ -635,8 +635,8 @@ class sr830Class(base_device):
 
                 ans = ch_response_to_step.Step_fail
 
-            return ans, parameters, time.time() - start_time
-        return ch_response_to_step.Incorrect_ch, parameters, time.time() - start_time
+            return ans, parameters, time.perf_counter() - start_time
+        return ch_response_to_step.Incorrect_ch, parameters, time.perf_counter() - start_time
 
 
 class ch_meas_sr830_class(base_ch):

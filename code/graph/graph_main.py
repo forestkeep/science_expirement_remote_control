@@ -19,24 +19,26 @@ from PyQt5.QtCore import QItemSelectionModel, QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QFileDialog, QHBoxLayout,
                              QLabel, QListWidget, QListWidgetItem, QPushButton,
-                             QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
+                             QSizePolicy, QSpacerItem, QVBoxLayout, QWidget, QDialog)
 
 try:
     from calc_values_for_graph import ArrayProcessor
     from colors import GColors, cold_colors, warm_colors
+    from Link_data_import_win import Check_data_import_win
     from curve_data import linearData
     from Message_graph import messageDialog
 except:
     from graph.calc_values_for_graph import ArrayProcessor
     from graph.colors import GColors, cold_colors, warm_colors
+    from graph.Link_data_import_win import Check_data_import_win
     from graph.curve_data import linearData
     from graph.Message_graph import messageDialog
 
 def time_decorator(func):
     def wrapper(*args, **kwargs):
-        start_time = time.time()
+        start_time = time.perf_counter()
         result = func(*args, **kwargs)
-        end_time = time.time()
+        end_time = time.perf_counter()
         print(f"Метод {func.__name__} - {end_time - start_time} с")
         return result
     return wrapper
@@ -156,12 +158,19 @@ class graphMain(QObject):
                 if 'time' not in df.columns:
                     self.is_time_column = False
 
-                df = df.dropna(axis=1, how='all')#удаление пустых столбцов
+                df = df.dropna(axis=1, how='all')
+
+                window = Check_data_import_win([col for col in df.columns], self.update_dict_param)
+                ans = window.exec_()
+                if ans == QDialog.Accepted: 
+                    selected_columns = [cb.text() for cb in window.checkboxes if cb.isChecked()]
+                else:
+                    return
 
                 result = {}
                 errors_col = []
 
-                for col in df.columns:
+                for col in selected_columns:
                     try:
                         df[col] = pd.to_numeric(df[col], errors='raise')
                     except ValueError:
@@ -178,7 +187,7 @@ class graphMain(QObject):
                     )
                     message.exec_()
                     
-                for col in df.columns:
+                for col in selected_columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
                     col_ = col.replace('(', '[').replace(')', ']')
                     result[col_] = np.array( df[col].tolist() )
@@ -745,14 +754,24 @@ class graphMain(QObject):
             elif obj is self.y_second_param_selector:
                 self.previous_y2 = self.handle_selector(self.y_second_param_selector, self.previous_y2, string_y2)
 
+        print(f"{string_x=} {string_y=} {string_y2=}")
+        print(f"{self.previous_x=} {self.previous_y=} {self.previous_y2=}")
+
         #блок проверки параметров
-
         block_parameters = ("time", "Select parameter")
-        check_main = not (string_x in block_parameters or string_y in block_parameters)
-        check_second = not (string_x in block_parameters or string_y2 in block_parameters)
 
-        if not check_second and not check_main:
-            print("block parameters error")
+        is_x_correct = (string_x != "Select parameter")
+        is_y_correct = (string_y not in block_parameters)
+        is_y2_correct = (string_y2 not in block_parameters)
+
+        if not is_x_correct:
+            print("x не корректен")
+            return
+        if obj is self.y_first_param_selector and not is_y_correct:
+            print("y не корректен")
+            return
+        if obj is self.y_second_param_selector and not is_y2_correct:
+            print("y2 не корректен")
             return
 
         #==========================================================================
@@ -772,7 +791,7 @@ class graphMain(QObject):
                 self.y_second_param_selector.setCurrentItem(item, QItemSelectionModel.Clear)
                 self.y_first_param_selector.addItem(item.text())
 
-        elif obj is self.y_first_param_selector and check_main:
+        elif obj is self.y_first_param_selector:
                 ret = self.handle_skip_draw(self.y_first_param_selector, self.y_second_param_selector, self.graphView, string_x, string_y, is_multiple)
                 if ret:
                     return
@@ -803,7 +822,7 @@ class graphMain(QObject):
                 self.y_second_axis_label = ""
 
 
-            if not self.second_check_box.isChecked() or not check_second:
+            if not self.second_check_box.isChecked():
                 for data_curve in self.stack_curve.values():
                     if data_curve.is_draw and data_curve.parent_graph_field is self.p2:
                         data_curve.delete_curve_from_graph()

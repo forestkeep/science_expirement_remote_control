@@ -151,10 +151,11 @@ class experimentSettings():
                     is_exp_run_anywhere,
                     is_delete_buf_file,
                     way_to_save,
+                    type_file_for_result,
                     repeat_exp,
                     repeat_meas
                     ):
-
+        self.type_file_for_result = type_file_for_result
         self.window_dialog.repeat_measurement_enter.setCurrentText(str(repeat_meas))
         self.window_dialog.repeat_exp_enter.setCurrentText( str(repeat_exp) )
         self.window_dialog.check_boxes_1[0].setChecked( is_exp_run_anywhere == True )
@@ -166,6 +167,7 @@ class experimentSettings():
                     self.is_exp_run_anywhere,
                     self.is_delete_buf_file,
                     self.way_to_save,
+                    self.type_file_for_result,
                     self.repeat_exp,
                     self.repeat_meas
                    )
@@ -173,6 +175,7 @@ class experimentSettings():
                 is_exp_run_anywhere,
                 is_delete_buf_file,
                 way_to_save,
+                self.type_file_for_result,
                 repeat_exp,
                 repeat_meas
                )
@@ -191,7 +194,7 @@ class experimentSettings():
             self.window_dialog,
             QApplication.translate('set exp window',"укажите путь сохранения результатов"),
             "",
-            "Книга Excel (*.xlsx)",
+            "Книга Excel (*.xlsx);; Text Files(*.txt)",
             #"Text Files(*.txt);; Книга Excel (*.xlsx);;Origin (*.opju)",
             options=options,
         )

@@ -46,7 +46,7 @@ class baseInstallation:
         self.is_experiment_endless = False
         self.pbar_percent = 0
         self.way_to_save_file = False
-        self.type_file_for_result = type_save_file.txt
+        self.type_file_for_result = type_save_file.excel
 
         self.dict_active_device_class = {}
         self.clients = []
@@ -173,7 +173,7 @@ class baseInstallation:
             self.installation_window,
             QApplication.translate('base_install',"укажите путь сохранения результатов"),
             "",
-            "Книга Excel (*.xlsx)",
+            "Книга Excel (*.xlsx);; Text Files(*.txt)",
             #"Text Files(*.txt);; Книга Excel (*.xlsx);;Origin (*.opju)",
             options=options,
         )
@@ -195,7 +195,7 @@ class baseInstallation:
                 pass
 
             self.way_to_save_file = fileName
-            #self.installation_window.way_save_text.setText(str(self.way_to_save_file))
+
             if self.save_results_now == True:
                 self.save_results_now = False
 
@@ -348,16 +348,21 @@ class baseInstallation:
 
     def add_new_device(self):
         logger.debug("нажата кнопка добавления нового прибора")
-        self.new_window = installation_Ui_Dialog()
-        self.new_window.setupUi(self, dict_device_class)
-        self.new_window.signal_to_main_window.connect(self.message_from_new_installation)
-        self.key_to_new_window_installation = True
-        self.new_window.show()
+        device_list, json_device_dict = self.device_selector.get_multiple_devices()
+        self.message_from_new_installation(device_list, json_device_dict)
+
+
+
+        #self.new_window = installation_Ui_Dialog()
+        #self.new_window.setupUi(self, dict_device_class)
+        #self.new_window.signal_to_main_window.connect(self.message_from_new_installation)
+        #self.key_to_new_window_installation = True
+        #self.new_window.show()
 
     def message_from_new_installation(self, device_list, json_device_list):
 
         new_added_device = {}
-        if device_list:
+        if device_list or json_device_list:
             number_device = len(self.dict_active_device_class.keys()) + 1
             for key in device_list:
                 try:
@@ -371,7 +376,24 @@ class baseInstallation:
                     number_device = number_device + 1
                 except:
                     logger.debug("под прибор |" + key + "| не удалось создать экземпляр")
-                    
+
+            for key in json_device_list.values():
+                try:
+                    key_dev = key.name + "_" + str(number_device)
+                    dev = self.JSON_dict_device_class[ key.json_data['device_type'] ](
+                        name=key_dev, installation_class=self
+                        )
+                    dev.load_json(key.json_data)
+                    self.dict_active_device_class[key_dev] = (dev)
+                    new_added_device[key_dev] = (dev)
+
+                    number_device = number_device + 1
+                except KeyError:
+                    logger.debug(f"Извините, под тип {key.json_data['device_type']} пока не разработан шаблон класса")
+
+                except Exception as e:
+                    logger.error(f"Failed to create instance of {key.name} {e}")
+
             self.installation_window.add_new_devices(new_added_device)
 
     def change_check_debug(self):
@@ -410,11 +432,13 @@ class baseInstallation:
         self.is_exp_run_anywhere,
         self.is_delete_buf_file,
         self.way_to_save_file,
+        self.type_file_for_result,
         self.repeat_experiment,
         self.repeat_meas) = self.gen_set_class.read_settings(
                                                             self.is_exp_run_anywhere,
                                                             self.is_delete_buf_file,
                                                             self.way_to_save_file,
+                                                            self.type_file_for_result,
                                                             self.repeat_experiment,
                                                             self.repeat_meas
                                                            )

@@ -12,7 +12,6 @@
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtGui import QBrush, QColor
-from scipy import stats
 
 try:
     from tree_curves import CurveTreeItem
@@ -185,6 +184,17 @@ class linearData(graphData):
             self.legend_field.addItem(self.plot_obj, self.legend_name)
 
     def recalc_stats_param(self):
+        #вычисление моды
+        filtered_data = self.filtered_y_data[~np.isnan(self.filtered_y_data)]
+        if filtered_data.size == 0:
+            mode_value = np.nan
+        else:
+            unique_values, counts = np.unique(filtered_data, return_counts=True)
+            max_count = counts.max()
+            modes = unique_values[counts == max_count]
+            mode_value = modes.min()
+        #------
+
         self.tree_item.update_parameters(
             {
                 "min_x": np.nanmin(self.filtered_x_data),
@@ -197,7 +207,7 @@ class linearData(graphData):
                 "std": round(np.nanstd(self.filtered_y_data), 3),
                 "median": np.nanmedian(self.filtered_y_data),
                 "count": np.count_nonzero(~np.isnan(self.filtered_y_data)),  #Колиество ненулевых значений
-                "mode": stats.mode(self.filtered_y_data[~np.isnan(self.filtered_y_data)])[0]  #только ненулевые значения
+                "mode": mode_value
             }
         )
 

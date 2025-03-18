@@ -41,8 +41,8 @@ class commandsSR830:
                 bytes(command, "ascii") + b"? " + bytes(param, "ascii") + b"\r\n"
             )
 
-        start_time = time.time()
-        while time.time() - start_time < timeout:
+        start_time = time.perf_counter()
+        while time.perf_counter() - start_time < timeout:
             line = self.device.client.readline().decode().strip()
             if line:
                 return line

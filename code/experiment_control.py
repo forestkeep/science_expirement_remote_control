@@ -74,17 +74,17 @@ class experimentControl(analyse):
 
                     if self.exp_th_connect.is_update_pbar :
                         self.pbar_percent = (
-                            ((time.time() - self.start_exp_time) / self.max_exp_time)
+                            ((time.perf_counter() - self.start_exp_time) / self.max_exp_time)
                         ) * 100
                     else:
                         self.pbar_percent = 0
-                    if self.max_exp_time - (time.time() - self.start_exp_time) > 0:
+                    if self.max_exp_time - (time.perf_counter() - self.start_exp_time) > 0:
                         min = int(
-                            (self.max_exp_time - (time.time() - self.start_exp_time))
+                            (self.max_exp_time - (time.perf_counter() - self.start_exp_time))
                             / 60
                         )
                         sec = int(
-                            (self.max_exp_time - (time.time() - self.start_exp_time))
+                            (self.max_exp_time - (time.perf_counter() - self.start_exp_time))
                             % 60
                         )
                     else:
@@ -124,18 +124,18 @@ class experimentControl(analyse):
                     ready_style_background
                 )
 
-                self.start_exp_time += time.time() - self.pause_start_time
+                self.start_exp_time += time.perf_counter() - self.pause_start_time
                 for device, ch in self.get_active_ch_and_device():
                     if ch.am_i_active_in_experiment:
                         if device.get_trigger(ch) == QApplication.translate('exp_flow', "Таймер"):
-                            ch.previous_step_time += time.time() - self.pause_start_time
+                            ch.previous_step_time += time.perf_counter() - self.pause_start_time
 
             else:
                 self.installation_window.pause_button.setText(QApplication.translate('exp_flow',"Возобновить"))
                 self.pause_flag = True
                 self.set_state_text(QApplication.translate('exp_flow',"Ожидание продолжения") + "...")
                 self.timer_for_pause_exp.start(50)
-                self.pause_start_time = time.time()
+                self.pause_start_time = time.perf_counter()
 
     def show_th_window(self):
         if self.exp_th_connect.flag_show_message :
@@ -166,7 +166,7 @@ class experimentControl(analyse):
                             * float(self.repeat_meas)
                         )
                         buf_time.append(t)
-        self.max_exp_time = max(buf_time) + (time.time() - self.start_exp_time)
+        self.max_exp_time = max(buf_time) + (time.perf_counter() - self.start_exp_time)
 
     def update_pbar(self) -> None:
         self.installation_window.pbar.setValue(int(self.pbar_percent))
@@ -326,7 +326,7 @@ class experimentControl(analyse):
                     ch.am_i_active_in_experiment = True
                     ch.do_last_step = False
                     ch.number_meas = 0
-                    ch.previous_step_time = time.time()
+                    ch.previous_step_time = time.perf_counter()
                     ch.pause_time = device.get_trigger_value(ch)
                     priority += 1
                     self.min_priority += 1
@@ -423,7 +423,7 @@ class experimentControl(analyse):
 
         logger.debug("запущен поток эксперимента")
         self.max_exp_time = 10
-        self.start_exp_time = time.time()
+        self.start_exp_time = time.perf_counter()
         
         self.write_meta_data()
         
@@ -452,7 +452,7 @@ class experimentControl(analyse):
                 self.max_exp_time = 100000
                 # не определено время
 
-            self.start_exp_time = time.time()
+            self.start_exp_time = time.perf_counter()
             self.installation_window.pbar.setMinimum(0)
             self.installation_window.pbar.setMaximum(100)
 
@@ -487,8 +487,8 @@ class experimentControl(analyse):
                             if ch.am_i_active_in_experiment:
                                 number_active_device += 1
                                 if device.get_trigger(ch) == QApplication.translate('exp_flow', "Таймер"):
-                                    if time.time() - ch.previous_step_time >= ch.pause_time:
-                                        ch.previous_step_time = time.time()
+                                    if time.perf_counter() - ch.previous_step_time >= ch.pause_time:
+                                        ch.previous_step_time = time.perf_counter()
                                         device.set_status_step(ch.get_name(), True)
                                         
                         #print(f"{number_active_device=}")
@@ -511,14 +511,14 @@ class experimentControl(analyse):
                             ch = target_execute[1]
                             
                             device.set_status_step(ch_name=ch.get_name(), status=False)
-                            t = time.time()
+                            t = time.perf_counter()
                             ans_device = device.on_next_step(ch, repeat=3)
 
                             ans_request = False
 
                             if ans_device == ch_response_to_step.Step_done:
                                 t = (
-                                    time.time() - t
+                                    time.perf_counter() - t
                                 )  # вычисляем время, необходимое на выставление шага
                                 ch.number_meas += 1
 
@@ -710,7 +710,7 @@ class experimentControl(analyse):
                         + message
                     )
 
-                time_t = time.time() - self.start_exp_time
+                time_t = time.perf_counter() - self.start_exp_time
 
                 if device.device_type == "oscilloscope":
                     par = copy.deepcopy(param)
@@ -789,7 +789,7 @@ class experimentControl(analyse):
 
         self.pbar_percent = 0  # сбрасываем прогресс бар
          
-        self.meta_data_exp.exp_stop_time = time.time()
+        self.meta_data_exp.exp_stop_time = time.perf_counter()
         
         if self.graph_window is not None:
             self.graph_window.update_graphics(self.measurement_parameters, is_exp_stop = True)#сообщаем окну просмотра, что эксперимент завершен

@@ -165,7 +165,7 @@ class pigInAPoke(base_device):
 
     def do_meas( self, ch ):
         """выполнить команды"""
-        start_time = time.time()
+        start_time = time.perf_counter()
         parameters = [self.name + " " + str(ch.get_name())]
         if ch.get_type() == "meas":
 
@@ -193,9 +193,9 @@ class pigInAPoke(base_device):
             else:
                 ans = ch_response_to_step.Step_fail
 
-            return ans, parameters, time.time() - start_time
+            return ans, parameters, time.perf_counter() - start_time
 
-        return ch_response_to_step.Incorrect_ch, parameters, time.time() - start_time
+        return ch_response_to_step.Incorrect_ch, parameters, time.perf_counter() - start_time
 
     def set_test_mode( self ):
         """переводит прибор в режим теста, выдаются сырые данные от функций передачи и приема"""

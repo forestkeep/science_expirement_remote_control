@@ -18,22 +18,18 @@ from dataclasses import dataclass
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QTranslator
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtWidgets import QApplication
 
 import qdarktheme
 
 import interface.info_window_dialog
-#from available_devices import dict_device_class, JSON_dict_device_class
 from device_creator.dev_creator import deviceCreator
 from device_creator.test_commands import TestCommands
-from device_creator.dev_template import templates
 from Devices.svps34_control import Ui_SVPS34_control
 from graph.online_graph import GraphWindow
 from Installation_class import installation_class
-from interface.installation_check_devices import installation_Ui_Dialog
 from interface.main_window import Ui_MainWindow
-from interface.selectdevice_window import Ui_Selectdevice
-from controlDevicesJSON import search_devices_json, validate_json_schema, get_new_JSON_devs
+from controlDevicesJSON import search_devices_json
 from localJSONControl import localDeviceControl
 from device_selector import deviceSelector
 
@@ -63,9 +59,6 @@ class MyWindow(QtWidgets.QMainWindow):
             "misis_lab",
             "exp_control" + VERSION_APP,
         )
-        current_dir =os.path.dirname(os.path.realpath(__file__))
-        self.directory_devices = os.path.join(current_dir, "my_devices")
-        self.JSON_devices = get_new_JSON_devs(self.directory_devices)
 
         self.graph_window   = None
         self.device_creator = deviceCreator()
@@ -144,10 +137,9 @@ class MyWindow(QtWidgets.QMainWindow):
         )
 
     def open_graph_in_exp(self):
-        if self.graph_window is not None:
-            pass
-        else:
+        if self.graph_window is None:
             self.graph_window = GraphWindow()
+
         self.graph_window.show()
         self.cur_install.stop_scan_thread = True#stop scanning thread
         self.close()
@@ -220,6 +212,9 @@ class MyWindow(QtWidgets.QMainWindow):
             self.key_to_new_window_installation = True
             self.cur_install.reconstruct_installation(device_list, json_device_dict)
             self.cur_install.show_window_installation()
+            if not self.device_selector:
+                self.device_selector = deviceSelector()
+            self.cur_install.device_selector = self.device_selector
 
             if self.ui.is_design_mode:
                 self.cur_install.change_check_debug()
@@ -245,21 +240,22 @@ class MyWindow(QtWidgets.QMainWindow):
             self.open_installation_window()
 
     def message_from_new_device_local_control(self, device):
-        if isinstance(device, str):
-            if device not in self.dict_active_local_devices.keys():
-                if device == "SVPS34":
-                    self.dict_active_local_devices[device] = Ui_SVPS34_control()
-                    self.dict_active_local_devices[device].setupUi()
-                    self.dict_active_local_devices[device].show()
-            else:
-                self.dict_active_local_devices[device].show()
-
-        else: #этот пункт на случай переданного json прибора
-                if device.name not in self.dict_active_local_devices.keys():
-                        self.dict_active_local_devices[device.name] = localDeviceControl(device)
-                        self.dict_active_local_devices[device.name].show()
+        if device:
+            if isinstance(device, str):
+                if device not in self.dict_active_local_devices.keys():
+                    if device == "SVPS34":
+                        self.dict_active_local_devices[device] = Ui_SVPS34_control()
+                        self.dict_active_local_devices[device].setupUi()
+                        self.dict_active_local_devices[device].show()
                 else:
-                    self.dict_active_local_devices[device.name].show()
+                    self.dict_active_local_devices[device].show()
+
+            else: #этот пункт на случай переданного json прибора
+                    if device.name not in self.dict_active_local_devices.keys():
+                            self.dict_active_local_devices[device.name] = localDeviceControl(device)
+                            self.dict_active_local_devices[device.name].show()
+                    else:
+                        self.dict_active_local_devices[device.name].show()
 
     def tray_icon_activated(self, reason):
         if reason == QtWidgets.QSystemTrayIcon.Trigger:

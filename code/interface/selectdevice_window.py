@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 class Ui_Selectdevice(QtWidgets.QDialog):
-    signal_to_main_window = QtCore.pyqtSignal(str)
 
     def __init__(self,JSON_devices = None):
         super().__init__()
@@ -64,6 +63,7 @@ class Ui_Selectdevice(QtWidgets.QDialog):
 
     def reload_json_dev(self, JSON_devices):
         for but in self.generic_buttons:
+            print(but)
             but.deleteLater()
         for lab in self.generic_label_dev:
             lab.deleteLater()
