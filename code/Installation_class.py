@@ -184,7 +184,7 @@ class installation_class(experimentControl, analyse):
         self.preparation_experiment()
 
     def preparation_experiment(self):
-        logger.debug("подготовка к эксперименту")
+        logger.info("подготовка к эксперименту")
         self.key_to_start_installation = False
         
         self.message_broker.clear_all_subscribers()
@@ -208,14 +208,17 @@ class installation_class(experimentControl, analyse):
                 self.cycle_analyse()
                 self.is_experiment_endless = self.analyse_endless_exp()
                 self.key_to_start_installation = True
+            else:
+                self.key_to_start_installation = False
 
         if self.key_to_start_installation == True:
             self.installation_window.start_button.setStyleSheet(ready_style_background)
+            self.installation_window.start_button.update_buf_style()
         else:
             self.installation_window.start_button.setStyleSheet(
                 not_ready_style_background
             )
-        #self.installation_window.start_button.setText("Запуск")
+            self.installation_window.start_button.update_buf_style()
 
     def add_new_channel(self, device, num_ch):
         if self.is_experiment_running() == False:
@@ -394,8 +397,9 @@ class installation_class(experimentControl, analyse):
         else:
             self.preparation_experiment()
             if self.key_to_start_installation:
-                self.stop_experiment = True
+
                 self.create_clients()
+                self.stop_experiment = True
                 self.set_clients_for_device()
                 self.set_state_text(QApplication.translate('main install',"Старт эксперимента"))
                 self.installation_window.pause_button.setStyleSheet(

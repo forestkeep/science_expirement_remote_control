@@ -37,7 +37,7 @@ from controlDevicesJSON import search_devices_json, validate_json_schema, get_ne
 from localJSONControl import localDeviceControl
 from device_selector import deviceSelector
 
-VERSION_APP = "1.0.3"
+VERSION_APP = "1.0.5"
 logger = logging.getLogger(__name__)
 
 def is_admin():
@@ -284,7 +284,7 @@ if __name__ == "__main__":
     FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
 
     console = logging.StreamHandler()
-    console.setLevel(logging.WARNING)
+    console.setLevel(logging.INFO)
     console.setFormatter(logging.Formatter(FORMAT))
 
     folder_path = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")

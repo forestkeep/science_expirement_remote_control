@@ -186,7 +186,7 @@ class instrument:
                 ser = serial.Serial(port.device)
                 ports.append(port.device)
                 ser.close()
-            except :
+            except Exception as e:
                 pass
         return ports
 
@@ -212,3 +212,10 @@ class AdapterException(Exception):
     def __init__(self, message):
         super().__init__(message)
 
+if __name__ == "__main__":
+    for i in range(4):
+        res = instrument.get_visa_resourses()
+        print(res)
+        #my = Adapter(res[0])
+        #my.write("*IDN?")
+        print(instrument.get_available_com_ports())
