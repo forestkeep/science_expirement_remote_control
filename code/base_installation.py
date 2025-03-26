@@ -269,14 +269,20 @@ class baseInstallation:
 
     def show_about_autors(self):
         text = QApplication.translate('base_install',"""
-        Автор:
+        Авторы:
 
+        Разработка:
         - Захидов Дмитрий
+                                      
+        Тестирование:        
+        - Тимофеев Сергей
+        - Астахов Василий
+        - Морченко Александр
 
         Если у вас есть вопросы, замечания, или предложения по улучшению приложения, 
-        пожалуйста, свяжитесь с мной по почте zakhidov.dim@yandex.ru
+        пожалуйста, свяжитесь с нами по почте zakhidov.dim@yandex.ru
 
-        Благодарю вас за использование приложения!
+        Благодарим вас за использование приложения!
         """)
         dialog = messageDialog(text=text, title=QApplication.translate('base_install',"Информация об авторах") )
         dialog.exec_()
