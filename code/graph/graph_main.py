@@ -16,10 +16,10 @@ import numpy as np
 import pandas as pd
 import pyqtgraph as pg
 from PyQt5.QtCore import QItemSelectionModel, QObject, Qt, pyqtSignal
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QFileDialog, QHBoxLayout,
                              QLabel, QListWidget, QListWidgetItem, QPushButton,
-                             QSizePolicy, QSpacerItem, QVBoxLayout, QWidget, QDialog)
+                             QSizePolicy, QSpacerItem, QVBoxLayout, QWidget, QDialog, QComboBox)
 
 try:
     from calc_values_for_graph import ArrayProcessor
@@ -43,6 +43,20 @@ def time_decorator(func):
         return result
     return wrapper
 
+class CustomComboBox(QComboBox):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.minimum_w = None
+
+    def addItem(self, text):
+        super().addItem(text)
+        fm = QFontMetrics(self.font())
+        self.minimum_w = max(fm.width(self.itemText(i)) for i in range(self.count()))
+    def showPopup(self):
+        super().showPopup()  
+        if self.minimum_w:
+            self.view().setMinimumWidth(self.minimum_w)
+            
 class graphMain(QObject):
     new_curve_selected = pyqtSignal()
     new_data_imported = pyqtSignal()
@@ -86,6 +100,8 @@ class graphMain(QObject):
         self.previous_y = None
         self.previous_y2 = None
 
+        self.exp_data_dict = {}
+
         self.colors_class = GColors()
         self.color_warm_gen = self.colors_class.get_random_warm_color()
         self.color_cold_gen = self.colors_class.get_random_cold_color()
@@ -110,9 +126,14 @@ class graphMain(QObject):
         
         import_lay = QHBoxLayout()
         self.import_button = QPushButton()
+        self.experiment_selector = CustomComboBox()
         self.selector = QSpacerItem(15, 15, QSizePolicy.Expanding, QSizePolicy.Minimum)
         import_lay.addWidget(self.import_button)
+        
+        exp_label = QLabel("Выберите экспериментальные данные: ")
         import_lay.addItem(self.selector)
+        import_lay.addWidget(exp_label)
+        import_lay.addWidget(self.experiment_selector)
 
         data_name_layout = QHBoxLayout()
         self.data_name_label = QLabel()
@@ -127,6 +148,7 @@ class graphMain(QObject):
         self.page.setLayout(self.tab1Layout)
         
         self.import_button.clicked.connect(self.import_data)
+        self.experiment_selector.currentIndexChanged.connect(self.change_experiment_data)
 
         self.page.subscribe_to_key_press(key = Qt.Key_Delete, callback = self.delete_key_press)
 
@@ -152,7 +174,6 @@ class graphMain(QObject):
         
         if fileName:
             if ans == "Книга Excel (*.xlsx)":
-
 
                 df = pd.read_excel(fileName, engine='openpyxl')
                 if 'time' not in df.columns:
@@ -195,10 +216,19 @@ class graphMain(QObject):
                 dev = {'d': {'c': result}}
 
                 self.data_name_label.setText(fileName)
+                self.experiment_selector.addItem(fileName)
+                self.exp_data_dict[fileName] = dev
 
                 self.set_default()
                 self.update_dict_param(dev)
                 return result
+    def change_experiment_data(self):
+        self.data_name_label.setText(self.experiment_selector.currentText())
+        new_data = self.exp_data_dict.get(self.experiment_selector.currentText(), None)
+        if new_data is not None:
+            self.set_default()
+            self.update_dict_param( new_data )
+            print("change_experiment_data")
         
     def setupDataSourceSelectors(self):
         # Data source selectors layout
