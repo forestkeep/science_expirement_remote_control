@@ -247,8 +247,8 @@ class analyse(baseInstallation):
             return False
 
         list_COMs = []
+        checked_connect_coms = {}
         list_device_name = []
-        fail_ports_list = []
 
         for client in self.clients:
             try:
@@ -268,23 +268,27 @@ class analyse(baseInstallation):
             list_COMs.append(com)
             list_device_name.append(device.get_name())
 
-            if com not in list_COMs:
+            if com not in checked_connect_coms.keys():
+                is_connect = False
                 try:
                     buf_client = Adapter(com, int(baud))
                     buf_client.close()
                     del buf_client
+                    is_connect = True
 
                 except Exception as e:
                     logger.warning(f"Не удалось открыть порт {com}\n {str(e)}")
-                    self.set_border_color_device(
-                        device_name=device.get_name(), status_color=not_ready_style_border
-                    )
                     text = QApplication.translate('analyse',"Не удалось открыть порт {com}")
                     text = text.format(com = com)
                     self.add_text_to_log( text, "war" )
-                    if com not in fail_ports_list:
-                        fail_ports_list.append(com)
                     status = False
+
+                checked_connect_coms[com] = is_connect
+
+            if not checked_connect_coms[com]:
+                self.set_border_color_device(
+                        device_name=device.get_name(), status_color=not_ready_style_border
+                    )
 
 
         marked_com_incorrect = []

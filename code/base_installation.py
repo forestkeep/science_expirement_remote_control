@@ -599,15 +599,16 @@ class baseInstallation:
         logger.info("передали настройки прибора установке")
 
     ##############################################
-    def create_clients(self) -> None:
+    def create_clients(self) -> list:
         self.is_search_resources = False
-        """функция создает клиенты для приборов с учетом того, что несколько приборов могут быть подключены к одному порту."""
+        """функция создает клиенты для приборов с учетом того, что несколько приборов могут быть подключены к одному порту. Возвращает список ресурсов, которые не удалось создать"""
         logger.info("создаем клиенты для приборов")
         list_type_connection = []
         list_COMs = []
         list_baud = []
         dict_modbus_clients = {}
         dict_serial_clients = {}
+        bad_resources = []
         for client in self.clients:
             try:
                 client.close()
@@ -639,7 +640,12 @@ class baseInstallation:
                 if list_COMs[i] in dict_serial_clients.keys():
                     self.clients.append(dict_serial_clients[list_COMs[i]])
                 else:
-                    ser = Adapter(list_COMs[i], int(list_baud[i]))
+                    try:
+                        ser = Adapter(list_COMs[i], int(list_baud[i]))
+                    except Exception as e:
+                        logger.warning(f"Error create {list_COMs[i]} client: {str(e)}")
+                        bad_resources.append(list_COMs[i])
+                        ser = False
 
                     dict_serial_clients[list_COMs[i]] = ser
                     self.clients.append(ser)
@@ -650,19 +656,25 @@ class baseInstallation:
                     self.clients.append(dict_modbus_clients[list_COMs[i]])
                 else:  # иначе создаем новый клиент и добавляем в список клиентов и список модбас клиентов
 
-                    dict_modbus_clients[list_COMs[i]] = ModbusSerialClient(
-                            framer="rtu",
-                            port=list_COMs[i],
-                            baudrate=int(list_baud[i]),
-                            stopbits=1,
-                            bytesize=8,
-                            parity="E",
-                            timeout=0.3,
-                            retries=1,
-                    )
+                    try:
+                        dict_modbus_clients[list_COMs[i]] = ModbusSerialClient(
+                                framer="rtu",
+                                port=list_COMs[i],
+                                baudrate=int(list_baud[i]),
+                                stopbits=1,
+                                bytesize=8,
+                                parity="E",
+                                timeout=0.3,
+                                retries=1,
+                        )
+                    except Exception as e:
+                        bad_resources.append(list_COMs[i])
+                        dict_modbus_clients[list_COMs[i]] = False
+                        logger.warning(f"Error create {list_COMs[i]} modbus client: {str(e)}")
 
                     self.clients.append(dict_modbus_clients[list_COMs[i]])
         self.is_search_resources = True
+        return bad_resources
 
 if __name__ == "__main__":
     import sys

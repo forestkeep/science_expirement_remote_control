@@ -390,6 +390,7 @@ class experimentControl(analyse):
                     + QApplication.translate('exp_flow',"не отвечает"),
                     "err",
                 )
+                print(f"Нет ответа прибора {dev.get_name()}")
             else:
                 if is_connect != None:
                     self.add_text_to_log(
@@ -398,6 +399,8 @@ class experimentControl(analyse):
 
         if self.is_debug:
             status = True
+
+        print(f"status = {status}")
 
         return status
     
@@ -765,6 +768,18 @@ class experimentControl(analyse):
                         ch.am_i_active_in_experiment = False
                         error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
                     break
+            else:
+                self.add_text_to_log(
+                    QApplication.translate('exp_flow',"Ошибка опроса") + " "
+                    + device.get_name()
+                    + " "
+                    + str(ch.get_name()),
+                    "err",
+                )
+                if not self.is_exp_run_anywhere :
+                    ch.am_i_active_in_experiment = False
+                    error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
+                break
 
         return error, ans, step_time
     

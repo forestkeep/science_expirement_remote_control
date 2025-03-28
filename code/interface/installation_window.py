@@ -180,6 +180,9 @@ class CustomButton(QtWidgets.QPushButton):
         super().__init__(text)
         self.style_sheet = self.styleSheet()
 
+    def update_buf_style(self):
+        self.style_sheet = self.styleSheet()
+
     def enterEvent(self, event):
         self.style_sheet = self.styleSheet()
         self.setStyleSheet("QToolTip { color: rgb(0,0,0); border: 1px solid white; background-color: rgba(250, 250, 250, 100);}")
