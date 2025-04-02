@@ -241,7 +241,8 @@ class saving_data:
                                 if param[0] in dev.data:
                                     dev.data[param[0]].append(param[1])
                                 else:
-                                    dev.data[param[0]] = [param[1]]
+                                    if len(param) > 1:
+                                        dev.data[param[0]] = [param[1]]
 
     def build_data_frame(self) -> pandas.DataFrame:
         column_number = 0

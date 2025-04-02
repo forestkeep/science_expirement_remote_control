@@ -54,7 +54,10 @@ class experimentControl(analyse):
         self.meta_data_exp = metaDataExp()
 
     def is_experiment_running(self) -> bool:
-        return self.experiment_thread is not None and self.experiment_thread.is_alive()
+        answer = False
+        if hasattr(self, "experiment_thread"):
+            answer = self.experiment_thread is not None and self.experiment_thread.is_alive()
+        return answer
 
     def connection_two_thread(self):
         """функция для связи основного потока и потока эксперимента, поток эксперимента выставляет значения/флаги/сообщения, а основной поток их обрабатывает"""

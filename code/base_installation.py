@@ -12,6 +12,7 @@
 import logging
 import sys
 import threading
+import time
 from datetime import datetime
 
 from pymodbus.client import ModbusSerialClient
@@ -159,8 +160,9 @@ class baseInstallation:
 
     def _search_resources(self):
         while  not self.stop_scan_thread:
-            if self.is_search_resources:
+            if self.is_search_resources and not self.is_experiment_running():
                 self.list_resources = instrument.get_resourses()
+                time.sleep(0.1)
 
     def get_list_resources(self) -> list:
         return self.list_resources

@@ -89,6 +89,9 @@ class pigInAPoke(base_device):
                 return True
             
         return False
+    def check_connect(self) -> bool:
+        response = "not defined check connect"
+        return response
 
     @base_device.base_add_parameters_from_window
     def add_parameters_from_window(self):  # менять для каждого прибора
@@ -181,7 +184,7 @@ class pigInAPoke(base_device):
                         try:
                             nm = float(nm)
                         except:
-                            pass
+                            logger.info(f"не удалось преобразовать {nm} в float при ответе pig_in_a_poke_device")
                         val = [f"{command}{index}=" + str(nm)]
                         parameters.append(val)
                 else:

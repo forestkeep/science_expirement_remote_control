@@ -144,7 +144,8 @@ class base_device():
         return False
     
     def check_connect(self) -> bool: 
-        """проверяет подключение прибора, если прибор отвечает возвращает True, иначе False"""
+        """проверяет подключение прибора, если прибор отвечает возвращает True, иначе False. 
+        Для прибора, который не поддерживает подключение по scpi необходимо переопределить функцию"""
         response = "not defined check connect"
         try:
             response = self.client.query(f"*IDN?\r\n", 1000)
@@ -252,7 +253,7 @@ class base_device():
                     num_meas_list.append( QApplication.translate("Device","Пока активны другие приборы") )
                 self.setting_window.num_meas_enter.clear()
                 self.setting_window.num_meas_enter.addItems(num_meas_list)
-                self.setting_window.num_meas_enter.setCurrentText(str(int(self.active_channel_meas.dict_buf_parameters["num steps"])))
+                self.setting_window.num_meas_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["num steps"]))
 
             self.key_to_signal_func = True
             return func(self, *args, **kwargs)

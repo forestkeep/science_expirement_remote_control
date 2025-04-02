@@ -22,11 +22,17 @@ class graphData:
     def __init__(self, raw_x, raw_y) -> None:
         """
         Initializes the graphData object with raw data for x and y axes.
+        The length of arrays is cut to the minimum
 
         Parameters:
             raw_x: The raw data for the x-axis.
             raw_y: The raw data for the y-axis.
         """
+
+        min_len = max(len(raw_x), len(raw_y))
+        raw_x = raw_x[:min_len]
+        raw_y = raw_y[:min_len]
+
         self.raw_data_x = np.array(raw_x)
         self.raw_data_y = np.array(raw_y)
 

@@ -13,6 +13,7 @@ import copy
 import logging
 import os
 import sys
+import time
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -241,6 +242,7 @@ class analyse(baseInstallation):
         """анализ конфликтов COM-портов и их доступности"""
         logger.info(f"анализируем ком порты и их доступность")
         self.is_search_resources = False#запрет на сканирование ресурсов
+        time.sleep(0.5)
         status = True
 
         if not self.is_all_device_settable():
@@ -278,8 +280,8 @@ class analyse(baseInstallation):
 
                 except Exception as e:
                     logger.warning(f"Не удалось открыть порт {com}\n {str(e)}")
-                    text = QApplication.translate('analyse',"Не удалось открыть порт {com}")
-                    text = text.format(com = com)
+                    text = QApplication.translate('analyse',"Не удалось открыть порт {com} {exc}")
+                    text = text.format(com = com, exc = str(e))
                     self.add_text_to_log( text, "war" )
                     status = False
 
