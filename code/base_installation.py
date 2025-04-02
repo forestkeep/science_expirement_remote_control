@@ -660,7 +660,6 @@ class baseInstallation:
 
                     try:
                         dict_modbus_clients[list_COMs[i]] = ModbusSerialClient(
-                                framer="rtu",
                                 port=list_COMs[i],
                                 baudrate=int(list_baud[i]),
                                 stopbits=1,
