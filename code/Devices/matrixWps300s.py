@@ -16,11 +16,10 @@ import time
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from Devices.power_supply_class import (chActPowerSupply, chMeasPowerSupply,
-                                        power_supply)
+from Devices.power_supply_class import power_supply
+from Devices.base_power_supply import chActPowerSupply, chMeasPowerSupply
 
 logger = logging.getLogger(__name__)
-
 
 class matrixWps300s(power_supply):
     def __init__(self, name, installation_class) -> None:

@@ -18,9 +18,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from pymodbus.client import ModbusSerialClient
 
-from Devices.power_supply_class import (chActPowerSupply, chMeasPowerSupply,
-                                        power_supply)
-
+from Devices.power_supply_class import power_supply
+from Devices.base_power_supply import chActPowerSupply, chMeasPowerSupply
 logger = logging.getLogger(__name__)
 # 3Регулируемый блок питания MAISHENG WSD-20H15 (200В, 15А)
 # Создание клиента Modbus RTU

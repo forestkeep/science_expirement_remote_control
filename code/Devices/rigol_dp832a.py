@@ -14,8 +14,8 @@ import time
 
 import pyvisa
 
-from Devices.power_supply_class import (chActPowerSupply, chMeasPowerSupply,
-                                        power_supply)
+from Devices.power_supply_class import power_supply
+from Devices.base_power_supply import chActPowerSupply, chMeasPowerSupply
 
 logger = logging.getLogger(__name__)
 
