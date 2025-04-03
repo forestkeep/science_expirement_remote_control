@@ -32,6 +32,7 @@ from schematic_exp.construct_diagramexp import expDiagram
 from schematic_exp.exp_time_line import callStack
 from saving_data.Parse_data import process_and_export, type_save_file
 from available_devices import dict_device_class, JSON_dict_device_class
+from meas_session_data import measSession
 
 logger = logging.getLogger(__name__)
 
@@ -430,6 +431,8 @@ class installation_class(experimentControl, analyse):
                     )
                     self.write_settings_to_buf_file()
 
+                    self.meas_session = measSession()
+
                     self.repeat_experiment = int(
                         self.gen_set_class.repeat_exp
                     )
@@ -700,12 +703,20 @@ class installation_class(experimentControl, analyse):
                 #"Text Files(*.txt);; Книга Excel (*.xlsx);;Origin (*.opju)",
                 options=options,
             )
+
+            buf_session = measSession()
+            buf_session.ask_session_name_description()
+            result_name = buf_session.session_name
+            result_description = buf_session.session_description
+
             if result_file:
                 if ans == "Книга Excel (*.xlsx)":
                     process_and_export(
                     buf_file,
                     result_file,
                     type_save_file.excel,
+                    result_name,
+                    result_description,
                     False,
                     self.answer_save_results
                 )

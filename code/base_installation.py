@@ -12,6 +12,7 @@
 import logging
 import sys
 import threading
+import time
 from datetime import datetime
 
 from pymodbus.client import ModbusSerialClient
@@ -20,13 +21,11 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
 from Adapter import Adapter, instrument
-from available_devices import dict_device_class
 from Devices.Classes import (not_ready_style_background,
                              not_ready_style_border, ready_style_border)
 from graph.online_graph import GraphWindow
 from interface.experiment_settings_window import (experimentSettings,
                                                   settigsDialog)
-from interface.installation_check_devices import installation_Ui_Dialog
 from interface.Message import messageDialog
 from saving_data.Parse_data import process_and_export, type_save_file
 
@@ -159,14 +158,20 @@ class baseInstallation:
 
     def _search_resources(self):
         while  not self.stop_scan_thread:
-            if self.is_search_resources:
+            if self.is_search_resources and not self.is_experiment_running():
                 self.list_resources = instrument.get_resourses()
+                self.list_visa_resources = instrument.get_visa_resourses()
+                time.sleep(0.1)
 
     def get_list_resources(self) -> list:
         return self.list_resources
+    
+    def get_list_visa_resources(self) -> list:
+        return self.list_visa_resources
 
     def set_way_save(self):
         self.is_window_save_dialog_showing = True
+
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         fileName, ans = QtWidgets.QFileDialog.getSaveFileName(
@@ -182,27 +187,31 @@ class baseInstallation:
                 if fileName.find(".opju") == -1:
                     fileName = fileName + ".opju"
                 self.type_file_for_result = type_save_file.origin
-                pass
+
             elif ans == "Книга Excel (*.xlsx)":
                 if fileName.find(".xlsx") == -1:
                     fileName = fileName + ".xlsx"
                 self.type_file_for_result = type_save_file.excel
-                pass
+
             else:
                 if fileName.find(".txt") == -1:
                     fileName = fileName + ".txt"
                 self.type_file_for_result = type_save_file.txt
-                pass
 
             self.way_to_save_file = fileName
 
             if self.save_results_now == True:
                 self.save_results_now = False
 
+                session_name, session_description = self.meas_session.session_name, self.meas_session.session_description
+                print(f"{session_name=} {session_description=}")
+
                 process_and_export(
                     self.buf_file,
                     self.way_to_save_file,
                     self.type_file_for_result,
+                    session_name,
+                    session_description,
                     self.is_delete_buf_file,
                     self.answer_save_results
                 )
@@ -238,6 +247,10 @@ class baseInstallation:
         )
 
     def save_results(self):
+
+        session_name, session_description = self.meas_session.session_name, self.meas_session.session_description
+        print(f"{session_name=} {session_description=}")
+
         if (
             self.way_to_save_file != False
             and self.way_to_save_file != None
@@ -257,6 +270,8 @@ class baseInstallation:
                 self.buf_file,
                 self.way_to_save_file,
                 self.type_file_for_result,
+                session_name,
+                session_description,
                 self.is_delete_buf_file,
                 self.answer_save_results
             )
@@ -504,8 +519,10 @@ class baseInstallation:
 
     def set_clients_for_device(self):
         for device, client in zip(self.dict_active_device_class.values(), self.clients):
-            if client is not False:
+            if client:
                 device.set_client(client)
+            else:
+                logger.warning(f"Для прибора {device.name} не создан клиент {client=}")
 
     def message_from_device_status_connect(self, answer, name_device):
         if answer == True:
@@ -658,7 +675,6 @@ class baseInstallation:
 
                     try:
                         dict_modbus_clients[list_COMs[i]] = ModbusSerialClient(
-                                framer="rtu",
                                 port=list_COMs[i],
                                 baudrate=int(list_baud[i]),
                                 stopbits=1,

@@ -37,7 +37,7 @@ class Adapter:
         self.name = sourse
 
         if "COM" in sourse:
-            self.client = Serial(sourse, self.baudrate, timeout=self.timeout / 1000)
+            self.client = Serial(port = sourse, baudrate = self.baudrate, timeout=self.timeout / 1000)
             logger.info(f"client создан {self.client=}")
             self.which_resourse = resourse.serial
             self.is_open = self.client.is_open
@@ -186,6 +186,7 @@ class instrument:
                 ser = serial.Serial(port.device)
                 ports.append(port.device)
                 ser.close()
+                del ser
             except Exception as e:
                 pass
         return ports
@@ -198,15 +199,15 @@ class instrument:
     @staticmethod
     def get_resourses() -> list:
         """return all available resourses"""
-        ports = instrument.get_available_com_ports()
+        resourses = instrument.get_available_com_ports()
         res_vis = instrument.get_visa_resourses()
         for res in res_vis:
             if "ASRL" in res:
                 pass
             else:
-                ports.append(res)
-
-        return ports
+                resourses.append(res)
+                
+        return resourses
 
 class AdapterException(Exception):
     def __init__(self, message):
