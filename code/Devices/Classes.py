@@ -536,12 +536,18 @@ class base_device():
         self.timer_for_scan_com_port.stop()
 
         local_list_com_ports = self.installation_class.get_list_resources()
+        visa_resources = self.installation_class.get_list_visa_resources()
         #print(f"{local_list_com_ports}")
         stop = False
         if local_list_com_ports == []:
             try:
                 local_list_com_ports.append(QApplication.translate("Device","Нет подключенных портов"))
-                self.setting_window.comportslist.setStyleSheet(not_ready_style_border)
+                if len(local_list_com_ports) < len(visa_resources):
+                    self.setting_window.comportslist.setStyleSheet(warning_style_border)
+                    self.setting_window.comportslist.setToolTip(QApplication.translate("Device","В системе обнаружены источники подключения  VISA"))
+                else:
+                    self.setting_window.comportslist.setStyleSheet(not_ready_style_border)
+                    self.setting_window.comportslist.setToolTip(QApplication.translate("Device","В системе не обнаружены доступные источники подключения"))
             except:
                 pass
 

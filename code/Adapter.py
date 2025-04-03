@@ -199,15 +199,15 @@ class instrument:
     @staticmethod
     def get_resourses() -> list:
         """return all available resourses"""
-        ports = instrument.get_available_com_ports()
+        resourses = instrument.get_available_com_ports()
         res_vis = instrument.get_visa_resourses()
         for res in res_vis:
             if "ASRL" in res:
                 pass
             else:
-                ports.append(res)
+                resourses.append(res)
                 
-        return ports
+        return resourses
 
 class AdapterException(Exception):
     def __init__(self, message):

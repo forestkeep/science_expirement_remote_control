@@ -174,6 +174,7 @@ class pigInAPoke(base_device):
 
             is_correct = True
             for command in ch.dict_settable_parameters["commands"]:
+                logger.info(f"отправляем команду {command} через {self.client}")
                 answer = self.client.query(command, 1000, "\n")
                 if answer:
                     val = [f"{command}raw=" + str(answer)]
