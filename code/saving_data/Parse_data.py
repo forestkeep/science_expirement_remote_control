@@ -49,7 +49,7 @@ class saving_data:
     def __init__(self) -> None:
         pass
 
-    def __save_excell(self, output_file_path):
+    def __save_excell(self, output_file_path, result_name):
 
         message = ""
         status = True
@@ -80,12 +80,10 @@ class saving_data:
                 mode=mode
             )
 
-        daytime = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-
         result = self.resul_df
 
         try:
-            result.to_excel(excel_writer, sheet_name=daytime, index=False)
+            result.to_excel(excel_writer, sheet_name=result_name, index=False)
 
         except Exception as e:
             return output_file_path, message, False
@@ -104,13 +102,13 @@ class saving_data:
                 continue
             else:
                 return output_file_path
-    def __save_txt(self, output_file_path):
+    def __save_txt(self, output_file_path, result_name):
         status = False
-        daytime = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+
         try:
             with open(output_file_path, "a") as file:
                 file.write(f"\n#############################################\n")
-                file.write(f"{daytime}\n")
+                file.write(f"{result_name}\n")
                 file.write(f"#############################################\n")
                 file.write(self.resul_df.to_string(index=False))
                 status = True
@@ -119,7 +117,7 @@ class saving_data:
 
         return output_file_path, "", status
 
-    def __save_origin(self, output_file_path):
+    def __save_origin(self, output_file_path, result_name):
         return output_file_path, "", False
 
     def __get_device(self, devices, name, ch):
@@ -128,15 +126,24 @@ class saving_data:
                 return dev
         return False
 
-    def save_data(self, input_file_path, output_file_path, output_type):
+    def save_data(self, input_file_path, output_file_path, output_type, result_name, result_description):
+
         self.__parse_data(input_file_path)
-        self.resul_df = self.build_data_frame()
+        self.resul_df = self.build_data_frame(result_description)
+
+        if not result_name:
+            result_name = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+
         if output_type == type_save_file.txt:
-            output_file_path, message, status = self.__save_txt(output_file_path)
+            output_file_path, message, status = self.__save_txt(output_file_path, result_name)
         elif output_type == type_save_file.excel:
-            output_file_path, message, status = self.__save_excell(output_file_path)
+            output_file_path, message, status = self.__save_excell(output_file_path, result_name)
         elif output_type == type_save_file.origin:
-            output_file_path, message, status = self.__save_origin(output_file_path)
+            output_file_path, message, status = self.__save_origin(output_file_path, result_name)
+        else:
+            logger.warning(f"тип сохранения не определен {output_type}")
+            message = "Тип сохранения не определен"
+            status = False
         return output_file_path, message, status
 
     def __parse_data(self, input_file_path):
@@ -244,7 +251,7 @@ class saving_data:
                                     if len(param) > 1:
                                         dev.data[param[0]] = [param[1]]
 
-    def build_data_frame(self) -> pandas.DataFrame:
+    def build_data_frame(self, result_description = None) -> pandas.DataFrame:
         column_number = 0
         max_dev_data_len = 0
         max_dev_set_len = 0
@@ -259,6 +266,11 @@ class saving_data:
         data_frame = {}
         for h in range(column_number):
             data_frame[h] = []
+            if result_description:
+                if h == 0:
+                    data_frame[h].append(result_description)
+                else:
+                    data_frame[h].append(" ")
 
         h = 0
         number_tab = []
@@ -358,11 +370,17 @@ class saving_data:
 class saving_data_processing:
         def __init__(self):
             self.saving_data = threading.Thread(target=self.run_saving)
-        def set_parameters(self, input_file_path, output_file_path, output_type, is_delete_buf_file):
+        def set_parameters(self, input_file_path, output_file_path, output_type, is_delete_buf_file, result_name, result_description):
             self.input_file_path = input_file_path
             self.output_file_path = output_file_path
             self.output_type = output_type
             self.is_delete_buf_file = is_delete_buf_file
+            self.result_name = "Result"
+            self.result_description = ""
+            if result_name:
+                self.result_name = result_name
+            if result_description:
+                self.result_description = result_description
         def set_adress_return(self, adress_return):
             self.adress_return = adress_return
         def run_saving(self):
@@ -371,7 +389,7 @@ class saving_data_processing:
             message = ""
 
             self.output_file_path, message, status = save.save_data(
-                    self.input_file_path, self.output_file_path, self.output_type
+                    self.input_file_path, self.output_file_path, self.output_type, self.result_name, self.result_description
                 )
             
             if status:
@@ -387,14 +405,16 @@ class saving_data_processing:
                 self.adress_return(status = status, output_file_path = self.output_file_path, message = message)
 
 def process_and_export(
-    input_file_path, output_file_path, output_type, is_delete_buf_file, func_result
+    input_file_path, output_file_path, output_type, result_name, result_descriptions,  is_delete_buf_file, func_result
 ):
     save = saving_data_processing()
     save.set_parameters(
         input_file_path, 
         output_file_path, 
         output_type, 
-        is_delete_buf_file
+        is_delete_buf_file,
+        result_name,
+        result_descriptions
     )
     save.set_adress_return(func_result)
     save.saving_data.start()

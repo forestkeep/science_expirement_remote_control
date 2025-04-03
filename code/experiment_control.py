@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import QApplication
 from Analyse_in_installation import analyse
 from Devices.Classes import (ch_response_to_step, not_ready_style_background,
                              ready_style_background)
+from meas_session_data import measSession
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +150,7 @@ class experimentControl(analyse):
                 self.show_warning_window(self.exp_th_connect.message)
             elif self.exp_th_connect.message_status == message_status.critical:
                 self.show_critical_window(self.exp_th_connect.message)
+
             self.exp_th_connect.is_message_show = True
         if self.exp_th_connect.ask_save_the_results:
             self.exp_th_connect.ask_save_the_results = False
@@ -362,7 +364,7 @@ class experimentControl(analyse):
                     + " ch-"
                     + str(ch.number)
                     + " "
-                    + QApplication.translate('exp_flow',"перед экспериментом"),
+                    + QApplication.translate('exp_flow',"перед экспериментом. Проверьте подключение."),
                     "err",
                 )
                 if not self.is_debug:
