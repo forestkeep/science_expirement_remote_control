@@ -175,8 +175,8 @@ class experimentControl(analyse):
                         buf_time.append(t)
         self.max_exp_time = max(buf_time) + (time.perf_counter() - self.start_exp_time)
 
-    def update_pbar(self) -> None:
-        self.installation_window.pbar.setValue(int(self.pbar_percent))
+    def update_pbar(self, pbar_percent) -> None:
+        self.installation_window.pbar.setValue(int(pbar_percent))
 
     def calculate_exp_time(self):
         """оценивает продолжительность эксперимента, возвращает результат в секундах, если эксперимент бесконечно долго длится, то вернется ответ True. В случае ошибки при расчете количества секунд вернется False"""
@@ -387,7 +387,6 @@ class experimentControl(analyse):
         for dev in self.dict_active_device_class.values():
             is_connect = dev.check_connect()
 
-
             if not is_connect:
                 status = False
                 logger.warning(f"Нет ответа прибора {dev.get_name()}")
@@ -424,155 +423,6 @@ class experimentControl(analyse):
             for nm, val in ch.__dict__.items():
                 print(nm, val)
         
-    def exp_th(self):
-        
-        self.meta_data_exp = metaDataExp()
-
-        logger.debug("запущен поток эксперимента")
-        self.max_exp_time = 10
-        self.start_exp_time = time.perf_counter()
-        
-        self.write_meta_data()
-        
-        #=================
-        #self.meta_data_exp.print_meta_data()
-        #=================
-        
-        self.exp_call_stack.set_data(self.meta_data_exp)
-
-        #проверка соединения приборов
-        status = self.check_connections()
-        # print("запущен поток эксперимента")
-        if status != False:
-            status = self.set_settings_before_exp()
-
-        error = not status  # флаг ошибки, будет поднят при ошибке во время эксперимента
-        error_start_exp = not status
-
-        if error is False and self.stop_experiment is False:
-
-            self.max_exp_time = self.calculate_exp_time()
-            if self.max_exp_time is True:
-                # эксперимент бесконечен
-                pass
-            elif self.max_exp_time is False:
-                self.max_exp_time = 100000
-                # не определено время
-
-            self.start_exp_time = time.perf_counter()
-            self.installation_window.pbar.setMinimum(0)
-            self.installation_window.pbar.setMaximum(100)
-
-            self.set_start_priorities()
-
-        target_execute = False
-        self.exp_th_connect.is_update_pbar = True
-        number_active_device = 4
-        #----------------------------------------------------------------------------------------------
-        if not error_start_exp:
-            for i in range(self.repeat_experiment):
-                if error :
-                    break
-                if i > 0:
-                    logger.info("подготовка к повтору эксперименте")
-                    self.stop_experiment = False
-                    self.set_between_experiments()
-                    
-                while not self.stop_experiment and not error:
-
-                    if not self.pause_flag:
-                        self.set_state_text(QApplication.translate('exp_flow',"Продолжение эксперимента, приборов:") + str(number_active_device))
-
-                        number_active_device = 0
-                        number_device_which_act_while = 0
-
-                        for device, ch in self.get_active_ch_and_device():
-                            if not device.get_steps_number(ch) :
-                                if not ch.do_last_step:
-                                    number_device_which_act_while += 1
-
-                            if ch.am_i_active_in_experiment:
-                                number_active_device += 1
-                                if device.get_trigger(ch) == QApplication.translate('exp_flow', "Таймер"):
-                                    if time.perf_counter() - ch.previous_step_time >= ch.pause_time:
-                                        ch.previous_step_time = time.perf_counter()
-                                        device.set_status_step(ch.get_name(), True)
-                                        
-                        #print(f"{number_active_device=}")
-                        if number_active_device == 0:
-                            """остановка эксперимента, нет активных приборов"""
-                            logger.info("остановка эксперимента, нет активных приборов")
-                            self.set_state_text(QApplication.translate('exp_flow',"Остановка эксперимента") + "...")
-                            self.stop_experiment = True
-                        if (
-                            number_device_which_act_while == number_active_device
-                            and number_active_device == 1
-                        ):
-                            """если активный прибор один и он работает, пока работают другие, и у него не стоит флаг последнего шага то стоп"""
-                            self.stop_experiment = True
-
-                        target_execute = self.get_execute_part()
-
-                        if target_execute is not False:
-                            device = target_execute[0]
-                            ch = target_execute[1]
-                            
-                            device.set_status_step(ch_name=ch.get_name(), status=False)
-                            t = time.perf_counter()
-                            ans_device = device.on_next_step(ch, repeat=3)
-
-                            ans_request = False
-
-                            if ans_device == ch_response_to_step.Step_done:
-                                t = (
-                                    time.perf_counter() - t
-                                )  # вычисляем время, необходимое на выставление шага
-                                ch.number_meas += 1
-
-                                if ch.get_type() == "act":
-                                    error, ans_request, time_step = self.do_act(device=device, ch=ch)
-
-                                elif ch.get_type() == "meas":
-                                    error, ans_request, time_step = self.do_meas(device=device, ch=ch)
-
-                            elif ans_device == ch_response_to_step.End_list_of_steps:
-                                ch.am_i_active_in_experiment = False
-                            else:
-                                ch.am_i_active_in_experiment = False
-
-                            if device.get_steps_number(ch) is not False:#проверка останвки по количеству шагов
-                                if (ch.number_meas >= device.get_steps_number(ch) ):
-                                    ch.am_i_active_in_experiment = False
-
-                            if ch.do_last_step:#был сделан последний шаг
-                                ch.am_i_active_in_experiment = False
-                                ch.do_last_step = False
-
-                            if not ch.am_i_active_in_experiment:
-                                self.add_text_to_log(
-                                        text=device.get_name()
-                                        + " "
-                                        + str(ch.get_name()) + " "
-                                        + QApplication.translate('exp_flow',"завершил работу"),
-                                        status="ok",
-                                    )
-                            current_priority = ch.get_priority()
-                            self.manage_subscribers(ch = ch)
-                            self.update_actors_priority(exclude_dev = device, exclude_ch = ch)
-
-                            self.meta_data_exp.exp_queue.append( self.meta_data_exp.numbers[ch] )
-                            self.meta_data_exp.queue_info.append( f'''\n\r 
-                                                                {device.get_name()} {ch.get_name()} \n\r
-                                                                 Status request = {ans_request} \n\r
-                                                                 Step time = {round(time_step, 3)} s\n\r
-                                                                 Номер шага = {ch.number_meas} \n\r
-                                                                 Приоритет = {current_priority}\n\r
-                                                                ''' )
-                            self.exp_call_stack.set_data(self.meta_data_exp)
-
-        self.finalize_experiment(error=error, error_start_exp=error_start_exp)
-        self.prepare_for_reexperiment()
-
     def manage_subscribers(self, ch):
         subscribers_do_operation = self.message_broker.get_subscribers(
             publisher=ch, name_subscribe=ch.do_operation_trigger
