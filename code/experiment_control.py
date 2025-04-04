@@ -151,6 +151,8 @@ class experimentControl(analyse):
             elif self.exp_th_connect.message_status == message_status.critical:
                 self.show_critical_window(self.exp_th_connect.message)
 
+            self.meas_session.ask_session_name_description(self.exp_th_connect.message)
+
             self.exp_th_connect.is_message_show = True
         if self.exp_th_connect.ask_save_the_results:
             self.exp_th_connect.ask_save_the_results = False
