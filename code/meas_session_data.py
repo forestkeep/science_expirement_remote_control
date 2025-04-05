@@ -38,12 +38,15 @@ class measSession():
         self._buf_file = ''
 
     def ask_session_name_description(self, text = None) -> bool:
-        if text is None:
-            text = QApplication.translate('askInfoWindow','''
+        text_def = QApplication.translate('askInfoWindow','''
 Хотите добавить название и описание к результатам? Это поможет вам легко ориентироваться в данных.
 
 Если не хотите, названием будет текущая дата и время, а описание останется пустым.
                 ''')
+        if text is not None:
+            text+=(" " + text_def)
+        else:
+            text = text_def
         askwin = askInfoWindow()
         askwin.signal_to_main_window.connect(self.receive_info_from_win)
         askwin.setupUi(text," ")
