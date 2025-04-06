@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import QApplication
 from Analyse_in_installation import analyse
 from Devices.Classes import (not_ready_style_background,
                              not_ready_style_border, ready_style_background)
-from experiment_control import experimentControl
+from measurement_running import experimentControl
 from Handler_manager import messageBroker
 from interface.installation_window import Ui_Installation
 from schematic_exp.construct_diagramexp import expDiagram
@@ -33,11 +33,14 @@ from schematic_exp.exp_time_line import callStack
 from saving_data.Parse_data import process_and_export, type_save_file
 from available_devices import dict_device_class, JSON_dict_device_class
 from meas_session_data import measSession
+from experiment_control import experimentoldControl
+from functions import get_active_ch_and_device
+from queue import Queue
 
 logger = logging.getLogger(__name__)
 
 version_app = "1.0.3"
-class installation_class(experimentControl, analyse):
+class installation_class( experimentoldControl, analyse):
     def __init__(self, settings, version = None) -> None:
         super().__init__()
         logger.info("запуск установки")
@@ -55,9 +58,7 @@ class installation_class(experimentControl, analyse):
         self.timer_for_pause_exp.timeout.connect(lambda: self.pause_actions())
 
         self.timer_for_connection_main_exp_thread = QTimer()
-        self.timer_for_connection_main_exp_thread.timeout.connect(
-            lambda: self.connection_two_thread()
-        )
+        self.timer_for_connection_main_exp_thread.timeout.connect( self.connection_two_thread )
 
         self.timer_for_open_base_instruction = QTimer()
         self.timer_for_open_base_instruction.timeout.connect(
@@ -371,7 +372,7 @@ class installation_class(experimentControl, analyse):
     def set_depending(self) -> bool:
         """устанавливает зависимости одних приборов от других, добавляет подписчиков"""
         status = True
-        for device, ch in self.get_active_ch_and_device():
+        for device, ch in get_active_ch_and_device( self.dict_active_device_class ):
             trig = device.get_trigger(ch)
             if trig != QApplication.translate('main install',"Таймер"):
 
@@ -387,14 +388,21 @@ class installation_class(experimentControl, analyse):
     
     def action_stop_experiment(self):
             self.stoped_experiment()
-            self.pause_flag = False
+            self.pause_flag = True
             self.pause_exp()
             self.installation_window.pause_button.setStyleSheet(
                 not_ready_style_background
             )
+            self.timer_for_pause_exp.stop()
+            self.installation_window.pause_button.style_sheet = not_ready_style_background
+            self.installation_window.pause_button.setText(QApplication.translate('exp_flow',"Пауза"))
             self.installation_window.start_button.setText(QApplication.translate('main install',"Остановка") + "...")
 
     def push_button_start(self):
+        """
+        slot for start button, if experiment is running, stops it, if not, starts experiment
+        """
+
         if self.is_experiment_running():
             self.action_stop_experiment()
         else:
@@ -405,52 +413,91 @@ class installation_class(experimentControl, analyse):
                 self.stop_experiment = True
                 self.set_clients_for_device()
                 self.set_state_text(QApplication.translate('main install',"Старт эксперимента"))
-                self.installation_window.pause_button.setStyleSheet(
-                    ready_style_background
-                )
-
-                self.installation_window.start_button.setStyleSheet(
-                    ready_style_background
-                )
+                self.installation_window.pause_button.setStyleSheet(ready_style_background)
+                self.installation_window.start_button.setStyleSheet(ready_style_background)
                 self.installation_window.start_button.setText(QApplication.translate('main install',"Стоп"))
                 
                 self.message_broker.clear_all_subscribers()
                 status = self.set_depending()#setting subscribers
                 
-                
                 if status:
                     self.stop_experiment = False
                     
                     self.buf_file = self.create_buf_file()
+
                     self.write_data_to_buf_file(message="installation start" + "\n\r")
                     lst_dev = ""
                     for dev in self.dict_active_device_class.values():
                         lst_dev += dev.get_name() + " "
-                    self.write_data_to_buf_file(
-                        message="device list: " + lst_dev + "\r\n"
-                    )
+                    self.write_data_to_buf_file(message="device list: " + lst_dev + "\r\n")
+
                     self.write_settings_to_buf_file()
 
-                    self.meas_session = measSession()
+                    self.repeat_experiment = int(self.gen_set_class.repeat_exp)
+                    self.repeat_meas = int(self.gen_set_class.repeat_meas)
 
-                    self.repeat_experiment = int(
-                        self.gen_set_class.repeat_exp
-                    )
-                    self.repeat_meas = int(
-                        self.gen_set_class.repeat_meas
-                    )
                     self.add_text_to_log(QApplication.translate('main install',"Создан файл") + " " + self.buf_file)
                     logger.debug("Эксперимент начат" + "Создан файл " + self.buf_file)
                     self.measurement_parameters = {}
                     if self.graph_window is not None:
                         self.graph_window.set_default()
-                    self.experiment_thread = threading.Thread(
-                        target=self.exp_th, daemon=True
-                    )
+
                     self.add_text_to_log(QApplication.translate('main install',"настройка приборов") + ".. ")
-                    self.experiment_thread.start()
+
+                    self.start_exp_time = time.perf_counter()
+                    self.remaining_exp_time = 0
+                    self.update_pbar(0)
+
                     self.timer_for_connection_main_exp_thread.start(1000)
-    
+                    self.timer_second_thread_tasks = QTimer()
+                    self.timer_second_thread_tasks.timeout.connect(self.second_thread_tasks)
+                    self.timer_second_thread_tasks.start(100)
+
+                    self.queue = Queue()
+
+                    self.meas_session = measSession()
+
+                    self.exp_controller = experimentControl(
+                        device_classes        =self.dict_active_device_class,
+                        message_broker        =self.message_broker,
+                        is_debug              =self.is_debug,
+                        is_experiment_endless =self.is_experiment_endless,
+                        repeat_exp            =self.repeat_experiment,
+                        repeat_meas           =self.repeat_meas,
+                        is_run_anywhere       =self.is_exp_run_anywhere,
+                        queue                 =self.queue
+                    )
+
+                    self.exp_controller.set_callbacks(
+                        self.update_remaining_time,
+                        self.update_measurement_data,
+                        self.write_data_to_buf_file,
+                        self.add_text_to_log,
+                        self.set_state_text,
+                        self.exp_call_stack.set_data,
+                        self.finalize_experiment
+                    )
+
+                    self.experiment_thread = threading.Thread(
+                        target=self.exp_controller.run, daemon=True
+                    )
+                    self.experiment_thread.start()
+    def second_thread_tasks(self):
+        if not self.queue.empty():
+            task = self.queue.get_nowait()
+            task()
+            self.queue.task_done()
+
+    def update_remaining_time(self, remaining_time: float):
+        logger.info(f"update_remaining_time {remaining_time}")
+        self.remaining_exp_time = remaining_time
+
+    def update_measurement_data(self, measurement_data: dict):
+        #TODO: оценить с точки зрения потокобезопасности, может быть нужно делать копии, а не ссылаться на один объект
+        self.measurement_parameters = measurement_data
+        if self.graph_window:
+            self.graph_window.update_graphics( self.measurement_parameters )
+
     def create_buf_file(self):
         name_file = ""
         for i in self.dict_active_device_class.values():

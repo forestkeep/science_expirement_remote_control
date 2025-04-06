@@ -29,6 +29,8 @@ from interface.experiment_settings_window import (experimentSettings,
 from interface.Message import messageDialog
 from saving_data.Parse_data import process_and_export, type_save_file
 
+from functions import get_active_ch_and_device
+
 logger = logging.getLogger(__name__)
 
 class baseInstallation:
@@ -113,17 +115,12 @@ class baseInstallation:
     def set_priorities(self):
         """устанавливает приоритеты в эксперименте всем активным каналам во всех приборах"""
         priority = 1
-        for dev, ch in self.get_active_ch_and_device():
+        for dev, ch in get_active_ch_and_device( self.dict_active_device_class ):
             ch.set_priority(priority=priority)
             priority += 1
 
-    def get_active_ch_and_device(self):
-        for device in self.dict_active_device_class.values():
-            for channel in device.channels:
-                if channel.is_ch_active():
-                    yield device, channel
-
-    def add_text_to_log(self, text, status=None):
+    def add_text_to_log(self, text: str, status: str = None):
+        logger.info(f"add_text_to_log {text=} {status=}")
         if status == "err":
             self.installation_window.log.setTextColor(QtGui.QColor("red"))
         elif status == "war":
@@ -142,6 +139,7 @@ class baseInstallation:
         #cur_text = self.installation_window.log.toPlainText().split("\n")
 
     def set_state_text(self, text):
+        logger.info(f"set_state_text {text}")
         self.installation_window.label_state.setText(text)
 
     def show_window_installation(self):
@@ -246,7 +244,7 @@ class baseInstallation:
                 status=message_status
         )
 
-    def save_results(self):
+    def save_results(self) -> bool:
 
         session_name, session_description = self.meas_session.session_name, self.meas_session.session_description
         print(f"{session_name=} {session_description=}")
@@ -275,12 +273,10 @@ class baseInstallation:
                 self.is_delete_buf_file,
                 self.answer_save_results
             )
-
+            return True
         else:
-            self.exp_th_connect.ask_save_the_results = True
+            return False
 
-            while self.exp_th_connect.ask_save_the_results == True:
-                pass
 
     def show_about_autors(self):
         text = QApplication.translate('base_install',"""
@@ -541,10 +537,11 @@ class baseInstallation:
             self.installation_window.start_button.setText(QApplication.translate('base_install',"Старт"))
             self.key_to_start_installation = False  # старт экспериепнта запрещаем
 
-    def write_data_to_buf_file(self, message, addTime=False):
+    def write_data_to_buf_file(self, message: str, addTime: bool=False):
+        logger.info(f"write_data_to_buf_file {message}")
         message = f"{datetime.now().strftime('%H:%M:%S') + ' ' if addTime else ''}{message.replace('.', ',')}"
         with open(self.buf_file, "a") as file:
-            file.write(str(message))
+            file.write( str(message) )
 
     def message_from_device_settings(
         self,

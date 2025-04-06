@@ -179,6 +179,14 @@ class CustomButton(QtWidgets.QPushButton):
     def __init__(self, text):
         super().__init__(text)
         self.style_sheet = self.styleSheet()
+        self.clicked.connect( self.lock_button )
+
+    def lock_button(self):
+        self.setEnabled(False)
+        QtCore.QTimer.singleShot(1000, self.unlock_button)
+        
+    def unlock_button(self):
+        self.setEnabled(True)
 
     def update_buf_style(self):
         self.style_sheet = self.styleSheet()
@@ -374,6 +382,8 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.log = QtWidgets.QTextEdit()
         self.log.setReadOnly(True)
         self.pbar = QtWidgets.QProgressBar()
+        self.pbar.setMinimum(0)
+        self.pbar.setMaximum(100)
         self.pbar.setValue(0)
 
         

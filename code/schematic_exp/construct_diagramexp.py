@@ -18,6 +18,7 @@ from PyQt5.QtCore import QPoint, QRect, Qt
 from PyQt5.QtGui import QBrush, QColor, QFont, QPainter, QPen
 from PyQt5.QtWidgets import (QApplication, QFrame, QLabel, QSizePolicy,
                              QVBoxLayout, QWidget)
+from functions import get_active_ch_and_device
 
 class Position(Enum):
     LEFT = 1
@@ -661,7 +662,7 @@ class expDiagram(QWidget):
         color_index = 0
         color_map = {}
         
-        for dev, ch in install_class.get_active_ch_and_device():
+        for dev, ch in get_active_ch_and_device( install_class.dict_active_device_class ):
             y = install_class.message_broker.get_subscribers(publisher = ch, name_subscribe = ch.do_operation_trigger)
             name_dev = dev.get_name()
             if name_dev not in color_map:
@@ -684,7 +685,7 @@ class expDiagram(QWidget):
 
         self.connections = []
         index = -1
-        for dev, ch in install_class.get_active_ch_and_device():
+        for dev, ch in get_active_ch_and_device( install_class.dict_active_device_class ):
             index += 1
             if dev.get_trigger(ch) == QApplication.translate("construct","Таймер"):
                 con = connection(self, str(dev.get_trigger_value(ch)) + "s")

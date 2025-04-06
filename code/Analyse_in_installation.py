@@ -26,6 +26,8 @@ from base_installation import baseInstallation
 from Devices.Classes import (not_ready_style_border, ready_style_border,
                              warning_style_border)
 
+from functions import get_active_ch_and_device
+
 
 class analyse(baseInstallation):
     def __init__(self) -> None:
@@ -34,7 +36,7 @@ class analyse(baseInstallation):
     def get_time_line_devices(self):
         """возвращает массивы веток приборов, каждая ветка работает по своему таймеру. Веткой называется прибор, работающий по таймеру и все подписчики"""
         time_lines = []
-        for device, ch in self.get_active_ch_and_device():
+        for device, ch in get_active_ch_and_device( self.dict_active_device_class):
             if device.get_trigger(ch) == "Таймер":
                 time_line = [[device.get_name(), ch.number]]
                 subscribers = self.get_subscribers(
@@ -78,7 +80,7 @@ class analyse(baseInstallation):
         # ----------анализ по таймерам-----------------------
         experiment_endless = False
         mark_device_number = []
-        for device, ch in self.get_active_ch_and_device():
+        for device, ch in get_active_ch_and_device( self.dict_active_device_class):
             trigger = device.get_trigger(ch)
             steps_number = device.get_steps_number(ch)
 
@@ -169,7 +171,7 @@ class analyse(baseInstallation):
         array = names
         logger.debug("анализируем зацикливания приборов")
         # формируем первую линию сигналов
-        for dev, ch in self.get_active_ch_and_device():
+        for dev, ch in get_active_ch_and_device( self.dict_active_device_class ):
             if dev.get_trigger(ch) == "Внешний сигнал":
                 s = dev.get_trigger_value(ch)
             else:
@@ -220,7 +222,7 @@ class analyse(baseInstallation):
         """возвращает массив пар [имя прибора, имя канала] подписчиков данного сигнала-триггера и всех последующих подписчиков, рекурсивная функция"""
 
         subscribers = signals
-        for device, ch in self.get_active_ch_and_device():
+        for device, ch in get_active_ch_and_device( self.dict_active_device_class):
             if device.get_trigger(ch).lower() == "внешний сигнал":
                 stroka = device.get_trigger_value(ch)
                 sourse = [stroka.split()[0], stroka.split()[1]]

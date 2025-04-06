@@ -217,6 +217,7 @@ if __name__ == "__main__":
     for i in range(4):
         res = instrument.get_visa_resourses()
         print(res)
-        #my = Adapter(res[0])
-        #my.write("*IDN?")
+        my = Adapter(res[0])
+        my.write("*IDN?")
+        time.sleep(1)
         print(instrument.get_available_com_ports())
