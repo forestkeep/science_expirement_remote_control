@@ -10,6 +10,7 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import sys
+import copy
 
 import qdarktheme
 from PyQt5.QtCore import QRect
@@ -54,9 +55,11 @@ class callStack(QWidget):
         
 	def set_data(self, meta_data_class):
 		#print("данные установлены в стек")
-		self.actors_names = meta_data_class.actors_names
-		self.exp_queue = meta_data_class.exp_queue
-		self.queue_info = meta_data_class.queue_info
+		self.actors_names = copy.deepcopy(meta_data_class.actors_names)
+		#TODO: копии сейчас сделаны для потокобезопасности, необходимо реализовать передачу не всего списка целиком, а по отдельности, добавля элементы.\
+		#Так же будет необходимо реализовать методы очистки всего стека и т.д.
+		self.exp_queue = copy.deepcopy(meta_data_class.exp_queue)
+		self.queue_info = copy.deepcopy(meta_data_class.queue_info)
 		self.rects = []
 		for inf in self.queue_info:
 			self.rects.append({"rect": None, "text": inf})
@@ -65,6 +68,7 @@ class callStack(QWidget):
 	def paintEvent(self, event):
 		painter = QPainter(self)
 		self.paintsome(painter = painter)
+
 	def paintsome(self, painter):
 			try:
 				painter = QPainter(self)

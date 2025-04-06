@@ -24,6 +24,7 @@ from functions import get_active_ch_and_device
 logger = logging.getLogger(__name__)
 
 class metaDataExp( ):
+
     def __init__(self):
         super().__init__()
         self.actors_names   = {}
@@ -33,8 +34,7 @@ class metaDataExp( ):
         self.queue_info     = []
         self.exp_start_time = 0
         self.exp_stop_time  = 0
-
-        
+ 
     def get_meta_data(self):
         pass
     
@@ -85,6 +85,7 @@ class experimentControl( ):
         self.is_experiment_endless = is_experiment_endless
         self.repeat_experiment = repeat_exp
         self.repeat_meas = repeat_meas
+
         self.is_exp_run_anywhere = is_run_anywhere
         self.queue = queue
 
@@ -152,6 +153,7 @@ class experimentControl( ):
         target_execute = False
         number_active_device = 4
         last_number_active_device = 0
+
         #----------------------------------------------------------------------------------------------
         if not error_start_exp:
             for i in range(self.repeat_experiment):
@@ -175,6 +177,7 @@ class experimentControl( ):
                         number_device_which_act_while = 0
 
                         for device, ch in get_active_ch_and_device( self.device_classes ):
+
                             if not device.get_steps_number(ch) :
                                 if not ch.do_last_step:
                                     number_device_which_act_while += 1
@@ -217,6 +220,7 @@ class experimentControl( ):
                                 t = (
                                     time.perf_counter() - t
                                 )
+
                                 ch.number_meas += 1
 
                                 if ch.get_type() == "act":
@@ -247,6 +251,7 @@ class experimentControl( ):
                                         + QApplication.translate('exp_flow',"завершил работу")
                                 status = "ok"
                                 self.queue.put(lambda data=text, status=True: self.add_text_to_log( data, status ))
+
 
                             current_priority = ch.get_priority()
                             self.manage_subscribers(ch = ch)
@@ -283,11 +288,13 @@ class experimentControl( ):
     def do_act(self, device, ch):
         error = False
         step_time = 0
+
         text = \
             QApplication.translate('exp_flow',"Выполняется действие") + " "\
             + device.get_name()\
             + str(ch.get_name())
         self.queue.put(lambda data=text: self.set_state_text( data ))
+
 
         try:
             ans, param, step_time = device.do_action(ch)
@@ -300,6 +307,7 @@ class experimentControl( ):
         if ans == ch_response_to_step.Incorrect_ch:
             pass
         elif ans == ch_response_to_step.Step_done:
+
             text = QApplication.translate('exp_flow',"шаг") + " "\
                 + device.get_name() + " "\
                 + str(ch.get_name()) + " "\
@@ -320,6 +328,7 @@ class experimentControl( ):
                 + str(ch.get_name())
 
             self.queue.put(lambda data=text, status="err": self.add_text_to_log( data, status ))
+
             if not self.is_exp_run_anywhere:
                 error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
         else:
@@ -336,6 +345,7 @@ class experimentControl( ):
             + str(ch.get_name())
 
         self.queue.put(lambda data=text: self.set_state_text( data ))
+
         logger.info(
             "Выполняется измерение "
             + device.get_name()
@@ -351,6 +361,7 @@ class experimentControl( ):
                 result = ch_response_to_step.Step_fail
                 logger.warning(
                     f"Ошибка измерения прибора {device} в эксперименте: {str(ex)}")
+
 
             if result != ch_response_to_step.Step_fail:
                 if len(result) == 3:
@@ -371,6 +382,7 @@ class experimentControl( ):
                     
                     self.queue.put(lambda data=text, status="": self.add_text_to_log( data, status ))
 
+
                 time_t = time.perf_counter() - self.start_exp_time
 
                 if device.device_type == "oscilloscope":
@@ -386,11 +398,13 @@ class experimentControl( ):
                 else:
                     status_update, buffer_meas = self.update_parameters(
                         data=self.__measurement_parameters,
+
                         entry=param,
                         time=time_t,
                     )
 
                 if status_update:
+
                     self.__measurement_parameters = buffer_meas
                     self.queue.put(lambda data=self.__measurement_parameters: self.update_measurement_data( data ))
 
@@ -423,17 +437,20 @@ class experimentControl( ):
                         + str(ch.get_name())
 
                     self.queue.put(lambda data=text, status="err": self.add_text_to_log( data, status ))
+
                     if not self.is_exp_run_anywhere :
                         ch.am_i_active_in_experiment = False
                         error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
                     break
             else:
+
                 text =\
                     QApplication.translate('exp_flow',"Ошибка опроса") + " "\
                     + device.get_name() + " "\
                     + str(ch.get_name())
 
                 self.queue.put(lambda data=text, status="err": self.add_text_to_log( data, status ))
+
                 if not self.is_exp_run_anywhere :
                     ch.am_i_active_in_experiment = False
                     error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
@@ -520,6 +537,7 @@ class experimentControl( ):
     def calc_last_exp_time(self) -> float:
         buf_time = [0]
         for device, ch in get_active_ch_and_device( self.device_classes ):
+
             if ch.am_i_active_in_experiment :
                 trig = device.get_trigger(ch)
                 if trig == QApplication.translate('exp_flow', "Таймер"):
@@ -533,6 +551,7 @@ class experimentControl( ):
                         buf_time.append(t)
         remaining_time = max(buf_time) + (time.perf_counter() - self.start_exp_time)
         return remaining_time
+
 
     def calculate_exp_time(self):
         """оценивает продолжительность эксперимента, возвращает результат в секундах, если эксперимент бесконечно долго длится, то вернется ответ True. В случае ошибки при расчете количества секунд вернется False"""
@@ -607,6 +626,7 @@ class experimentControl( ):
         status = True
         for dev, ch in get_active_ch_and_device( self.device_classes ):
 
+
             if ch.number in ch_done.values() and dev.get_name() in ch_done.keys():
                 continue
 
@@ -623,6 +643,7 @@ class experimentControl( ):
                 logger.debug(
                     "ошибка при настройке " + dev.get_name() + " перед экспериментом"
                 )
+
                 text = \
                     QApplication.translate('exp_flow',"Ошибка настройки") + " "\
                     + dev.get_name() + " ch-"\
@@ -640,6 +661,7 @@ class experimentControl( ):
                 text = \
                     dev.get_name() + " ch-" + str(ch.number) + QApplication.translate('exp_flow'," настроен")
                 self.queue.put(lambda data=text, status="": self.add_text_to_log( data, status ))
+
                 
         return status
 
@@ -663,6 +685,7 @@ class experimentControl( ):
                     text =\
                         QApplication.translate('exp_flow',"Ответ") + " " + dev.get_name() + " " + str(is_connect)
                     self.queue.put(lambda data=text, status="": self.add_text_to_log( data, status ))
+
 
         if self.is_debug:
             status = True
@@ -688,6 +711,7 @@ class experimentControl( ):
                             + QApplication.translate('exp_flow'," завершил работу")
 
                         self.queue.put(lambda data=text, status="ok": self.add_text_to_log( data, status ))
+
                         subscriber.do_last_step = True
 
             # испускаем сигнал о том, что работа закончена

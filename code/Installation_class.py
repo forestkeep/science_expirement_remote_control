@@ -19,7 +19,7 @@ from datetime import datetime
 
 import qdarktheme
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QThread
 from PyQt5.QtWidgets import QApplication
 
 from Analyse_in_installation import analyse

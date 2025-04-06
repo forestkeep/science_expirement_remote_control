@@ -152,6 +152,7 @@ class experimentoldControl(analyse):
         )
         if not self.pause_flag:
             self.installation_window.pause_button.style_sheet = ready_style_background
+
         else:
             self.installation_window.pause_button.setStyleSheet(style)
 
