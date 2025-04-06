@@ -33,24 +33,17 @@ class settigsDialog(QDialog):
         main_layout = QVBoxLayout()
         set_layout = QHBoxLayout()
 
-        checkboxes_layout_1 = QVBoxLayout()
-        self.check_boxes_1 = []
-        for i in range(2):
-            checkbox = QCheckBox(f"check {i+1}")
-            checkbox.checkState()
-            self.check_boxes_1.append(checkbox)
-            checkboxes_layout_1.addWidget(checkbox)
-        set_layout.addLayout(checkboxes_layout_1)
+        self.checkboxes_layout_1 = QVBoxLayout()
 
-        self.check_boxes_1[0].setChecked(True)
-        self.check_boxes_1[0].setStyleSheet(
-            "QToolTip { background-color: lightblue; color: black; border: 1px solid black; }"
-        )
+        self.is_delete_buf_file = QCheckBox()
+        self.is_exp_run_anywhere = QCheckBox()
+        self.should_prompt_for_session_name = QCheckBox()
 
-        self.check_boxes_1[1].setChecked(True)
-        self.check_boxes_1[1].setStyleSheet(
-            "QToolTip { background-color: lightblue; color: black; border: 1px solid black; }"
-        )
+        self.manage_new_checkbox(self.is_delete_buf_file)
+        self.manage_new_checkbox(self.is_exp_run_anywhere)
+        self.manage_new_checkbox(self.should_prompt_for_session_name)
+
+        set_layout.addLayout(self.checkboxes_layout_1)
 
         self.comboboxes = []
         self.labels = []
@@ -65,7 +58,7 @@ class settigsDialog(QDialog):
 
         bufvlay1.addWidget(self.labelbuf1)
         bufvlay1.addWidget(self.repeat_exp_enter)
-        checkboxes_layout_1.addLayout(bufvlay1)
+        self.checkboxes_layout_1.addLayout(bufvlay1)
 
         bufvlay2 = QVBoxLayout()
         self.labelbuf2 = QLabel()
@@ -75,7 +68,7 @@ class settigsDialog(QDialog):
         self.repeat_measurement_enter.setMaximumWidth( int(self.height()/2))
         bufvlay2.addWidget(self.labelbuf2)
         bufvlay2.addWidget(self.repeat_measurement_enter)
-        checkboxes_layout_1.addLayout(bufvlay2)
+        self.checkboxes_layout_1.addLayout(bufvlay2)
 
         bufvlay3 = QVBoxLayout()
         bufhlay3 = QHBoxLayout()
@@ -89,7 +82,7 @@ class settigsDialog(QDialog):
         bufhlay3.setStretch(1, 1)
         bufvlay3.addWidget(self.labelbuf3)
         bufvlay3.addLayout(bufhlay3)
-        checkboxes_layout_1.addLayout(bufvlay3)
+        self.checkboxes_layout_1.addLayout(bufvlay3)
 
         self.buttonBox = QDialogButtonBox()
         self.buttonBox.setGeometry(QtCore.QRect(80, 340, 191, 32))
@@ -107,19 +100,31 @@ class settigsDialog(QDialog):
 
     def closeEvent(self, event):
         pass
+
+    def manage_new_checkbox(self, checkbox):
+        checkbox.setChecked(True)
+        checkbox.setStyleSheet(
+            "QToolTip { background-color: lightblue; color: black; border: 1px solid black; }"
+        )
+        self.checkboxes_layout_1.addWidget(checkbox)
     
     def retranslateUi(self, Installation):
         _translate = QtCore.QCoreApplication.translate
         
         self.setWindowTitle(_translate('set exp window',"Настройки эксперимента"))
-        self.check_boxes_1[0].setText(_translate('set exp window',"Продолжать эксперимент при ошибке прибора"))
-        self.check_boxes_1[0].setToolTip(
+        self.is_exp_run_anywhere.setText(_translate('set exp window',"Продолжать эксперимент при ошибке прибора"))
+        self.is_exp_run_anywhere.setToolTip(
             _translate('set exp window',"При активации эксперимент будет продолжаться независимо от ответа прибора, \n\r если ответа от прибора не будет, в файл результатов будет записано слово fail")
         )
 
-        self.check_boxes_1[1].setText(_translate('set exp window',"Удалить буферный файл после эксперимента"))
-        self.check_boxes_1[1].setToolTip(
+        self.is_delete_buf_file.setText(_translate('set exp window',"Удалить буферный файл после эксперимента"))
+        self.is_delete_buf_file.setToolTip(
             _translate('set exp window',"При каждом измерении значения записываются в буферный файл, \n\r после эксперимента файл вычитывается и переводится в удобочитаемый формат, \n\r в случае активации этого пункта буферный файл будет удаляться после удачного сохранения результатов.")
+        )
+
+        self.should_prompt_for_session_name.setText(_translate('set exp window',"Запрашивать имя и описание измерений"))
+        self.should_prompt_for_session_name.setToolTip(
+            _translate('set exp window',"При активации этого пункта установка будет запрашивать имя и описание измерений в конце эксперимента")
         )
         
         self.labelbuf1.setText(_translate('set exp window',"Количество повторов эксперимента"))
@@ -142,14 +147,16 @@ class experimentSettings():
 
         self.window_dialog.repeat_measurement_enter.currentIndexChanged.connect(lambda: self._read_par())
         self.window_dialog.repeat_exp_enter.currentIndexChanged.connect(lambda: self._read_par())
-        self.window_dialog.check_boxes_1[0].stateChanged.connect(lambda: self._read_par())
-        self.window_dialog.check_boxes_1[1].stateChanged.connect(lambda: self._read_par())
+        self.window_dialog.is_exp_run_anywhere.stateChanged.connect(lambda: self._read_par())
+        self.window_dialog.is_delete_buf_file.stateChanged.connect(lambda: self._read_par())
+        self.window_dialog.should_prompt_for_session_name.stateChanged.connect(lambda: self._read_par())
         self.window_dialog.save_results_but.clicked.connect(lambda: self.set_way_save())
         self.window_dialog.place_save_res.textChanged.connect(lambda: self._read_par())
 
     def read_settings(self,
                     is_exp_run_anywhere,
                     is_delete_buf_file,
+                    should_prompt_for_session_name,
                     way_to_save,
                     type_file_for_result,
                     repeat_exp,
@@ -158,14 +165,16 @@ class experimentSettings():
         self.type_file_for_result = type_file_for_result
         self.window_dialog.repeat_measurement_enter.setCurrentText(str(repeat_meas))
         self.window_dialog.repeat_exp_enter.setCurrentText( str(repeat_exp) )
-        self.window_dialog.check_boxes_1[0].setChecked( is_exp_run_anywhere == True )
-        self.window_dialog.check_boxes_1[1].setChecked( is_delete_buf_file == True )
+        self.window_dialog.is_exp_run_anywhere.setChecked( is_exp_run_anywhere == True )
+        self.window_dialog.is_delete_buf_file.setChecked( is_delete_buf_file == True )
+        self.window_dialog.should_prompt_for_session_name.setChecked( should_prompt_for_session_name == True )
         self.window_dialog.place_save_res.setText( "" if not way_to_save else way_to_save )
         answer = self.window_dialog.exec_()
         if answer:
             return (True,
                     self.is_exp_run_anywhere,
                     self.is_delete_buf_file,
+                    self.should_prompt_for_session_name,
                     self.way_to_save,
                     self.type_file_for_result,
                     self.repeat_exp,
@@ -174,6 +183,7 @@ class experimentSettings():
         return (False,
                 is_exp_run_anywhere,
                 is_delete_buf_file,
+                should_prompt_for_session_name,
                 way_to_save,
                 self.type_file_for_result,
                 repeat_exp,
@@ -181,8 +191,10 @@ class experimentSettings():
                )
 
     def _read_par(self):
-        self.is_exp_run_anywhere = self.window_dialog.check_boxes_1[0].checkState() == Qt.Checked
-        self.is_delete_buf_file = self.window_dialog.check_boxes_1[1].checkState() == Qt.Checked
+        self.is_exp_run_anywhere = self.window_dialog.is_exp_run_anywhere.checkState() == Qt.Checked
+        self.is_delete_buf_file = self.window_dialog.is_delete_buf_file.checkState() == Qt.Checked
+        self.should_prompt_for_session_name = self.window_dialog.should_prompt_for_session_name.checkState() == Qt.Checked
+
         self.way_to_save = self.window_dialog.place_save_res.text()
         self.repeat_exp = int(self.window_dialog.repeat_exp_enter.currentText())
         self.repeat_meas = int(self.window_dialog.repeat_measurement_enter.currentText())

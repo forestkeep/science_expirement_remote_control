@@ -53,6 +53,9 @@ class measSession():
         askwin.setModal(True)
         askwin.exec_()
         return True
+    def set_default_session_name_description(self):
+        self.meas_session_data.session_name = None
+        self.meas_session_data.session_description = None
     @property
     def session_name(self) -> str:
         return self.meas_session_data.session_name

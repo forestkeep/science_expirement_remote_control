@@ -448,12 +448,14 @@ class baseInstallation:
         (is_change,
         self.is_exp_run_anywhere,
         self.is_delete_buf_file,
+        self.should_prompt_for_session_name,
         self.way_to_save_file,
         self.type_file_for_result,
         self.repeat_experiment,
         self.repeat_meas) = self.gen_set_class.read_settings(
                                                             self.is_exp_run_anywhere,
                                                             self.is_delete_buf_file,
+                                                            self.should_prompt_for_session_name,
                                                             self.way_to_save_file,
                                                             self.type_file_for_result,
                                                             self.repeat_experiment,
@@ -463,48 +465,8 @@ class baseInstallation:
         if is_change:
             self.settings.setValue("is_exp_run_anywhere", self.is_exp_run_anywhere)
             self.settings.setValue("is_delete_buf_file", self.is_delete_buf_file)
+            self.settings.setValue("should_prompt_for_session_name", self.should_prompt_for_session_name)
 
-    def open_general_settings_old(self):
-        set_dialog = settigsDialog()
-
-        state = self.is_exp_run_anywhere == "true" or self.is_exp_run_anywhere == True
-        if state:
-            is_exp_run_anywhere = [Qt.Checked]
-        else:
-            is_exp_run_anywhere = [Qt.Unchecked]
-
-        set_dialog.check_boxes_1[0].setChecked(state)
-        set_dialog.check_boxes_1[0].stateChanged.connect(
-            lambda state: is_exp_run_anywhere.__setitem__(0, state == Qt.Checked)
-        )
-
-        state = self.is_delete_buf_file == "true" or self.is_delete_buf_file == True
-        if state:
-            is_delete_buf_file = [Qt.Checked]
-        else:
-            is_delete_buf_file = [Qt.Unchecked]
-        set_dialog.check_boxes_1[1].setChecked(state)
-        set_dialog.check_boxes_1[1].stateChanged.connect(
-            lambda state: is_delete_buf_file.__setitem__(0, state == Qt.Checked)
-        )
-
-        answer = set_dialog.exec_()
-        if answer:
-            if is_exp_run_anywhere[0]:
-                self.is_exp_run_anywhere = True
-            else:
-                self.is_exp_run_anywhere = False
-
-            if is_delete_buf_file[0]:
-                self.is_delete_buf_file = True
-            else:
-                self.is_delete_buf_file = False
-
-            self.settings.setValue("is_exp_run_anywhere", self.is_exp_run_anywhere)
-            self.settings.setValue("is_delete_buf_file", self.is_delete_buf_file)
-
-        else:
-            pass
 
     ########### devices class connect func #############
 

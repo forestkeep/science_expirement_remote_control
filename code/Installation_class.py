@@ -33,14 +33,14 @@ from schematic_exp.exp_time_line import callStack
 from saving_data.Parse_data import process_and_export, type_save_file
 from available_devices import dict_device_class, JSON_dict_device_class
 from meas_session_data import measSession
-from experiment_control import experimentoldControl
+from experiment_control import ExperimentBridge
 from functions import get_active_ch_and_device
 from queue import Queue
 
 logger = logging.getLogger(__name__)
 
 version_app = "1.0.3"
-class installation_class( experimentoldControl, analyse):
+class installation_class( ExperimentBridge, analyse):
     def __init__(self, settings, version = None) -> None:
         super().__init__()
         logger.info("запуск установки")
@@ -91,10 +91,14 @@ class installation_class( experimentoldControl, analyse):
         self.is_show_basic_instruction_again = self.settings.value(
             "is_show_basic_instruction_again", defaultValue=True
         )
+        self.should_prompt_for_session_name = self.settings.value(
+            "should_prompt_for_session_name", defaultValue=True
+        )
         # self.is_show_basic_instruction_again = True
         self.is_exp_run_anywhere = self.format_bool_settings(self.is_exp_run_anywhere)
         self.is_delete_buf_file = self.format_bool_settings(self.is_delete_buf_file)
         self.is_show_basic_instruction_again = self.format_bool_settings(self.is_show_basic_instruction_again)
+        self.should_prompt_for_session_name = self.format_bool_settings(self.should_prompt_for_session_name)
 
         logger.info("settings readed")
 

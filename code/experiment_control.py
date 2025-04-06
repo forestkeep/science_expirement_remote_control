@@ -43,7 +43,7 @@ class message_status(enum.Enum):
     critical = 3
 
 
-class experimentoldControl(analyse):
+class ExperimentBridge(analyse):
     def __init__(self) -> None:
         super().__init__()
         self.exp_th_connect    = exp_th_connection()
@@ -183,7 +183,10 @@ class experimentoldControl(analyse):
 
             self.set_state_text(QApplication.translate('exp_flow',"Сохранение результатов"))
 
-            self.meas_session.ask_session_name_description( "Эксперимент завершен" )
+            if self.should_prompt_for_session_name:
+                self.meas_session.ask_session_name_description( "Эксперимент завершен" )
+            else:
+                self.meas_session.set_default_session_name_description()
 
             if not self.way_to_save_file:
                 self.set_way_save()
@@ -209,18 +212,5 @@ class experimentoldControl(analyse):
             self.exp_th_connect.is_update_pbar = False
             self.set_state_text(QApplication.translate('exp_flow',"Ожидание старта"))
             self.is_search_resources = True#разрешение на сканирование ресурсов
-
-def print_data(data):
-    for device, channels in data.items():
-        print(f"Device: {device}")
-        for channel, parameters in channels.items():
-            print(f"Channel: {channel}")
-            for parameter, values in parameters.items():
-                if parameter == "time":
-                    print(f"  {parameter}: {values}")
-                else:
-                    print(
-                        f"  {parameter}: {', '.join([str(value) for value in values])}"
-                    )
 
     
