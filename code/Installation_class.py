@@ -41,13 +41,12 @@ logger = logging.getLogger(__name__)
 
 version_app = "1.0.3"
 class installation_class( ExperimentBridge, analyse):
-    def __init__(self, settings, version = None) -> None:
+    def __init__(self, settings_manager, version = None) -> None:
         super().__init__()
         logger.info("запуск установки")
 
-        self.settings            = settings
+        self.settings_manager    = settings_manager
         self.version_app         = version
-        self.load_settings()  # reading settings
 
         self.device_selector = None
 
@@ -79,28 +78,12 @@ class installation_class( ExperimentBridge, analyse):
                 value = True
             elif value.lower() == "false":
                 value = False
+            else:
+                try:
+                    value = float(value)
+                except:
+                    pass
         return value
-
-    def load_settings(self):
-        self.is_exp_run_anywhere = self.settings.value(
-            "is_exp_run_anywhere", defaultValue=False
-        )
-        self.is_delete_buf_file = self.settings.value(
-            "is_delete_buf_file", defaultValue=True
-        )
-        self.is_show_basic_instruction_again = self.settings.value(
-            "is_show_basic_instruction_again", defaultValue=True
-        )
-        self.should_prompt_for_session_name = self.settings.value(
-            "should_prompt_for_session_name", defaultValue=True
-        )
-        # self.is_show_basic_instruction_again = True
-        self.is_exp_run_anywhere = self.format_bool_settings(self.is_exp_run_anywhere)
-        self.is_delete_buf_file = self.format_bool_settings(self.is_delete_buf_file)
-        self.is_show_basic_instruction_again = self.format_bool_settings(self.is_show_basic_instruction_again)
-        self.should_prompt_for_session_name = self.format_bool_settings(self.should_prompt_for_session_name)
-
-        logger.info("settings readed")
 
     def time_decorator(func):
         def wrapper(*args, **kwargs):
@@ -437,9 +420,6 @@ class installation_class( ExperimentBridge, analyse):
 
                     self.write_settings_to_buf_file()
 
-                    self.repeat_experiment = int(self.gen_set_class.repeat_exp)
-                    self.repeat_meas = int(self.gen_set_class.repeat_meas)
-
                     self.add_text_to_log(QApplication.translate('main install',"Создан файл") + " " + self.buf_file)
                     logger.debug("Эксперимент начат" + "Создан файл " + self.buf_file)
                     self.measurement_parameters = {}
@@ -466,9 +446,9 @@ class installation_class( ExperimentBridge, analyse):
                         message_broker        =self.message_broker,
                         is_debug              =self.is_debug,
                         is_experiment_endless =self.is_experiment_endless,
-                        repeat_exp            =self.repeat_experiment,
-                        repeat_meas           =self.repeat_meas,
-                        is_run_anywhere       =self.is_exp_run_anywhere,
+                        repeat_exp            =int(self.settings_manager.get_setting("repeat_exp")[1]),
+                        repeat_meas           =int(self.settings_manager.get_setting("repeat_meas")[1]),
+                        is_run_anywhere       =self.settings_manager.get_setting("is_exp_run_anywhere")[1],
                         queue                 =self.queue
                     )
 

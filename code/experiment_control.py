@@ -25,17 +25,6 @@ from functions import get_active_ch_and_device
 
 logger = logging.getLogger(__name__)
 
-class exp_th_connection:
-    def __init__(self) -> None:
-        self.flag_show_message           = False
-        self.message                     = ""
-        self.message_status              = message_status.info
-        self.is_message_show             = False
-        self.ask_save_the_results        = False
-        self.is_update_pbar              = False
-        self.is_measurement_data_updated = False
-        self.start_exp_time              = 0
-
 
 class message_status(enum.Enum):
     info = 1
@@ -46,7 +35,6 @@ class message_status(enum.Enum):
 class ExperimentBridge(analyse):
     def __init__(self) -> None:
         super().__init__()
-        self.exp_th_connect    = exp_th_connection()
         self.experiment_thread = None
         self.stop_experiment   = False
         self.pause_start_time  = 0
@@ -69,11 +57,8 @@ class ExperimentBridge(analyse):
                     )
                 else:
 
-                    if self.exp_th_connect.is_update_pbar :
-                        pbar_percent = (
+                    pbar_percent = (
                             ((time.perf_counter() - self.start_exp_time) / self.remaining_exp_time)) * 100
-                    else:
-                        pbar_percent = 0
 
                     min = 0
                     sec = 0
@@ -183,12 +168,12 @@ class ExperimentBridge(analyse):
 
             self.set_state_text(QApplication.translate('exp_flow',"Сохранение результатов"))
 
-            if self.should_prompt_for_session_name:
+            if self.settings_manager.get_setting('should_prompt_for_session_name')[1]:
                 self.meas_session.ask_session_name_description( "Эксперимент завершен" )
             else:
                 self.meas_session.set_default_session_name_description()
 
-            if not self.way_to_save_file:
+            if not self.settings_manager.get_setting('way_to_save')[1]:
                 self.set_way_save()
 
             if not error_start_exp :
@@ -209,7 +194,6 @@ class ExperimentBridge(analyse):
             self.pause_flag = True
             self.pause_exp()
             self.installation_window.pause_button.setStyleSheet(not_ready_style_background)
-            self.exp_th_connect.is_update_pbar = False
             self.set_state_text(QApplication.translate('exp_flow',"Ожидание старта"))
             self.is_search_resources = True#разрешение на сканирование ресурсов
 

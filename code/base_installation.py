@@ -24,8 +24,7 @@ from Adapter import Adapter, instrument
 from Devices.Classes import (not_ready_style_background,
                              not_ready_style_border, ready_style_border)
 from graph.online_graph import GraphWindow
-from interface.experiment_settings_window import (experimentSettings,
-                                                  settigsDialog)
+
 from interface.Message import messageDialog
 from saving_data.Parse_data import process_and_export, type_save_file
 
@@ -39,29 +38,23 @@ class baseInstallation:
         self.save_results_now = False
         self.is_search_resources = True
 
-        self.is_window_save_dialog_showing = False
         self.is_debug = False
         self.down_brightness = False
         self.bright = 50
         self.pause_flag = False
         self.is_experiment_endless = False
         self.pbar_percent = 0
-        self.way_to_save_file = False
         self.type_file_for_result = type_save_file.excel
 
         self.dict_active_device_class = {}
         self.clients = []
         self.key_to_start_installation = False
 
-        self.repeat_experiment = 1
-        self.repeat_meas = 1
-
         self.list_resources = []
         self.thread_scan_resources = threading.Thread(target=self._search_resources)
         self.thread_scan_resources.daemon = True
         self.stop_scan_thread = False
 
-        self.gen_set_class = experimentSettings()
         self.thread_scan_resources.start()
 
     def show_information_window(self, message):
@@ -168,8 +161,6 @@ class baseInstallation:
         return self.list_visa_resources
 
     def set_way_save(self):
-        self.is_window_save_dialog_showing = True
-
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         fileName, ans = QtWidgets.QFileDialog.getSaveFileName(
@@ -196,26 +187,24 @@ class baseInstallation:
                     fileName = fileName + ".txt"
                 self.type_file_for_result = type_save_file.txt
 
-            self.way_to_save_file = fileName
+            self.settings_manager.set_settings({'way_to_save' : fileName})
 
             if self.save_results_now == True:
                 self.save_results_now = False
 
                 session_name, session_description = self.meas_session.session_name, self.meas_session.session_description
-                print(f"{session_name=} {session_description=}")
 
                 process_and_export(
                     self.buf_file,
-                    self.way_to_save_file,
+                    fileName,
                     self.type_file_for_result,
                     session_name,
                     session_description,
-                    self.is_delete_buf_file,
+                    self.settings_manager.get_setting('is_delete_buf_file')[1],
                     self.answer_save_results
                 )
         else:
             self.type_file_for_result = False
-        self.is_window_save_dialog_showing = False
 
     def answer_save_results(self, status, output_file_path, message = None, deleted_buf_file = False):
 
@@ -247,13 +236,9 @@ class baseInstallation:
     def save_results(self) -> bool:
 
         session_name, session_description = self.meas_session.session_name, self.meas_session.session_description
-        print(f"{session_name=} {session_description=}")
 
-        if (
-            self.way_to_save_file != False
-            and self.way_to_save_file != None
-            and self.way_to_save_file != ''
-        ):  # если выбран путь для сохранения результатов
+        status, way_to_save = self.settings_manager.get_setting('way_to_save')
+        if status and way_to_save:
 
             if self.type_file_for_result == type_save_file.origin:
                 pass
@@ -266,11 +251,11 @@ class baseInstallation:
 
             process_and_export(
                 self.buf_file,
-                self.way_to_save_file,
+                way_to_save,
                 self.type_file_for_result,
                 session_name,
                 session_description,
-                self.is_delete_buf_file,
+                self.settings_manager.get_setting('is_delete_buf_file')[1],
                 self.answer_save_results
             )
             return True
@@ -305,10 +290,12 @@ class baseInstallation:
         dialog.exec_()
 
     def show_basic_instruction(self):
-        if (
-            self.is_show_basic_instruction_again == "true"
-            or self.is_show_basic_instruction_again == True
-        ):
+        status, is_show_again = self.settings_manager.get_setting("is_show_basic_instruction_again")
+        if status is not True:
+            self.settings_manager.save_settings({"is_show_basic_instruction_again": True})
+            is_show_again = True
+
+        if is_show_again:
             text = QApplication.translate('base_install',"""
                 Настройте каждый прибор, нажав кнопку "Настроить" под его каналом. 
                 Открывайте (кнопка +) и закрывайте каналы, а также добавляйте и удаляйте приборы по необходимости.
@@ -346,12 +333,11 @@ class baseInstallation:
             )
 
             if dialog.exec_() == QtWidgets.QDialog.Accepted:
-                self.is_show_basic_instruction_again = (
+                is_show_basic_instruction_again = (
                     not dialog.check_not_show.isChecked()
                 )
-                self.settings.setValue(
-                    "is_show_basic_instruction_again",
-                    self.is_show_basic_instruction_again,
+                self.settings_manager.save_settings(
+                    {"is_show_basic_instruction_again":is_show_basic_instruction_again}
                 )
 
     def open_graph_in_exp(self):
@@ -444,29 +430,7 @@ class baseInstallation:
         return value
 
     def open_general_settings(self):
-
-        (is_change,
-        self.is_exp_run_anywhere,
-        self.is_delete_buf_file,
-        self.should_prompt_for_session_name,
-        self.way_to_save_file,
-        self.type_file_for_result,
-        self.repeat_experiment,
-        self.repeat_meas) = self.gen_set_class.read_settings(
-                                                            self.is_exp_run_anywhere,
-                                                            self.is_delete_buf_file,
-                                                            self.should_prompt_for_session_name,
-                                                            self.way_to_save_file,
-                                                            self.type_file_for_result,
-                                                            self.repeat_experiment,
-                                                            self.repeat_meas
-                                                           )
-
-        if is_change:
-            self.settings.setValue("is_exp_run_anywhere", self.is_exp_run_anywhere)
-            self.settings.setValue("is_delete_buf_file", self.is_delete_buf_file)
-            self.settings.setValue("should_prompt_for_session_name", self.should_prompt_for_session_name)
-
+        self.settings_manager.ask_exp_settings()
 
     ########### devices class connect func #############
 

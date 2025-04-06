@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QTranslator
 from PyQt5.QtWidgets import QApplication
+from SettingsManager import SettingsManager
 
 import qdarktheme
 
@@ -52,13 +53,8 @@ class devFile:
 
 class MyWindow(QtWidgets.QMainWindow):
     global VERSION_APP
-    def __init__(self):
-        self.settings = QtCore.QSettings(
-            QtCore.QSettings.IniFormat,
-            QtCore.QSettings.UserScope,
-            "misis_lab",
-            "exp_control" + VERSION_APP,
-        )
+    def __init__(self, settings_manager: SettingsManager):
+        self.settings_manager = settings_manager
 
         self.graph_window   = None
         self.device_creator = deviceCreator()
@@ -79,7 +75,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.pushButton_2.clicked.connect(self.open_installation_window)
         self.ui.actionCreateNew.triggered.connect(self.open_create_new_device)
         self.cur_install = installation_class(
-            settings=self.settings, 
+            settings_manager=self.settings_manager, 
             version = VERSION_APP
         )
 
@@ -88,9 +84,10 @@ class MyWindow(QtWidgets.QMainWindow):
         self.translator = QTranslator() 
         self.lang = None
 
-        lang = self.settings.value(
-            "language", defaultValue="ENG"
-        )
+        status, lang = self.settings_manager.get_setting("language")
+        if not status:
+            lang = "ENG"
+            self.settings_manager.save_settings({"language": lang})
 
         self.change_language(lang)
 
@@ -136,10 +133,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.lang = lang
         self.load_language(lang)
         self.ui.retranslateUi(self)
-        self.settings.setValue(
-            "language",
-            self.lang,
-        )
+        self.settings_manager.save_settings({"language": lang})
 
     def open_graph_in_exp(self):
         if self.graph_window is None:
@@ -309,6 +303,25 @@ if __name__ == "__main__":
     
     QtWidgets.QApplication.instance().installTranslator(translator)
 
-    start_window = MyWindow()
+
+    settings = QtCore.QSettings(
+            QtCore.QSettings.IniFormat,
+            QtCore.QSettings.UserScope,
+            "misis_lab",
+            "exp_control" + VERSION_APP,
+        )
+    
+    persistent_settings = {
+        'language': 'ENG',
+        'theme': 'dark',
+        "is_show_basic_instruction_again": True,
+        "is_exp_run_anywhere": False,
+        "is_delete_buf_file": False,
+        "should_prompt_for_session_name": True
+        }
+
+    settings_manager = SettingsManager(settings, VERSION_APP)
+
+    start_window = MyWindow( settings_manager)
     start_window.show()
     sys.exit(app.exec_())
