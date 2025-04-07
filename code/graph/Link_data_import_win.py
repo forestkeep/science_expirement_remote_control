@@ -12,9 +12,8 @@
 import sys
 
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
-                             QHBoxLayout, QLabel, QPushButton, QVBoxLayout)
-
-
+                             QHBoxLayout, QLabel, QPushButton, QVBoxLayout,
+                             QScrollArea, QWidget, QSizePolicy, QFileDialog, QComboBox)
 
 class Check_data_import_win(QDialog):
     def __init__(self, strings, callback, is_osc=False):
@@ -33,6 +32,20 @@ class Check_data_import_win(QDialog):
 
         title_label = QLabel( title_text)
         layout_vert_main.addWidget(title_label)
+
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        #self.scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.scroll_content_widget = QWidget()
+        self.scroll_content_layout = QVBoxLayout(self.scroll_content_widget)
+
+        # Устанавливаем содержимое в scroll_area
+        self.scroll_area.setWidget(self.scroll_content_widget)
+
+        # Добавляем scroll_area в основной макет
+        layout_vert_main.addWidget(self.scroll_area)
 
         
         self.step_combo = QComboBox()
@@ -53,14 +66,16 @@ class Check_data_import_win(QDialog):
             self.checkboxes.append(checkbox)
 
         layout_hor.addLayout(lay_columns)
-        layout_vert_main.addLayout(layout_hor)
 
         self.setLayout(layout_vert_main)
         self.setWindowTitle(QApplication.translate("GraphWindow",'Импорт данных'))
 
         ok_button = QPushButton("OK")
         ok_button.clicked.connect(self.on_ok)
+
+        self.scroll_content_layout.addLayout(layout_hor)
         layout_vert_main.addWidget(ok_button)
+
     def on_ok(self):
         self.accept()
 

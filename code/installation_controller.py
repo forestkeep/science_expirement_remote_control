@@ -92,8 +92,8 @@ class MyWindow(QtWidgets.QMainWindow):
         self.change_language(lang)
 
         #----------------------
-        self.ui.is_design_mode = True
-        self.message_from_new_installation( ['Maisheng'], [])
+        #self.ui.is_design_mode = True
+        #self.message_from_new_installation( ['Maisheng'], [])
         #---------------------------
 
         if False:

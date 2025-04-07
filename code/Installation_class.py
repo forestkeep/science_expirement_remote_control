@@ -39,7 +39,6 @@ from queue import Queue
 
 logger = logging.getLogger(__name__)
 
-version_app = "1.0.3"
 class installation_class( ExperimentBridge, analyse):
     def __init__(self, settings_manager, version = None) -> None:
         super().__init__()
@@ -65,11 +64,11 @@ class installation_class( ExperimentBridge, analyse):
         )
         self.timer_for_open_base_instruction.setSingleShot(
             True
-        )  # Установить таймер на однократное срабатывание
+        )
 
         self.message_broker = (
             messageBroker()
-        )  # обработчик событий работает как хаб для подписчиков на сигналы и источников сигналов
+        )
 
     def format_bool_settings(self, value):
 
@@ -755,76 +754,3 @@ class installation_class( ExperimentBridge, analyse):
                 print("не выбран файл сохранения результатов")
         else:
             print("Не выбран баф файл")
-
-if __name__ == "__main__":
-    import logging
-    import os
-    from logging.handlers import RotatingFileHandler
-
-    from PyQt5.QtCore import QLocale, QTranslator
-
-    logger = logging.getLogger(__name__)
-    FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
-    console = logging.StreamHandler()
-    folder_path = "log_files"
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-
-    file_handler = RotatingFileHandler("log_files/logfile.log", maxBytes=100000, backupCount=3)
-
-    logging.basicConfig(
-        encoding="utf-8",
-        format=FORMAT,
-        level=logging.INFO,
-        handlers=[file_handler, console],
-    )
-    console.setLevel(logging.WARNING)
-
-    settings = QtCore.QSettings(
-            QtCore.QSettings.IniFormat,
-            QtCore.QSettings.UserScope,
-            "misis_lab",
-            "exp_control" + version_app,
-        )
-    
-    keys = settings.allKeys()
-
-    for key in keys:
-        value = settings.value(key)
-
-    os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-
-    lst = ["ATF20B"]
-    lst5 = ["WPS300s", "DS1104Z"]
-    lst4 = ["АКИП-2404", "SR830"]
-    lst11 = ["E7-20MNIPI", "АКИП-2404", "DP832A", "PR"]
-    lst22 = ["SR830", "SR830", "DS1104Z"]
-    lst21 = ["Maisheng", "Maisheng", "Maisheng", "Maisheng", "Maisheng", "Maisheng"]
-    lst50 = ["E7-20MNIPI", "E7-20MNIPI"]
-    lst55 = ["DS1104Z"]
-
-
-    qdarktheme.enable_hi_dpi()
-    app = QtWidgets.QApplication(sys.argv)
-    
-    #----------------------------------
-    translator = QTranslator()
-    
-    translator.load("translations/translation_en.qm")
-    
-    app.installTranslator(translator)
-    #----------------------------------
-
-    qdarktheme.setup_theme(corner_shape="sharp")
-
-    from available_devices import dict_device_class
-
-    a = installation_class(settings=settings, dict_device_class=dict_device_class, version="test")
-    a.reconstruct_installation(lst4)
-
-    QtWidgets.QApplication.instance().removeTranslator(translator)
-    a.show_window_installation()
-    sys.exit(app.exec_())
-
-
-# pyuic5 name.ui -o name.py

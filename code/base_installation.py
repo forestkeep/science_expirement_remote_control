@@ -464,7 +464,7 @@ class baseInstallation:
             self.key_to_start_installation = False  # старт экспериепнта запрещаем
 
     def write_data_to_buf_file(self, message: str, addTime: bool=False):
-        logger.info(f"write_data_to_buf_file {message}")
+        logger.debug(f"write_data_to_buf_file {message}")
         message = f"{datetime.now().strftime('%H:%M:%S') + ' ' if addTime else ''}{message.replace('.', ',')}"
         with open(self.buf_file, "a") as file:
             file.write( str(message) )
