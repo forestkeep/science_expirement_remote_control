@@ -11,7 +11,8 @@
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget
-
+import logging
+logger = logging.getLogger(__name__)
 
 class tabPage(QWidget):
     def __init__(self, number, parent=None):
@@ -20,7 +21,7 @@ class tabPage(QWidget):
         self.callbacks = {Qt.Key_Delete:[]}
 
     def keyPressEvent(self, event):
-        print(event.key())
+        logger.info(f"нажата клавиша {event.key()}")
         for callback in self.callbacks.get(event.key(), []):
             callback()
 

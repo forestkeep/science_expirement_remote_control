@@ -101,7 +101,6 @@ class mnipiE720Class(base_device):
     @base_device.base_is_correct_parameters
     def _is_correct_parameters(self) -> bool:  # менять для каждого прибора
         if self.key_to_signal_func:
-            # print("проверить параметры")
 
             is_shift_correct = True
             is_level_correct = True
@@ -218,8 +217,6 @@ class mnipiE720Class(base_device):
 
     # фцункция подтверждения корректности параметров от контроллера установкию. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств
     def confirm_parameters(self):
-        #print(str(self.name) +
-        #      " получил подтверждение настроек, рассчитываем шаги")
         if True:
             for ch in self.channels:
                 if ch.is_ch_active():
@@ -230,7 +227,6 @@ class mnipiE720Class(base_device):
 
     def action_before_experiment(self, number_of_channel) -> bool:  # менять для каждого прибора
         self.switch_channel(number_of_channel)
-        #print(f"настройка канала {number_of_channel} прибора "+ str(self.name)+ " перед экспериментом..")
         logger.debug(f"настройка канала {number_of_channel} прибора "+ str(self.name)+ " перед экспериментом..")
         pause = 0.1
         status = True
@@ -240,7 +236,6 @@ class mnipiE720Class(base_device):
     def do_meas(self, ch):
         '''прочитать текущие и настроенные значения'''
         self.switch_channel(ch_name=ch.get_name())
-        #print("делаем измерение", self.name)
 
         start_time = time.perf_counter()
         parameters = [self.name + " " + str(ch.get_name())]
@@ -285,10 +280,8 @@ class mnipiE720Class(base_device):
             is_correct = True
 
         if is_correct:
-            #print("сделан шаг", self.name)
             ans = ch_response_to_step.Step_done
         else:
-            #ans = ch_response_to_step.Step_fail
             ans = ch_response_to_step.Step_done
 
         return ans, parameters, time.perf_counter() - start_time
@@ -302,7 +295,6 @@ class mnipiE720Class(base_device):
 
                 while i < attempts:
                     self.client.write(self.dict_meas_param[focus_val])
-                    print(f"{self.dict_meas_param[focus_val]=}")
                     param = False
                     param = self.read_parameters(self.client, self.is_debug)
                     logger.debug(f"попытка {i+1}, ответ {param}")
@@ -476,7 +468,6 @@ class mnipiE720Class(base_device):
 class ch_mnipi_class(base_ch):
     def __init__(self, number, device_class) -> None:
         super().__init__(number, ch_type = "meas", device_class=device_class)
-        #print(f"канал {number} создан")
         self.base_duration_step = 2#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.dict_buf_parameters["meas L"] = False  
         self.dict_buf_parameters["meas R"] = False
@@ -495,7 +486,7 @@ if __name__ == "__main__":
 
         comm = [b'', b'', b'', b'']
         timeout = 5#sec
-        #dev = mnipi_e7_20_class("name", 1)
+
         buf = [170, 22, 0, 94, 1, 0, 3, 21, 1, 5, 2, 6, 4, 0, 0, 252, 2, 59, 0, 254, 4, 132]
         buf = [170, 0, 0, 100, 1, 0, 3, 21, 1, 5, 0, 13, 91, 0, 0, 252, 163, 115, 1, 246, 8, 166]
         #print(mnipiE720Class.decode_parameters(self= 1,buffer = buf))

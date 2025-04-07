@@ -95,10 +95,8 @@ class graphOsc:
             else:
                 self.dict_param.update(new)
             channel_keys = self.extract_wavech_devices(self.dict_param)
-            #print(f"{channel_keys=}")
 
             devices, channels, wavechs = self.extract_data(channel_keys)
-            #print(f"{devices=} {channels=} {wavechs=}")
             current_dev = self.choice_device.currentText()
             self.key = False
             devices = set(devices)
@@ -136,7 +134,6 @@ class graphOsc:
 
         for device, channels in main_dict.items():
             for channel, data in channels.items():
-                #print(f"{channel=} {data=}")
                 wavech_keys = [key for key in data.keys() if "wavech" in key]
                 if wavech_keys:
                     wavech_devices.append(device)
@@ -185,7 +182,7 @@ class graphOsc:
 
                 df = df.dropna(axis=1, how='all')
 
-                window = Check_data_import_win([col for col in df.columns], self.update_dict_param, True)
+                window = Check_data_import_win(sorted([col for col in df.columns]), self.update_dict_param, True)
                 ans = window.exec_()
                 if ans == QDialog.Accepted: 
                     selected_step = window.step_combo.currentText()
@@ -321,11 +318,9 @@ class graphOsc:
         self.retranslateUI(self.page)
 
     def click_scene_main_graph(self, event):
-        #print(len(self.graphView.scene().itemsNearEvent(event)))
         self.__callback_click_scene(self.stack_osc.values())
 
     def click_scene_loop_graph(self, event):
-        #print(len(self.graphView.scene().itemsNearEvent(event)))
         self.__callback_click_scene(self.loops_stack)
 
     def __callback_click_scene(self, focus_objects: list):
@@ -616,7 +611,7 @@ class graphOsc:
             
     def calc_avg_two_loops(self, loop1, loop2):
         if loop1.time_scale != loop2.time_scale:
-            print("невозможно вычислить среднее между петлями, временной шаг должен быть одинаковым")
+            logger.warning("невозможно вычислить среднее между петлями, временной шаг должен быть одинаковым")
             return False
         
         mean_resistance  = (loop1.resistance + loop2.resistance)/2
@@ -643,16 +638,12 @@ class graphOsc:
                 if loop.current_highlight:
                     self.graphView_loop.removeItem(loop.plot_obj)
                     del self.loops_stack[index]
-        else:
-            print("no loops")
 
     def clear_all_loops(self):
         if len(self.loops_stack) > 0:
             for loop in self.loops_stack:
                 self.graphView_loop.removeItem(loop.plot_obj)
             self.loops_stack.clear()
-        else:
-            print("no loops")
 
     def update_num_waveforms(self):
 
@@ -1020,7 +1011,7 @@ class graphOsc:
                 interval_values=interval_values,
             )
             if ans == False:
-                print("Нельзя найти точки пересечения или она всего одна")
+                logger.info("Нельзя найти точки пересечения с нулем или она всего одна")
 
         if self.vertical_lines.is_data_setted == True:
             status, x_vert_1, x_vert_2 = self.vertical_lines.get_next_data()
@@ -1139,7 +1130,7 @@ class graphOsc:
             if status:
                 if field_scale != sig_scale:
                     status = False
-                    print("time scale сигнала и поля должны быть равны")
+                    logger.warning("time scale сигнала и поля должны быть равны")
                     
             if status:
                 try:

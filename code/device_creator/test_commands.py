@@ -212,18 +212,9 @@ if __name__ == "__main__":
     rm = pyvisa.ResourceManager()
     name = rm.list_resources()
 
-    #using with allows to close explicitly the resource at the end of the script
     with rm.open_resource(name[0]) as Power_Analyser:
-        print(Power_Analyser)
 
         Power_Analyser.timeout = 25000
 
         Data = Power_Analyser.query(":DDS:ARB:DAC16:BIN#504096")
-        print(Data)
 
-    '''
-    app = QApplication(sys.argv)
-    window = TestCommands()
-    window.show()
-    sys.exit(app.exec_())
-    '''

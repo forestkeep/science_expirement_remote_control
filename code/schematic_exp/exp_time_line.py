@@ -11,11 +11,14 @@
 
 import sys
 import copy
+import logging
 
 import qdarktheme
 from PyQt5.QtCore import QRect
 from PyQt5.QtGui import QBrush, QColor, QPainter
 from PyQt5.QtWidgets import QApplication, QLabel, QToolTip, QWidget
+
+logger = logging.getLogger(__name__)
 
 unique_colors= [
     QColor(186, 0, 0, 255),       
@@ -41,7 +44,6 @@ class callStack(QWidget):
 		self.y_line_points = []
 		self.actors_names = {}
 		self.lb = QLabel("ererer")
-		#print("создали стек")
 		self.rect_height = 10
 		self.rect_width = 17
 		self.setStyleSheet("QToolTip { background-color: rgb(50, 50, 60); color: white; }")
@@ -54,7 +56,6 @@ class callStack(QWidget):
 				return
         
 	def set_data(self, meta_data_class):
-		#print("данные установлены в стек")
 		self.actors_names = copy.deepcopy(meta_data_class.actors_names)
 		#TODO: копии сейчас сделаны для потокобезопасности, необходимо реализовать передачу не всего списка целиком, а по отдельности, добавля элементы.\
 		#Так же будет необходимо реализовать методы очистки всего стека и т.д.
@@ -113,7 +114,7 @@ class callStack(QWidget):
 						for y_coord in self.y_line_points:   
 							painter.drawLine(0, y_coord, self.max_width, y_coord)
 			except Exception as e:
-				print(f"error {e}")
+				logger.warning(f"error {e}")
 
 
 class metaDataExp():

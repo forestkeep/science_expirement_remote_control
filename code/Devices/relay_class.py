@@ -345,10 +345,8 @@ class relayPr1Class(base_device):
                 parameters.append(val)
                 
             if is_correct:
-                #print("сделан шаг", self.name + " ch " + str(self.active_channel.number))
                 ans = ch_response_to_step.Step_done
             else:
-                #print("ошибка шага", self.name + " ch " + str(self.active_channel.number))
                 ans = ch_response_to_step.Step_fail
                 
             if self.is_debug:
@@ -365,10 +363,8 @@ class relayPr1Class(base_device):
     
     def read_temp_sensor(self):
         response = self._read_reg(adr=0x0405, slave=0x0A, num_registers=0x0007)
-        print(f"{response=}")
         if response:
             response = struct.pack('> ' + 'H' * len(response.registers), *response.registers)
-            print(f"{len(response)=}")
             if len(response) >= 7:
                     # Извлекаем 7 байтов
                     segment = response[0:7]
@@ -383,7 +379,6 @@ class relayPr1Class(base_device):
                     response = (1 if sign == 1 else -1) * (hundr*100 + tent*10+ integer_part + tenths / 10 + hundredths / 100 + thousandths / 1000)
             else:
                 response = False
-        print(f"{response=}")
         return response
 
 
@@ -446,15 +441,12 @@ class relayPr1Class(base_device):
             ans = self.client.write_register(address=address, slave=slave, value=value)
 
             if isinstance(ans, ExceptionResponse):
-                # print("ошибка записи в регистр реле", ans)
                 return False
 
             if isinstance(ans, ModbusIOException):
-                # print("ошибка записи в регистр реле", ans)
                 return False
 
         except:
-            # print("Ошибка модбас модуля или клиента")
             return False
         return True
 
@@ -465,16 +457,13 @@ class relayPr1Class(base_device):
             )
 
             if isinstance(ans, ExceptionResponse):
-                # print("ошибка записи в регистр реле", ans)
                 return False
 
             if isinstance(ans, ModbusIOException):
-                # print("ошибка записи в регистр реле", ans)
                 return False
 
             return ans
         except:
-            # print("Ошибка модбас модуля или клиента")
             return False
 
 class chActPR(base_ch):

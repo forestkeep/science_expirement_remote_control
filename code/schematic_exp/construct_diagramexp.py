@@ -288,7 +288,6 @@ class Packing:
         self.levels = []
         self.current_level = []
         self.field_height = 0
-        #print(f"всего блоков {len(self.rectangles)}")
 
     def is_ceiling_feasible(self, rectangle):
         return rectangle.current_y + sum(r.current_y for r in self.current_level) <= self.strip_width
@@ -300,23 +299,18 @@ class Packing:
 
         self.strip_width = width
         self.box_height = height
-        #print(f"высота-{self.strip_width} ширина-{height}")
-        current_x = 0  # Начальная высота уровня
+        current_x = 0
 
         for rectangle in self.rectangles:
 
             if rectangle.current_y > self.strip_width:
-                #print(f"Блок {rectangle} не поместится, ставим его принудительно")
                 self.pack_on_ceiling(rectangle, current_x)
                 self.field_height = max(self.field_height, rectangle.current_y)
             elif self.is_ceiling_feasible(rectangle):
-                #print(f"устанавливаем на пол блок {rectangle}")
                 self.pack_on_ceiling(rectangle, current_x)
                 self.field_height = max(self.field_height, rectangle.current_y + (rectangle.current_y - self.strip_width))
-            #elif self.is_floor_feasible(rectangle):
-            #    self.pack_on_floor(rectangle, current_x)
+
             else:
-                #print("переход след уровень")
                 self.levels.append(self.current_level)
                 current_x += max(r.current_x for r in self.current_level)  # Переход на новый уровень
                 self.current_level = []
@@ -327,7 +321,6 @@ class Packing:
 
         if self.current_level:
             current_x += max(r.current_x for r in self.current_level)
-        #print(f"{current_x=}")
         return current_x, self.field_height
 
     def pack_on_ceiling(self, rectangle, current_x):   
@@ -407,7 +400,6 @@ class blockDevice(QWidget):
             x = min( [x, self.parent_wid.width() - self.width() ] )
             new_coord = QPoint(x, y)
             
-            #print(f"{self.parent_wid.width()=} {x=}")
             self.move(new_coord)
             self.parentWidget().update()
 
@@ -462,7 +454,6 @@ class expDiagram(QWidget):
             self.is_ctrl_pressed = False
         elif event.key() == Qt.Key_Delete:
             all_child_widgets = self.findChildren(blockDevice)
-            #print(all_child_widgets)
             for widget in all_child_widgets:
                 if widget.is_check:
                     widget.hide()
@@ -475,7 +466,6 @@ class expDiagram(QWidget):
             lb = blockDevice(obj.ch_name, obj.dev_name, self)
             lb.type_trigger = obj.type_trigger
             lb.value_trigger = obj.value_trigger
-            #print(obj.value_trigger)
             lb.number_meas = obj.number_meas
             lb.frame.setStyleSheet(f"background-color: {obj.color};")
             lb.base_color = f"background-color: {obj.color};"
@@ -508,7 +498,6 @@ class expDiagram(QWidget):
         self.auto_place(self.labels)
 
     def auto_place(self, components: list):
-        #print("auto_place")
         '''
         группа 1: компоненты работают по таймеру и от них не зависит ни один другой компонент
         группа 2: компоненты зависят от других компонентов и в цепочке есть компонент с таймером
@@ -578,7 +567,6 @@ class expDiagram(QWidget):
                             buf.current_y+=int(height*4/3)
                             current_level = next_level
                         buf.current_x = max(levels_length)
-                        #print(f"{buf.current_x=}")
                         groups2.append(buf)
 
         for obj in components:
@@ -635,7 +623,6 @@ class expDiagram(QWidget):
                 obj.move(obj.x_offset+family.x_offset, obj.y_offset+family.y_offset)
 
         for family in groups3:
-            #print(family.current_x, family.current_y)
             for obj in family.blocks:
                 obj.move(obj.x_offset+family.x_offset, obj.y_offset+family.y_offset)
 
@@ -697,8 +684,6 @@ class expDiagram(QWidget):
                 components = dev.get_trigger_value(ch).split()
             except:
                 continue
-
-            #print(f"{components=}")
 
             for label in self.labels:
                 if len(components) >= 2:

@@ -12,6 +12,7 @@
 import sys
 import time
 
+import logging
 from PyQt5.QtCore import QPoint, QTimer, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
@@ -32,12 +33,14 @@ except:
     from graph.tabPage_win import tabPage
     from graph.tree_curves import treeWin
 
+logger = logging.getLogger(__name__)
+
 def time_decorator(func):
     def wrapper(*args, **kwargs):
         start_time = time.perf_counter()
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
-        #print(f"Метод {func.__name__} - {end_time - start_time} с")
+        logger.info(f"Метод {func.__name__} выполнялся {end_time - start_time} с")
         return result
 
     return wrapper

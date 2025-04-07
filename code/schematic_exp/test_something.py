@@ -30,7 +30,6 @@ class MyWidget(QWidget):
     def mousePressEvent(self, event):
         for r in self.rects:
             if r["rect"].contains(event.pos()):
-                #print(event.pos())
                 QToolTip.showText(event.globalPos(), r["text"], self)
                 return
 

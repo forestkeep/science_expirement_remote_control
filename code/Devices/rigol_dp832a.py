@@ -181,7 +181,6 @@ class rigolDp832aClass(power_supply):
         self.client.write(f"INST CH{channel}\n")
 
 if __name__ == "__main__":
-    # print("тестирование ригола")
     # rt = 0
 
     # rigol = rigolDp832aClass("rigol", rt)

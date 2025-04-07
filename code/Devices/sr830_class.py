@@ -642,8 +642,7 @@ class sr830Class(base_device):
 class ch_meas_sr830_class(base_ch):
     def __init__(self, number, device_class) -> None:
         super().__init__(number, ch_type="meas", device_class=device_class)
-        # print(f"канал {number} создан")
-        # print(self.am_i_should_do_step, "ацаыввыаваываываывыаывываываываываываывавыаывыыв")
+
         self.base_duration_step = 2  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.dict_buf_parameters["time_const"] = "1000"  # секунды
         self.dict_buf_parameters["filter_slope"] = "6"  # dB
@@ -659,69 +658,7 @@ class ch_meas_sr830_class(base_ch):
         self.dict_buf_parameters["num steps"] = "1"
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
-
-if __name__ == "__main__":
-
-    pass
-    # Создание клиента Modbus RTU
-    # client = ModbusSerialClient(
-    # method='rtu', port='COM3', baudrate=9600, stopbits=1, bytesize=8, parity='E')
-
-    # power_supply = maisheng_power_class()
-    # power_supply.set_client(client)
-
-    # set_voltage(client,20000)
-
-    """
-    for i in range(0,20000,1000):
-        set_voltage(client,i)
-        time.sleep(5)
-    """
-
-    # power_supply.output_switching_off()
-    # power_supply.set_current(1500)
-    # i = power_supply.get_setting_voltage()
-    # print(i.registers)
-
-    """
-    print("установка напряжения ответ", set_voltage(client,10000))
-    time.sleep(1)
-    print("напряжение текущее ",get_setting_voltage(client))
-    time.sleep(1)
-    print("установка тока ответ",set_current(client,100))
-    time.sleep(1)
-    print("включениие ответ",output_switching_on(client))
-    time.sleep(1)
-    print("напряжение текущее после включения",get_current_voltage(client))
-    """
-
-    # client.read_discrete_inputs(address=40, count=2, slave=2)
-    # client.read_exception_status()
-    # client.readwrite_registers()
-    # Чтение данных из регистров хранения (holding registers)
-    # client.read_coils(address=40, count=2, slave=2)
-    # result = client.read_holding_registers(address=2, count=5, unit=1)
-    # if result.isError():
-    # print("Ошибка чтения данных:", result)
-    # else:
-    # print("Прочитанные данные:", result.registers)
-
-    # Запись данных в регистры хранения
-
-    """
-    data = [10, 20, 30, 40, 50]
-    result = client.write_registers(address=0, values=data, unit=1)
-    if result.isError():
-        print("Ошибка записи данных:", result)
-    else:
-        print("Данные успешно записаны")
-    """
-
-    # Закрытие соединения
-    # client.close()
-
 """
-
         self.frequency_enter
         self.amplitude_enter
         self.time_const_enter_number
@@ -741,16 +678,6 @@ if __name__ == "__main__":
         self.boudrate
         self.comportslist
     
-
-
-
-
-
-
-
-
-
-
         self.time_const_enter_number = "1"
         self.time_const_enter_factor = "X1"
         self.time_const_enter_decimal_factor = "ks"
@@ -765,6 +692,4 @@ if __name__ == "__main__":
         self.reserve_enter = "high reserve"
         self.filters_enter = "line"
         self.triger_enter = "Таймер"
-
-
 """

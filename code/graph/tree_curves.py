@@ -26,6 +26,8 @@ except:
 
 import numexpr as ne
 import numpy as np
+import logging
+logger = logging.getLogger(__name__)
 
 
 class CurveTreeItem(QTreeWidgetItem):
@@ -171,7 +173,7 @@ class CurveTreeItem(QTreeWidgetItem):
                     val = new_value
                 self.parameters[parameter_name] = val
             else:
-                print(f"ключ {parameter_name} не найден в параметрах отображения кривой")
+                logger.info(f"ключ {parameter_name} не найден в параметрах отображения кривой")
         self.update_display()
     def get_description(self):
         block_item = self.findChild( QApplication.translate("GraphWindow","Разное") )
@@ -434,7 +436,7 @@ class treeWin(QWidget):
             x_name = ""
             for id, curve in choised_curves.items():
                 if curve.curve_data_obj.x_name not in names_x_parameters and names_x_parameters:
-                    print(f"Выбранные кривые построены в различных пространствах. {names_x_parameters}")
+                    logger.info(f"Выбранные кривые построены в различных пространствах. {names_x_parameters}")
                     self.main_class.show_tooltip( QApplication.translate("GraphWindow","Выбранные кривые находятся в разных пространствах. Построение невозможно."), timeout=3000)
                     return
                 names_x_parameters.add(curve.curve_data_obj.x_name)
@@ -442,7 +444,7 @@ class treeWin(QWidget):
 
             context, all_x, status = self.preparation_arrays(context)
             if not status:
-                print("ошибка в расчете, таймаут, авозможно, что-то с исходными данными")
+                logger.info("ошибка в расчете, таймаут, возможно, что-то с исходными данными")
                 self.main_class.show_tooltip( QApplication.translate("GraphWindow","Таймаут при расчете параметров. Возможно, исходные данные содержат некорректные значенияю."), timeout=3000)
                 return
                 
@@ -494,7 +496,7 @@ class treeWin(QWidget):
         try:
             result = ne.evaluate(expression, context)
         except Exception as e:
-            print(f'Ошибка: {str(e)}')
+            logger.info(f'Ошибка: {str(e)}')
 
         return result
 

@@ -13,6 +13,8 @@ import copy
 
 import matplotlib.pyplot as plt
 import numpy as np
+import logging
+logger = logging.getLogger(__name__)
 
 filtered_signal_data2=[-0.086, -0.086, -0.084, -0.084, -0.08 , -0.08 , -0.072, -0.072,
        -0.064, -0.064, -0.058, -0.058, -0.05 , -0.05 , -0.042, -0.042,
@@ -253,7 +255,6 @@ class LoopAnalyzer:
 
     def calc_avg_loop(self, loops_stack):
         '''вернет объект петли, полученный усреднением стека петель'''
-        print("вычисляем среднюю петлю")
         if len(loops_stack) == 0:
             return False
         elif len(loops_stack) == 1:
@@ -267,7 +268,7 @@ class LoopAnalyzer:
             
     def calc_avg_two_loops(self, loop1, loop2):
         if loop1.time_scale != loop2.time_scale:
-            print("невозможно вычислить среднее между петлями, временной шаг должен быть одинаковым")
+            logger.info("невозможно вычислить среднее между петлями, временной шаг должен быть одинаковым")
             return False
         
         mean_resistance  = (loop1.resistance + loop2.resistance)/2

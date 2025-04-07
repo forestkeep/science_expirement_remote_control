@@ -135,7 +135,7 @@ class Ui_MainWindow(object):
         self.main_class.change_language(language)
 
     def set_design_mode(self):
-        print("Design mode activated")
+        pass
 
     def set_design_mode(self):
         self.is_design_mode = not self.is_design_mode

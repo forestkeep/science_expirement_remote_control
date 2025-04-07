@@ -157,7 +157,6 @@ class oscilloscopeClass(base_device):
         )
 
         for num_ch in range(1, self.total_number_of_channels + 1):
-            # print(f"{num_ch=} {self.setting_window.checkboxes_ch=}")
             self.setting_window.checkboxes_ch[num_ch - 1].setChecked(
                 self.active_channel_meas.dict_buf_parameters[f"actch{num_ch}"]
             )
@@ -372,7 +371,6 @@ class oscilloscopeClass(base_device):
             return False
         enter_factor = {"s": 1, "ms": 0.001, "us": 0.000001, "ns": 0.000000001}
         scale = round(float(number) * enter_factor[factor] * 1000000000) / 1000000000
-        # print(f"{scale=}")
         return scale
 
     def get_parts_scale(self, value) -> str:
@@ -539,7 +537,6 @@ class oscilloscopeClass(base_device):
             return True
 
     def is_ch_vscale_correct(self, ch_number) -> bool:
-        # print(f"{ch_number=} {self.setting_window.checkboxes_ch=}")
         if self.setting_window.checkboxes_ch[ch_number - 1].isChecked() == True:
             sourse_scale_num = self.setting_window.vert_scale_boxes[ch_number - 1][
                 0
@@ -1010,7 +1007,6 @@ class oscilloscopeClass(base_device):
             for num_ch in act_channels:
                 val = [f"wavech{num_ch}=" + "fail"]
                 parameters.append(val)
-        #print(f"{parameters=}")
         return parameters, status
 
     def do_meas(self, ch):
@@ -1050,8 +1046,6 @@ class oscilloscopeClass(base_device):
 
                 ans = ch_response_to_step.Step_fail
 
-            # print(f"{parameters=}")
-
             return ans, parameters, time.perf_counter() - start_time, message
         return ch_response_to_step.Incorrect_ch, parameters, time.perf_counter() - start_time
 
@@ -1082,9 +1076,3 @@ class oscilloscopeClass(base_device):
             chann.extend(general_param)
         return channels
 
-
-if __name__ == "__main__":
-    # osc = oscilloscopeClass(23232, 4333)
-    my_list = [1, 2, 3]
-    my_string = ",".join(map(str, my_list))
-    print(my_string)  # Вывод: 123

@@ -113,14 +113,13 @@ class basePowerSupply(base_device):
             start_time = time.perf_counter()
             result = func(*args, **kwargs)
             end_time = time.perf_counter()
-            print(f"Метод {func.__name__} - {end_time - start_time} с")
+            logger.info(f"Метод {func.__name__} выполнялся {end_time - start_time} с")
             return result
 
         return wrapper
 
     @base_device.base_show_window
     def show_setting_window(self, number_of_channel):
-        #print(f"показываем окно настройки для канала {number_of_channel}")
         self.switch_channel(number=number_of_channel)
         # запрещаем исполнение функций во время инициализации
         self.key_to_signal_func = False
@@ -326,7 +325,7 @@ class basePowerSupply(base_device):
 
     def _change_units(self):
         if self.key_to_signal_func:
-            # print("изменить параметры")
+
             self.setting_window.second_limit_enter.setEnabled(True)
             if (
                 self.setting_window.type_work_enter.currentText()
@@ -444,9 +443,6 @@ class basePowerSupply(base_device):
         except:
             is_parameters_correct = False
 
-        #print(f"{self.active_channel_act.dict_settable_parameters=} {self.active_channel_act}")
-        #print(f"{self.active_channel_meas.dict_settable_parameters=} {self.active_channel_meas}")
-
         self.installation_class.message_from_device_settings(
             name_device=self.name,
             num_channel=self.active_channel_meas.number,
@@ -560,7 +556,6 @@ class basePowerSupply(base_device):
         """устанавливает значения тока и напряжения, включает выход прибора"""
 
         self.switch_channel(number_of_channel)
-        # print(f"настройка канала {number_of_channel} прибора "+ str(self.name)+ " перед экспериментом..")
         is_correct = True
         if ( self._set_voltage( self.active_channel_act.number, self.active_channel_act.min_step_V ) == False ):
             is_correct = False
@@ -576,7 +571,6 @@ class basePowerSupply(base_device):
     def action_end_experiment( self, ch ) -> bool:
         """выключение прибора"""
         self.switch_channel(ch_name=ch.get_name())
-        # print("Плавное выключение источника питания")
         status = True
         if ch.get_type() == "act":
             if self.active_channel_act.dict_buf_parameters["soft_off"] == True:
@@ -595,7 +589,6 @@ class basePowerSupply(base_device):
 
                     while voltage > step:
                         voltage -= step
-                        # print("напряжение = ", voltage)
                         self._set_voltage(self.active_channel_act.number, voltage)
                         time.sleep(3)
                 else:
@@ -607,7 +600,7 @@ class basePowerSupply(base_device):
     def soft_start( self, number_of_channel, repeat=3 ):
         """плавное включение прибора"""
         self.switch_channel(number_of_channel)
-        # print("Плавное выключение источника питания")
+        logger.debug("Плавное выключение источника питания")
 
         if (
             self.active_channel_act.dict_buf_parameters["type_of_work"]
@@ -675,7 +668,7 @@ class basePowerSupply(base_device):
                         == True
                     ):
                         answer = ch_response_to_step.Step_done
-                        # print(f"установлено успешно напряжение {self.active_channel.steps_voltage[self.active_channel.step_index]}")
+
                     else:
                         answer = ch_response_to_step.Step_fail
                         if self.is_debug:

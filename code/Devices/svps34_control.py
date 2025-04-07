@@ -105,13 +105,10 @@ class device:
         self.ui.log.append(
             str(datetime.datetime.now().strftime("%H:%M:%S")) + " receive: " + answer
         )
-        print(answer)
         if answer.find("Remote control") != -1 or answer.find("Hand control") != -1:
             # self.status = state_device.Connect
-            # print("connect")
             return True
         else:
-            # print("fail connect")
             return False
 
     def get_temperature(self):
@@ -515,7 +512,6 @@ class Ui_SVPS34_control(QtWidgets.QMainWindow):
 
     def click_channel_button(self, number_of_channel):
         if self.is_device_connect:
-            # print("number channel = " + str(number_of_channel))
             answer = self.connect_devices[0].button_action(number_of_channel)
             if answer != False:
                 if answer == On_Off_state.On:
@@ -534,7 +530,7 @@ class Ui_SVPS34_control(QtWidgets.QMainWindow):
                     elif number_of_channel == 7:
                         self.ch7.setStyleSheet("background-color: rgb(85, 255, 127);")
                     else:
-                        print("error number of channel too much")
+                        pass
                 else:
                     if number_of_channel == 1:
                         self.ch1.setStyleSheet("background-color: rgb(206, 206, 206);")
@@ -551,12 +547,11 @@ class Ui_SVPS34_control(QtWidgets.QMainWindow):
                     elif number_of_channel == 7:
                         self.ch7.setStyleSheet("background-color: rgb(206, 206, 206);")
                     else:
-                        print("error number of channel too much")
+                        pass
 
     def click_relay_button(self, number_of_relay):
         if self.is_device_connect:
             answer = self.connect_devices[0].relay_action(number_of_relay)
-            # print(answer)
             if answer != False:
                 if answer == On_Off_state.On:
                     if number_of_relay == 1:
@@ -574,7 +569,7 @@ class Ui_SVPS34_control(QtWidgets.QMainWindow):
                     elif number_of_relay == 7:
                         self.rel7.setStyleSheet("background-color: rgb(85, 255, 127);")
                     else:
-                        print("error number of channel too much")
+                        pass
                 else:
                     if number_of_relay == 1:
                         self.rel1.setStyleSheet("background-color: rgb(206, 206, 206);")
@@ -591,7 +586,7 @@ class Ui_SVPS34_control(QtWidgets.QMainWindow):
                     elif number_of_relay == 7:
                         self.rel7.setStyleSheet("background-color: rgb(206, 206, 206);")
                     else:
-                        print("error number of channel too much")
+                        pass
 
     def scan_active_com_ports(self):
         import serial.tools.list_ports
@@ -608,7 +603,6 @@ class Ui_SVPS34_control(QtWidgets.QMainWindow):
                 pass
         self.comportslist.clear()
         self.comportslist.addItems(active_ports)
-        # print(active_ports)
 
     def write_boud_rate(self, list):
         self.comportslist_2.addItems(list)

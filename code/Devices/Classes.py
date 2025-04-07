@@ -537,7 +537,6 @@ class base_device():
 
         local_list_com_ports = self.installation_class.get_list_resources()
         visa_resources = self.installation_class.get_list_visa_resources()
-        #print(f"{local_list_com_ports}")
         stop = False
         if local_list_com_ports == []:
             try:
@@ -837,7 +836,6 @@ class base_ch(control_in_experiment):
     
     def receive_message(self, message):
         '''функция приема сигнала от издателя, в данный момент по приему сообщения выставляется готовность сделать действие'''
-        #print(message)
         self.am_i_should_do_step = True
 
     def get_settings(self):
@@ -864,7 +862,7 @@ def time_decorator(func):
         start_time = time.perf_counter()
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
-        print(f"Метод {func.__name__} - {end_time - start_time} с")
+        logger.info(f"Метод {func.__name__} выполнялся {end_time - start_time} с")
         return result
     return wrapper
 

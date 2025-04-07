@@ -119,11 +119,9 @@ class deviceCreator(QDialog):
 
             self.get_channels_parameters()
         else:
-            print("no channels parameters")
             self.start_questions()
 
     def get_channels_parameters(self):
-        print("get_channels_parameters")
         self.ok_button.setParent(None)
         self.cancel_button.setParent(None)
 
@@ -463,7 +461,6 @@ class deviceCreator(QDialog):
     def submit_command(self):
         input_text = self.input_field.text().strip()
         current_arguments = self.extract_arguments(input_text)
-        #print(f"{self.actual_arguments=} {current_arguments=}")
         if set( self.actual_arguments ) != set( current_arguments ):
             '''если набор аргументов не одинаковый, то необходимо вывести сообщение с ошибкой'''
             QMessageBox.critical(self, QApplication.translate('device_creator',"Ошибка"), QApplication.translate('device_creator',"Аргументы в фигурных скобках должны быть такими же как и в образце. Их количесто так же должно быть равно количеству аргументов в образце. Может быть вы забыли обрамить аргументы фигурными скобками. Аргументы:") + f" {self.actual_arguments}")

@@ -13,14 +13,15 @@ import time
 import unittest
 
 import numpy as np
-
+import logging
+logger = logging.getLogger(__name__)
 
 def time_decorator(func):
     def wrapper(*args, **kwargs):
         start_time = time.perf_counter()
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
-        print(f"Метод {func.__name__} - {end_time - start_time} с")
+        logger.info(f"Метод {func.__name__} выполнялся {end_time - start_time} с")
         return result
 
     return wrapper
@@ -271,24 +272,5 @@ class TestArrayProcessor(unittest.TestCase):
         self.assertTrue(np.all(np.isin(result_y[0], expected_y)) and np.all(np.isin(result_y[1], expected_y)))
 
 if __name__ == "__main__":
-
     unittest.main()
-    '''
-    arr_time_x, val_x, arr_time_y, val_y = generate_arrays()
-
-    calculator = ArrayProcessor()
-    x, y, time = calculator.combine_interpolate_arrays(arr_time_x, arr_time_y, val_x, val_y)
-    np.set_printoptions(threshold=np.inf)
-
     
-    arrx1 = [1,2,3,4,5]
-    arrx2 = [1,3,4,5]
-
-    arry1 = [1,2,3,4,5]
-    arry2 = [2, 6, 8, 10]
-
-    calculator = ArrayProcessor()
-    arr1, arr2, gen_x = calculator.combine_interpolate_arrays(arrx1, arrx2, arry1, arry2)
-    '''
-
-# kernprof -l -v C:\Users\zahidovds\Desktop\virtual_for_uswindsens\main\graph\calc_values_for_graph.py

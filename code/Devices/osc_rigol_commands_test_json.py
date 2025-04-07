@@ -52,7 +52,6 @@ class oscRigolCommands:
 
     def check_parameters(self, command, focus_answer) -> bool:  #
         ans = self.device.client.query(command)
-        print(f"{ans=} {focus_answer=}")
 
         if isinstance(
             focus_answer, (int, float)
@@ -94,7 +93,7 @@ class oscRigolCommands:
                     result[num_ch] = arr
                 else:
                     status = False
-                    print("неудачное считывание")
+                    logger.warning("неудачное считывание параметров осциллограммы")
         else:
             status = True
             result = {}

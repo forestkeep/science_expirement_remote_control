@@ -15,6 +15,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import pyqtgraph as pg
+import logging
 from PyQt5.QtCore import QItemSelectionModel, QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QFileDialog, QHBoxLayout,
@@ -34,12 +35,14 @@ except:
     from graph.curve_data import linearData
     from graph.Message_graph import messageDialog
 
+logger = logging.getLogger(__name__)
+
 def time_decorator(func):
     def wrapper(*args, **kwargs):
         start_time = time.perf_counter()
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
-        print(f"Метод {func.__name__} - {end_time - start_time} с")
+        logger.info(f"Метод  {func.__name__} выполнялся {end_time - start_time} с")
         return result
     return wrapper
 
@@ -181,7 +184,7 @@ class graphMain(QObject):
 
                 df = df.dropna(axis=1, how='all')
 
-                window = Check_data_import_win([col for col in df.columns], self.update_dict_param)
+                window = Check_data_import_win(sorted([col for col in df.columns]), self.update_dict_param)
                 ans = window.exec_()
                 if ans == QDialog.Accepted: 
                     selected_columns = [cb.text() for cb in window.checkboxes if cb.isChecked()]
@@ -228,7 +231,6 @@ class graphMain(QObject):
         if new_data is not None:
             self.set_default()
             self.update_dict_param( new_data )
-            print("change_experiment_data")
         
     def setupDataSourceSelectors(self):
         # Data source selectors layout
@@ -439,6 +441,9 @@ class graphMain(QObject):
             self.x_param_selector.addItems(new_param)
             self.y_first_param_selector.addItems(new_param)
             self.y_second_param_selector.addItems(new_param)
+            self.x_param_selector.sortItems()
+            self.y_first_param_selector.sortItems()
+            self.y_second_param_selector.sortItems()
 
             self.remove_parameter("Select parameter", self.x_param_selector)
             self.remove_parameter("Select parameter", self.y_first_param_selector)
@@ -471,6 +476,11 @@ class graphMain(QObject):
         self.x_param_selector.addItems(self.list_param)
         self.y_first_param_selector.addItems(self.list_param)
         self.y_second_param_selector.addItems(self.list_param)
+
+        self.x_param_selector.sortItems()
+        self.y_first_param_selector.sortItems()
+        self.y_second_param_selector.sortItems()
+
         self.x_param_selector.setCurrentItem(QListWidgetItem(box_x))
         self.y_first_param_selector.setCurrentItem(QListWidgetItem(box_y))
         self.y_second_param_selector.setCurrentItem(QListWidgetItem(box_y2))
@@ -784,8 +794,8 @@ class graphMain(QObject):
             elif obj is self.y_second_param_selector:
                 self.previous_y2 = self.handle_selector(self.y_second_param_selector, self.previous_y2, string_y2)
 
-        print(f"{string_x=} {string_y=} {string_y2=}")
-        print(f"{self.previous_x=} {self.previous_y=} {self.previous_y2=}")
+        logger.info(f"{string_x=} {string_y=} {string_y2=}")
+        logger.info(f"{self.previous_x=} {self.previous_y=} {self.previous_y2=}")
 
         #блок проверки параметров
         block_parameters = ("time", "Select parameter")
@@ -795,13 +805,10 @@ class graphMain(QObject):
         is_y2_correct = (string_y2 not in block_parameters)
 
         if not is_x_correct:
-            print("x не корректен")
             return
         if obj is self.y_first_param_selector and not is_y_correct:
-            print("y не корректен")
             return
         if obj is self.y_second_param_selector and not is_y2_correct:
-            print("y2 не корректен")
             return
 
         #==========================================================================
@@ -1194,7 +1201,8 @@ class graphMain(QObject):
             device_y = buf_y[1].split(" ")[0]
             ch_y = buf_y[1].split(" ")[1][:-1]
         else:
-            print(f"ошибка при декодиировании имени параметра {buf_y}")
+
+            logger.warning(f"ошибка при декодиировании имени параметра {buf_y}")
             return False, False, string_y
 
         return device_y, ch_y, parameter_y

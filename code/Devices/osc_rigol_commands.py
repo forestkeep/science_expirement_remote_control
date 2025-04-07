@@ -94,7 +94,7 @@ class oscRigolCommands:
                     result[num_ch] = arr
                 else:
                     status = False
-                    print("неудачное считывание")
+                    logger.warning("неудачное считывание параметров осциллограммы")
         else:
             status = True
             result = {}

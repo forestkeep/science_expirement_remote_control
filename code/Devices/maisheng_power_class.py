@@ -106,13 +106,10 @@ class maishengPowerClass(power_supply):
                     address=address, count=count, slave=slave, values=values
                 )
                 if ans.isError():
-                    # print("ошибка ответа устройства при установке значения", ans)
                     return False
                 else:
                     pass
-                    # print(ans.registers)
             except:
-                # print("Ошибка модбас модуля или клиента")
                 return False
             return True
 
@@ -128,13 +125,10 @@ class maishengPowerClass(power_supply):
                 )
 
                 if ans.isError():
-                    # print("ошибка ответа устройства при чтении текущего", ans)
                     return False
                 else:
-                    # print(ans.registers)
                     return ans.registers
             except:
-                # print("Ошибка модбас модуля или клиента")
                 return False
 
     def _get_current_voltage(self, ch_num):
@@ -171,13 +165,10 @@ class maishengPowerClass(power_supply):
             )
 
             if ans.isError():
-                # print("ошибка ответа устройства при чтении установленного", ans)
                 return False
             else:
-                # print(ans.registers)
                 return ans.registers
         except:
-            # print("Ошибка модбас модуля или клиента")
             return False
 
     def _get_setting_voltage(self, ch_num):
@@ -237,25 +228,24 @@ if __name__ == "__main__":
     power_supply.set_client(client)
     power_supply.set_test_mode()
     while True:
-        # print("введи значение напряжения, разделитель точка")
         voltage = input()
         flag = True
         try:
             voltage = float(voltage)
         except:
-            # print("ошибка, нужно ввести число")
+            # logger.info("ошибка, нужно ввести число")
             flag = False
 
         if flag:
             ans = power_supply._set_voltage(voltage * 100)
-            # print("ответ модуля:", ans)
+            # logger.info("ответ модуля:", ans)
             time.sleep(2)
-            # print("читаем установленное значение напряжения...")
+            # logger.info("читаем установленное значение напряжения...")
             ans = power_supply._get_setting_voltage()
-            # print("ответ модуля на чтение установленного напряжения:", ans)
+            # logger.info("ответ модуля на чтение установленного напряжения:", ans)
             time.sleep(2)
-            # print("читаем текущее значение напряжения...")
+            # logger.info("читаем текущее значение напряжения...")
             ans = power_supply._get_current_voltage()
-            # print("ответ модуля на чтение текущего напряжения(с дисплея):", ans)
+            # logger.info("ответ модуля на чтение текущего напряжения(с дисплея):", ans)
 
             client.close()

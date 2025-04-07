@@ -12,6 +12,7 @@
 import sys
 
 import qdarktheme
+import logging
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QLabel, QScrollArea,
                              QSizePolicy, QVBoxLayout, QWidget)
@@ -23,10 +24,11 @@ except:
 	from schematic_exp.actions_line import actionLine, blockInfo
 	from schematic_exp.stack_experiment import unique_colors1
  
+logger = logging.getLogger(__name__)
+
 class actDiagramWin(QWidget):
     def __init__(self):
         super().__init__()
-        print("показываем окно")
         
         main_layout = QVBoxLayout()
 
@@ -117,7 +119,7 @@ class actDiagram():
     def add_action(self, actor_name, action_name, action_info) -> bool:
      
         if actor_name in self.actors.keys():
-            print(f"добавлено действие{actor_name}")
+            logger.info(f"добавлено действие{actor_name}")
       
             new_block = blockInfo(name = action_name,
                               info = action_info

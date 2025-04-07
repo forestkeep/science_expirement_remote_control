@@ -41,8 +41,6 @@ class device_page(QtWidgets.QWidget):
             if i > 0:
                 self.ind_channels+=1
             
-        #print(f"{device_class.get_name()} {self.ind_channels=}")
-
         self.setMinimumSize( self.ind_channels*140, 300 )
         self.device_class = device_class
         self.installation_class = installation_class

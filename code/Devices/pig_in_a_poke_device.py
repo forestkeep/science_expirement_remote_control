@@ -57,7 +57,6 @@ class pigInAPoke(base_device):
 
     @base_device.base_show_window
     def show_setting_window(self, number_of_channel):
-        #print(f"показываем окно настройки для канала {number_of_channel}")
         self.switch_channel(number=number_of_channel)
         # запрещаем исполнение функций во время инициализации
         self.key_to_signal_func = False
@@ -125,9 +124,6 @@ class pigInAPoke(base_device):
 
         if is_parameters_correct:
             is_parameters_correct = self._is_correct_parameters()
-
-        #print(f"{self.active_channel_act.dict_settable_parameters=} {self.active_channel_act}")
-        #print(f"{self.active_channel_meas.dict_settable_parameters=} {self.active_channel_meas}")
 
         self.installation_class.message_from_device_settings(
             name_device=self.name,

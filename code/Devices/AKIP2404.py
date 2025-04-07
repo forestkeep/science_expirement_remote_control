@@ -143,7 +143,7 @@ class akip2404Class(base_device):
     ) -> bool:  # менять для каждого прибора
         self.switch_channel(number_of_channel)
         self.select_channel(channel=self.active_channel_meas.number)
-        print(
+        logger.debug(
             f"настройка канала {number_of_channel} прибора "
             + str(self.name)
             + " перед экспериментом.."
@@ -185,7 +185,7 @@ class akip2404Class(base_device):
         start_time = time.perf_counter()
         parameters = [self.name + " " + str(ch.get_name())]
         if ch.get_type() == "meas":
-            #print("делаем измерение", self.name, str(ch.get_name()))
+            logger.debug("делаем измерение", self.name, str(ch.get_name()))
 
             is_correct = True
             voltage = self._get_current_voltage(ch_num = self.active_channel.number)
@@ -203,10 +203,8 @@ class akip2404Class(base_device):
             # -----------------------------
 
             if is_correct:
-                #print("сделан шаг", self.name)
                 ans = ch_response_to_step.Step_done
             else:
-                print("Ошибка шага", self.name)
                 val = ["voltage=" + "fail"]
                 parameters.append(val)
 

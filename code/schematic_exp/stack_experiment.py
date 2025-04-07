@@ -12,9 +12,12 @@
 import sys
 
 import qdarktheme
+import logging
 from PyQt5.QtGui import QBrush, QColor, QPainter
 from PyQt5.QtWidgets import (QApplication, QFrame, QLabel, QSizePolicy,
                              QVBoxLayout, QWidget)
+
+logger = logging.getLogger(__name__)
 
 unique_colors= [
     QColor(186, 0, 0, 255),       
@@ -118,7 +121,6 @@ class callStack(QWidget):
         self.rect_width = 30
         
     def set_data(self, meta_data_class):
-        #print("данные установлены в стек")
         self.actors_names = meta_data_class.actors_names
         self.exp_queue = meta_data_class.exp_queue
         self.max_width = 0
@@ -126,7 +128,6 @@ class callStack(QWidget):
         #self.add_blocks()
         
     def add_blocks(self):
-        #print("добавляем блок")
         painter = QPainter(self)
         self.offset_y = 0
         self.actions = []
@@ -140,7 +141,6 @@ class callStack(QWidget):
 
                 for act in self.exp_queue:
                     if num_actor == act:
-                        #print(f"Блок найден {self.ind}")
                         self.ind+=1
                         new_block = deviceActionDraw(ch_name='////',
                                        color=f"background-color: {unique_colors1[index]};",
@@ -156,7 +156,6 @@ class callStack(QWidget):
                 self.offset_y += self.rect_height+6
         
     def paintEvent(self, event):
-        #print("рисуем")
         try:
             painter = QPainter(self)
             offset_y_lines = 5
@@ -190,7 +189,7 @@ class callStack(QWidget):
                 for y_coord in self.y_line_points:
                     painter.drawLine(0, y_coord, self.max_width, y_coord)
         except Exception as e:
-            print(e)
+            logger.warning(f"ошибка: {str(e)} при попытке рисования")
             
 class metaDataExp():
     def __init__(self):
