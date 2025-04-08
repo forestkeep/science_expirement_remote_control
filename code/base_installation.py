@@ -209,18 +209,27 @@ class baseInstallation:
     def answer_save_results(self, status, output_file_path, message = None, deleted_buf_file = False):
 
         message_status = "ok"
+        status, setted_way_to_save = self.settings_manager.get_setting('way_to_save')
+        added_text = ""
+        if status:
+            if setted_way_to_save != output_file_path:
+                message_status = "war"
+                added_text = QApplication.translate('base_install',"Заданный путь сохранения не был доступен, мы его изменили на {way}").format(way = output_file_path)
         text = ""
         if status == True:
             if deleted_buf_file:
                 try:
                     text=QApplication.translate('base_install',"Результаты сохранены в {way}, файл {file} был удален")
                     text = text.format(way = output_file_path, file = deleted_buf_file)
+                    text+=" " + added_text
                 except:
                     text=QApplication.translate('base_install',"Результаты сохранены в {way}")
                     text = text.format(way = output_file_path)
+                    text+=" " + added_text
             else:
                 text = QApplication.translate('base_install',"Результаты сохранены в {way}")
                 text = text.format(way = output_file_path)
+                text+=" " + added_text
         else:
             text = QApplication.translate('base_install',"Не удалось сохранить результаты в {way}")
             if message is not None:

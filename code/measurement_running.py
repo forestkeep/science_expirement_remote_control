@@ -16,6 +16,7 @@ from PyQt5.QtCore import QThread, pyqtSignal, QObject
 from PyQt5.QtWidgets import QApplication
 from Devices.Classes import ch_response_to_step
 from Handler_manager import messageBroker
+from profilehooks import profile
 import numpy
 import queue
 
@@ -115,7 +116,7 @@ class experimentControl( ):
         self.finalize_experiment = finalize_experiment
 
         self.queue.put(lambda data=self.__measurement_parameters: self.update_measurement_data( data ))
-
+    @profile(stdout=False, filename='baseline.prof')
     def run(self):
         
         logger.debug("запущен поток эксперимента")

@@ -9,32 +9,17 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-import ctypes
-import logging
-import os
-import sys
-from logging.handlers import RotatingFileHandler
-from dataclasses import dataclass
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QTranslator
+import sys
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QApplication, QCheckBox,
                             QSpinBox, QComboBox,
-                            QFileDialog, QMessageBox,
+                            QFileDialog, 
                             QDoubleSpinBox, QLineEdit,
                             QHBoxLayout, QVBoxLayout,
                             QDialog, QDialogButtonBox,
-                            QSizePolicy, QPushButton, QLabel, QFrame)
+                            QSizePolicy, QPushButton, QLabel)
 
-from device_creator.dev_creator import deviceCreator
-from device_creator.test_commands import TestCommands
-from Devices.svps34_control import Ui_SVPS34_control
-from graph.online_graph import GraphWindow
-from Installation_class import installation_class
-from interface.main_window import Ui_MainWindow
-from controlDevicesJSON import search_devices_json
-from localJSONControl import localDeviceControl
-from device_selector import deviceSelector
 import enum
 
 
@@ -60,6 +45,10 @@ class SettingsManager():
                 self.cache_settings[key] = value
 
         self.experiment_settings = ExperimentSettings( self.cache_settings )
+
+        all_set, persistent_set = self.experiment_settings.get_settings()
+        self.save_settings(persistent_set)
+        self.set_settings(all_set)
 
     def save_settings(self, data: dict):
         """
@@ -156,7 +145,6 @@ class SettingsManager():
                     pass
         return value
 
-
 class ConfigDialog(QDialog):
     def __init__(self, configs, parent=None):
         super().__init__(parent)
@@ -172,6 +160,7 @@ class ConfigDialog(QDialog):
     def setup_ui(self):
         main_layout = QVBoxLayout(self)
         self.create_widgets()
+        self.setWindowTitle(QApplication.translate( "message_win", "Настройки эксперимента" ))
         
         for widget_type in [QCheckBox, QSpinBox, QComboBox, QLineEdit]:
             for layout in self.widget_layouts[widget_type]:
@@ -360,6 +349,10 @@ class ExperimentSettings:
         if self.window.exec_():
             self.values, self.values_persistent = self.window.get_values()
 
+        return self.values, self.values_persistent
+    
+    def get_settings(self):
+        self.values, self.values_persistent = self.window.get_values()
         return self.values, self.values_persistent
     
     def set_way_save(self):
