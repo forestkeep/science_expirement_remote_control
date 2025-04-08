@@ -29,7 +29,7 @@ class graphData:
             raw_y: The raw data for the y-axis.
         """
 
-        min_len = max(len(raw_x), len(raw_y))
+        min_len = min(len(raw_x), len(raw_y))
         raw_x = raw_x[:min_len]
         raw_y = raw_y[:min_len]
 
