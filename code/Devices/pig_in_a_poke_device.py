@@ -29,6 +29,7 @@ class chMeasPigPoke(base_ch):
         self.base_duration_step = 10
         self.dict_buf_parameters["commands"] = []
         self.dict_buf_parameters["commands_file"] = ''
+        self.dict_buf_parameters["timeout_connect"] = 1000
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
 class pigInAPoke(base_device):
@@ -49,9 +50,7 @@ class pigInAPoke(base_device):
             lambda: self._download_commands()
         )
         self.setting_window.command_text.textChanged.connect(lambda: self._is_correct_parameters())
-        self.setting_window.downloaded_file_lable.setToolTip(
-            QApplication.translate("Device", "Введите команды построчно, на каждом шаге прибора команды будут построчно выполнены, а полученные от них данные записаны в качесве результатов.")
-        )
+        self.setting_window.timeout_line.textChanged.connect(lambda: self._is_correct_parameters())
         self.setting_window.num_act_label.setParent(None)
         self.setting_window.num_act_enter.setParent(None)
 
@@ -68,6 +67,7 @@ class pigInAPoke(base_device):
             )
         text = "\n".join(self.active_channel_meas.dict_buf_parameters["commands"])
         self.setting_window.command_text.setText(text)
+        self.setting_window.timeout_line.setText(str(self.active_channel_meas.dict_buf_parameters["timeout_connect"]))
 
         self.key_to_signal_func = True
 
@@ -77,17 +77,28 @@ class pigInAPoke(base_device):
 
     @base_device.base_is_correct_parameters
     def _is_correct_parameters(self):
+        status1 = True
+        status2 = True
         if self.key_to_signal_func:
+            text_timeout = self.setting_window.timeout_line.text()
+
+            try:
+                text_time = float(text_timeout)
+                self.setting_window.timeout_line.setStyleSheet(ready_style_border)
+            except:
+                status1 = False
+                self.setting_window.timeout_line.setStyleSheet(not_ready_style_border)
 
             text = self.setting_window.command_text.toPlainText()
+
             if re.fullmatch(r'[\s]*', text):
                 self.setting_window.command_text.setStyleSheet(not_ready_style_border)
-                return False
+                status2 = False
             else:
                 self.setting_window.command_text.setStyleSheet(ready_style_border)
-                return True
-            
-        return False
+                
+        return status1 and status2
+    
     def check_connect(self) -> bool:
         response = "not defined check connect"
         return response
@@ -106,6 +117,11 @@ class pigInAPoke(base_device):
             self.active_channel_meas.dict_buf_parameters["commands_file"] = (
                 self.setting_window.downloaded_file_lable.text()
             )
+            try:
+                timeoutcon = float(self.setting_window.timeout_line.text())
+            except:
+                timeoutcon = 1000
+            self.active_channel_meas.dict_buf_parameters["timeout_connect"] = timeoutcon
 
     def send_signal_ok(
         self,
@@ -171,7 +187,8 @@ class pigInAPoke(base_device):
             is_correct = True
             for command in ch.dict_settable_parameters["commands"]:
                 logger.info(f"отправляем команду {command} через {self.client}")
-                answer = self.client.query(command, 1000, "\n")
+                timeout = ch.dict_settable_parameters["timeout_connect"]
+                answer = self.client.query(command, timeout, "\n")
                 if answer:
                     val = [f"{command}raw=" + str(answer)]
                     parameters.append(val)

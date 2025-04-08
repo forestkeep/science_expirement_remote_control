@@ -33,6 +33,9 @@ class pigInAPokeWindow(base_settings_window):
 
         self.description_label = QtWidgets.QLabel()
 
+        self.timeotlabel = QtWidgets.QLabel()
+        self.timeout_line = QtWidgets.QLineEdit()
+
         self.downloaded_file_lable = QtWidgets.QLabel()
         self.command_text = QtWidgets.QTextEdit(self)
         self.download_button = QtWidgets.QPushButton(self)
@@ -42,6 +45,9 @@ class pigInAPokeWindow(base_settings_window):
         self.Layout_set_dev_meas.addWidget(self.command_text, 3, 0, 1, 1)
         self.Layout_set_dev_meas.addWidget(self.download_button, 4, 0, 1, 1)
 
+        self.Layout_set_dev_meas.addWidget(self.timeotlabel)
+        self.Layout_set_dev_meas.addWidget(self.timeout_line)
+
         self.retranslateUi(self)
 
     def retranslateUi(self, Set_power_supply):
@@ -49,6 +55,12 @@ class pigInAPokeWindow(base_settings_window):
         Set_power_supply.setWindowTitle(
             _translate("pigInAPoke", "Настройка прибора Кот в мешке")
         )
+        text_timeout = _translate("pigInAPoke", "Введите значение таймаута опроса прибора в мсек")
+        self.timeotlabel.setText( text_timeout )
+        self.timeout_line.setPlaceholderText( text_timeout )
+        self.timeout_line.setToolTip(_translate("pigInAPoke", "Большое значение таймаута замедлит опрос прибора.\n" \
+        " Если у вас один прибор, выдающий данные не по запросу, а через определенные интервалы времени,\n" \
+        " то имеет смысл установить значение таймаута чуть большим, чем период выдачи результатов прибором."))
         self.description_label.setText(_translate("pigInAPoke", "Впишите или загрузите команды построчно"))
         self.download_button.setText(_translate("pigInAPoke", "Загрузить файл"))
         self.downloaded_file_lable.setToolTip(_translate("pigInAPoke", "Введите команды построчно, на каждом шаге прибора команды будут построчно выполнены, а полученные от них данные записаны в качесве результатов."))

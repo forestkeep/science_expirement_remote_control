@@ -623,7 +623,3 @@ class baseInstallation:
                     self.clients.append(dict_modbus_clients[list_COMs[i]])
         self.is_search_resources = True
         return bad_resources
-
-if __name__ == "__main__":
-    import sys
-    print(sys.path)

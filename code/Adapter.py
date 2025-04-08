@@ -125,15 +125,12 @@ class Adapter:
         if end_symbol:
             command = command + end_symbol
         if self.which_resourse == resourse.serial:
+            self.client.timeout = timeout/1000
+            self.client.reset_input_buffer()
             try:
                 self.client.write(command)
             except:
                 self.client.write(command.encode())
-
-            if timeout:
-                time.sleep(int(timeout) / 1000)
-            else:
-                time.sleep(0.1)
 
             return self.client.readline()
         elif self.which_resourse == resourse.pyvisa:
