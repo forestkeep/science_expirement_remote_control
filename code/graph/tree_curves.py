@@ -70,8 +70,12 @@ class CurveTreeItem(QTreeWidgetItem):
 
         self.add_basic_characteristics()
 
-    def add_basic_characteristics(self):
+    def change_name(self, name):
+        self.setText(0, f"Кривая {name}")
+        self.parameters["name"] = name
+        self.curve_data_obj.set_legend_name(name)
 
+    def add_basic_characteristics(self):
 
         self.addChild(QTreeWidgetItem([f"ID: {self.parameters['id']}"]))
         
@@ -175,6 +179,7 @@ class CurveTreeItem(QTreeWidgetItem):
             else:
                 logger.info(f"ключ {parameter_name} не найден в параметрах отображения кривой")
         self.update_display()
+    
     def get_description(self):
         block_item = self.findChild( QApplication.translate("GraphWindow","Разное") )
         if block_item:
@@ -529,14 +534,18 @@ class treeWin(QWidget):
                 show_action.triggered.connect(lambda: self.show_curve(root_item))
 
             color_action = QAction( QApplication.translate("GraphWindow","Изменить цвет"), self)
+            name_action = QAction( QApplication.translate("GraphWindow","Изменить название"), self)
             delete_action = QAction( QApplication.translate("GraphWindow","Удалить график"), self)
             reset_data_action = QAction( QApplication.translate("GraphWindow","Сбросить фильтры"), self)
             add_note_action = QAction( QApplication.translate("GraphWindow","Добавить заметку"), self)
+
+            context_menu.addAction(name_action)
             context_menu.addAction(color_action)
             context_menu.addAction(delete_action)
             context_menu.addAction(reset_data_action)
             context_menu.addAction(add_note_action)
 
+            name_action.triggered.connect(lambda: self.change_name_curve(root_item))
             color_action.triggered.connect(lambda: self.change_color_curve(root_item))
             delete_action.triggered.connect(lambda: self.delete_curve(root_item))
             reset_data_action.triggered.connect(lambda: self.reset_filters(root_item))
@@ -546,6 +555,12 @@ class treeWin(QWidget):
     def reset_filters(self, item=None):
         if item in self.curves:
             self.curve_reset.emit(item.curve_data_obj)
+
+    def change_name_curve(self, item):
+        text, ok = QInputDialog().getText(self, QApplication.translate("GraphWindow","Новое название"),
+                                     QApplication.translate("GraphWindow","Новое название"), QLineEdit.Normal, item.curve_data_obj.name)
+        if ok and text:
+            item.change_name(text)
 
     def add_note(self, item):
         description = item.get_description()

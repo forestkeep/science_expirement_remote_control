@@ -12,11 +12,32 @@
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtGui import QBrush, QColor
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     from tree_curves import CurveTreeItem
 except:
     from graph.tree_curves import CurveTreeItem
+
+class legendName():
+    def __init__(self, device: str, ch: str, y_name: str) -> None:
+        self.__full_name = " ".join([device, ch, y_name])
+        self.__short_name = " ".join([device, ch])
+        self.__name = ""
+        self.current_name = self.__full_name
+
+    def set_short(self):
+        self.current_name = self.__short_name
+
+    def set_full(self):
+        self.current_name = self.__full_name
+
+    def set_custom(self, name: str):
+        self.__name = name
+        self.current_name = self.__name
+
     
 class graphData:
     def __init__(self, raw_x, raw_y) -> None:
@@ -47,7 +68,6 @@ class graphData:
         self.ch = None
         self.name = None
         self.number = None
-        self.legend_name = None
 
         self.mother_data = None
 
@@ -58,6 +78,7 @@ class graphData:
         self.parent_graph_field = None
         self.legend_field = None
 
+        logger.info(f"Создана кривая {self.raw_data_x=}, {self.raw_data_y=}")
         self.tree_item = CurveTreeItem(curve_data_obj=self)
 
     def set_plot_obj(self, plot_obj, pen, highlight=False):
@@ -113,6 +134,7 @@ class graphData:
             self.current_highlight = True
             self.plot_obj.setPen(pg.mkPen('w', width=2))
             self.plot_obj.setSymbolBrush(color = 'w')
+    
     def place_curve_on_graph(self, graph_field: pg.ViewBox, legend_field):
         """
         Places the curve on the given graph and legend fields. If the given fields
@@ -132,7 +154,7 @@ class graphData:
 
         if self.legend_field:
             if self.legend_field is not legend_field:
-                self.legend_field.removeItem(self.legend_name)
+                self.legend_field.removeItem(self.legend.current_name)
 
         self.parent_graph_field = graph_field
         self.legend_field = legend_field
@@ -140,7 +162,8 @@ class graphData:
         self.parent_graph_field.addItem(self.plot_obj)
 
         if self.legend_field.getLabel( self.plot_obj ) is None:
-            self.legend_field.addItem(self.plot_obj, self.legend_name)
+            logger.info(f"Добавление {self.legend.current_name=} в легенду")
+            self.legend_field.addItem(self.plot_obj, self.legend.current_name)
 
         self.is_draw = True
 
@@ -148,7 +171,7 @@ class graphData:
         if self.is_draw:
             self.is_draw = False
             self.parent_graph_field.removeItem(self.plot_obj)
-            self.legend_field.removeItem(self.legend_name)
+            self.legend_field.removeItem(self.legend.current_name)
     
     def data_reset(self) -> bool:
         if self.filtered_x_data is self.raw_data_x:
@@ -164,7 +187,7 @@ class linearData(graphData):
         self.ch = ch
         self.y_name = y_name
         self.x_name = x_name
-        self.legend_name = " ".join([device, ch])
+        self.legend = legendName(device, ch, y_name)
 
         self.y_param_name = y_param_name
         self.x_param_name = x_param_name
@@ -173,21 +196,27 @@ class linearData(graphData):
 
     def set_full_legend_name(self):
         if self.legend_field:
-            self.legend_field.removeItem(self.legend_name)
-
-        self.legend_name = " ".join([self.device, self.ch, self.y_param_name])
-
-        if self.legend_field:
-            self.legend_field.addItem(self.plot_obj, self.legend_name)
+            self.legend_field.removeItem(self.legend.current_name)
+            self.legend.set_full()
+            self.legend_field.addItem(self.plot_obj, self.legend.current_name)
+        else:
+            self.legend.set_full()
 
     def set_short_legend_name(self):
         if self.legend_field:
-            self.legend_field.removeItem(self.legend_name)
+            self.legend_field.removeItem(self.legend.current_name)
+            self.legend.set_short()
+            self.legend_field.addItem(self.plot_obj, self.legend.current_name)
+        else:
+            self.legend.set_short()
 
-        self.legend_name = " ".join([self.device, self.ch])
-
+    def set_legend_name(self, name):
         if self.legend_field:
-            self.legend_field.addItem(self.plot_obj, self.legend_name)
+            self.legend_field.removeItem(self.legend.current_name)
+            self.legend.set_custom(name)
+            self.legend_field.addItem(self.plot_obj, self.legend.current_name)
+        else:
+            self.legend.set_custom(name)
 
     def recalc_stats_param(self):
         #вычисление моды

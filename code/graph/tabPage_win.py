@@ -27,6 +27,8 @@ class tabPage(QWidget):
 
     def subscribe_to_key_press(self, key, callback):
 
+
+        print(f"подписываем {callback} на {key}")
         if key not in self.callbacks.keys():
             self.callbacks[key] = []
         self.callbacks[key].append(callback)

@@ -12,11 +12,10 @@ import time
 import copy
 import logging
 
-from PyQt5.QtCore import QThread, pyqtSignal, QObject
 from PyQt5.QtWidgets import QApplication
 from Devices.Classes import ch_response_to_step
 from Handler_manager import messageBroker
-from profilehooks import profile
+#from profilehooks import profile
 import numpy
 import queue
 
@@ -116,7 +115,9 @@ class experimentControl( ):
         self.finalize_experiment = finalize_experiment
 
         self.queue.put(lambda data=self.__measurement_parameters: self.update_measurement_data( data ))
-    @profile(stdout=False, filename='baseline.prof')
+
+    #snakeviz baseline.prof - команда для просмотра профилирования
+    #@profile(stdout=False, filename='baseline.prof')
     def run(self):
         
         logger.debug("запущен поток эксперимента")
@@ -399,7 +400,6 @@ class experimentControl( ):
                 else:
                     status_update, buffer_meas = self.update_parameters(
                         data=self.__measurement_parameters,
-
                         entry=param,
                         time=time_t,
                     )
@@ -552,7 +552,6 @@ class experimentControl( ):
                         buf_time.append(t)
         remaining_time = max(buf_time) + (time.perf_counter() - self.start_exp_time)
         return remaining_time
-
 
     def calculate_exp_time(self):
         """оценивает продолжительность эксперимента, возвращает результат в секундах, если эксперимент бесконечно долго длится, то вернется ответ True. В случае ошибки при расчете количества секунд вернется False"""

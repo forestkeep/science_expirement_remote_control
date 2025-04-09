@@ -20,7 +20,7 @@ from PyQt5.QtCore import QItemSelectionModel, QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QFileDialog, QHBoxLayout,
                              QLabel, QListWidget, QListWidgetItem, QPushButton,
-                             QSizePolicy, QSpacerItem, QVBoxLayout, QWidget, QDialog, QComboBox)
+                             QSizePolicy, QSpacerItem, QVBoxLayout, QWidget, QDialog, QComboBox, QLineEdit)
 
 try:
     from calc_values_for_graph import ArrayProcessor
@@ -90,6 +90,11 @@ class graphMain(QObject):
         self.legend = pg.LegendItem(size=(80, 60), offset=(10, 10))
         self.legend2 = pg.LegendItem(size=(80, 60), offset=(50, 10))
 
+        self.axislabel_line_edit = QLineEdit()
+        self.axislabel_line_edit.setVisible( False )
+
+        self.focus_label = None
+
         self.legends_main = []
         self.legends_second = []
 
@@ -126,6 +131,8 @@ class graphMain(QObject):
         self.graphView.plotItem.getAxis("bottom").linkToView(
             self.graphView.plotItem.getViewBox()
         )
+
+        self.axislabel_line_edit.setParent(self.graphView)
         
         import_lay = QHBoxLayout()
         self.import_button = QPushButton()
@@ -157,7 +164,11 @@ class graphMain(QObject):
 
         self.page.subscribe_to_key_press(key = Qt.Key_Escape, callback = self.reset_filters)
 
+        self.page.subscribe_to_key_press(key = Qt.Key_Enter, callback = self.click_enter_key)
+        self.page.subscribe_to_key_press(key = Qt.Key_Return, callback = self.click_enter_key)
+
         self.retranslateUi(self.page)
+
 
     def import_data(self, *args, **kwargs):
 
@@ -721,7 +732,31 @@ class graphMain(QObject):
                         name_block = QApplication.translate("GraphWindow","История изменения")
                         curve.tree_item.delete_block(name_block)
 
+    def click_enter_key(self):
+
+        if self.axislabel_line_edit.isVisible() and self.focus_label:
+            self.focus_label.setPlainText(self.axislabel_line_edit.text())
+            self.axislabel_line_edit.setVisible(False)
+            self.focus_label = None
+
     def click_scene_main_graph(self, event):
+        if event.double():
+            for item in self.graphView.scene().itemsNearEvent(event):
+                if item is self.graphView.plotItem.getAxis("left"):
+                    axis = self.graphView.plotItem.getAxis("left")
+                    self.focus_label = axis.label
+                    
+                elif item is self.graphView.plotItem.getAxis("bottom"):
+                    axis = self.graphView.plotItem.getAxis("bottom")
+                    self.focus_label = axis.label
+
+                elif item is self.graphView.plotItem.getAxis("right"):
+                    axis = self.graphView.plotItem.getAxis("right")
+                    self.focus_label = axis.label
+
+                self.axislabel_line_edit.setGeometry(int(event.pos().x()), int(event.pos().y()), 100, 20)
+                self.axislabel_line_edit.setVisible(True)
+            
         self.__callback_click_scene( self.stack_curve.values() )
 
         self.hide_second_line_grid()
@@ -743,8 +778,8 @@ class graphMain(QObject):
     def delete_key_press(self):
         for curve in self.stack_curve.values():
             if curve.current_highlight:
-                #TODO: процесс удаления
-                pass
+                if curve.is_draw:
+                    curve.delete_curve_from_graph()
 
     def handle_selector(self, selector, previous, string_value):
         if previous == string_value:
@@ -981,14 +1016,14 @@ class graphMain(QObject):
     
     def create_curve(self, y_data, x_data, name_device, name_ch, y_name, x_name, y_param_name, x_param_name) -> linearData:
             new_data = linearData(raw_x   = x_data,
-                                    raw_y   = y_data,
-                                    device  = name_device,
-                                    ch      = name_ch,
-                                    y_name  = y_name,
-                                    x_name  = x_name,
-                                    y_param_name = y_param_name,
-                                    x_param_name = x_param_name
-                                    )
+                                  raw_y   = y_data,
+                                  device  = name_device,
+                                  ch      = name_ch,
+                                  y_name  = y_name,
+                                  x_name  = x_name,
+                                  y_param_name = y_param_name,
+                                  x_param_name = x_param_name
+                                  )
             buf_color = next(self.color_warm_gen)
 
             if new_data.saved_pen == None:
@@ -1004,7 +1039,7 @@ class graphMain(QObject):
             graph = pg.PlotDataItem(new_data.filtered_x_data, 
                                             new_data.filtered_y_data, 
                                             pen  = buf_pen,
-                                            name = new_data.legend_name,
+                                            name = new_data.legend,
                                             symbolPen=buf_pen,
                                             symbolBrush=buf_color,
                                             symbol='o',

@@ -56,9 +56,9 @@ class ExperimentBridge(analyse):
                         QApplication.translate('exp_flow',"Бесконечный эксперимент")
                     )
                 else:
-
-                    pbar_percent = (
-                            ((time.perf_counter() - self.start_exp_time) / self.remaining_exp_time)) * 100
+                    if self.remaining_exp_time == 0:
+                        self.remaining_exp_time = 1
+                    pbar_percent = ( ((time.perf_counter() - self.start_exp_time) / self.remaining_exp_time) ) * 100
 
                     min = 0
                     sec = 0
