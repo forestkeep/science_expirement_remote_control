@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import pyqtgraph as pg
 import logging
-from PyQt5.QtCore import QItemSelectionModel, QObject, Qt, pyqtSignal
+from PyQt5.QtCore import QItemSelectionModel, QObject, Qt, pyqtSignal, QPoint, QPointF
 from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QFileDialog, QHBoxLayout,
                              QLabel, QListWidget, QListWidgetItem, QPushButton,
@@ -93,7 +93,7 @@ class graphMain(QObject):
         self.axislabel_line_edit = QLineEdit()
         self.axislabel_line_edit.setVisible( False )
 
-        self.focus_label = None
+        self.focus_axis = None
 
         self.legends_main = []
         self.legends_second = []
@@ -124,6 +124,44 @@ class graphMain(QObject):
         
         self.graphView = self.setupGraphView()
         self.graphView.scene().sigMouseClicked.connect(self.click_scene_main_graph)
+
+        #--------------------------------------------------------TESTS
+        '''
+        self.inf2 = pg.InfiniteLine(movable=True, angle=0, pen=(0, 0, 200), bounds = [-20, 20], hoverPen=(0,200,0), label='y={value:0.2f}mm', 
+                       labelOpts={'color': (200,0,0), 'movable': True, 'fill': (0, 0, 200, 100)})
+        
+        self.targetItem2 = pg.TargetItem(
+            pos=(0, 0),
+            size=20,
+            symbol="star",
+            pen="#F4511E",
+            label="vert={1:0.2f}",
+            labelOpts={
+                "offset": QPoint(15, 15)
+            }
+        )
+        self.targetItem2.label().setAngle(45)
+
+        self.lr = pg.LinearRegionItem(values=[70, 80])
+        label = pg.InfLineLabel(self.lr.lines[1], "region 1", position=0.95, rotateAxis=(1,0), anchor=(1, 1))
+
+        self.x = np.arange(10)
+        self.y = np.arange(10) %3
+        top = np.linspace(1.0, 1, 10)
+
+
+        self.err = pg.ErrorBarItem(x=self.x, y=self.y, top=top, bottom=top, beam=0.5)
+        self.graphView.addItem(self.err)
+        self.graphView.plot(self.x, self.y, symbol='o', pen={'color': 0.8, 'width': 2})
+
+
+        self.graphView.addItem(self.lr)
+        self.graphView.addItem(self.inf2)
+        self.graphView.addItem(self.targetItem2)
+        '''
+        #--------------------------------------------------------------------
+        
+        
 
         self.graphView.plotItem.getAxis("left").linkToView(
             self.graphView.plotItem.getViewBox()
@@ -734,30 +772,55 @@ class graphMain(QObject):
 
     def click_enter_key(self):
 
-        if self.axislabel_line_edit.isVisible() and self.focus_label:
-            self.focus_label.setPlainText(self.axislabel_line_edit.text())
+        if self.axislabel_line_edit.isVisible() and self.focus_axis:
+            self.focus_axis.setLabel(self.axislabel_line_edit.text(), color=self.focus_axis.pen().color())
             self.axislabel_line_edit.setVisible(False)
-            self.focus_label = None
+            self.focus_axis = None
 
     def click_scene_main_graph(self, event):
         if event.double():
+            is_checked_axis = False
             for item in self.graphView.scene().itemsNearEvent(event):
                 if item is self.graphView.plotItem.getAxis("left"):
                     axis = self.graphView.plotItem.getAxis("left")
-                    self.focus_label = axis.label
+                    self.focus_axis = axis
+                    shift_x = 50
+                    shift_y = 0
+                    is_checked_axis = True
+                    break
                     
                 elif item is self.graphView.plotItem.getAxis("bottom"):
                     axis = self.graphView.plotItem.getAxis("bottom")
-                    self.focus_label = axis.label
+                    self.focus_axis = axis
+                    shift_x = 0
+                    shift_y = -50
+                    is_checked_axis = True
+                    break
 
                 elif item is self.graphView.plotItem.getAxis("right"):
-                    axis = self.graphView.plotItem.getAxis("right")
-                    self.focus_label = axis.label
+                    if event.scenePos().x() - event.pos().x() > self.graphView.size().width()*0.9:
+                        axis = self.graphView.plotItem.getAxis("right")
+                        self.focus_axis = axis
+                        shift_x = -100
+                        shift_y = 0
+                        is_checked_axis = True
+                        break
 
-                self.axislabel_line_edit.setGeometry(int(event.pos().x()), int(event.pos().y()), 100, 20)
+            if is_checked_axis:
+                text = self.focus_axis.label.toPlainText()
+                self.axislabel_line_edit.setText(text)
+                self.axislabel_line_edit.setGeometry(int(event.scenePos().x() + shift_x), int(event.scenePos().y() + shift_y), 100, 20)
+                self.axislabel_line_edit.setFocus()
                 self.axislabel_line_edit.setVisible(True)
-            
-        self.__callback_click_scene( self.stack_curve.values() )
+            else:
+                self.focus_axis = None
+                self.axislabel_line_edit.setVisible(False)
+        else:
+            self.__callback_click_scene( self.stack_curve.values() )
+
+            if self.axislabel_line_edit.isVisible():
+                self.axislabel_line_edit.setVisible(False)
+                self.focus_axis = None
 
         self.hide_second_line_grid()
 
@@ -776,10 +839,14 @@ class graphMain(QObject):
                         graph.plot_obj.setSymbolBrush(color = graph.saved_pen['color'])
 
     def delete_key_press(self):
+        curv_for_del = []
         for curve in self.stack_curve.values():
             if curve.current_highlight:
                 if curve.is_draw:
-                    curve.delete_curve_from_graph()
+                    curv_for_del.append(curve)
+
+        for curve in curv_for_del:
+            self.main_class.tree_class.delete_curve(curve.tree_item)
 
     def handle_selector(self, selector, previous, string_value):
         if previous == string_value:
