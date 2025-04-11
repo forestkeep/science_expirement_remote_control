@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                              QScrollArea, QWidget, QSizePolicy, QFileDialog, QComboBox)
 
 class Check_data_import_win(QDialog):
-    def __init__(self, strings, callback, is_osc=False):
+    def __init__(self, strings, callback=None, is_osc=False):
         super().__init__()
         self.callback = callback
         self.initUI(strings, is_osc)

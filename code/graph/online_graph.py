@@ -25,6 +25,10 @@ try:
     from osc_wave_graph import graphOsc
     from tabPage_win import tabPage
     from tree_curves import treeWin
+    from dataManager import graphDataManager
+    from importData import controlImportData
+    from importData import importDataWin
+    from paramSelectors import paramSelector, paramController
 except:
     from graph.filters_win import filtersClass
     from graph.graph_main import graphMain
@@ -32,6 +36,11 @@ except:
     from graph.osc_wave_graph import graphOsc
     from graph.tabPage_win import tabPage
     from graph.tree_curves import treeWin
+    from graph.dataManager import graphDataManager
+    from graph.importData import controlImportData
+    from graph.importData import importDataWin
+    from graph.paramSelectors import paramSelector, paramController
+
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +92,14 @@ class GraphWindow(QMainWindow):
         splitter.setStretchFactor(1, 10)
         splitter.setStretchFactor(2, 1)
 
+        self.data_manager = graphDataManager()
+        self.select_win = paramSelector()
+        self.select_controller = paramController( self.select_win )
+        self.import_data_win = importDataWin()
+        self.import_data_manager = controlImportData(self.import_data_win, self.data_manager, self)
+
+        self.data_manager.add_selector(self.select_controller)
+
         self.filter_class.set_filter_slot(self.filters_callback)#при нажатии кнопок в фильтре будет вызываться эта функция
 
         self.mainLayout.addWidget(splitter)
@@ -93,7 +110,7 @@ class GraphWindow(QMainWindow):
         self.tabWidget.addTab(self.tab1, QApplication.translate("GraphWindow", "Графики") )
         self.tabWidget.addTab(self.tab2, QApplication.translate("GraphWindow", "Осциллограммы") )  # Placeholder for another tab
 
-        self.graph_main = graphMain(tablet_page=self.tab1, main_class=self)
+        self.graph_main = graphMain(tablet_page=self.tab1, main_class=self, import_data_widget=self.import_data_win, select_data_wid = self.select_win)
         self.graph_wave = graphOsc(self.tab2, self)
 
         self.graph_main.new_curve_selected.connect(self.tree_class.update_visible)
@@ -186,7 +203,7 @@ if __name__ == "__main__":
     qdarktheme.setup_theme("dark", corner_shape="sharp", custom_colors={"primary": "#DDBCFF"})
     mainWindow = GraphWindow()
     mainWindow.show()
-    mainWindow.test_update()
+    #mainWindow.test_update()
 
     #mainWindow.update_param_in_comboxes()
     sys.exit(app.exec_())

@@ -477,62 +477,47 @@ class experimentControl( ):
             status = True
 
             if "pig_in_a_poke" in device:
-                #костыль, этот тип прибора обрабатываем отдельно, потому что знаем, 
-                #что в качестве первого параметра он всегда будет иметь строку
-                #и потом остальные значения не попадут в числовые отображаемые параметры см. ниже
                 new_pairs = []
                 for index, pair in enumerate(parameter_pairs):
-                    if (index+1)%2==0:
-                        new_pairs.append(pair)
+                    new_pairs.append(pair)
                 parameter_pairs = new_pairs
 
+            if device not in data:
+                data[device] = {}
+
+            if channel not in data[device]:
+                data[device][channel] = {}
+
             for parameter_pair in parameter_pairs:
-                name, value = parameter_pair[0].split("=")
+                try:
+                    name, value = parameter_pair[0].split("=")
+                except:
+                    logger.warning(f"ошибка при декодировании параметра {parameter_pair}")
+                    continue
+
                 if "wavech" in name:  # oscilloscope wave
                     value = value.split("|")
+                    buf = []
                     for val in value:
                         try:
-                            val = float(val)
-                        except:
-                            status = False
-                            break
+                            buf.append(float(val))
+                        except ValueError:
+                            logger.warning(f"не удалось преобразовать в число: {device=} {channel=} {name=} {val=}")
+                            continue
+                    value = numpy.array(buf)
+
                 else:
                     try:
                         value = float(value)
-                    except:
-                        # Этот блок необходим потому, что все полученные данные имеют одинаковую метку времени, а она записывается в отдельный массив
-                        # если хоть один из них не преобразовывается в число,
-                        # а другие преобразовываются. то в будущем возникнет сдвиг в данных.
-                        # Это не учтено при обработке.
-                        #TODO: проанализировать, можно ли преобразовывать данные в числа и добавлять в файл результатов, если хотя бы один из них не преобразуется в число
-                        #исправить это
-                        status = False
-                        break
-            if status:
-                if device not in data:
-                    data[device] = {}
-                if channel not in data[device]:
-                    data[device][channel] = {}
+                    except ValueError:
+                        logger.warning(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
+                        continue
 
-                for parameter_pair in parameter_pairs:
-                    name, value = parameter_pair[0].split("=")
-                    if "wavech" in name:  # oscilloscope wave
-                        value = value.split("|")
-                        buf = []
-                        for val in value:
-                            buf.append(float(val))
-                        value = numpy.array(buf)
+                if name not in data[device][channel]:
+                    data[device][channel][name] = [numpy.array([]),numpy.array([])]
+                data[device][channel][name][0].append(value)
+                data[device][channel][name][1].append(time)
 
-                    else:
-                        value = float(value)
-
-                    if name not in data[device][channel]:
-                        data[device][channel][name] = []
-                    data[device][channel][name].append(value)
-
-                if "time" not in data[device][channel]:
-                    data[device][channel]["time"] = []
-                data[device][channel]["time"].append(time)
             return status, data
 
     def calc_last_exp_time(self) -> float:

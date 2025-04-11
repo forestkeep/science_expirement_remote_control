@@ -28,12 +28,14 @@ try:
     from Link_data_import_win import Check_data_import_win
     from curve_data import linearData
     from Message_graph import messageDialog
+    from paramSelectors import paramSelector, paramController
 except:
     from graph.calc_values_for_graph import ArrayProcessor
     from graph.colors import GColors, cold_colors, warm_colors
     from graph.Link_data_import_win import Check_data_import_win
     from graph.curve_data import linearData
     from graph.Message_graph import messageDialog
+    from graph.paramSelectors import paramSelector, paramController
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +57,7 @@ class CustomComboBox(QComboBox):
         super().addItem(text)
         fm = QFontMetrics(self.font())
         self.minimum_w = max(fm.width(self.itemText(i)) for i in range(self.count()))
+        
     def showPopup(self):
         super().showPopup()  
         if self.minimum_w:
@@ -64,9 +67,14 @@ class graphMain(QObject):
     new_curve_selected = pyqtSignal()
     new_data_imported = pyqtSignal()
 
-    def __init__(self, tablet_page, main_class):
+    def __init__(self, tablet_page, main_class, import_data_widget, select_data_wid):
         super().__init__()
         self.page = tablet_page
+        #++++++++++++++++++++++++++++++++++++++++
+        self.import_data_widget = import_data_widget
+        self.select_win = select_data_wid
+
+        #++++++++++++++++++++++++++++++++++++++++++
         self.is_show_warning = True
         self.key_to_update_plot = True
         self.x = []
@@ -89,6 +97,8 @@ class graphMain(QObject):
         
         self.legend = pg.LegendItem(size=(80, 60), offset=(10, 10))
         self.legend2 = pg.LegendItem(size=(80, 60), offset=(50, 10))
+
+        self.tooltip = pg.TextItem("X:0,Y:0", color=(255, 255, 255), anchor=(0, 0))
 
         self.axislabel_line_edit = QLineEdit()
         self.axislabel_line_edit.setVisible( False )
@@ -119,8 +129,6 @@ class graphMain(QObject):
     def initUI(self):
         self.tab1Layout = QVBoxLayout()
         # Add all data source selectors and graph area to tab1Layout
-        self.settingsLayout = self.setupSettingsLayout()
-        self.dataSourceLayout = self.setupDataSourceSelectors()
         
         self.graphView = self.setupGraphView()
         self.graphView.scene().sigMouseClicked.connect(self.click_scene_main_graph)
@@ -172,16 +180,7 @@ class graphMain(QObject):
 
         self.axislabel_line_edit.setParent(self.graphView)
         
-        import_lay = QHBoxLayout()
-        self.import_button = QPushButton()
-        self.experiment_selector = CustomComboBox()
         self.selector = QSpacerItem(15, 15, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        import_lay.addWidget(self.import_button)
-        
-        exp_label = QLabel("Выберите экспериментальные данные: ")
-        import_lay.addItem(self.selector)
-        import_lay.addWidget(exp_label)
-        import_lay.addWidget(self.experiment_selector)
 
         data_name_layout = QHBoxLayout()
         self.data_name_label = QLabel()
@@ -189,19 +188,14 @@ class graphMain(QObject):
         data_name_layout.addItem(self.selector)
         # Add the layouts to the first tab
         self.tab1Layout.addLayout(data_name_layout)
-        self.tab1Layout.addLayout(self.dataSourceLayout)
-        self.tab1Layout.addLayout(self.settingsLayout)
+        self.tab1Layout.addWidget( self.select_win )
         self.tab1Layout.addWidget(self.graphView)
-        self.tab1Layout.addLayout(import_lay)
+        self.tab1Layout.addWidget(self.import_data_widget)
         self.page.setLayout(self.tab1Layout)
         
-        self.import_button.clicked.connect(self.import_data)
-        self.experiment_selector.currentIndexChanged.connect(self.change_experiment_data)
 
         self.page.subscribe_to_key_press(key = Qt.Key_Delete, callback = self.delete_key_press)
-
         self.page.subscribe_to_key_press(key = Qt.Key_Escape, callback = self.reset_filters)
-
         self.page.subscribe_to_key_press(key = Qt.Key_Enter, callback = self.click_enter_key)
         self.page.subscribe_to_key_press(key = Qt.Key_Return, callback = self.click_enter_key)
 
@@ -274,6 +268,7 @@ class graphMain(QObject):
                 self.set_default()
                 self.update_dict_param(dev)
                 return result
+            
     def change_experiment_data(self):
         self.data_name_label.setText(self.experiment_selector.currentText())
         new_data = self.exp_data_dict.get(self.experiment_selector.currentText(), None)
@@ -281,57 +276,6 @@ class graphMain(QObject):
             self.set_default()
             self.update_dict_param( new_data )
         
-    def setupDataSourceSelectors(self):
-        # Data source selectors layout
-        dataSourceLayout = QHBoxLayout()
-
-        x_buf = self.createHoverSelector("X-Axis:")
-        y_first_buf = self.createHoverSelector("Y main Axis:")
-        y_second_buf = self.createHoverSelector("Y second Axis:")
-        
-        self.x_param_selector = x_buf[2]
-        self.y_first_param_selector = y_first_buf[2]
-        self.y_second_param_selector = y_second_buf[2]
-        
-        self.x_param_selector.setMaximumSize(800, 75)
-        self.y_first_param_selector.setMaximumSize(800, 75)
-        self.y_second_param_selector.setMaximumSize(800, 75)
-        
-        self.x_param_selector.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.y_first_param_selector.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.y_second_param_selector.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        
-        self.x_param_hover = x_buf[1]
-        self.y_first_param_hover = y_first_buf[1]
-        self.y_second_param_hover = y_second_buf[1]
-
-        self.second_check_box = QCheckBox("Add second axis")
-        self.y_second_Layout = QVBoxLayout()
-        self.y_second_Layout.addWidget(QLabel("Y second Axis:"))
-        self.y_second_Layout.addWidget(self.y_second_param_selector)
-        self.y_second_Layout.addWidget(self.second_check_box)
-        
-        dataSourceLayout.addWidget(self.y_first_param_hover)
-        dataSourceLayout.addWidget(self.x_param_hover)
-        dataSourceLayout.addLayout(self.y_second_Layout)
-
-        self.x_param_selector.addItems(["Select parameter"])
-        self.y_first_param_selector.addItems(["Select parameter"])
-        self.y_second_param_selector.addItems(["Select parameter"])
-        
-        item = self.x_param_selector.item(0)
-        
-        self.x_param_selector.setCurrentItem( item )
-        self.y_first_param_selector.setCurrentItem( item )
-        self.y_second_param_selector.setCurrentItem( item )
-
-        self.y_first_param_selector.itemPressed.connect( lambda: self.update_plot( self.y_first_param_selector ) )
-        self.y_second_param_selector.itemPressed.connect( lambda: self.update_plot( self.y_second_param_selector ) )
-        self.x_param_selector.itemPressed.connect( lambda: self.update_plot( self.x_param_selector ) )
-        self.second_check_box.stateChanged.connect( lambda: self.update_plot( self.second_check_box ) )
-
-        return dataSourceLayout
-
     def createHoverSelector(self, label_text) -> list:
         layout = QVBoxLayout()
         label = QLabel(label_text)
@@ -348,23 +292,6 @@ class graphMain(QObject):
 
         return [layout, hover_widget, listWidget]
 
-    def setupSettingsLayout(self):
-        
-        self.multiple_checkbox = QCheckBox()
-
-        self.multiple_checkbox.stateChanged.connect(self.update_multiple)
-
-        self.tooltip = QLabel("X:0,Y:0")
-        self.horizontalSpacer = QSpacerItem(
-            15, 15, QSizePolicy.Expanding, QSizePolicy.Minimum
-        )
-        settingsLayout = QHBoxLayout()
-        settingsLayout.addWidget(self.multiple_checkbox)
-        settingsLayout.addItem(self.horizontalSpacer)
-        settingsLayout.addWidget(self.tooltip)
-
-        return settingsLayout
-    
     def update_multiple(self):
         if self.multiple_checkbox.isChecked() == True:
             self.y_first_param_selector.setSelectionMode(QListWidget.MultiSelection)
@@ -418,6 +345,7 @@ class graphMain(QObject):
         
         self.legend.setParentItem(self.p1)
         self.legend2.setParentItem(self.p2)
+        self.tooltip.setParentItem(self.p1)
 
         my_font = QFont("Times", 13)
         self.p1.getAxis("right").label.setFont(my_font)
@@ -428,16 +356,14 @@ class graphMain(QObject):
 
     def showToolTip(self, event):
         pos = event 
-    
-        self.graphView.removeItem(self.tooltip)
         x_val = round(
             self.graphView.plotItem.vb.mapSceneToView(pos).x(), 1
         ) 
         y_val = round(
             self.graphView.plotItem.vb.mapSceneToView(pos).y(), 1
         ) 
-        text = f'<p style="font-size:{10}pt">X:{x_val} Y:{y_val}</p>'
-        self.tooltip.setText(text)
+        text = f'X:{x_val} Y:{y_val}'
+        self.tooltip.setPlainText(text)
 
     def update_dict_param(self, new: dict, is_exp_stop = False):
         if new:
@@ -1314,7 +1240,6 @@ class graphMain(QObject):
 
     def retranslateUi(self, GraphWindow):
         _translate = QApplication.translate
-        self.import_button.setText( _translate("GraphWindow", "Импортировать..") )
         self.data_name_label.setText( _translate("GraphWindow","Экспериментальные данные") )
-        self.multiple_checkbox.setText( _translate("GraphWindow","Множественное построение") )
+
         

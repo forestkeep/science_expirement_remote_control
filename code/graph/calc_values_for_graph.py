@@ -29,7 +29,6 @@ def time_decorator(func):
 class ArrayProcessor:
     @staticmethod
     def combine_and_sort_arrays(array1, array2):
-        # Удаление дубликатов и сортировка в одном шаге
         unique_values = np.unique(np.concatenate((array1, array2)))
         return unique_values
 

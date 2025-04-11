@@ -481,6 +481,8 @@ class installation_class( ExperimentBridge, analyse):
         if self.graph_window:
             self.graph_window.update_graphics( self.measurement_parameters )
 
+        print(self.measurement_parameters)
+
     def create_buf_file(self):
         name_file = ""
         for i in self.dict_active_device_class.values():

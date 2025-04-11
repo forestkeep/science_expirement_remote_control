@@ -363,14 +363,6 @@ class baseInstallation:
         device_list, json_device_dict = self.device_selector.get_multiple_devices()
         self.message_from_new_installation(device_list, json_device_dict)
 
-
-
-        #self.new_window = installation_Ui_Dialog()
-        #self.new_window.setupUi(self, dict_device_class)
-        #self.new_window.signal_to_main_window.connect(self.message_from_new_installation)
-        #self.key_to_new_window_installation = True
-        #self.new_window.show()
-
     def message_from_new_installation(self, device_list, json_device_list):
 
         new_added_device = {}
