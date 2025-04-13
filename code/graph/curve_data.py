@@ -181,13 +181,12 @@ class graphData:
         return True
 
 class linearData(graphData):
-    def __init__(self, raw_x, raw_y, device, ch, y_name, x_name, y_param_name, x_param_name) -> None:
+    def __init__(self, raw_x, raw_y, device, ch, curve_name, y_param_name, x_param_name) -> None:
         super().__init__(raw_x, raw_y)
         self.device = device
         self.ch = ch
-        self.y_name = y_name
-        self.x_name = x_name
-        self.legend = legendName(device, ch, y_name)
+        self.curve_name = curve_name
+        self.legend = legendName(device, ch, curve_name)
 
         self.y_param_name = y_param_name
         self.x_param_name = x_param_name
@@ -236,12 +235,12 @@ class linearData(graphData):
                 "max_x": np.nanmax(self.filtered_x_data),
                 "min_y": np.nanmin(self.filtered_y_data),
                 "max_y": np.nanmax(self.filtered_y_data),
-                "name": "-".join([self.y_name, self.x_name]),
+                "name": self.curve_name,
                 "tip": "linear",
                 "mean": round(np.nanmean(self.filtered_y_data), 3),
                 "std": round(np.nanstd(self.filtered_y_data), 3),
                 "median": np.nanmedian(self.filtered_y_data),
-                "count": np.count_nonzero(~np.isnan(self.filtered_y_data)),  #Колиество ненулевых значений
+                "count": np.count_nonzero(~np.isnan(self.filtered_y_data)),
                 "mode": mode_value
             }
         )

@@ -132,6 +132,9 @@ class paramSelector(QWidget):
 
 class paramController( QObject):
     parameters_updated = pyqtSignal(str, list, list)
+    multiple_checked = pyqtSignal(bool)
+    state_second_axis_changed = pyqtSignal(bool)
+
     def __init__(self, paramSelector: paramSelector) -> None:
         super().__init__()
         self.paramSelector = paramSelector
@@ -148,6 +151,9 @@ class paramController( QObject):
         self.__x_parameters = set()
         self.__y_first_parameters = set()
         self.__y_second_parameters = set()
+
+    def set_adapter(self, adapter):
+        self.adapter = adapter
 
     def x_param_changed(self):
         self.curent_x_parameter = self.paramSelector.x_param_selector.currentItem().text()
@@ -175,12 +181,11 @@ class paramController( QObject):
                 buf_list.append(list_widget.currentItem().text())
 
     def second_check_box_changed(self):
-        if self.paramSelector.second_check_box.isChecked():
-            self.curent_y_second_parameters = [item.text() for item in self.paramSelector.y_second_param_selector.selectedItems()]
-        else:
-            self.curent_y_second_parameters.clear()
+        self.curent_y_second_parameters.clear()
 
-        self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
+        state = self.paramSelector.second_check_box.isChecked()
+        self.paramSelector.y_second_param_selector.clearSelection()
+        self.state_second_axis_changed.emit( state )
             
     def add_parameters(self, new_parameters):
         self.__x_parameters.update(new_parameters)
@@ -198,10 +203,12 @@ class paramController( QObject):
         self.curent_y_second_parameters = []
    
     def update_multiple(self):
+        is_multiple = True
         if not self.paramSelector.check_miltiple.isChecked():
             self.clear_y_axis()
+            is_multiple = False
 
-        self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
+        self.multiple_checked.emit( is_multiple )
 
     def set_default(self):
         self.curent_x_parameter = None

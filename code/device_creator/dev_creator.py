@@ -26,10 +26,10 @@ from PyQt5.QtGui import QColor
 
 try:
     from dev_template import templates
-    from test_commands import TestCommands
+    from device_creator.run_commands import TestCommands
 except:
     from device_creator.dev_template import templates
-    from device_creator.test_commands import TestCommands
+    from device_creator.run_commands import TestCommands
 
 TYPE_DEVICES = ['power_supply']
 class InvalidTemplate(Exception):

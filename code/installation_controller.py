@@ -25,7 +25,7 @@ import qdarktheme
 
 import interface.info_window_dialog
 from device_creator.dev_creator import deviceCreator
-from device_creator.test_commands import TestCommands
+from device_creator.run_commands import TestCommands
 from Devices.svps34_control import Ui_SVPS34_control
 from graph.online_graph import GraphWindow
 from Installation_class import installation_class
@@ -266,6 +266,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def search_devices_json(self, directory):
         return search_devices_json(directory)
+    
 
 def get_installation_controller_path():
 

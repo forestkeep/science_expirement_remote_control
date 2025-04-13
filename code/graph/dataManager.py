@@ -11,6 +11,7 @@
 
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
+from PyQt5.QtCore import pyqtSignal, QObject
 import logging
 import numpy as np
 
@@ -29,29 +30,58 @@ class sessionMeasData:
 	data : dict
 
 class relationData:
-	def __init__(self, data1: measTimeData, data2: measTimeData):
-		self.data1 = data1
-		self.data2 = data2
-		self.__base_x = np.unique(np.concatenate((data1.num_or_time, data2.num_or_time)))
-		self.x_result = np.interp(self.__base_x, data1.num_or_time, data1.par_val)
-		self.y_result = np.interp(self.__base_x, data2.num_or_time, data2.par_val)
+	def __init__(self, data_x_axis: measTimeData, data_y_axis: measTimeData):
+		self.name = self.create_name(data_x_axis.device, data_x_axis.ch, data_x_axis.param, data_y_axis.device, data_y_axis.ch, data_y_axis.param)
+		self.data_x_axis = data_x_axis
+		self.data_y_axis = data_y_axis
+		if data_x_axis.param == "time":
+			self.__base_x = data_y_axis.num_or_time
+			self.x_result = data_y_axis.num_or_time
+			self.y_result = data_y_axis.par_val
 
-class graphDataManager:
+		elif data_y_axis.param == "time":
+			self.__base_x = data_x_axis.par_val
+			self.x_result = data_x_axis.par_val
+			self.y_result = data_x_axis.num_or_time
+
+		else:
+			self.__base_x = np.unique(np.concatenate((data_x_axis.num_or_time, data_y_axis.num_or_time)))
+			self.x_result = np.interp(self.__base_x, data_x_axis.num_or_time, data_x_axis.par_val)
+			self.y_result = np.interp(self.__base_x, data_y_axis.num_or_time, data_y_axis.par_val)
+
+	def create_name(self, x_device, x_ch, x_param, y_device, y_ch, y_param):
+		if x_device:
+			x_device+="-"
+		if x_ch:
+			x_ch+="-"
+		if y_device:
+			y_device+="-"
+		if y_ch:
+			y_ch+="-"
+		return f"{y_device}{y_ch}{y_param}/{x_device}{x_ch}{x_param}"
+
+class graphDataManager( QObject ):
+	list_parameters_updated = pyqtSignal(dict)
+	val_parameters_added = pyqtSignal(dict)
 	'''
 	класс предназначен для управления данными для графиков. он менеджерит поток данных - от эксперимента или импортирует их извне.
 	Рассчитывает, отправляет данные в соответсвующий график.
 	'''
 	def __init__(self, selector=None):
+		super().__init__()
 		self.selector = selector
 		self.__sessions_data = {}
 		self.current_id = None
+		self.all_parameters = {
+			"main": [],
+			"osc": []
+		}
 
-	def add_selector(self, selector):
-		self.selector = selector
-		self.selector.parameters_updated.connect(self.parameters_choised)
+		self.updated_params = {
+			"main": [],
+			"osc": []
+		}
 
-	def parameters_choised(self, param_x: str, param_y1: list, param_y2: list):
-		print(param_x, param_y1, param_y2)
 
 	def __remove_session(self, session_id: str):
 		self.__sessions_data.pop(session_id)
@@ -64,6 +94,43 @@ class graphDataManager:
 
 	def get_sessions_ids(self):
 		return list(self.__sessions_data.keys())
+	
+	def get_current_session_relation_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> list[relationData]:
+		relations_first_axis = []
+		relations_second_axis = []
+		if data_type not in self.__sessions_data[self.current_id].keys():
+			logger.warning(f"Invalid data type {data_type} available types {list(self.__sessions_data[self.current_id].keys())}")
+			return [], []
+		
+		if keysx and keysy1 or keysx and keysy2:
+			for key in keysy1:
+				buf = relationData(
+					self.__sessions_data[self.current_id][data_type].data[keysx],
+					self.__sessions_data[self.current_id][data_type].data[key]
+				)
+				relations_first_axis.append(buf)
+			for key in keysy2:
+				buf = relationData(
+					self.__sessions_data[self.current_id][data_type].data[keysx],
+					self.__sessions_data[self.current_id][data_type].data[key]
+				)
+				relations_second_axis.append(buf)
+
+		return relations_first_axis, relations_second_axis
+	
+	def get_current_session_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> tuple[ measTimeData, dict, dict ]:
+		returned_x = None
+		returned_y1 = {}
+		returned_y2 = {}
+
+
+		returned_x = self.__sessions_data[self.current_id][data_type].data.get(keysx)
+		for key in keysy1:
+				returned_y1[key] = self.__sessions_data[self.current_id][data_type].data[key]
+		for key in keysy2:
+				returned_y2[key] = self.__sessions_data[self.current_id][data_type].data[key]
+
+		return returned_x, returned_y1, returned_y2
 	
 	def get_current_session_id(self):
 		return self.current_id
@@ -152,8 +219,20 @@ class graphDataManager:
 		return True
 
 	def _add_new_data(self, device: Optional[str], channel: Optional[str], param: str, value: list):
-		
-		key = f"{device}-{channel}-{param}"
+		self.updated_params = {
+			"main": [],
+			"osc": []
+		}
+
+		if device is None:
+			device = ""
+		else:
+			device+="-"
+		if channel is None:
+			channel = ""
+		else:
+			channel+="-"
+		key = f"{device}{channel}{param}"
 
 		val_list = np.array(value[0])
 		time_list = (np.array([i for i in range(len(val_list))]) if len(value) == 1 else np.array(value[1]))
@@ -164,17 +243,24 @@ class graphDataManager:
 		if "wavech" in param:
 			existing_data = self.__sessions_data[self.current_id]['osc'].data.get(key)
 			focus = self.__sessions_data[self.current_id]['osc'].data
+			key_type = "osc"
 		else:
 			existing_data = self.__sessions_data[self.current_id]["main"].data.get(key)
 			focus = self.__sessions_data[self.current_id]["main"].data
+			key_type = "main"
+
 		if existing_data is None:
 			new_data = measTimeData(device=device, ch=channel, param=param, 
 								par_val=val_list, num_or_time=time_list)
 			focus[key] = new_data
+			self.all_parameters[key_type].append(key)
+			self.list_parameters_updated.emit(self.all_parameters)
 		else:
 			if len(existing_data.par_val) < len(value):
 				existing_data.par_val = val_list
 				existing_data.num_or_time = time_list
+				self.updated_params[key_type].append(existing_data)
+				self.val_parameters_added.emit(self.updated_params)
 
 		return True
 
@@ -182,6 +268,9 @@ def get_dict_depth(d):
 	if not isinstance(d, dict)  or not d:
 		return 0
 	return 1 + max(get_dict_depth(value) for value in d.values())
+
+def new_param_get(parameters):
+	print(parameters)
 
 if __name__ == "__main__":
 
@@ -206,5 +295,6 @@ if __name__ == "__main__":
 
 	my_class = graphDataManager()
 	my_class.start_new_session("1")
+	my_class.list_parameters_updated.connect(print)
 	my_class.add_measurement_data(nested_dict)
-	print(my_class.get_session_name_params())
+	#print(my_class.get_session_name_params())

@@ -29,6 +29,7 @@ try:
     from curve_data import linearData
     from Message_graph import messageDialog
     from paramSelectors import paramSelector, paramController
+    from graphSelectAdapter import graphSelectAdapter
 except:
     from graph.calc_values_for_graph import ArrayProcessor
     from graph.colors import GColors, cold_colors, warm_colors
@@ -36,6 +37,7 @@ except:
     from graph.curve_data import linearData
     from graph.Message_graph import messageDialog
     from graph.paramSelectors import paramSelector, paramController
+    from graph.graphSelectAdapter import graphSelectAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +84,9 @@ class graphMain(QObject):
         self.x2 = []
         self.y2 = {}
         self.dict_param = {}
+        self.is_second_axis = False
+
+        self.is_multiple = False
     
         self.main_class = main_class
 
@@ -200,117 +205,24 @@ class graphMain(QObject):
         self.page.subscribe_to_key_press(key = Qt.Key_Return, callback = self.click_enter_key)
 
         self.retranslateUi(self.page)
+    def set_second_axis(self, state):
+        self.is_second_axis = state
 
-
-    def import_data(self, *args, **kwargs):
-
-        if self.main_class.experiment_controller is not None:
-            if self.main_class.experiment_controller.is_experiment_running():
-                self.main_class.show_tooltip( QApplication.translate("GraphWindow","Дождитесь окончания эксперимента"), timeout = 3000)
-                return
-        
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        fileName, ans = QFileDialog.getOpenFileName(
-            caption=QApplication.translate("GraphWindow", "укажите путь импорта"),
-            directory="",
-            filter="Книга Excel (*.xlsx)",
-            options=options,
-        )
-        
-        if fileName:
-            if ans == "Книга Excel (*.xlsx)":
-
-                df = pd.read_excel(fileName, engine='openpyxl')
-                if 'time' not in df.columns:
-                    self.is_time_column = False
-
-                df = df.dropna(axis=1, how='all')
-
-                window = Check_data_import_win(sorted([col for col in df.columns]), self.update_dict_param)
-                ans = window.exec_()
-                if ans == QDialog.Accepted: 
-                    selected_columns = [cb.text() for cb in window.checkboxes if cb.isChecked()]
-                else:
-                    return
-
-                result = {}
-                errors_col = []
-
-                for col in selected_columns:
-                    try:
-                        df[col] = pd.to_numeric(df[col], errors='raise')
-                    except ValueError:
-                        errors_col.append(col)
-                        continue
-                    
-                if errors_col != []:
-                    res = ', '.join(errors_col)
-                    text = QApplication.translate("GraphWindow", "В столбцах {res} обнаружены данные, которые не получается преобразовать в числа.\nПри построение эти точки будут пропущены.")
-                    text = text.format(res = res)
-                    message = messageDialog(
-                        title = QApplication.translate("GraphWindow","Сообщение"),
-                        text= text
-                    )
-                    message.exec_()
-                    
-                for col in selected_columns:
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
-                    col_ = col.replace('(', '[').replace(')', ']')
-                    result[col_] = np.array( df[col].tolist() )
-                    
-                dev = {'d': {'c': result}}
-
-                self.data_name_label.setText(fileName)
-                self.experiment_selector.addItem(fileName)
-                self.exp_data_dict[fileName] = dev
-
-                self.set_default()
-                self.update_dict_param(dev)
-                return result
-            
-    def change_experiment_data(self):
-        self.data_name_label.setText(self.experiment_selector.currentText())
-        new_data = self.exp_data_dict.get(self.experiment_selector.currentText(), None)
-        if new_data is not None:
-            self.set_default()
-            self.update_dict_param( new_data )
-        
-    def createHoverSelector(self, label_text) -> list:
-        layout = QVBoxLayout()
-        label = QLabel(label_text)
-        listWidget = QListWidget()
-        listWidget.setSelectionMode(QListWidget.SingleSelection)
-
-        hover_widget = QWidget()
-        hover_widget.setLayout(layout)
-
-        hover_widget.setAttribute(Qt.WA_Hover, True)
-
-        layout.addWidget(label)
-        layout.addWidget(listWidget)
-
-        return [layout, hover_widget, listWidget]
-
-    def update_multiple(self):
-        if self.multiple_checkbox.isChecked() == True:
-            self.y_first_param_selector.setSelectionMode(QListWidget.MultiSelection)
-            self.y_second_param_selector.setSelectionMode(QListWidget.MultiSelection)
+        if not state:
+            self.plots_lay.getAxis("right").hide()
+            for curve in self.stack_curve.values():
+                if curve.parent_graph_field is self.second_graphView and curve.is_draw:
+                    curve.delete_curve_from_graph()
         else:
-            self.y_first_param_selector.setSelectionMode(QListWidget.SingleSelection)
-            self.y_second_param_selector.setSelectionMode(QListWidget.SingleSelection)
-            
-            self.y.clear()
-            self.y2.clear()
-            
-            self.y_second_param_selector.clearSelection()
-            self.y_first_param_selector.clearSelection()
+            self.plots_lay.getAxis("right").show()
 
-            for data in self.stack_curve.values():
-                if data.is_draw == True:
-                    data.delete_curve_from_graph()
-        
-        self.update_draw()
+    def set_data(self, data_first_axis, data_second_axis):
+        self.is_running_exp = False
+        if self.is_running_exp:
+            self.update_data_running()
+            self.update_draw()
+        else:
+            self.update_data(data_first_axis, data_second_axis)
 
     def setupGraphView(self):
         graphView = pg.PlotWidget(title="")
@@ -322,9 +234,9 @@ class graphMain(QObject):
         graphView.plotItem.getAxis("left").linkToView(graphView.plotItem.getViewBox())
         graphView.plotItem.getAxis("bottom").linkToView(graphView.plotItem.getViewBox())
 
-        self.p1 = graphView.plotItem
+        self.plots_lay = graphView.plotItem
         
-        self.p2 = pg.ViewBox(parent=None,
+        self.second_graphView = pg.ViewBox(parent=None,
                 border=None,
                 lockAspect=False,
                 enableMouse=False,
@@ -335,20 +247,20 @@ class graphMain(QObject):
                 defaultPadding=0.02
                 )
         
-        self.p1.showAxis("right")
-        self.p1.scene().addItem(self.p2)
-        self.p1.getAxis("right").linkToView(self.p2)
-        self.p2.setXLink(self.p1)
-        self.p1.getAxis("right").setLabel("axis2", color="#000fff")
+        self.plots_lay.showAxis("right")
+        self.plots_lay.scene().addItem(self.second_graphView)
+        self.plots_lay.getAxis("right").linkToView(self.second_graphView)
+        self.second_graphView.setXLink(self.plots_lay)
+        self.plots_lay.getAxis("right").setLabel("axis2", color="#000fff")
 
-        self.p1.vb.sigResized.connect(self.updateViews)
+        self.plots_lay.vb.sigResized.connect(self.updateViews)
         
-        self.legend.setParentItem(self.p1)
-        self.legend2.setParentItem(self.p2)
-        self.tooltip.setParentItem(self.p1)
+        self.legend.setParentItem(self.plots_lay)
+        self.legend2.setParentItem(self.second_graphView)
+        self.tooltip.setParentItem(self.plots_lay)
 
         my_font = QFont("Times", 13)
-        self.p1.getAxis("right").label.setFont(my_font)
+        self.plots_lay.getAxis("right").label.setFont(my_font)
         graphView.getAxis("bottom").label.setFont(my_font)
         graphView.getAxis("left").label.setFont(my_font)
 
@@ -364,19 +276,6 @@ class graphMain(QObject):
         ) 
         text = f'X:{x_val} Y:{y_val}'
         self.tooltip.setPlainText(text)
-
-    def update_dict_param(self, new: dict, is_exp_stop = False):
-        if new:
-            new_param = []
-            new_name_parameters = self.create_name_param(new)
-            new_param = list(set(new_name_parameters) - set(self.old_params))
-
-            self.dict_param = new
-            for param in new_param:
-                self.old_params.append(param)
-
-            self.update_param_in_comboxes(new_param)
-            self.update_plot(is_exp_stop = is_exp_stop)
 
     def set_default(self):
         self.key_to_update_plot = False
@@ -396,7 +295,7 @@ class graphMain(QObject):
         for item in self.graphView.items():
             if isinstance(item, pg.PlotDataItem):
                 self.graphView.removeItem(item)
-        self.p2.clear()
+        self.second_graphView.clear()
 
         self.dict_param = {}
 
@@ -404,73 +303,10 @@ class graphMain(QObject):
 
         self.new_data_imported.emit()
 
-    def remove_parameter(self, parameter, qlistwidget):
-            for index in range(qlistwidget.count()):
-                if qlistwidget.item(index).text() == parameter:
-                    qlistwidget.takeItem(index)
-                    break
-
-    def update_param_in_comboxes(self, new_param = None):
-        self.key_to_update_plot = False
-        if new_param is not None:
-            self.x_param_selector.addItems(new_param)
-            self.y_first_param_selector.addItems(new_param)
-            self.y_second_param_selector.addItems(new_param)
-            self.x_param_selector.sortItems()
-            self.y_first_param_selector.sortItems()
-            self.y_second_param_selector.sortItems()
-
-            self.remove_parameter("Select parameter", self.x_param_selector)
-            self.remove_parameter("Select parameter", self.y_first_param_selector)
-            self.remove_parameter("Select parameter", self.y_second_param_selector)
-            self.key_to_update_plot = True
-            return
-        
-        self.list_param = self.create_name_param(self.dict_param)
-        box_x = self.x_param_selector.currentItem()
-        box_y = self.y_first_param_selector.currentItem()
-        box_y2 = self.y_second_param_selector.currentItem()
-
-        if box_x is not None:
-            box_x = box_x.text()
-        if box_y2 is not None:
-            box_y2 = box_y2.text()
-        if box_y is not None:
-            box_y = box_y.text()
-        
-        self.x_param_selector.clear()
-        self.y_first_param_selector.clear()
-        self.y_second_param_selector.clear()
-        if box_x not in self.list_param:
-            self.list_param.append(box_x)
-        if box_y not in self.list_param:
-            self.list_param.append(box_y)
-        if box_y2 not in self.list_param:
-            self.list_param.append(box_y2)
-
-        self.x_param_selector.addItems(self.list_param)
-        self.y_first_param_selector.addItems(self.list_param)
-        self.y_second_param_selector.addItems(self.list_param)
-
-        self.x_param_selector.sortItems()
-        self.y_first_param_selector.sortItems()
-        self.y_second_param_selector.sortItems()
-
-        self.x_param_selector.setCurrentItem(QListWidgetItem(box_x))
-        self.y_first_param_selector.setCurrentItem(QListWidgetItem(box_y))
-        self.y_second_param_selector.setCurrentItem(QListWidgetItem(box_y2))
-
-        self.key_to_update_plot = True
-
     def updateViews(self):
-        self.p2.setGeometry(self.p1.vb.sceneBoundingRect())
-        self.p2.linkedViewChanged(self.p1.vb, self.p2.XAxis)
+        self.second_graphView.setGeometry(self.plots_lay.vb.sceneBoundingRect())
+        self.second_graphView.linkedViewChanged(self.plots_lay.vb, self.second_graphView.XAxis)
 
-    def get_last_item_parameter(self, selector, default="Select parameter"):
-
-        item = selector.currentItem()
-        return item.text() if item is not None else default
-    
     def update_data_running(self):
         string_x = self.get_last_item_parameter(self.x_param_selector)
         string_y = self.get_last_item_parameter(self.y_first_param_selector)
@@ -494,8 +330,8 @@ class graphMain(QObject):
                 device_y2, ch_y2, key_y2 = self.decode_name_parameters(string_y2)
                 if key_y2 in self.y2.keys():
                     self.y2.pop(key_y2)
-                    self.p2.removeItem(self.curve2[key_y2])
-                    self.p2.removeItem(self.curve2_dots[key_y2])
+                    self.second_graphView.removeItem(self.curve2[key_y2])
+                    self.second_graphView.removeItem(self.curve2_dots[key_y2])
                     self.curve2.pop(key_y2)
                     self.curve2_dots.pop(key_y2)
                     return
@@ -774,14 +610,6 @@ class graphMain(QObject):
         for curve in curv_for_del:
             self.main_class.tree_class.delete_curve(curve.tree_item)
 
-    def handle_selector(self, selector, previous, string_value):
-        if previous == string_value:
-            previous = None
-            selector.setCurrentItem(selector.currentItem(), QItemSelectionModel.Clear)
-        else:
-            previous = string_value
-        return previous
-    
     def handle_skip_draw(self, selector, second_selector,  graph_field, string_x, string_y, is_multiple):
         if is_multiple:
             current_items = list(item.text() for item in selector.selectedItems())
@@ -800,18 +628,55 @@ class graphMain(QObject):
         return False
     
     def hide_second_line_grid(self):
-        self.p1.getAxis("right").setGrid(0)#костыль, который необходим для того, чтобы сетка по вспомогательной оси не отображалась. При вызове меню сетки отрисоываются на всех осях
+        self.plots_lay.getAxis("right").setGrid(0)#костыль, который необходим для того, чтобы сетка по вспомогательной оси не отображалась. При вызове меню сетки отрисоываются на всех осях
 
-    def update_data(self, obj):
-
-        string_x = self.get_last_item_parameter(self.x_param_selector)
-        string_y = self.get_last_item_parameter(self.y_first_param_selector)
-        string_y2 = self.get_last_item_parameter(self.y_second_param_selector)
-
-        is_multiple = self.multiple_checkbox.isChecked()
+    def update_data(self, data_first_axis, data_second_axis):
 
         self.hide_second_line_grid()
 
+        if not self.is_multiple:
+            for key,curve in self.stack_curve.items():
+                if key not in data_first_axis and key not in data_second_axis:
+                    if curve.is_draw:
+                        curve.delete_curve_from_graph()
+
+        for data in data_first_axis:
+            if self.stack_curve.get(data.name) is None:
+                self.create_and_place_curve(
+                                            y_data = data.y_result,
+                                            x_data = data.x_result,
+                                            name_device = data.data_y_axis.device,
+                                            name_ch = data.data_y_axis.ch,
+                                            curve_name = data.name,
+                                            y_param_name = data.data_y_axis.param,
+                                            x_param_name = data.data_x_axis.param,
+                                            graph_field = self.graphView,
+                                            legend_field = self.legend
+                                            )
+            else:
+                if not self.stack_curve[data.name].is_draw:
+                    self.stack_curve[data.name].place_curve_on_graph(graph_field  = self.graphView,
+                                                                    legend_field  = self.legend)
+                    
+                
+        for data in data_second_axis:
+            if self.stack_curve.get(data.name) is None:
+                self.create_and_place_curve(
+                                            y_data = data.y_result,
+                                            x_data = data.x_result,
+                                            name_device = data.data_y_axis.device,
+                                            name_ch = data.data_y_axis.ch,
+                                            curve_name = data.name,
+                                            y_param_name = data.data_y_axis.param,
+                                            x_param_name = data.data_x_axis.param,
+                                            graph_field = self.second_graphView,
+                                            legend_field = self.legend2
+                                            )
+            else:
+                if not self.stack_curve[data.name].is_draw:
+                    self.stack_curve[data.name].place_curve_on_graph(graph_field  = self.second_graphView,
+                                                                    legend_field  = self.legend2)
+        '''
         if not is_multiple:
             if obj is self.x_param_selector:
                 self.previous_x = self.handle_selector(self.x_param_selector, self.previous_x, string_x)
@@ -824,8 +689,10 @@ class graphMain(QObject):
 
         logger.info(f"{string_x=} {string_y=} {string_y2=}")
         logger.info(f"{self.previous_x=} {self.previous_y=} {self.previous_y2=}")
+        '''
 
         #блок проверки параметров
+        '''
         block_parameters = ("time", "Select parameter")
 
         is_x_correct = (string_x != "Select parameter")
@@ -838,7 +705,9 @@ class graphMain(QObject):
             return
         if obj is self.y_second_param_selector and not is_y2_correct:
             return
+        '''
 
+        '''
         #==========================================================================
         if obj is None:
             return
@@ -932,6 +801,7 @@ class graphMain(QObject):
                 else:
                     data_curve.set_short_legend_name()
 
+        '''
         self.new_curve_selected.emit() #сигнал о том. что набор кривых был изменен
 
     def destroy_curve(self, curve_data_obj):
@@ -1006,14 +876,15 @@ class graphMain(QObject):
             name_ch1 = ch_y
 
         return x1, y1, x1_name, y1_name, name_device1, name_ch1, parameter_y, parameter_x
-    
-    def create_curve(self, y_data, x_data, name_device, name_ch, y_name, x_name, y_param_name, x_param_name) -> linearData:
+    def set_multiple_mode(self, is_multiple):
+        self.is_multiple = is_multiple
+
+    def create_curve(self, y_data, x_data, name_device, name_ch, curve_name, y_param_name, x_param_name) -> linearData:
             new_data = linearData(raw_x   = x_data,
                                   raw_y   = y_data,
                                   device  = name_device,
                                   ch      = name_ch,
-                                  y_name  = y_name,
-                                  x_name  = x_name,
+                                  curve_name  = curve_name,
                                   y_param_name = y_param_name,
                                   x_param_name = x_param_name
                                   )
@@ -1043,13 +914,12 @@ class graphMain(QObject):
             
             return new_data
     
-    def create_and_place_curve(self, y_data, x_data, name_device, name_ch, y_name, x_name, y_param_name, x_param_name, graph_field, legend_field):
-        if self.stack_curve.get(y_name + x_name) is None:
-            new_data = self.create_curve(y_data, x_data, name_device, name_ch, y_name, x_name, y_param_name, x_param_name)
+    def create_and_place_curve(self, y_data, x_data, name_device, name_ch, curve_name, y_param_name, x_param_name, graph_field, legend_field):
+            new_data = self.create_curve(y_data, x_data, name_device, name_ch, curve_name, y_param_name, x_param_name)
             self.main_class.tree_class.add_curve(new_data.tree_item)
-            self.stack_curve[y_name + x_name] = new_data
+            self.stack_curve[curve_name] = new_data
             
-        self.stack_curve[y_name + x_name].place_curve_on_graph(graph_field  = graph_field,
+            self.stack_curve[curve_name].place_curve_on_graph(graph_field  = graph_field,
                                                               legend_field  = legend_field)
         
     def add_curve_to_stack(self, curve_data_obj):   
@@ -1081,8 +951,8 @@ class graphMain(QObject):
             del self.curve1[key]
 
         for key in to_remove2:
-            self.p2.removeItem(self.curve2[key])
-            self.p2.removeItem(self.curve2_dots[key])
+            self.second_graphView.removeItem(self.curve2[key])
+            self.second_graphView.removeItem(self.curve2_dots[key])
             del self.curve2[key]
             del self.curve2_dots[key]
 
@@ -1117,8 +987,8 @@ class graphMain(QObject):
 
         # Обновление curve2, если чекбокс отмечен
         if self.second_check_box.isChecked():
-            self.p1.getAxis("right").setLabel(self.y_second_axis_label, color=self.color_line_second)
-            self.p1.getAxis("right").setStyle(showValues=True)
+            self.plots_lay.getAxis("right").setLabel(self.y_second_axis_label, color=self.color_line_second)
+            self.plots_lay.getAxis("right").setStyle(showValues=True)
 
             for i, (key, data) in enumerate(self.y2.items()):
                 min_length = min(len(self.x2), len(data))
@@ -1128,16 +998,16 @@ class graphMain(QObject):
                     brush = pg.mkBrush(color=warm_colors[i])
                     self.curve2[key] = pg.PlotCurveItem(pen=pen)
                     self.curve2_dots[key] = pg.ScatterPlotItem(pen=pen, symbol='x', size=10)
-                    self.p2.addItem(self.curve2[key])
-                    self.p2.addItem(self.curve2_dots[key])
+                    self.second_graphView.addItem(self.curve2[key])
+                    self.second_graphView.addItem(self.curve2_dots[key])
                     self.curve2_dots[key].setBrush(brush)
                     
                 self.curve2[key].setData(self.x2[:min_length], data[:min_length])
                 self.curve2_dots[key].setData(self.x2[:min_length], data[:min_length])
                 self.legend2.addItem(self.curve2[key], f"{key}")
         else:
-            self.p1.getAxis("right").setStyle(showValues=False)
-            self.p1.getAxis("right").setLabel("")
+            self.plots_lay.getAxis("right").setStyle(showValues=False)
+            self.plots_lay.getAxis("right").setLabel("")
 
     @property
     def is_exp_running(self):
@@ -1173,9 +1043,9 @@ class graphMain(QObject):
             if isinstance(item, pg.PlotDataItem) or isinstance(item, pg.PlotCurveItem) or isinstance(item, pg.ScatterPlotItem):
                 self.graphView.removeItem(item)
 
-        for item in self.p2.allChildren():
+        for item in self.second_graphView.allChildren():
             if isinstance(item, pg.PlotDataItem) or isinstance(item, pg.PlotCurveItem) or isinstance(item, pg.ScatterPlotItem):
-                self.p2.removeItem(item)
+                self.second_graphView.removeItem(item)
 
         string_x = self.get_last_item_parameter(self.x_param_selector)
 
@@ -1190,7 +1060,7 @@ class graphMain(QObject):
 
         for string_y2 in items_second_selector:
             x2, y2, x2_name, y2_name, name_device2, name_ch2, parameter_y2, parameter_x2 = self.calc_curve_parameter(string_x, string_y2)
-            self.create_and_place_curve(y2, x2, name_device2, name_ch2, y2_name, x2_name, parameter_y2, parameter_x2, self.p2, self.legend2)
+            self.create_and_place_curve(y2, x2, name_device2, name_ch2, y2_name, x2_name, parameter_y2, parameter_x2, self.second_graphView, self.legend2)
             self.y_main_axis_label = parameter_y2
             self.remove_parameter(string_y2, self.y_first_param_selector)
 
@@ -1202,38 +1072,6 @@ class graphMain(QObject):
                     data_curve.set_short_legend_name()
 
         self.new_curve_selected.emit() #сигнал о том. что набор кривых был изменен
-
-    def create_name_param(self, main_dict):
-        if "time" in main_dict.keys():
-            output_list = ["time"]
-        else:
-            output_list = []
-
-        for device, channels in main_dict.items():
-            for channel, values in channels.items():
-                if "time" in values.keys() and "time" not in output_list:
-                    output_list.append("time")
-                for key, value in values.items():
-                    if key != "time" and ("WAVECH" not in key.upper()):
-                        output_list.append(f"{key}({device} {channel})")
-
-        return output_list
- 
-    def decode_name_parameters(self, string_y):
-        if string_y.upper() == "TIME" or string_y.upper() == "SELECT PARAMETER":
-            return False, False, string_y
-        
-        buf_y = string_y.split("(")
-        if len(buf_y) > 1:
-            parameter_y = buf_y[0]
-            device_y = buf_y[1].split(" ")[0]
-            ch_y = buf_y[1].split(" ")[1][:-1]
-        else:
-
-            logger.warning(f"ошибка при декодиировании имени параметра {buf_y}")
-            return False, False, string_y
-
-        return device_y, ch_y, parameter_y
 
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна
         self.graph_win_close_signal.emit(1)

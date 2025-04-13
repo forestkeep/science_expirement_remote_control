@@ -29,6 +29,7 @@ try:
     from importData import controlImportData
     from importData import importDataWin
     from paramSelectors import paramSelector, paramController
+    from graphSelectAdapter import graphSelectAdapter
 except:
     from graph.filters_win import filtersClass
     from graph.graph_main import graphMain
@@ -40,6 +41,7 @@ except:
     from graph.importData import controlImportData
     from graph.importData import importDataWin
     from graph.paramSelectors import paramSelector, paramController
+    from graph.graphSelectAdapter import graphSelectAdapter
 
 
 logger = logging.getLogger(__name__)
@@ -98,8 +100,6 @@ class GraphWindow(QMainWindow):
         self.import_data_win = importDataWin()
         self.import_data_manager = controlImportData(self.import_data_win, self.data_manager, self)
 
-        self.data_manager.add_selector(self.select_controller)
-
         self.filter_class.set_filter_slot(self.filters_callback)#при нажатии кнопок в фильтре будет вызываться эта функция
 
         self.mainLayout.addWidget(splitter)
@@ -112,6 +112,8 @@ class GraphWindow(QMainWindow):
 
         self.graph_main = graphMain(tablet_page=self.tab1, main_class=self, import_data_widget=self.import_data_win, select_data_wid = self.select_win)
         self.graph_wave = graphOsc(self.tab2, self)
+
+        self.adapter_main_graph = graphSelectAdapter(self.graph_main, self.select_controller, self.data_manager, 'main')
 
         self.graph_main.new_curve_selected.connect(self.tree_class.update_visible)
         self.graph_main.new_data_imported.connect(self.tree_class.clear_all)
