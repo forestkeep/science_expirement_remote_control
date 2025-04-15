@@ -78,7 +78,6 @@ class graphData:
         self.parent_graph_field = None
         self.legend_field = None
 
-        logger.info(f"Создана кривая {self.raw_data_x=}, {self.raw_data_y=}")
         self.tree_item = CurveTreeItem(curve_data_obj=self)
 
     def set_plot_obj(self, plot_obj, pen, highlight=False):

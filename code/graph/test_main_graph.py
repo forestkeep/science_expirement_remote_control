@@ -20,38 +20,36 @@ class test_graph:
 
     def __init__(self):
         self.start_time = time.time()
-        ch1, ch2, step = self.read_param_from_test()
+        #ch1, ch2, step = self.read_param_from_test()
+        ch1, ch2, step = [1], [2], 0.002
         
         self.main_dict = {
-            "device1": {"ch_1": {"time": [0], self.get_param(): self.get_values()}},
+            "device1": {"ch_1": {self.get_param(): [self.get_values(), [0] ]}},
             "device3": {
                 "ch_1": {
-                    "time": [0],
-                    self.get_param(): self.get_values(),
-                    "wavech": [ch1],
-                    "scale": [step],
+                    self.get_param(): [self.get_values(), [0] ],
+                    "wavech": [[ch1], [0] ],
+                    "scale": [[step], [0] ],
                 },
                 "ch_2": {
-                    "time": [0],
-                    self.get_param(): self.get_values(),
-                    self.get_param(): self.get_values(),
-                    self.get_param(): self.get_values(),
+                    self.get_param(): [self.get_values(), [0] ],
+                    self.get_param(): [self.get_values(), [0] ],
+                    self.get_param(): [self.get_values(), [0] ],
                 },
-                "ch_3": {"time": [0], "wavech": [ch2], "scale": [step]},
+                "ch_3": {"wavech": [[ch2], [0] ], "scale": [[step], [0] ]},
                 "ch_4": {
-                    "time": [0],
-                    "wavech": [self.generate_random_list(10, 0, 10)],
-                    "scale": [0.002],
+                    "wavech": [ [self.generate_random_list(10, 0, 10)], [0] ],
+                    "scale": [[0.002], [0]],
                 },
             },
             "device4": {
                 "ch_1": {
-                    "time": [0],
-                    "wavech": [self.generate_random_list(10, 0, 10)],
-                    "scale": [0.002],
+                    "wavech": [[self.generate_random_list(10, 0, 10)], [0] ],
+                    "scale": [[0.002], [0] ],
                 }
             },
         }
+
         '''
         
         self.main_dict = {
@@ -136,26 +134,24 @@ class test_graph:
         for channels in main_dict.values():
             for channel, parameters in channels.items():
                 for key, value in parameters.items():
-                    if key == "time":
-                        value.append(round(time.time() - self.start_time, 3))
-                    elif (
+                    if (
                         isinstance(value, list)
-                        and not any(isinstance(i, list) for i in value)
                         and key != "wavech"
                     ):
-                        buf = value[-1] + random.randint(-10, 10)*(1 + random.uniform(-0.2, 0.2))
-                        value.append(buf)
+                        buf = value[0][-1] + random.randint(-10, 10)*(1 + random.uniform(-0.2, 0.2))
+                        value[0].append(buf)
+                        value[1].append(round(time.time() - self.start_time, 3))
                     elif (
                         isinstance(value, list)
-                        and any(isinstance(i, list) for i in value)
                         or key == "wavech"
                     ):
                         # Если ключ содержит 'wave', добавляем случайное число в каждый вложенный список
-                        value.append(
+                        value[0].append(
                             self.generate_random_list(
-                                size=100, lower_bound=0, upper_bound=10
+                                size=10, lower_bound=0, upper_bound=10
                             )
                         )
+                        value[1].append(round(time.time() - self.start_time, 3))
         return main_dict
 
     def append_values(self):

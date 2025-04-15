@@ -162,8 +162,9 @@ class GraphWindow(QMainWindow):
     def update_graphics(self, new_data: dict, is_exp_stop = False):
         '''is_exp_stop - флаг остановки эксперимента, передается, когда эксперимент завершается, принудительно переводит окно графиков в расщиренный режим просмотра'''
         if new_data:
-            self.graph_main.update_dict_param(new=new_data, is_exp_stop=is_exp_stop)
-            self.graph_wave.update_dict_param(new=new_data, is_exp_stop=is_exp_stop)
+            self.data_manager.add_measurement_data(new_data)
+            #self.graph_main.update_dict_param(new=new_data, is_exp_stop=is_exp_stop)
+            #self.graph_wave.update_dict_param(new=new_data, is_exp_stop=is_exp_stop)
 
     def set_default(self):
         self.graph_main.set_default()
@@ -178,12 +179,11 @@ class GraphWindow(QMainWindow):
             self.experiment_controller.running = False
             self.timer.stop()
 
-    def test_update(self):
+    def test_update(self, periodsec):
         self.test = test_graph()
         self.gen = self.test.append_values()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.gen_new_data)
-        periodsec = 0.1
         self.timer.start(int(periodsec*1000))
         self.counter_test = 0
         self.experiment_controller = exprEmul()
@@ -199,13 +199,24 @@ class exprEmul():
         return self.running
 
 if __name__ == "__main__":
+    import os
+    logger = logging.getLogger(__name__)
+    FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
+
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    console.setFormatter(logging.Formatter(FORMAT))
+
+    logging.basicConfig(handlers=[console], level=logging.DEBUG)
+
     import qdarktheme
     from test_main_graph import test_graph
     app = QApplication(sys.argv)
     qdarktheme.setup_theme("dark", corner_shape="sharp", custom_colors={"primary": "#DDBCFF"})
     mainWindow = GraphWindow()
+    mainWindow.data_manager.start_new_session("test", use_timestamps=True)
     mainWindow.show()
-    #mainWindow.test_update()
+    mainWindow.test_update(periodsec=0.005)
 
     #mainWindow.update_param_in_comboxes()
     sys.exit(app.exec_())

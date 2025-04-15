@@ -138,15 +138,15 @@ class controlImportData(QObject):
             if ans == "Книга Excel (*.xlsx)":
 
                 df = pd.read_excel(fileName, engine='openpyxl')
-                if 'time' not in df.columns:
-                    self.is_time_column = False
 
                 df = df.dropna(axis=1, how='all')
 
-                window = Check_data_import_win(sorted([col for col in df.columns]))
+                df_col_type = type(df.columns[0])
+
+                window = Check_data_import_win(sorted([str(col) for col in df.columns]))
                 ans = window.exec_()
                 if ans == QDialog.Accepted: 
-                    selected_columns = [cb.text() for cb in window.checkboxes if cb.isChecked()]
+                    selected_columns = [df_col_type(cb.text()) for cb in window.checkboxes if cb.isChecked()]
                 else:
                     return
                 
@@ -161,8 +161,9 @@ class controlImportData(QObject):
                     try:
                         df[col] = pd.to_numeric(df[col], errors='raise')
                     except ValueError:
-                        errors_col.append(col)
+                        errors_col.append(str(col))
                         continue
+
                     
                 if errors_col != []:
                     res = ', '.join(errors_col)
@@ -176,14 +177,15 @@ class controlImportData(QObject):
                     
                 for col in selected_columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
-                    col_ = col.replace('(', '[').replace(')', ']')
+                    col_ = str(col).replace('(', '[').replace(')', ']')
                     buf = np.array( df[col].tolist())
                     result[col_] = [ buf, np.array([i for i in range(len(buf))]) ]
+                    print(f"{col_}{result[col_]=}")
 
                 fileName = self.add_new_data_name(data_name=fileName, is_set_current=True)
 
                 try:
-                    self.data_manager.start_new_session(fileName, result)
+                    self.data_manager.start_new_session(session_id = fileName, new_data = result)
                 except Exception as e:
                     logger.warning(f"ошибка при импорте данных от дата менеджера: {str(e)}")
                     self.win.experiment_selector.delete_text(fileName)

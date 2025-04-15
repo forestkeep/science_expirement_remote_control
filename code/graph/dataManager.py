@@ -19,27 +19,29 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class measTimeData:
-	device : str
-	ch : str
-	param: str
-	par_val: np.array
-	num_or_time: np.array
+	device : str = ''
+	ch : str = ''
+	param: str = ''
+	par_val: np.array = None
+	num_or_time: np.array = None
 
 @dataclass
 class sessionMeasData:
 	data : dict
+	spicified_data : str
 
 class relationData:
 	def __init__(self, data_x_axis: measTimeData, data_y_axis: measTimeData):
 		self.name = self.create_name(data_x_axis.device, data_x_axis.ch, data_x_axis.param, data_y_axis.device, data_y_axis.ch, data_y_axis.param)
 		self.data_x_axis = data_x_axis
 		self.data_y_axis = data_y_axis
-		if data_x_axis.param == "time":
+
+		if data_x_axis.param == "time" or data_x_axis.param == "numbers":
 			self.__base_x = data_y_axis.num_or_time
 			self.x_result = data_y_axis.num_or_time
 			self.y_result = data_y_axis.par_val
 
-		elif data_y_axis.param == "time":
+		elif data_y_axis.param == "time" or data_y_axis.param == "numbers":
 			self.__base_x = data_x_axis.par_val
 			self.x_result = data_x_axis.par_val
 			self.y_result = data_x_axis.num_or_time
@@ -72,6 +74,7 @@ class graphDataManager( QObject ):
 		self.selector = selector
 		self.__sessions_data = {}
 		self.current_id = None
+		self.current_spicified_data = None#это поле показывает, по какому критерию наборы данных в текущей сессии зависят друг от друга, либо временные метки, либо порядковый номер, в случае импорта из таблиц
 		self.all_parameters = {
 			"main": [],
 			"osc": []
@@ -81,7 +84,6 @@ class graphDataManager( QObject ):
 			"main": [],
 			"osc": []
 		}
-
 
 	def __remove_session(self, session_id: str):
 		self.__sessions_data.pop(session_id)
@@ -123,7 +125,6 @@ class graphDataManager( QObject ):
 		returned_y1 = {}
 		returned_y2 = {}
 
-
 		returned_x = self.__sessions_data[self.current_id][data_type].data.get(keysx)
 		for key in keysy1:
 				returned_y1[key] = self.__sessions_data[self.current_id][data_type].data[key]
@@ -140,7 +141,7 @@ class graphDataManager( QObject ):
 			session_id = self.current_id
 		return list(self.__sessions_data[session_id]['osc'].data.keys()) + list( self.__sessions_data[session_id]['main'].data.keys())
 
-	def start_new_session(self, session_id: str, new_data = None):
+	def start_new_session(self, session_id: str,use_timestamps: bool = False, new_data = None):
 		if not session_id or not isinstance(session_id, str):
 			raise ValueError("Invalid session_id")
 
@@ -149,10 +150,15 @@ class graphDataManager( QObject ):
 
 		previous_id = self.current_id
 
+		if use_timestamps:
+			specified_data = "time"
+		else:
+			specified_data = "numbers"
+
 		try:
 			self.__sessions_data[session_id] = {
-				"osc": sessionMeasData(data={}), 
-				"main": sessionMeasData(data={})
+				"osc": sessionMeasData(data={}, spicified_data=specified_data), 
+				"main": sessionMeasData(data={}, spicified_data=specified_data)
 			}
 			self.current_id = session_id
 
@@ -167,7 +173,21 @@ class graphDataManager( QObject ):
 			if session_id in self.__sessions_data.keys():
 				del self.__sessions_data[session_id]
 			self.current_id = previous_id
+			self.current_spicified_data = self.__sessions_data[self.current_id]['osc'].spicified_data
 			raise
+
+		self.current_spicified_data = self.__sessions_data[self.current_id]['osc'].spicified_data
+
+		if use_timestamps:
+			spicified_data = {	
+							"time":[[],[]]	
+					 		}
+		else:
+			spicified_data = {	
+							"numbers":[[],[]]	
+					 		}
+
+		self.add_measurement_data(spicified_data)
 
 	def add_measurement_data(self, new_param: Dict[str, Any]) -> bool:
 		"""
@@ -176,9 +196,15 @@ class graphDataManager( QObject ):
 		:param new_param: Словарь с измерительными данными
 		"""
 
+		key = self.current_spicified_data
+		self.updated_params = {
+			"main": {key: measTimeData(param=key)},
+			"osc": {key: measTimeData(param=key)}
+		}
+
 		status = True
 		depth = get_dict_depth(new_param)
-		
+
 		depth_handlers = {
 			3: self._handle_three_level_data,
 			2: self._handle_two_level_data,
@@ -186,44 +212,76 @@ class graphDataManager( QObject ):
 		}
 		
 		handler = depth_handlers.get(depth)
+
+		is_new_param_added = False
+		is_old_param_udated = False
+
 		if handler:
-			status = handler(new_param)
+			status, is_new_param_added, is_old_param_udated = handler(new_param)
 		else:
 			logger.warning(f"Слишком глубокая структура данных {new_param=} не знаем, как с ней работать")
 			status = False
 
-		return status
+		if is_new_param_added:
+			self.list_parameters_updated.emit(self.all_parameters)
 
-	def _handle_three_level_data(self, data: Dict[str, Dict[str, dict[str, Any]]]) -> bool:
+		if is_old_param_udated:
+			self.val_parameters_added.emit(self.updated_params)
+
+		return status
+	
+
+	def _handle_three_level_data(self, data: Dict[str, Dict[str, dict[str, Any]]]) -> tuple[bool, bool, bool]:
+		is_new_param_added = False
+		is_old_param_udated = False
 		for device, channels in data.items():
 			for channel, values in channels.items():
 				for param, value in values.items():
-					ans = self._add_new_data(device=device, channel=channel, param=param, value=value)
+					ans, is_added, is_udated = self._add_new_data(device=device, channel=channel, param=param, value=value)
+
+					if is_added and not is_new_param_added:
+						is_new_param_added = True
+					if is_udated and not is_old_param_udated:
+						is_old_param_udated = True
 					if not ans:
-						return False
-		return True
+						return False, is_new_param_added, is_old_param_udated
+					
+		return True, is_new_param_added, is_old_param_udated
 
 	def _handle_two_level_data(self, data: Dict[str, Dict[str, Any]])  -> bool:
+		is_new_param_added = False
+		is_old_param_udated = False
 		for channel, values in data.items():
 			for param, value in values.items():
-				ans = self._add_new_data(device=None, channel=channel, param=param, value=value)
+				ans, is_added, is_udated = self._add_new_data(device=None, channel=channel, param=param, value=value)
+
+				if is_added and not is_new_param_added:
+					is_new_param_added = True
+				if is_udated and not is_old_param_udated:
+					is_old_param_udated = True
 				if not ans:
-					return False
-		return True
+					return False, is_new_param_added, is_old_param_udated
+				
+		return True, is_new_param_added, is_old_param_udated
 
 	def _handle_one_level_data(self, data: Dict[str, any])  -> bool:
+		is_new_param_added = False
+		is_old_param_udated = False
 		for param, value in data.items():
-			ans = self._add_new_data(device=None, channel=None, param=param, value=value)
+			ans, is_added, is_udated = self._add_new_data(device=None, channel=None, param=param, value=value)
+
+			if is_added and not is_new_param_added:
+				is_new_param_added = True
+			if is_udated and not is_old_param_udated:
+				is_old_param_udated = True
 			if not ans:
-				return False
-		return True
+				return False, is_new_param_added, is_old_param_udated
+			
+		return True, is_new_param_added, is_old_param_udated
 
-	def _add_new_data(self, device: Optional[str], channel: Optional[str], param: str, value: list):
-		self.updated_params = {
-			"main": [],
-			"osc": []
-		}
-
+	def _add_new_data(self, device: Optional[str], channel: Optional[str], param: str, value: list) -> tuple[bool, bool, bool]:
+		is_new_param_added = False
+		is_old_param_udated = False
 		if device is None:
 			device = ""
 		else:
@@ -234,12 +292,16 @@ class graphDataManager( QObject ):
 			channel+="-"
 		key = f"{device}{channel}{param}"
 
-		val_list = np.array(value[0])
+		if "wavech" not in param:
+			val_list = np.array(value[0])
+		else:
+			val_list = [np.array(i) for i in value[0]]
+
 		time_list = (np.array([i for i in range(len(val_list))]) if len(value) == 1 else np.array(value[1]))
 		if len(val_list) != len(time_list):
 			logger.warning(f"Длины списков параметра и времени не равны {device=} {channel=} {param=}")
-			return False
-
+			return False, is_new_param_added, is_old_param_udated
+		
 		if "wavech" in param:
 			existing_data = self.__sessions_data[self.current_id]['osc'].data.get(key)
 			focus = self.__sessions_data[self.current_id]['osc'].data
@@ -254,23 +316,20 @@ class graphDataManager( QObject ):
 								par_val=val_list, num_or_time=time_list)
 			focus[key] = new_data
 			self.all_parameters[key_type].append(key)
-			self.list_parameters_updated.emit(self.all_parameters)
+			is_new_param_added = True
 		else:
-			if len(existing_data.par_val) < len(value):
+			if len(existing_data.par_val) < len(value[0]):
 				existing_data.par_val = val_list
 				existing_data.num_or_time = time_list
-				self.updated_params[key_type].append(existing_data)
-				self.val_parameters_added.emit(self.updated_params)
+				self.updated_params[key_type][key] = existing_data
+				is_old_param_udated = True
 
-		return True
+		return True, is_new_param_added, is_old_param_udated
 
 def get_dict_depth(d):
 	if not isinstance(d, dict)  or not d:
 		return 0
 	return 1 + max(get_dict_depth(value) for value in d.values())
-
-def new_param_get(parameters):
-	print(parameters)
 
 if __name__ == "__main__":
 
@@ -292,6 +351,7 @@ if __name__ == "__main__":
 			},
 			'ch2': {}}
 	}
+
 
 	my_class = graphDataManager()
 	my_class.start_new_session("1")

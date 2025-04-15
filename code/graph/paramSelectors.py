@@ -29,17 +29,15 @@ class customQListWidget(QListWidget):
                 self.addItem(parameter)
 
     def remove_parameters(self, parameters: str|list):
+
         if isinstance(parameters, str):
             parameters = [parameters]
 
         for parameter in parameters:
             for index in range(self.count()):
-                if self.item(index).text() == parameter:
-                    self.takeItem(index)
-
-    def get_last_item_parameter(self, default="Select parameter"):
-        item = self.currentItem()
-        return item.text() if item is not None else default
+                if self.item(index):
+                    if self.item(index).text() == parameter:
+                        self.takeItem(index)
 
 class paramSelector(QWidget):
 
@@ -90,12 +88,6 @@ class paramSelector(QWidget):
         dataSourceLayout.addWidget(self.y_first_param_hover)
         dataSourceLayout.addWidget(self.x_param_hover)
         dataSourceLayout.addWidget(self.y_second_param_hover)
-
-        item = self.x_param_selector.item(0)
-        
-        self.x_param_selector.setCurrentItem( item )
-        self.y_first_param_selector.setCurrentItem( item )
-        self.y_second_param_selector.setCurrentItem( item )
 
         self.second_check_box = QCheckBox("Add second axis")
         self.check_miltiple = QCheckBox("Multiple selection")
@@ -148,6 +140,10 @@ class paramController( QObject):
         self.curent_y_first_parameters = []
         self.curent_y_second_parameters = []
 
+        self.previous_x_parameter = [None]
+        self.previous_y_first_parameter = [None]
+        self.previous_y_second_parameter = [None]
+
         self.__x_parameters = set()
         self.__y_first_parameters = set()
         self.__y_second_parameters = set()
@@ -160,30 +156,45 @@ class paramController( QObject):
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
     def y_first_param_changed(self):
-        self.manage_y_selectors(self.paramSelector.y_first_param_selector, self.curent_y_first_parameters)
+        self.manage_y_selectors(self.paramSelector.y_first_param_selector, self.curent_y_first_parameters, self.paramSelector.y_second_param_selector, self.previous_y_first_parameter)
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
     def y_second_param_changed(self):
-        self.manage_y_selectors(self.paramSelector.y_second_param_selector, self.curent_y_second_parameters)
+        self.manage_y_selectors(self.paramSelector.y_second_param_selector, self.curent_y_second_parameters, self.paramSelector.y_first_param_selector, self.previous_y_second_parameter)
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
-    def manage_y_selectors(self, list_widget, buf_list):
+    def manage_y_selectors(self, list_widget, buf_list, opposite_selector, previous_parameter):
         if self.paramSelector.check_miltiple.isChecked():
             buf_text = list_widget.currentItem().text()
             if buf_text in buf_list:
                 buf_list.remove(buf_text)
+                opposite_selector.add_parameters(buf_text)
             else:
                 buf_list.append(buf_text)
+                opposite_selector.remove_parameters(buf_text)
         else:
+            opposite_selector.add_parameters(buf_list)
             buf_list.clear()
             buf_item = list_widget.currentItem()
             if buf_item is not None:
-                buf_list.append(list_widget.currentItem().text())
+                buf_text = buf_item.text()
+                if buf_text == previous_parameter[0]:
+                    buf_item.setSelected(False)
+                    list_widget.setCurrentItem(None)
+                    previous_parameter[0] = None
+                    opposite_selector.add_parameters(buf_text)
+                else:
+                    previous_parameter[0] = buf_text
+                    buf_list.append(buf_text)
+                    opposite_selector.remove_parameters(buf_text)
 
     def second_check_box_changed(self):
         self.curent_y_second_parameters.clear()
 
         state = self.paramSelector.second_check_box.isChecked()
+        if not state:
+            self.paramSelector.y_first_param_selector.add_parameters(self.__y_first_parameters)
+        self.previous_y_second_parameter[0] = None
         self.paramSelector.y_second_param_selector.clearSelection()
         self.state_second_axis_changed.emit( state )
             
@@ -207,6 +218,11 @@ class paramController( QObject):
         if not self.paramSelector.check_miltiple.isChecked():
             self.clear_y_axis()
             is_multiple = False
+            self.paramSelector.y_second_param_selector.add_parameters(self.__y_first_parameters)
+            self.paramSelector.y_first_param_selector.add_parameters(self.__y_second_parameters)
+            self.previous_x_parameter = [None]
+            self.previous_y_first_parameter = [None]
+            self.previous_y_second_parameter = [None]
 
         self.multiple_checked.emit( is_multiple )
 

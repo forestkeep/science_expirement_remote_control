@@ -47,9 +47,8 @@ class Check_data_import_win(QDialog):
         # Добавляем scroll_area в основной макет
         layout_vert_main.addWidget(self.scroll_area)
 
-        
         self.step_combo = QComboBox()
-        self.step_combo.addItems(strings)
+        self.step_combo.addItems( strings )
         if is_osc:
             lay_combo = QVBoxLayout() 
             step_label = QLabel( QApplication.translate("GraphWindow","Шаг времени"))

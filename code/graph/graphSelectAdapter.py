@@ -17,7 +17,6 @@ class graphSelectAdapter:
 		self.data_manager = data_manager
 		self.type_data = type_data
 
-
 		self.selector.parameters_updated.connect(self.parameters_choised)
 		self.selector.multiple_checked.connect(self.multiple_changed)
 		self.selector.state_second_axis_changed.connect(self.state_second_axis_changed)
@@ -42,13 +41,14 @@ class graphSelectAdapter:
 		  Например, поступило новое значение'''
 		paramx, paramy1, paramy2 = self.selector.get_parameters()
 
-		datax = {}
+		datax = ''
 		datay1 = {}
 		datay2 = {}
-		for param in paramx:
-			buf = parameters[self.type_data].get(param)
-			if buf:
-				datax[param] = parameters[self.type_data][param]
+
+		buf = parameters[self.type_data].get(paramx)
+		if buf:
+			datax = paramx
+
 		for param in paramy1:
 			buf = parameters[self.type_data].get(param)
 			if buf:
@@ -58,12 +58,13 @@ class graphSelectAdapter:
 			if buf:
 				datay2[param] = parameters[self.type_data][param]
 
-		self.graph.update_data(datax, datay1, datay2)
+		data_first_axis, data_second_axis = self.data_manager.get_current_session_relation_data(datax, datay1, datay2, self.type_data)
+
+		self.graph.set_data(data_first_axis, data_second_axis, is_updated = True)
 
 	def parameters_choised(self, param_x, param_y1, param_y2):
 		'''метод вызывается селектором в моменты, когда пользователь выбрал новые параметры'''
 
 		data_first_axis, data_second_axis = self.data_manager.get_current_session_relation_data(param_x, param_y1, param_y2, self.type_data)
 
-		print(f"data choised: {data_first_axis=}, {data_second_axis=}")
 		self.graph.set_data(data_first_axis, data_second_axis)

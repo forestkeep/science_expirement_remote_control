@@ -74,6 +74,7 @@ class saving_data:
 
         if excel_writer is None:
             mode = "w"
+            print(output_file_path)
             excel_writer = pandas.ExcelWriter(
                 output_file_path, 
                 engine='openpyxl', 
@@ -392,12 +393,14 @@ class saving_data_processing:
                     self.input_file_path, self.output_file_path, self.output_type, self.result_name, self.result_description
                 )
             
+            print(f"{message=} {status=}")
+            
             if status:
                 if self.is_delete_buf_file == True:
                     try:
                         send2trash(self.input_file_path)
                     except Exception as e:
-                        message += f"{type(e).__name__} - {e}"
+                        message += f"файл сохранен, но буферный файл не уудалось отправить в корзину - {e}"
                     self.adress_return(status = status, output_file_path = self.output_file_path, message = message, deleted_buf_file = self.input_file_path)
                 else:
                     self.adress_return(status = status, output_file_path = self.output_file_path, message = message)
@@ -434,11 +437,11 @@ def func_answer_test(status, output_file_path, message, deleted_buf_file = False
     print(f"Время выполнения {time.perf_counter() - start}")
 
 if __name__ == "__main__":
-    input_file = "pig_in_a_poke_1_2025-02-21 17-45-00.txt"
-    is_delete_buf_file = True
-    output_file_path = "testData.txt"
+    input_file = "pig_in_a_poke_1_2025-04-14 13-15-38.txt"
+    is_delete_buf_file = False
+    output_file_path = "testData.xlsx"
 
-    process_and_export(input_file, output_file_path, type_save_file.txt, is_delete_buf_file, func_answer_test)
+    process_and_export(input_file, output_file_path, type_save_file.excel,'name_test',"description_test", is_delete_buf_file, func_answer_test)
     
 
     

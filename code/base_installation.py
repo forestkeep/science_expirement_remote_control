@@ -209,9 +209,9 @@ class baseInstallation:
     def answer_save_results(self, status, output_file_path, message = None, deleted_buf_file = False):
 
         message_status = "ok"
-        status, setted_way_to_save = self.settings_manager.get_setting('way_to_save')
+        status1, setted_way_to_save = self.settings_manager.get_setting('way_to_save')
         added_text = ""
-        if status:
+        if status1:
             if setted_way_to_save != output_file_path:
                 message_status = "war"
                 added_text = QApplication.translate('base_install',"Заданный путь сохранения не был доступен, мы его изменили на {way}").format(way = output_file_path)
