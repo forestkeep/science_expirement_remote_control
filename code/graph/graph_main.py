@@ -450,7 +450,7 @@ class graphMain(QObject):
                             x = data.x_result[-1*self.num_showing_points:]
                             y = data.y_result[-1*self.num_showing_points:]
                         self.stack_curve[data.name].plot_obj.setData(x, y)
-                        self.stack_curve[data.name].rel_data = data
+                        self.stack_curve[data.name].setData(data)
                 
         for data in data_second_axis:
             if self.stack_curve.get(data.name) is None:
@@ -482,6 +482,13 @@ class graphMain(QObject):
         key = curve_data_obj.curve_name
         if self.stack_curve.get(key) is not None:
             self.stack_curve.pop(key)
+
+    def stop_session(self):
+        i = 0
+        for curve in self.stack_curve.values():
+            curve.stop_session()
+            print(i)
+            i+=1
 
     def hide_curve(self, curve_data_obj:linearData):
         curve_data_obj.delete_curve_from_graph()

@@ -43,7 +43,7 @@ class legendName():
 
     
 class graphData:
-    def __init__(self, raw_x, raw_y) -> None:
+    def __init__(self, data) -> None:
         """
         Initializes the graphData object with raw data for x and y axes.
         The length of arrays is cut to the minimum
@@ -52,8 +52,10 @@ class graphData:
             raw_x: The raw data for the x-axis.
             raw_y: The raw data for the y-axis.
         """
+        raw_x = data.x_result
+        raw_y = data.y_result
 
-        min_len = min(len(raw_x), len(raw_y))
+        min_len = min(len(data.x_result), len(data.y_result))
         raw_x = raw_x[:min_len]
         raw_y = raw_y[:min_len]
 
@@ -182,14 +184,28 @@ class graphData:
         self.filtered_x_data = self.raw_data_x
         self.filtered_y_data = self.raw_data_y
         return True
+    
+    def setData(self, data):
+        self.rel_data = data
+        self.raw_data_x = np.array(data.x_result)
+        self.raw_data_y = np.array(data.y_result)
+
+    def stop_session(self):
+        if self.plot_obj is not None:
+            self.plot_obj.setData(self.raw_data_x, self.raw_data_y)
+            self.data_reset()
 
 class linearData(graphData):
     def __init__(self, data: relationData) -> None:
-        super().__init__(data.x_result, data.y_result)
+        super().__init__(data)
         self.rel_data = data
         self.curve_name = self.rel_data.name
         self.legend = legendName(self.curve_name)
 
+        self.recalc_stats_param()
+
+    def stop_session(self):
+        super().stop_session()
         self.recalc_stats_param()
 
     def set_full_legend_name(self):

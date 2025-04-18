@@ -29,6 +29,7 @@ class graphSelectAdapter:
 		self.selector.showingAllPoints.connect(self.showingAllPoints)
 		self.data_manager.list_parameters_updated.connect(self.update_params)
 		self.data_manager.val_parameters_added.connect(self.data_updated)
+		self.data_manager.stop_current_session.connect(self.stop_session)
 
 		self.tree_class.curve_deleted.connect(self.destroy_curve)
 		self.tree_class.curve_shown.connect(self.show_curve)
@@ -48,6 +49,10 @@ class graphSelectAdapter:
 		logger.debug(f"hide_curve {first_parameters=} {second_parameters=}")
 
 		self.selector.clear_selections("", first_parameters, second_parameters)
+
+	def stop_session(self):
+		self.graph.stop_session()
+		self.selector.stop_session()
 
 	def destroy_curve(self, curve_data_obj: linearData):
 		self.hide_curve(curve_data_obj)

@@ -167,6 +167,11 @@ class GraphWindow(QMainWindow):
         self.update_graphics(next(self.gen))
         self.counter_test += 1
 
+        if self.counter_test >= 100:
+            self.counter_test = 0
+            self.timer.stop()
+            self.data_manager.stop_session_running()
+
     def test_update(self, periodsec):
         self.test = test_graph()
         self.gen = self.test.append_values()

@@ -60,6 +60,7 @@ class relationData:
 class graphDataManager( QObject ):
 	list_parameters_updated = pyqtSignal(dict)
 	val_parameters_added = pyqtSignal(dict)
+	stop_current_session = pyqtSignal()
 	'''
 	класс предназначен для управления данными для графиков. он менеджерит поток данных - от эксперимента или импортирует их извне.
 	Рассчитывает, отправляет данные в соответсвующий график.
@@ -193,6 +194,7 @@ class graphDataManager( QObject ):
 		if not session_id:
 			session_id = self.current_id
 		self.__sessions_data[session_id]['osc'].is_running = False
+		self.stop_current_session.emit()
 
 	def add_measurement_data(self, new_param: Dict[str, Any]) -> bool:
 		"""

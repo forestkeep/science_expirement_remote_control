@@ -299,6 +299,9 @@ class paramController( QObject):
 
     def get_parameters(self):
         return self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters
+    
+    def stop_session(self):
+        self.paramSelector.numPointsselector.hide()
 
 if __name__ == '__main__':
     import sys
