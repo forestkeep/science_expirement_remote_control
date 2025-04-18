@@ -59,11 +59,10 @@ def time_decorator(func):
 class GraphWindow(QMainWindow):
     graph_win_close_signal = pyqtSignal(int)
 
-    def __init__(self, experiment_controller = None):
+    def __init__(self):
         super().__init__()
         self.setWindowTitle("Online Graph")
         self.setGeometry(100, 100, 1200, 700)
-        self.experiment_controller = experiment_controller
         self.notification = None
         self.initUI()
 
@@ -94,6 +93,9 @@ class GraphWindow(QMainWindow):
         splitter.setStretchFactor(1, 10)
         splitter.setStretchFactor(2, 1)
 
+        one_deca_part = int(self.width()/10)
+        splitter.setSizes([one_deca_part, one_deca_part*9, 0])
+
         self.data_manager = graphDataManager()
         self.select_win = paramSelector()
         self.select_controller = paramController( self.select_win )
@@ -113,15 +115,7 @@ class GraphWindow(QMainWindow):
         self.graph_main = graphMain(tablet_page=self.tab1, main_class=self, import_data_widget=self.import_data_win, select_data_wid = self.select_win)
         self.graph_wave = graphOsc(self.tab2, self)
 
-        self.adapter_main_graph = graphSelectAdapter(self.graph_main, self.select_controller, self.data_manager, 'main')
-
-        self.graph_main.new_curve_selected.connect(self.tree_class.update_visible)
-        self.graph_main.new_data_imported.connect(self.tree_class.clear_all)
-        self.tree_class.curve_deleted.connect(self.graph_main.destroy_curve)
-        self.tree_class.curve_shown.connect(self.graph_main.show_curve)
-        self.tree_class.curve_hide.connect(self.graph_main.hide_curve)
-        self.tree_class.curve_reset.connect(self.graph_main.reset_filters)
-        self.tree_class.curve_created.connect(self.graph_main.add_curve_to_stack)
+        self.adapter_main_graph = graphSelectAdapter(self.graph_main, self.select_controller, self.data_manager, self.tree_class, 'main', self)
 
         self.tabWidget.setCurrentIndex(0)
 
@@ -144,8 +138,8 @@ class GraphWindow(QMainWindow):
     def filters_callback(self, filter_func):
 
         is_apply = True
-        if self.experiment_controller is not None:
-            if self.experiment_controller.is_experiment_running():
+        if self.data_manager is not None:
+            if self.data_manager.is_session_running():
                 is_apply = False
 
         if is_apply:
@@ -163,8 +157,6 @@ class GraphWindow(QMainWindow):
         '''is_exp_stop - флаг остановки эксперимента, передается, когда эксперимент завершается, принудительно переводит окно графиков в расщиренный режим просмотра'''
         if new_data:
             self.data_manager.add_measurement_data(new_data)
-            #self.graph_main.update_dict_param(new=new_data, is_exp_stop=is_exp_stop)
-            #self.graph_wave.update_dict_param(new=new_data, is_exp_stop=is_exp_stop)
 
     def set_default(self):
         self.graph_main.set_default()
@@ -174,10 +166,6 @@ class GraphWindow(QMainWindow):
         """функция раз в n секунд генерирует словарь и обновляет данные"""
         self.update_graphics(next(self.gen))
         self.counter_test += 1
-        if self.counter_test == 1000:
-            self.graph_main.reconfig_state()
-            self.experiment_controller.running = False
-            self.timer.stop()
 
     def test_update(self, periodsec):
         self.test = test_graph()
@@ -186,17 +174,9 @@ class GraphWindow(QMainWindow):
         self.timer.timeout.connect(self.gen_new_data)
         self.timer.start(int(periodsec*1000))
         self.counter_test = 0
-        self.experiment_controller = exprEmul()
 
     def closeEvent(self, event):
         self.graph_win_close_signal.emit(1)
-
-class exprEmul():
-    def __init__(self):
-        self.running = True
-
-    def is_experiment_running(self):
-        return self.running
 
 if __name__ == "__main__":
     import os
@@ -204,7 +184,7 @@ if __name__ == "__main__":
     FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
 
     console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
+    console.setLevel(logging.DEBUG)
     console.setFormatter(logging.Formatter(FORMAT))
 
     logging.basicConfig(handlers=[console], level=logging.DEBUG)
@@ -214,9 +194,9 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     qdarktheme.setup_theme("dark", corner_shape="sharp", custom_colors={"primary": "#DDBCFF"})
     mainWindow = GraphWindow()
-    mainWindow.data_manager.start_new_session("test", use_timestamps=True)
+    mainWindow.data_manager.start_new_session("test",is_experiment_running=True, use_timestamps=True)
     mainWindow.show()
-    mainWindow.test_update(periodsec=0.005)
+    mainWindow.test_update(periodsec=0.1)
 
     #mainWindow.update_param_in_comboxes()
     sys.exit(app.exec_())

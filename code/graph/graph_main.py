@@ -30,6 +30,7 @@ try:
     from Message_graph import messageDialog
     from paramSelectors import paramSelector, paramController
     from graphSelectAdapter import graphSelectAdapter
+    from dataManager import relationData
 except:
     from graph.calc_values_for_graph import ArrayProcessor
     from graph.colors import GColors, cold_colors, warm_colors
@@ -38,6 +39,7 @@ except:
     from graph.Message_graph import messageDialog
     from graph.paramSelectors import paramSelector, paramController
     from graph.graphSelectAdapter import graphSelectAdapter
+    from graph.dataManager import relationData
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +69,6 @@ class CustomComboBox(QComboBox):
             
 class graphMain(QObject):
     new_curve_selected = pyqtSignal()
-    new_data_imported = pyqtSignal()
 
     def __init__(self, tablet_page, main_class, import_data_widget, select_data_wid):
         super().__init__()
@@ -78,28 +79,12 @@ class graphMain(QObject):
 
         #++++++++++++++++++++++++++++++++++++++++++
         self.is_show_warning = True
-        self.key_to_update_plot = True
-        self.x = []
-        self.y = {}
-        self.x2 = []
-        self.y2 = {}
-        self.dict_param = {}
-        self.is_second_axis = False
 
+        self.is_second_axis = False
         self.is_multiple = False
     
         self.main_class = main_class
 
-        self._is_exp_running = False
-
-        self.curve1 = {}
-        self.curve2 = {}
-        self.curve2_dots = {}
-
-        self.old_params = []
-
-        self.is_time_column = True
-        
         self.legend = pg.LegendItem(size=(80, 60), offset=(10, 10))
         self.legend2 = pg.LegendItem(size=(80, 60), offset=(50, 10))
 
@@ -117,19 +102,23 @@ class graphMain(QObject):
         self.x_axis_label = ""
         self.y_second_axis_label = ""
 
+
+        self.num_showing_points = 10
+        self.is_all_points_showing = True
+
         self.stack_curve = {}
-
-        self.previous_x = None
-        self.previous_y = None
-        self.previous_y2 = None
-
-        self.exp_data_dict = {}
 
         self.colors_class = GColors()
         self.color_warm_gen = self.colors_class.get_random_warm_color()
         self.color_cold_gen = self.colors_class.get_random_cold_color()
 
         self.initUI()
+
+    def set_num_points(self, value):
+        self.num_showing_points = value
+
+    def show_all_points(self, state):
+        self.is_all_points_showing = state
 
     def initUI(self):
         self.tab1Layout = QVBoxLayout()
@@ -175,8 +164,6 @@ class graphMain(QObject):
         '''
         #--------------------------------------------------------------------
         
-        
-
         self.graphView.plotItem.getAxis("left").linkToView(
             self.graphView.plotItem.getViewBox()
         )
@@ -198,6 +185,8 @@ class graphMain(QObject):
         self.tab1Layout.addWidget(self.graphView)
         self.tab1Layout.addWidget(self.import_data_widget)
         self.page.setLayout(self.tab1Layout)
+
+        self.set_second_axis(state = False)
         
 
         self.page.subscribe_to_key_press(key = Qt.Key_Delete, callback = self.delete_key_press)
@@ -206,7 +195,7 @@ class graphMain(QObject):
         self.page.subscribe_to_key_press(key = Qt.Key_Return, callback = self.click_enter_key)
 
         self.retranslateUi(self.page)
-    def set_second_axis(self, state):
+    def set_second_axis(self, state: bool):
         self.is_second_axis = state
 
         if not state:
@@ -216,14 +205,6 @@ class graphMain(QObject):
                     curve.delete_curve_from_graph()
         else:
             self.plots_lay.getAxis("right").show()
-
-    def set_data(self, data_first_axis, data_second_axis, is_updated = False):
-
-        if self._is_exp_running:
-            self.update_data_running()
-            self.update_draw()
-        else:
-            self.update_data(data_first_axis, data_second_axis, is_updated = is_updated)
 
     def setupGraphView(self):
         graphView = pg.PlotWidget(title="")
@@ -279,16 +260,6 @@ class graphMain(QObject):
         self.tooltip.setPlainText(text)
 
     def set_default(self):
-        self.key_to_update_plot = False
-
-        self.x_param_selector.clear()
-        self.y_first_param_selector.clear()
-        self.x_param_selector.clear()
-        self.y_first_param_selector.clear()
-        self.y_second_param_selector.clear()
-        self.x_param_selector.addItems(["Select parameter"])
-        self.y_first_param_selector.addItems(["Select parameter"])
-        self.y_second_param_selector.addItems(["Select parameter"])
         self.x = []
         self.old_params = []
         self.y.clear()
@@ -298,198 +269,9 @@ class graphMain(QObject):
                 self.graphView.removeItem(item)
         self.second_graphView.clear()
 
-        self.dict_param = {}
-
-        self.key_to_update_plot = True
-
-        self.new_data_imported.emit()
-
     def updateViews(self):
         self.second_graphView.setGeometry(self.plots_lay.vb.sceneBoundingRect())
         self.second_graphView.linkedViewChanged(self.plots_lay.vb, self.second_graphView.XAxis)
-
-    def update_data_running(self):
-        string_x = self.get_last_item_parameter(self.x_param_selector)
-        string_y = self.get_last_item_parameter(self.y_first_param_selector)
-        string_y2 = self.get_last_item_parameter(self.y_second_param_selector)
-
-        current_items_y = list(item.text() for item in self.y_first_param_selector.selectedItems())
-        current_items_y2 = list(item.text() for item in self.y_second_param_selector.selectedItems())
-
-        self.hide_second_line_grid()
-
-        if string_y not in current_items_y and string_y != "Select parameter":
-                if string_y in self.y.keys():
-                    self.y.pop(string_y)
-                    self.graphView.removeItem(self.curve1[string_y])
-                    self.curve1.pop(string_y)
-                    return
-                else:
-                    string_y = "Select parameter"
-
-        if string_y2 not in current_items_y2 and string_y2 != "Select parameter":
-                device_y2, ch_y2, key_y2 = self.decode_name_parameters(string_y2)
-                if key_y2 in self.y2.keys():
-                    self.y2.pop(key_y2)
-                    self.second_graphView.removeItem(self.curve2[key_y2])
-                    self.second_graphView.removeItem(self.curve2_dots[key_y2])
-                    self.curve2.pop(key_y2)
-                    self.curve2_dots.pop(key_y2)
-                    return
-                else:
-                    string_y2 = "Select parameter"
-
-        if string_x != "Select parameter":
-            self.remove_parameter("Select parameter", self.x_param_selector)
-
-        if string_y != "Select parameter":
-            self.remove_parameter("Select parameter", self.y_first_param_selector)
-
-        if string_y2 != "Select parameter":
-            self.remove_parameter("Select parameter", self.y_second_param_selector)
-
-        check_main = True
-        
-        if not self.multiple_checkbox.isChecked():
-            self.y.clear()
-            self.y2.clear()
-
-        if string_x == "Select parameter" or string_y == "Select parameter":
-            check_main = False
-            if self.second_check_box.isChecked():
-                if string_x == "Select parameter" or string_y2 == "Select parameter":
-                    return
-            else:
-                return
-
-        if string_x == "time" and string_y == "time":
-            check_main = False
-            if self.second_check_box.isChecked():
-                if string_x == "time" or string_y2 == "time":
-                    return
-            else:
-                return
-
-        if check_main == True:
-            if self.y is self.y2:
-                self.y = {}
-                self.x = []
-                self.y_main_axis_label = ""
-            if (
-                string_x == "time"
-                and string_y != "time"
-                and string_y != "Select parameter"
-            ):
-                device_y, ch_y, parameter_y = self.decode_name_parameters(string_y)
-                self.y_main_axis_label = parameter_y
-                self.x_axis_label = "time"
-                self.x = self.dict_param[device_y][ch_y]["time"]
-                self.y[string_y] = self.dict_param[device_y][ch_y][parameter_y]
-                
-            elif string_y == "time" and string_x != "time":
-                device_x, ch_x, parameter_x = self.decode_name_parameters(string_x)
-                self.x_axis_label = parameter_x
-                self.y_main_axis_label = "time"
-                self.y["time"] = self.dict_param[device_x][ch_x]["time"]
-                self.x = self.dict_param[device_x][ch_x][parameter_x]
-                
-            elif string_x == string_y:
-                device_x, ch_x, parameter_x = self.decode_name_parameters(string_x)
-                self.x = self.dict_param[device_x][ch_x][parameter_x]
-                self.y[string_x] = self.dict_param[device_x][ch_x][parameter_x]
-                self.y_main_axis_label = parameter_x
-                self.x_axis_label = parameter_x
-            else:
-                device_y, ch_y, parameter_y = self.decode_name_parameters(string_y)
-                device_x, ch_x, parameter_x = self.decode_name_parameters(string_x)
-                x_param = self.dict_param[device_x][ch_x][parameter_x]
-                y_param = self.dict_param[device_y][ch_y][parameter_y]
-                if self.is_time_column:
-
-                    x_time = self.dict_param[device_x][ch_x]["time"]
-                    y_time = self.dict_param[device_y][ch_y]["time"]
-                    
-                    self.x, bufy, _ = ArrayProcessor.combine_interpolate_arrays(
-                        arr_time_x1=x_time,
-                        arr_time_x2=y_time,
-                        values_y1=x_param,
-                        values_y2=y_param,
-                                        )
-                        
-                    self.y[string_y] = bufy
-                    
-                else:
-                    self.x = x_param
-                    self.y[string_y] = y_param
-                
-                self.y_main_axis_label = parameter_y
-                self.x_axis_label = parameter_x
-
-        if self.second_check_box.isChecked():
-            if (
-                string_x == "time" and string_y2 == "time"
-            ) or string_y2 == "Select parameter":
-                self.y_second_axis_label = ""
-                self.x2 = []
-                self.y2.clear()
-            elif (
-                string_x == "time"
-                and string_y2 != "time"
-                and string_y2 != "Select parameter"
-            ):
-                
-                device_y2, ch_y2, parameter_y2 = self.decode_name_parameters(string_y2)
-                self.y_second_axis_label = parameter_y2
-                self.x_axis_label = "time"
-                self.x2 = self.dict_param[device_y2][ch_y2]["time"]
-                self.y2[parameter_y2] = self.dict_param[device_y2][ch_y2][parameter_y2]
-
-            elif string_y2 == "time" and string_x != "time":
-                device_x, ch_x, parameter_x = self.decode_name_parameters(string_x)
-                self.x_axis_label = parameter_x
-                self.y_second_axis_label = "time"
-                self.y2["time"] = self.dict_param[device_x][ch_x]["time"]
-                self.x2 = self.dict_param[device_x][ch_x][parameter_x]
-            elif string_x == string_y2 and string_y2 != "time":
-                device_x, ch_x, parameter_x = self.decode_name_parameters(string_x)
-                self.x2 = self.dict_param[device_x][ch_x][parameter_x]
-                self.y2[parameter_x] = self.x2
-                self.y_second_axis_label = parameter_x
-                self.x_axis_label = parameter_x
-            else:
-                device_y2, ch_y2, parameter_y2 = self.decode_name_parameters(string_y2)
-                device_x, ch_x, parameter_x = self.decode_name_parameters(string_x)
-                x_param = self.dict_param[device_x][ch_x][parameter_x]
-                y_param = self.dict_param[device_y2][ch_y2][parameter_y2]
-                if self.is_time_column:
-                    x_time = self.dict_param[device_x][ch_x]["time"]
-                    y_time = self.dict_param[device_y2][ch_y2]["time"]
-                    self.x2, bufy2, _ = ArrayProcessor.combine_interpolate_arrays(
-                        arr_time_x1=x_time,
-                        arr_time_x2=y_time,
-                        values_y1=x_param,
-                        values_y2=y_param,
-                    )
-                    self.y2[parameter_y2] = bufy2
-                else:
-                    self.x2 = x_param
-                    self.y2[parameter_y2] = y_param
-                    
-                self.y_second_axis_label = parameter_y2
-                self.x_axis_label = parameter_x
-
-        else:
-            self.y_second_axis_label = ""
-            self.x2 = self.x2[:0]
-            self.y2.clear()
-
-        if len(self.y.keys()) > 1:
-            self.y_main_axis_label = ""
-
-        if len(self.y2.keys()) > 1:
-            self.y_second_axis_label = ""
-
-        self.check_and_show_warning()
 
     def set_filters(self, filter_func):
         for curve in self.stack_curve.values():
@@ -515,6 +297,10 @@ class graphMain(QObject):
                                                  )
 
     def reset_filters(self, curve = None):
+        if self.main_class.data_manager.is_session_running():
+            self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Дождитесь окончания эксперимента" ) )
+            return
+        
         if curve:
             if not curve.data_reset():
                 self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Все фильтры уже сброшены, сбрасывать больше нечего." ) )
@@ -631,11 +417,10 @@ class graphMain(QObject):
     def hide_second_line_grid(self):
         self.plots_lay.getAxis("right").setGrid(0)#костыль, который необходим для того, чтобы сетка по вспомогательной оси не отображалась. При вызове меню сетки отрисоываются на всех осях
 
-    @time_decorator
+    #@time_decorator
     def update_data(self, data_first_axis, data_second_axis, is_updated = False):
 
         self.hide_second_line_grid()
-
 
         for key, curve in self.stack_curve.items():    
             if curve.is_draw:
@@ -644,79 +429,68 @@ class graphMain(QObject):
 
         for data in data_first_axis:
             if self.stack_curve.get(data.name) is None:
-                print("создаем кривую", data.name)
                 self.create_and_place_curve(
-                                            y_data = data.y_result,
-                                            x_data = data.x_result,
-                                            name_device = data.data_y_axis.device,
-                                            name_ch = data.data_y_axis.ch,
-                                            curve_name = data.name,
-                                            y_param_name = data.data_y_axis.param,
-                                            x_param_name = data.data_x_axis.param,
+                                            data = data,
                                             graph_field = self.graphView,
-                                            legend_field = self.legend
+                                            legend_field = self.legend,
+                                            number_axis=1
                                             )
             else:
                 if not self.stack_curve[data.name].is_draw:
                     self.stack_curve[data.name].place_curve_on_graph(graph_field  = self.graphView,
-                                                                    legend_field  = self.legend)
+                                                                    legend_field  = self.legend,
+                                                                    number_axis=1
+                                                                    )
                 else:
                     if is_updated:
-                        self.stack_curve[data.name].plot_obj.setData(data.x_result, data.y_result)
+                        if self.is_all_points_showing:
+                            x = data.x_result
+                            y = data.y_result
+                        else:
+                            x = data.x_result[-1*self.num_showing_points:]
+                            y = data.y_result[-1*self.num_showing_points:]
+                        self.stack_curve[data.name].plot_obj.setData(x, y)
+                        self.stack_curve[data.name].rel_data = data
                 
         for data in data_second_axis:
             if self.stack_curve.get(data.name) is None:
                 self.create_and_place_curve(
-                                            y_data = data.y_result,
-                                            x_data = data.x_result,
-                                            name_device = data.data_y_axis.device,
-                                            name_ch = data.data_y_axis.ch,
-                                            curve_name = data.name,
-                                            y_param_name = data.data_y_axis.param,
-                                            x_param_name = data.data_x_axis.param,
+                                            data = data,
                                             graph_field = self.second_graphView,
-                                            legend_field = self.legend2
+                                            legend_field = self.legend2,
+                                            number_axis=2
                                             )
             else:
                 if not self.stack_curve[data.name].is_draw:
                     self.stack_curve[data.name].place_curve_on_graph(graph_field  = self.second_graphView,
-                                                                    legend_field  = self.legend2)
+                                                                    legend_field  = self.legend2,
+                                                                    number_axis=2)
                 else:
                     if is_updated:
-                        self.stack_curve[data.name].plot_obj.setData(data.x_result, data.y_result)
-
-        self.new_curve_selected.emit()
+                        if self.is_all_points_showing:
+                            x = data.x_result
+                            y = data.y_result
+                        else:
+                            x = data.x_result[-1*self.num_showing_points:]
+                            y = data.y_result[-1*self.num_showing_points:]
+                        self.stack_curve[data.name].plot_obj.setData(x, y)
+                        self.stack_curve[data.name].rel_data = data
 
     def destroy_curve(self, curve_data_obj):
         curve_data_obj.delete_curve_from_graph()
         curve_data_obj.is_draw = False
-        key = curve_data_obj.y_name + curve_data_obj.x_name
+        key = curve_data_obj.curve_name
         if self.stack_curve.get(key) is not None:
-            del self.stack_curve[key]
+            self.stack_curve.pop(key)
 
-    def show_curve(self, curve_data_obj:linearData):
-        #TODO: определеить поведение в зависимости от режима выбора кривых, пересмотреть подписи осей при этих режимах. Возможно, стоит отображать кривую через искусственный выбор параметра в селекторе
-        if self.x_axis_label == curve_data_obj.x_name:
-            curve_data_obj.place_curve_on_graph(graph_field  = self.graphView,
-                                                legend_field = self.legend)
-        else:
-            self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Кривая принадлежит другому пространству") )
-    
     def hide_curve(self, curve_data_obj:linearData):
         curve_data_obj.delete_curve_from_graph()
         
     def set_multiple_mode(self, is_multiple):
         self.is_multiple = is_multiple
 
-    def create_curve(self, y_data, x_data, name_device, name_ch, curve_name, y_param_name, x_param_name) -> linearData:
-            new_data = linearData(raw_x   = x_data,
-                                  raw_y   = y_data,
-                                  device  = name_device,
-                                  ch      = name_ch,
-                                  curve_name  = curve_name,
-                                  y_param_name = y_param_name,
-                                  x_param_name = x_param_name
-                                  )
+    def create_curve(self, data: relationData) -> linearData:
+            new_data = linearData(data=data)
             buf_color = next(self.color_warm_gen)
 
             if new_data.saved_pen == None:
@@ -745,13 +519,15 @@ class graphMain(QObject):
             
             return new_data
     @time_decorator
-    def create_and_place_curve(self, y_data, x_data, name_device, name_ch, curve_name, y_param_name, x_param_name, graph_field, legend_field):
-            new_data = self.create_curve(y_data, x_data, name_device, name_ch, curve_name, y_param_name, x_param_name)
+    def create_and_place_curve(self, data, graph_field, legend_field, number_axis):
+            new_data = self.create_curve(data = data)
             self.main_class.tree_class.add_curve(new_data.tree_item)
-            self.stack_curve[curve_name] = new_data
+            self.stack_curve[data.name] = new_data
             
-            self.stack_curve[curve_name].place_curve_on_graph(graph_field  = graph_field,
-                                                              legend_field  = legend_field)
+            self.stack_curve[data.name].place_curve_on_graph(graph_field  = graph_field,
+                                                             legend_field  = legend_field,
+                                                             number_axis = number_axis
+                                                              )
         
     def add_curve_to_stack(self, curve_data_obj):   
         self.stack_curve[curve_data_obj.y_name + curve_data_obj.x_name] = curve_data_obj
@@ -768,32 +544,6 @@ class graphMain(QObject):
                     text=text
                 )
                 message.exec_()
-
-    @property
-    def is_exp_running(self):
-        return self._is_exp_running
-    
-    @is_exp_running.setter
-    def is_exp_running(self, new_state):
-        if new_state != self._is_exp_running:
-            self._is_exp_running = new_state
-            if self._is_exp_running == False:
-                self.reconfig_state()
-
-    def update_plot(self, obj = None, is_exp_stop = False):
-        if self.key_to_update_plot:
-            is_running = False
-            if self.main_class.experiment_controller is not None:
-                if self.main_class.experiment_controller.is_experiment_running():
-                    is_running = True
-
-            if is_running and not is_exp_stop:
-                self.update_data_running()
-                self.update_draw()
-            else:
-                self.update_data( obj )
-
-            self.is_exp_running = is_running and not is_exp_stop
 
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна
         self.graph_win_close_signal.emit(1)

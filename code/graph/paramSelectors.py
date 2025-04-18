@@ -13,7 +13,7 @@ import logging
 from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QHBoxLayout,QLabel,
                              QListWidget, QSizePolicy, QVBoxLayout, QWidget)
-
+from numShowPoints_win import numShowPointsClass
 logger = logging.getLogger(__name__)
 
 class customQListWidget(QListWidget):
@@ -38,6 +38,20 @@ class customQListWidget(QListWidget):
                 if self.item(index):
                     if self.item(index).text() == parameter:
                         self.takeItem(index)
+    def __manage_selection(self, text: str, checked: bool):
+        for index in range(self.count()):
+            if self.item(index):
+                if self.item(index).text() == text:
+                    logger.debug(f"manage_selection {text} {checked}")
+                    self.setCurrentItem(self.item(index))
+                    self.item(index).setSelected(checked)
+                    self.itemClicked.emit(self.item(index))#программно вызываем соответсвующую логику событий, будто кликнули на элемент
+
+    def clear_selection(self, text: str):
+        self.__manage_selection(text, False)
+
+    def set_selection(self, text: str):
+        self.__manage_selection(text, True)
 
 class paramSelector(QWidget):
 
@@ -59,11 +73,17 @@ class paramSelector(QWidget):
         layout.addWidget(label)
         layout.addWidget(listWidget)
 
+        layout.setContentsMargins(0, 0, 0, 0)
+        hover_widget.setContentsMargins(0, 0, 0, 0)
+
         return [layout, hover_widget, listWidget]
     
     def setupDataSourceSelectors(self):
         main_lay = QVBoxLayout()
         dataSourceLayout = QHBoxLayout()
+
+        main_lay.setContentsMargins(0, 0, 0, 0)
+        dataSourceLayout.setContentsMargins(0, 0, 0, 0)
 
         x_buf = self.createHoverSelector("X-Axis:")
         y_first_buf = self.createHoverSelector("Y main Axis:")
@@ -96,6 +116,12 @@ class paramSelector(QWidget):
         self.hor_check_lay.addWidget(self.check_miltiple)
         self.hor_check_lay.addWidget(self.second_check_box)
 
+        self.hor_check_lay.setContentsMargins(0, 0, 0, 0)
+
+        self.numPointsselector = numShowPointsClass()
+
+        self.hor_check_lay.addWidget(self.numPointsselector)
+
         main_lay.addLayout(dataSourceLayout)
         main_lay.addLayout(self.hor_check_lay)
 
@@ -127,14 +153,20 @@ class paramController( QObject):
     multiple_checked = pyqtSignal(bool)
     state_second_axis_changed = pyqtSignal(bool)
 
+    numPointsChanged = pyqtSignal(int)
+    showingAllPoints = pyqtSignal(bool)
+
     def __init__(self, paramSelector: paramSelector) -> None:
         super().__init__()
         self.paramSelector = paramSelector
-        self.paramSelector.x_param_selector.itemPressed.connect(self.x_param_changed)
-        self.paramSelector.y_first_param_selector.itemPressed.connect(self.y_first_param_changed)
-        self.paramSelector.y_second_param_selector.itemPressed.connect(self.y_second_param_changed)
+        self.paramSelector.x_param_selector.itemClicked.connect(self.x_param_changed)
+        self.paramSelector.y_first_param_selector.itemClicked.connect(self.y_first_param_changed)
+        self.paramSelector.y_second_param_selector.itemClicked.connect(self.y_second_param_changed)
         self.paramSelector.check_miltiple.stateChanged.connect(self.update_multiple)
         self.paramSelector.second_check_box.stateChanged.connect(self.second_check_box_changed)
+
+        self.paramSelector.numPointsselector.numPointsChanged.connect(self.numPointsChanged)
+        self.paramSelector.numPointsselector.showingAllPoints.connect(self.showingAllPoints)
 
         self.curent_x_parameter = None
         self.curent_y_first_parameters = []
@@ -148,44 +180,57 @@ class paramController( QObject):
         self.__y_first_parameters = set()
         self.__y_second_parameters = set()
 
-    def set_adapter(self, adapter):
-        self.adapter = adapter
-
     def x_param_changed(self):
+        logger.debug(f"x_param_changed {self.curent_x_parameter=}")
         self.curent_x_parameter = self.paramSelector.x_param_selector.currentItem().text()
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
     def y_first_param_changed(self):
-        self.manage_y_selectors(self.paramSelector.y_first_param_selector, self.curent_y_first_parameters, self.paramSelector.y_second_param_selector, self.previous_y_first_parameter)
+        logger.debug(f"y_first_param_changed {self.curent_y_first_parameters=} {self.previous_y_first_parameter=}")
+
+        self.manage_y_selectors(selector = self.paramSelector.y_first_param_selector,
+                                current_parameters = self.curent_y_first_parameters,
+                                opposite_selector = self.paramSelector.y_second_param_selector,
+                                previous_parameter = self.previous_y_first_parameter)
+        
+        logger.debug(f"y_first_param_changed update current parameters {self.curent_y_first_parameters=}")
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
+
 
     def y_second_param_changed(self):
-        self.manage_y_selectors(self.paramSelector.y_second_param_selector, self.curent_y_second_parameters, self.paramSelector.y_first_param_selector, self.previous_y_second_parameter)
+
+        self.manage_y_selectors(selector = self.paramSelector.y_second_param_selector,
+                                current_parameters = self.curent_y_second_parameters,
+                                opposite_selector = self.paramSelector.y_first_param_selector,
+                                previous_parameter = self.previous_y_second_parameter
+                                )
+        
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
-    def manage_y_selectors(self, list_widget, buf_list, opposite_selector, previous_parameter):
+    def manage_y_selectors(self, selector, current_parameters, opposite_selector, previous_parameter):
+        logger.debug(f"manage_y_selectors {current_parameters=}, {previous_parameter=}") 
         if self.paramSelector.check_miltiple.isChecked():
-            buf_text = list_widget.currentItem().text()
-            if buf_text in buf_list:
-                buf_list.remove(buf_text)
+            buf_text = selector.currentItem().text()
+            if buf_text in current_parameters:
+                current_parameters.remove(buf_text)
                 opposite_selector.add_parameters(buf_text)
             else:
-                buf_list.append(buf_text)
+                current_parameters.append(buf_text)
                 opposite_selector.remove_parameters(buf_text)
         else:
-            opposite_selector.add_parameters(buf_list)
-            buf_list.clear()
-            buf_item = list_widget.currentItem()
+            opposite_selector.add_parameters(current_parameters)
+            current_parameters.clear()
+            buf_item = selector.currentItem()
             if buf_item is not None:
                 buf_text = buf_item.text()
                 if buf_text == previous_parameter[0]:
                     buf_item.setSelected(False)
-                    list_widget.setCurrentItem(None)
+                    selector.setCurrentItem(None)
                     previous_parameter[0] = None
                     opposite_selector.add_parameters(buf_text)
                 else:
                     previous_parameter[0] = buf_text
-                    buf_list.append(buf_text)
+                    current_parameters.append(buf_text)
                     opposite_selector.remove_parameters(buf_text)
 
     def second_check_box_changed(self):
@@ -225,6 +270,21 @@ class paramController( QObject):
             self.previous_y_second_parameter = [None]
 
         self.multiple_checked.emit( is_multiple )
+
+    def clear_selections(self, x_param: str, y_first_params: list, y_second_params: list):
+        logger.debug(f"clear_selections {x_param=} {y_first_params=} {y_second_params=}")
+        self.paramSelector.x_param_selector.clear_selection(x_param)
+        for param in y_first_params:
+            self.paramSelector.y_first_param_selector.clear_selection(param)
+        for param in y_second_params:
+            self.paramSelector.y_second_param_selector.clear_selection(param)
+
+    def set_selections(self, x_param: str, y_first_params: list, y_second_params: list):
+        self.paramSelector.x_param_selector.set_selection(x_param)
+        for param in y_first_params:
+            self.paramSelector.y_first_param_selector.set_selection(param)
+        for param in y_second_params:
+            self.paramSelector.y_second_param_selector.set_selection(param)
 
     def set_default(self):
         self.curent_x_parameter = None

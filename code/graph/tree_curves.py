@@ -19,6 +19,8 @@ from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QDialog,
                              QTreeWidget, QTreeWidgetItem, QVBoxLayout,
                              QWidget, QInputDialog)
 
+from pyqtgraph import siScale
+
 try:
     from calc_values_for_graph import ArrayProcessor
 except:
@@ -617,6 +619,7 @@ class treeWin(QWidget):
                                           QApplication.translate("GraphWindow", "Пожалуйста, выберите элемент для отображения."))
                 return
         if item in self.curves:
+            item.curve_data_obj.delete_curve_from_graph()
             self.curve_hide.emit(item.curve_data_obj)
 
     def change_color_curve(self, item):

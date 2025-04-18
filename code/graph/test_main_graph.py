@@ -24,7 +24,43 @@ class test_graph:
         ch1, ch2, step = [1], [2], 0.002
         
         self.main_dict = {
+            '''
             "device1": {"ch_1": {self.get_param(): [self.get_values(), [0] ]}},
+            '''
+            "device3": {
+                "ch_1": {
+                    self.get_param(): [self.get_values(), [0] ],
+                    "wavech": [[ch1], [0] ],
+                    "scale": [[step], [0] ],
+                },
+                
+                "ch_2": {
+                    self.get_param(): [self.get_values(), [0] ],
+                    self.get_param(): [self.get_values(), [0] ],
+                    self.get_param(): [self.get_values(), [0] ],
+                },
+                
+                "ch_3": {"wavech": [[ch2], [0] ], "scale": [[step], [0] ]},
+                "ch_4": {
+                    "wavech": [ [self.generate_random_list(10, 0, 10)], [0] ],
+                    "scale": [[0.002], [0]],
+                
+                },
+                
+            },
+            
+            "device4": {
+                "ch_1": {
+                    "wavech": [[self.generate_random_list(10, 0, 10)], [0] ],
+                    "scale": [[0.002], [0] ],
+                }
+            
+            },
+            
+        }
+
+        self.main_dict = {
+
             "device3": {
                 "ch_1": {
                     self.get_param(): [self.get_values(), [0] ],
@@ -33,21 +69,9 @@ class test_graph:
                 },
                 "ch_2": {
                     self.get_param(): [self.get_values(), [0] ],
-                    self.get_param(): [self.get_values(), [0] ],
-                    self.get_param(): [self.get_values(), [0] ],
-                },
-                "ch_3": {"wavech": [[ch2], [0] ], "scale": [[step], [0] ]},
-                "ch_4": {
-                    "wavech": [ [self.generate_random_list(10, 0, 10)], [0] ],
-                    "scale": [[0.002], [0]],
-                },
+                }, 
             },
-            "device4": {
-                "ch_1": {
-                    "wavech": [[self.generate_random_list(10, 0, 10)], [0] ],
-                    "scale": [[0.002], [0] ],
-                }
-            },
+                  
         }
 
         '''

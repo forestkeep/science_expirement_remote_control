@@ -49,6 +49,8 @@ class importDataWin(QWidget):
         self.main_lay = QHBoxLayout()
         self.setLayout(self.main_lay)
 
+        self.main_lay.setContentsMargins(0, 0, 0, 0)
+
         self.import_button = QPushButton()
         self.experiment_selector = CustomComboBox()
         self.selector = QSpacerItem(15, 15, QSizePolicy.Expanding, QSizePolicy.Minimum)

@@ -13,18 +13,21 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtGui import QBrush, QColor
 import logging
+from pyqtgraph import siScale
 
 logger = logging.getLogger(__name__)
 
 try:
     from tree_curves import CurveTreeItem
+    from dataManager import relationData
 except:
     from graph.tree_curves import CurveTreeItem
+    from graph.dataManager import relationData
 
 class legendName():
-    def __init__(self, device: str, ch: str, y_name: str) -> None:
-        self.__full_name = " ".join([device, ch, y_name])
-        self.__short_name = " ".join([device, ch])
+    def __init__(self, name) -> None:
+        self.__full_name = name
+        self.__short_name = name
         self.__name = ""
         self.current_name = self.__full_name
 
@@ -68,6 +71,8 @@ class graphData:
         self.ch = None
         self.name = None
         self.number = None
+
+        self.number_axis = None
 
         self.mother_data = None
 
@@ -134,7 +139,7 @@ class graphData:
             self.plot_obj.setPen(pg.mkPen('w', width=2))
             self.plot_obj.setSymbolBrush(color = 'w')
     
-    def place_curve_on_graph(self, graph_field: pg.ViewBox, legend_field):
+    def place_curve_on_graph(self, graph_field: pg.ViewBox, legend_field, number_axis):
         """
         Places the curve on the given graph and legend fields. If the given fields
         are different from the current fields, the curve is first removed from the
@@ -157,11 +162,10 @@ class graphData:
 
         self.parent_graph_field = graph_field
         self.legend_field = legend_field
-        
+        self.number_axis = number_axis
         self.parent_graph_field.addItem(self.plot_obj)
-
+        
         if self.legend_field.getLabel( self.plot_obj ) is None:
-            logger.info(f"Добавление {self.legend.current_name=} в легенду")
             self.legend_field.addItem(self.plot_obj, self.legend.current_name)
 
         self.is_draw = True
@@ -180,15 +184,11 @@ class graphData:
         return True
 
 class linearData(graphData):
-    def __init__(self, raw_x, raw_y, device, ch, curve_name, y_param_name, x_param_name) -> None:
-        super().__init__(raw_x, raw_y)
-        self.device = device
-        self.ch = ch
-        self.curve_name = curve_name
-        self.legend = legendName(device, ch, curve_name)
-
-        self.y_param_name = y_param_name
-        self.x_param_name = x_param_name
+    def __init__(self, data: relationData) -> None:
+        super().__init__(data.x_result, data.y_result)
+        self.rel_data = data
+        self.curve_name = self.rel_data.name
+        self.legend = legendName(self.curve_name)
 
         self.recalc_stats_param()
 

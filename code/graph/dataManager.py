@@ -29,10 +29,11 @@ class measTimeData:
 class sessionMeasData:
 	data : dict
 	spicified_data : str
+	is_running : bool
 
 class relationData:
 	def __init__(self, data_x_axis: measTimeData, data_y_axis: measTimeData):
-		self.name = self.create_name(data_x_axis.device, data_x_axis.ch, data_x_axis.param, data_y_axis.device, data_y_axis.ch, data_y_axis.param)
+		self.x_name, self.y_name,self.name = self.create_names(data_x_axis.device, data_x_axis.ch, data_x_axis.param, data_y_axis.device, data_y_axis.ch, data_y_axis.param)
 		self.data_x_axis = data_x_axis
 		self.data_y_axis = data_y_axis
 
@@ -51,17 +52,11 @@ class relationData:
 			self.x_result = np.interp(self.__base_x, data_x_axis.num_or_time, data_x_axis.par_val)
 			self.y_result = np.interp(self.__base_x, data_y_axis.num_or_time, data_y_axis.par_val)
 
-	def create_name(self, x_device, x_ch, x_param, y_device, y_ch, y_param):
-		if x_device:
-			x_device+="-"
-		if x_ch:
-			x_ch+="-"
-		if y_device:
-			y_device+="-"
-		if y_ch:
-			y_ch+="-"
-		return f"{y_device}{y_ch}{y_param}/{x_device}{x_ch}{x_param}"
-
+	def create_names(self, x_device, x_ch, x_param, y_device, y_ch, y_param):
+		x_name = f"{x_device}{x_ch}{x_param}"
+		y_name = f"{y_device}{y_ch}{y_param}"
+		return x_name, y_name, f"{y_name}/{x_name}"
+	
 class graphDataManager( QObject ):
 	list_parameters_updated = pyqtSignal(dict)
 	val_parameters_added = pyqtSignal(dict)
@@ -141,7 +136,7 @@ class graphDataManager( QObject ):
 			session_id = self.current_id
 		return list(self.__sessions_data[session_id]['osc'].data.keys()) + list( self.__sessions_data[session_id]['main'].data.keys())
 
-	def start_new_session(self, session_id: str,use_timestamps: bool = False, new_data = None):
+	def start_new_session(self, session_id: str,use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None):
 		if not session_id or not isinstance(session_id, str):
 			raise ValueError("Invalid session_id")
 
@@ -157,8 +152,8 @@ class graphDataManager( QObject ):
 
 		try:
 			self.__sessions_data[session_id] = {
-				"osc": sessionMeasData(data={}, spicified_data=specified_data), 
-				"main": sessionMeasData(data={}, spicified_data=specified_data)
+				"osc": sessionMeasData(data={}, spicified_data=specified_data, is_running=is_experiment_running), 
+				"main": sessionMeasData(data={}, spicified_data=specified_data, is_running=is_experiment_running)
 			}
 			self.current_id = session_id
 
@@ -188,6 +183,16 @@ class graphDataManager( QObject ):
 					 		}
 
 		self.add_measurement_data(spicified_data)
+
+	def is_session_running(self, session_id: str = None):
+		if not session_id:
+			session_id = self.current_id
+		return self.__sessions_data[session_id]['osc'].is_running
+	
+	def stop_session_running(self, session_id: str = None):
+		if not session_id:
+			session_id = self.current_id
+		self.__sessions_data[session_id]['osc'].is_running = False
 
 	def add_measurement_data(self, new_param: Dict[str, Any]) -> bool:
 		"""

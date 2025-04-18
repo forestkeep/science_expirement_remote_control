@@ -8,20 +8,71 @@
 # 
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-
+from curve_data import linearData
+from PyQt5.QtWidgets import QApplication
+import logging
+logger = logging.getLogger(__name__)
 
 class graphSelectAdapter:
-	def __init__(self, graph, selector, data_manager, type_data):
+	def __init__(self, graph, selector, data_manager, tree_class, type_data, main_class):
 		self.graph = graph
 		self.selector = selector
 		self.data_manager = data_manager
+		self.tree_class = tree_class
 		self.type_data = type_data
+		self.main_class = main_class
 
 		self.selector.parameters_updated.connect(self.parameters_choised)
 		self.selector.multiple_checked.connect(self.multiple_changed)
 		self.selector.state_second_axis_changed.connect(self.state_second_axis_changed)
+		self.selector.numPointsChanged.connect(self.numPointsChanged)
+		self.selector.showingAllPoints.connect(self.showingAllPoints)
 		self.data_manager.list_parameters_updated.connect(self.update_params)
 		self.data_manager.val_parameters_added.connect(self.data_updated)
+
+		self.tree_class.curve_deleted.connect(self.destroy_curve)
+		self.tree_class.curve_shown.connect(self.show_curve)
+		self.tree_class.curve_hide.connect(self.hide_curve)
+		self.tree_class.curve_reset.connect(self.reset_filters)
+		self.tree_class.curve_created.connect(self.curve_created)
+
+	def hide_curve(self, curve_data_obj: linearData):
+		first_parameters = []
+		second_parameters = []
+		y_name = curve_data_obj.rel_data.y_name
+		if curve_data_obj.number_axis == 2:
+			second_parameters = [y_name]
+		if curve_data_obj.number_axis == 1:
+			first_parameters = [y_name]
+
+		logger.debug(f"hide_curve {first_parameters=} {second_parameters=}")
+
+		self.selector.clear_selections("", first_parameters, second_parameters)
+
+	def destroy_curve(self, curve_data_obj: linearData):
+		self.hide_curve(curve_data_obj)
+		self.graph.destroy_curve(curve_data_obj)
+
+	def show_curve(self, curve_data_obj: linearData):
+		logger.debug(f"show_curve {curve_data_obj.rel_data.y_name=}")
+		paramx, paramy1, paramy2 = self.selector.get_parameters()
+		if paramx == curve_data_obj.rel_data.x_name:	
+			y_name = curve_data_obj.rel_data.y_name
+			self.selector.set_selections("", [y_name], [y_name])
+		else:
+			self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Кривая принадлежит другому пространству") )
+
+	def reset_filters(self, curve_data_obj: linearData):
+		self.graph.reset_filters(curve_data_obj)
+
+	def curve_created(self, curve_data_obj: linearData):
+		pass
+
+	def numPointsChanged(self, value):
+		self.graph.set_num_points(value)
+		
+	def showingAllPoints(self, state):
+		self.graph.show_all_points(state)
 
 	def state_second_axis_changed(self, state):
 		self.graph.set_second_axis( state )
@@ -60,11 +111,11 @@ class graphSelectAdapter:
 
 		data_first_axis, data_second_axis = self.data_manager.get_current_session_relation_data(datax, datay1, datay2, self.type_data)
 
-		self.graph.set_data(data_first_axis, data_second_axis, is_updated = True)
+		self.graph.update_data(data_first_axis, data_second_axis, is_updated = True)
 
 	def parameters_choised(self, param_x, param_y1, param_y2):
 		'''метод вызывается селектором в моменты, когда пользователь выбрал новые параметры'''
 
 		data_first_axis, data_second_axis = self.data_manager.get_current_session_relation_data(param_x, param_y1, param_y2, self.type_data)
 
-		self.graph.set_data(data_first_axis, data_second_axis)
+		self.graph.update_data(data_first_axis, data_second_axis)
