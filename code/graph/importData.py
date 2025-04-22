@@ -52,11 +52,13 @@ class importDataWin(QWidget):
         self.main_lay.setContentsMargins(0, 0, 0, 0)
 
         self.import_button = QPushButton()
+        self.import_button_osc = QPushButton()
         self.experiment_selector = CustomComboBox()
         self.selector = QSpacerItem(15, 15, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.main_lay.addWidget(self.import_button)
+        self.main_lay.addWidget(self.import_button_osc)
         
-        exp_label = QLabel("Выберите экспериментальные данные: ")
+        exp_label = QLabel("Выберите сессию: ")
         self.main_lay.addItem(self.selector)
         self.main_lay.addWidget(exp_label)
         self.main_lay.addWidget(self.experiment_selector)
@@ -66,6 +68,7 @@ class importDataWin(QWidget):
     def retranslateUi(self):
         __translate = QApplication.translate
         self.import_button.setText(__translate("GraphWindow", "Импортировать.."))
+        self.import_button_osc.setText(__translate("GraphWindow", "Импортировать осциллограммы.."))
 
 class CustomComboBox(QComboBox):
     def __init__(self, parent=None):
@@ -91,11 +94,11 @@ class CustomComboBox(QComboBox):
 class controlImportData(QObject):
     exp_name_changed = pyqtSignal(str)
     new_data_imported = pyqtSignal(str, dict)
-    def __init__(self, window, data_manager, main_class = None):
+    def __init__(self, window, data_manager = None, main_class = None):
         super().__init__()
         self.win = window
-        self.main_class = main_class
-        self.data_manager = data_manager
+        #self.main_class = main_class
+        #self.data_manager = data_manager
         self.win.import_button.clicked.connect(self.import_data)
 
         self.win.experiment_selector.currentIndexChanged.connect(self.experimental_data_changed)
@@ -105,7 +108,7 @@ class controlImportData(QObject):
         exp_name = self.win.experiment_selector.currentText()
         self.exp_name_changed.emit(exp_name)
 
-    def add_new_data_name(self, data_name, is_set_current = False) -> str:
+    def add_new_data_name(self, data_name) -> str:
         all_names = [self.win.experiment_selector.itemText(i) for i in range(self.win.experiment_selector.count())]
         if data_name in all_names:
             data_name+="(1)"
@@ -115,17 +118,17 @@ class controlImportData(QObject):
                 i+=1
 
         self.win.experiment_selector.addItem(data_name)
-        if is_set_current:
-            self.win.experiment_selector.setCurrentText(data_name)
 
         return data_name
 
     def import_data(self):
 
+        '''
         if self.__is_exp_running:
             if self.main_class.experiment_controller.is_experiment_running():
                 self.main_class.show_tooltip( QApplication.translate("GraphWindow","Дождитесь окончания эксперимента"), timeout = 3000)
                 return
+        '''
         
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
@@ -182,16 +185,18 @@ class controlImportData(QObject):
                     col_ = str(col).replace('(', '[').replace(')', ']')
                     buf = np.array( df[col].tolist())
                     result[col_] = [ buf, np.array([i for i in range(len(buf))]) ]
-                    print(f"{col_}{result[col_]=}")
 
-                fileName = self.add_new_data_name(data_name=fileName, is_set_current=True)
+                fileName = self.add_new_data_name(data_name=fileName)
 
+                self.new_data_imported.emit(fileName, result)
+
+                '''
                 try:
                     self.data_manager.start_new_session(session_id = fileName, new_data = result)
                 except Exception as e:
                     logger.warning(f"ошибка при импорте данных от дата менеджера: {str(e)}")
                     self.win.experiment_selector.delete_text(fileName)
-
+                '''
 
 if __name__ == "__main__":
     import sys

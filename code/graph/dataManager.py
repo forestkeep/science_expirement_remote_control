@@ -65,12 +65,11 @@ class graphDataManager( QObject ):
 	класс предназначен для управления данными для графиков. он менеджерит поток данных - от эксперимента или импортирует их извне.
 	Рассчитывает, отправляет данные в соответсвующий график.
 	'''
-	def __init__(self, selector=None):
+	def __init__(self):
 		super().__init__()
-		self.selector = selector
 		self.__sessions_data = {}
-		self.current_id = None
-		self.current_spicified_data = None#это поле показывает, по какому критерию наборы данных в текущей сессии зависят друг от друга, либо временные метки, либо порядковый номер, в случае импорта из таблиц
+		self.name = None
+		self.current_spicified_data = None#это поле показывает, по какому критерию наборы данных зависят друг от друга, либо временные метки, либо порядковый номер, в случае импорта из таблиц
 		self.all_parameters = {
 			"main": [],
 			"osc": []
@@ -81,70 +80,51 @@ class graphDataManager( QObject ):
 			"osc": []
 		}
 
-	def __remove_session(self, session_id: str):
-		self.__sessions_data.pop(session_id)
-
-	def change_session(self, session_id: str) -> bool:
-		if session_id in self.__sessions_data.keys():
-			self.current_id = session_id
-			return True	
-		return False
-
-	def get_sessions_ids(self):
-		return list(self.__sessions_data.keys())
-	
-	def get_current_session_relation_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> list[relationData]:
+	def get_relation_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> list[relationData]:
 		relations_first_axis = []
 		relations_second_axis = []
-		if data_type not in self.__sessions_data[self.current_id].keys():
-			logger.warning(f"Invalid data type {data_type} available types {list(self.__sessions_data[self.current_id].keys())}")
+		if data_type not in self.__sessions_data.keys():
+			logger.warning(f"Invalid data type {data_type} available types {list(self.__sessions_data[self.name].keys())}")
 			return [], []
 		
 		if keysx and keysy1 or keysx and keysy2:
 			for key in keysy1:
 				buf = relationData(
-					self.__sessions_data[self.current_id][data_type].data[keysx],
-					self.__sessions_data[self.current_id][data_type].data[key]
+					self.__sessions_data[data_type].data[keysx],
+					self.__sessions_data[data_type].data[key]
 				)
 				relations_first_axis.append(buf)
 			for key in keysy2:
 				buf = relationData(
-					self.__sessions_data[self.current_id][data_type].data[keysx],
-					self.__sessions_data[self.current_id][data_type].data[key]
+					self.__sessions_data[data_type].data[keysx],
+					self.__sessions_data[data_type].data[key]
 				)
 				relations_second_axis.append(buf)
 
 		return relations_first_axis, relations_second_axis
 	
-	def get_current_session_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> tuple[ measTimeData, dict, dict ]:
+	def get_session_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> tuple[ measTimeData, dict, dict ]:
 		returned_x = None
 		returned_y1 = {}
 		returned_y2 = {}
 
-		returned_x = self.__sessions_data[self.current_id][data_type].data.get(keysx)
+		returned_x = self.__sessions_data[data_type].data.get(keysx)
 		for key in keysy1:
-				returned_y1[key] = self.__sessions_data[self.current_id][data_type].data[key]
+				returned_y1[key] = self.__sessions_data[data_type].data[key]
 		for key in keysy2:
-				returned_y2[key] = self.__sessions_data[self.current_id][data_type].data[key]
+				returned_y2[key] = self.__sessions_data[data_type].data[key]
 
 		return returned_x, returned_y1, returned_y2
 	
-	def get_current_session_id(self):
-		return self.current_id
+	def get_name(self):
+		return self.name
 	
-	def get_session_name_params(self, session_id: str = None):
-		if not session_id:
-			session_id = self.current_id
-		return list(self.__sessions_data[session_id]['osc'].data.keys()) + list( self.__sessions_data[session_id]['main'].data.keys())
+	def get_name_params(self):
+		return list(self.__sessions_data['osc'].data.keys()) + list( self.__sessions_data['main'].data.keys())
 
-	def start_new_session(self, session_id: str,use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None):
+	def start_new_session(self, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None):
 		if not session_id or not isinstance(session_id, str):
 			raise ValueError("Invalid session_id")
-
-		if session_id in self.__sessions_data:
-			raise ValueError(f"Session {session_id} already exists")
-
-		previous_id = self.current_id
 
 		if use_timestamps:
 			specified_data = "time"
@@ -152,27 +132,22 @@ class graphDataManager( QObject ):
 			specified_data = "numbers"
 
 		try:
-			self.__sessions_data[session_id] = {
+			self.__sessions_data = {
 				"osc": sessionMeasData(data={}, spicified_data=specified_data, is_running=is_experiment_running), 
 				"main": sessionMeasData(data={}, spicified_data=specified_data, is_running=is_experiment_running)
 			}
-			self.current_id = session_id
+			self.name = session_id
 
 			if new_data is not None:
 				status = self.add_measurement_data(new_data)
 				if not status:
-					self.__remove_session(session_id)
-					self.change_session(previous_id)
 					raise ValueError("Failed to add measurement data")
 
 		except Exception as e:
-			if session_id in self.__sessions_data.keys():
-				del self.__sessions_data[session_id]
-			self.current_id = previous_id
-			self.current_spicified_data = self.__sessions_data[self.current_id]['osc'].spicified_data
+			self.current_spicified_data = self.__sessions_data['osc'].spicified_data
 			raise
 
-		self.current_spicified_data = self.__sessions_data[self.current_id]['osc'].spicified_data
+		self.current_spicified_data = self.__sessions_data['osc'].spicified_data
 
 		if use_timestamps:
 			spicified_data = {	
@@ -187,13 +162,13 @@ class graphDataManager( QObject ):
 
 	def is_session_running(self, session_id: str = None):
 		if not session_id:
-			session_id = self.current_id
-		return self.__sessions_data[session_id]['osc'].is_running
+			session_id = self.name
+		return self.__sessions_data['osc'].is_running
 	
 	def stop_session_running(self, session_id: str = None):
 		if not session_id:
-			session_id = self.current_id
-		self.__sessions_data[session_id]['osc'].is_running = False
+			session_id = self.name
+		self.__sessions_data['osc'].is_running = False
 		self.stop_current_session.emit()
 
 	def add_measurement_data(self, new_param: Dict[str, Any]) -> bool:
@@ -310,12 +285,12 @@ class graphDataManager( QObject ):
 			return False, is_new_param_added, is_old_param_udated
 		
 		if "wavech" in param:
-			existing_data = self.__sessions_data[self.current_id]['osc'].data.get(key)
-			focus = self.__sessions_data[self.current_id]['osc'].data
+			existing_data = self.__sessions_data['osc'].data.get(key)
+			focus = self.__sessions_data['osc'].data
 			key_type = "osc"
 		else:
-			existing_data = self.__sessions_data[self.current_id]["main"].data.get(key)
-			focus = self.__sessions_data[self.current_id]["main"].data
+			existing_data = self.__sessions_data["main"].data.get(key)
+			focus = self.__sessions_data["main"].data
 			key_type = "main"
 
 		if existing_data is None:

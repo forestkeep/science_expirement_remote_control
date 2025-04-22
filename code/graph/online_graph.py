@@ -16,7 +16,7 @@ import logging
 from PyQt5.QtCore import QPoint, QTimer, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
-                             QSizePolicy, QSplitter, QTabWidget, QWidget)
+                             QSizePolicy, QSplitter, QTabWidget, QWidget, QMenu, QAction, QVBoxLayout, QStackedWidget)
 
 try:
     from filters_win import filtersClass
@@ -43,7 +43,6 @@ except:
     from graph.paramSelectors import paramSelector, paramController
     from graph.graphSelectAdapter import graphSelectAdapter
 
-
 logger = logging.getLogger(__name__)
 
 def time_decorator(func):
@@ -56,21 +55,90 @@ def time_decorator(func):
 
     return wrapper
 
+
 class GraphWindow(QMainWindow):
     graph_win_close_signal = pyqtSignal(int)
 
-    def __init__(self):
+    def __init__(self, import_data_win=None):
         super().__init__()
         self.setWindowTitle("Online Graph")
         self.setGeometry(100, 100, 1200, 700)
         self.notification = None
+        self.initUI(import_data_win=import_data_win)
+
+    def initUI(self, import_data_win):
+
+        self.__add_menu()
+
+        self.mainWidget = QWidget(self)
+        self.main_lay = QVBoxLayout(self.mainWidget)
+        self.setWindowIcon(QIcon('picture/graph.png')) 
+        self.setCentralWidget(self.mainWidget)
+
+        self.stack = QStackedWidget(self)
+
+        self.main_lay.addWidget(self.stack)
+        self.main_lay.addWidget(import_data_win)
+
+    def __add_menu(self):
+        self.menubar = self.menuBar()
+        self.menu = QMenu(self.menubar)
+        self.menu.setObjectName("menu")
+
+        self.save_installation_button_as = QAction(self)
+        self.save_installation_button = QAction(self)
+        self.open_installation_button = QAction(self)
+        self.add_device_button = QAction(self)
+
+        self.convert_buf_button = QAction(self)
+
+        self.menu.addAction(self.save_installation_button)
+        self.menu.addAction(self.save_installation_button_as)
+        self.menu.addAction(self.open_installation_button)
+        self.menu.addSeparator()
+        self.menu.addAction(self.add_device_button)
+        self.menu.addSeparator()
+        self.menu.addAction(self.convert_buf_button)
+        self.menubar.addAction(self.menu.menuAction())
+
+        self.set = QMenu(self.menubar)
+        self.menubar.addAction(self.set.menuAction())
+        self.develop_mode = QAction(self)
+        self.general_settings = QAction(self)
+
+        self.info = QMenu(self.menubar)
+        self.menubar.addAction(self.info.menuAction())
+        self.instruction = QAction(self)
+        self.about_autors = QAction(self)
+        self.version = QAction(self)
+        self.setAcceptDrops(True)
+
+        # Меню "Файл"
+        file_menu = self.menubar.addMenu("Файл") 
+        file_menu.addAction(self.save_installation_button)
+        file_menu.addAction(self.save_installation_button_as)
+        file_menu.addAction(self.open_installation_button)
+        file_menu.addSeparator()
+        file_menu.addAction(self.add_device_button)
+        file_menu.addSeparator()
+        file_menu.addAction(self.convert_buf_button)
+
+        # Меню "Настройки"
+        settings_menu = self.menubar.addMenu("Сессия")
+        settings_menu.addAction(self.develop_mode)
+        settings_menu.addAction(self.general_settings)
+
+class GraphSession(QWidget):
+    graph_win_close_signal = pyqtSignal(int)
+
+    def __init__(self):
+        super().__init__()
+        self.notification = None
         self.initUI()
 
     def initUI(self):
-        self.mainWidget = QWidget(self)
-        self.setWindowIcon(QIcon('picture/graph.png')) 
-        self.setCentralWidget(self.mainWidget)
-        self.mainLayout = QHBoxLayout(self.mainWidget)
+
+        self.up_lay = QHBoxLayout(self)
 
         self.filter_class = filtersClass()
 
@@ -99,12 +167,10 @@ class GraphWindow(QMainWindow):
         self.data_manager = graphDataManager()
         self.select_win = paramSelector()
         self.select_controller = paramController( self.select_win )
-        self.import_data_win = importDataWin()
-        self.import_data_manager = controlImportData(self.import_data_win, self.data_manager, self)
 
         self.filter_class.set_filter_slot(self.filters_callback)#при нажатии кнопок в фильтре будет вызываться эта функция
 
-        self.mainLayout.addWidget(splitter)
+        self.up_lay.addWidget(splitter)
 
         self.tab1 = tabPage(1)
         self.tab2 = tabPage(2)
@@ -112,12 +178,13 @@ class GraphWindow(QMainWindow):
         self.tabWidget.addTab(self.tab1, QApplication.translate("GraphWindow", "Графики") )
         self.tabWidget.addTab(self.tab2, QApplication.translate("GraphWindow", "Осциллограммы") )  # Placeholder for another tab
 
-        self.graph_main = graphMain(tablet_page=self.tab1, main_class=self, import_data_widget=self.import_data_win, select_data_wid = self.select_win)
+        self.graph_main = graphMain(tablet_page=self.tab1, main_class=self, select_data_wid = self.select_win)
         self.graph_wave = graphOsc(self.tab2, self)
 
         self.adapter_main_graph = graphSelectAdapter(self.graph_main, self.select_controller, self.data_manager, self.tree_class, 'main', self)
 
         self.tabWidget.setCurrentIndex(0)
+
 
     def show_tooltip(self, message, show_while_not_click = False, timeout = 3000):
         if self.notification is None:
@@ -162,26 +229,69 @@ class GraphWindow(QMainWindow):
         self.graph_main.set_default()
         self.graph_wave.set_default()
 
-    def gen_new_data(self):
-        """функция раз в n секунд генерирует словарь и обновляет данные"""
-        self.update_graphics(next(self.gen))
-        self.counter_test += 1
+    def closeEvent(self, event):
+        self.graph_win_close_signal.emit(1)
 
-        if self.counter_test >= 100:
-            self.counter_test = 0
-            self.timer.stop()
-            self.data_manager.stop_session_running()
-
-    def test_update(self, periodsec):
+class running_exp_test(QWidget):
+    def __init__(self,graph_class, max_points, periodsec):
+        super().__init__()
         self.test = test_graph()
         self.gen = self.test.append_values()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.gen_new_data)
-        self.timer.start(int(periodsec*1000))
         self.counter_test = 0
+        self.max_points = max_points
+        self.periodsec = periodsec
+        self.graph_class = graph_class
 
-    def closeEvent(self, event):
-        self.graph_win_close_signal.emit(1)
+    def run(self):
+        self.graph_class.start_new_session("test",is_experiment_running=True, use_timestamps=True)
+        self.graph_class.import_data_manager.add_new_data_name("test")
+        self.timer.start(int(self.periodsec*1000))
+
+    def gen_new_data(self):
+        """функция раз в n секунд генерирует словарь и обновляет данные"""
+        self.graph_class.graph_sessions["test"].update_graphics(next(self.gen))
+        self.counter_test += 1
+
+        if self.counter_test >= self.max_points:
+            self.counter_test = 0
+            self.timer.stop()
+            self.graph_class.graph_sessions["test"].data_manager.stop_session_running()
+
+class sessionController():
+    def __init__(self):
+        self.import_data_win = importDataWin()
+        self.import_data_manager = controlImportData(self.import_data_win)
+        self.import_data_manager.exp_name_changed.connect(self.change_session)
+        self.import_data_manager.new_data_imported.connect(self.data_imported)
+
+        self.graphics_win = GraphWindow(self.import_data_win)
+
+        self.graph_sessions = {}
+
+    def start_new_session(self, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None):
+        new_session_graph = GraphSession()
+        try:
+            new_session_graph.data_manager.start_new_session(session_id, use_timestamps, is_experiment_running, new_data)
+        except:
+            pass
+
+        self.graph_sessions[session_id] = new_session_graph
+        self.graphics_win.stack.addWidget(new_session_graph)
+
+    def change_session(self, session_id: str):
+        if self.graph_sessions.get(session_id) is not None:
+            self.graphics_win.stack.setCurrentWidget(self.graph_sessions[session_id])
+        else:
+            print(f"session {session_id} not found")
+
+    def data_imported(self, session_id: str, data: dict):
+        self.start_new_session(session_id, new_data=data)
+        self.import_data_manager.win.experiment_selector.setCurrentIndex(self.import_data_manager.win.experiment_selector.findText(session_id))
+
+    def update_session_data(self, session_id: str, data: dict):
+        self.graph_sessions[session_id].data_manager.add_measurement_data(data)
 
 if __name__ == "__main__":
     import os
@@ -198,12 +308,13 @@ if __name__ == "__main__":
     from test_main_graph import test_graph
     app = QApplication(sys.argv)
     qdarktheme.setup_theme("dark", corner_shape="sharp", custom_colors={"primary": "#DDBCFF"})
-    mainWindow = GraphWindow()
-    mainWindow.data_manager.start_new_session("test",is_experiment_running=True, use_timestamps=True)
-    mainWindow.show()
-    mainWindow.test_update(periodsec=0.1)
 
-    #mainWindow.update_param_in_comboxes()
+    my_session_class = sessionController()
+    my_session_class.graphics_win.show()
+
+    test_class = running_exp_test(my_session_class, 100, 0.1)
+    test_class.run()
+
     sys.exit(app.exec_())
 
     # py-spy record --native -o profile.svg -- python C:\Users\zahidovds\Desktop\virtual_for_uswindsens\main\graph\online_graph.py

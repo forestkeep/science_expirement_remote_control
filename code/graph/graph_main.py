@@ -70,11 +70,11 @@ class CustomComboBox(QComboBox):
 class graphMain(QObject):
     new_curve_selected = pyqtSignal()
 
-    def __init__(self, tablet_page, main_class, import_data_widget, select_data_wid):
+    def __init__(self, tablet_page, main_class, select_data_wid):
         super().__init__()
         self.page = tablet_page
         #++++++++++++++++++++++++++++++++++++++++
-        self.import_data_widget = import_data_widget
+        #self.import_data_widget = import_data_widget
         self.select_win = select_data_wid
 
         #++++++++++++++++++++++++++++++++++++++++++
@@ -176,14 +176,12 @@ class graphMain(QObject):
         self.selector = QSpacerItem(15, 15, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         data_name_layout = QHBoxLayout()
-        self.data_name_label = QLabel()
-        data_name_layout.addWidget(self.data_name_label)
         data_name_layout.addItem(self.selector)
         # Add the layouts to the first tab
         self.tab1Layout.addLayout(data_name_layout)
         self.tab1Layout.addWidget( self.select_win )
         self.tab1Layout.addWidget(self.graphView)
-        self.tab1Layout.addWidget(self.import_data_widget)
+        #self.tab1Layout.addWidget(self.import_data_widget)
         self.page.setLayout(self.tab1Layout)
 
         self.set_second_axis(state = False)
@@ -557,6 +555,5 @@ class graphMain(QObject):
 
     def retranslateUi(self, GraphWindow):
         _translate = QApplication.translate
-        self.data_name_label.setText( _translate("GraphWindow","Экспериментальные данные") )
 
         

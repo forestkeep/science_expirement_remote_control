@@ -114,13 +114,13 @@ class graphSelectAdapter:
 			if buf:
 				datay2[param] = parameters[self.type_data][param]
 
-		data_first_axis, data_second_axis = self.data_manager.get_current_session_relation_data(datax, datay1, datay2, self.type_data)
+		data_first_axis, data_second_axis = self.data_manager.get_relation_data(datax, datay1, datay2, self.type_data)
 
 		self.graph.update_data(data_first_axis, data_second_axis, is_updated = True)
 
 	def parameters_choised(self, param_x, param_y1, param_y2):
 		'''метод вызывается селектором в моменты, когда пользователь выбрал новые параметры'''
 
-		data_first_axis, data_second_axis = self.data_manager.get_current_session_relation_data(param_x, param_y1, param_y2, self.type_data)
+		data_first_axis, data_second_axis = self.data_manager.get_relation_data(param_x, param_y1, param_y2, self.type_data)
 
 		self.graph.update_data(data_first_axis, data_second_axis)
