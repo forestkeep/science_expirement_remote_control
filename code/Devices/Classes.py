@@ -296,8 +296,7 @@ class base_device():
                     self.active_channel_meas.is_time_meas_correct = True
                     if self.setting_window.triger_meas_enter.currentText() == QApplication.translate("Device","Таймер"):
                             try:
-                                if int(self.setting_window.sourse_meas_enter.currentText()) < 1:
-                                    self.active_channel_meas.is_time_meas_correct = False
+                                float(self.setting_window.sourse_meas_enter.currentText())
                             except:
                                 self.active_channel_meas.is_time_meas_correct = False
 
@@ -605,7 +604,7 @@ class base_device():
         return answer
 
     def get_trigger_value(self, ch):
-        '''возвращает источник сигнала или время в секундах, если в качестве триггера выбран таймер, в случае ошибки возвращает False'''
+        '''возвращает источник сигнала или время, если в качестве триггера выбран таймер, в случае ошибки возвращает False'''
         trigger = self.get_trigger(ch)
 
         if trigger is None:
@@ -614,7 +613,7 @@ class base_device():
 
         elif trigger == QApplication.translate("Device","Таймер"):
             try:
-                answer = int(ch.dict_settable_parameters["sourse/time"])
+                answer = float(ch.dict_settable_parameters["sourse/time"])
             except:
                 answer = False
         elif trigger == QApplication.translate("Device","Внешний сигнал"):
@@ -671,9 +670,9 @@ class base_device():
 
                 if self.setting_window.triger_act_enter.currentText() == QApplication.translate( "Device", "Таймер" ):
                     try:
-                        buf = int(self.active_channel_act.dict_buf_parameters["sourse/time"])
+                        buf = float(self.active_channel_act.dict_buf_parameters["sourse/time"])
                     except:
-                        buf = 5
+                        buf = 1
                     self.setting_window.sourse_act_enter.clear()
                     self.setting_window.sourse_act_enter.setEditable(True)
                     self.setting_window.sourse_act_enter.addItems([str(buf), "10", "30", "60", "120"])
@@ -697,9 +696,9 @@ class base_device():
 
                 if self.setting_window.triger_meas_enter.currentText() == QApplication.translate( "Device", "Таймер" ):
                     try:
-                        buf = int(self.active_channel_meas.dict_buf_parameters["sourse/time"])
+                        buf = float(self.active_channel_meas.dict_buf_parameters["sourse/time"])
                     except:
-                        buf = 5
+                        buf = 1
                     self.setting_window.sourse_meas_enter.clear()
                     self.setting_window.sourse_meas_enter.setEditable(True)
                     self.setting_window.sourse_meas_enter.addItems([str(buf), "10", "30", "60", "120"])
@@ -820,8 +819,8 @@ class base_ch(control_in_experiment):
         self.signal_list = []
         self.dict_settable_parameters = {}  # текущие параметры канала действий
         self.dict_buf_parameters = {"trigger": QApplication.translate("Device","Таймер"),
-                                    "sourse/time": str(10),  # секунды
-                                    "num steps": "1",
+                                    "sourse/time": str(1),  # секунды
+                                    "num steps": "10",
                                     }
 
         self.message_broker = device_class.message_broker

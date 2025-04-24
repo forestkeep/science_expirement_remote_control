@@ -36,13 +36,13 @@ from meas_session_data import measSession
 from experiment_control import ExperimentBridge
 from functions import get_active_ch_and_device
 from queue import Queue
+from graph.online_graph import sessionController
 
 logger = logging.getLogger(__name__)
 
 class installation_class( ExperimentBridge, analyse):
     def __init__(self, settings_manager, version = None) -> None:
         super().__init__()
-        logger.info("запуск установки")
 
         self.settings_manager    = settings_manager
         self.version_app         = version
@@ -97,7 +97,8 @@ class installation_class( ExperimentBridge, analyse):
     def reconstruct_installation(self, installation_list: list, json_devices: dict = None):
         """Reconstruct installation from list of device names"""
         self.dict_active_device_class = {}
-        self.graph_window = None
+        self.graph_controller = sessionController()
+        self.graph_controller.graphics_win.graph_win_close_signal.connect(self.graph_win_closed)
         self.measurement_parameters = {}
         i = 0
         for device_name in installation_list:
@@ -169,12 +170,12 @@ class installation_class( ExperimentBridge, analyse):
         self.timer_for_open_base_instruction.start()
 
     def set_state_ch(self, device, num_ch, state):
-        logger.info(f"передаем состояние {state} канала {num_ch} прибору {device}")
+        logger.debug(f"передаем состояние {state} канала {num_ch} прибору {device}")
         self.dict_active_device_class[device].set_state_ch(num_ch, state)
         self.preparation_experiment()
 
     def preparation_experiment(self):
-        logger.info("подготовка к эксперименту")
+        logger.debug("подготовка к эксперименту")
         self.key_to_start_installation = False
         
         self.message_broker.clear_all_subscribers()
@@ -297,9 +298,7 @@ class installation_class( ExperimentBridge, analyse):
             file.write(str(name_device) + str(text) + "\n\r")
 
     def close_other_windows(self):
-        if self.graph_window is not None:
-            self.graph_window.close()
-
+        self.graph_controller.graphics_win.close()
         self.stop_scan_thread = True
         self.thread_scan_resources.join()
 
@@ -422,8 +421,11 @@ class installation_class( ExperimentBridge, analyse):
                     self.add_text_to_log(QApplication.translate('main install',"Создан файл") + " " + self.buf_file)
                     logger.debug("Эксперимент начат" + "Создан файл " + self.buf_file)
                     self.measurement_parameters = {}
-                    if self.graph_window is not None:
-                        self.graph_window.set_default()
+
+                    self.current_session_graph_id = self.graph_controller.start_new_session(session_name=str(datetime.now()),
+                                                                                            use_timestamps=True,
+                                                                                            is_experiment_running=True
+                                                                                            )
 
                     self.add_text_to_log(QApplication.translate('main install',"настройка приборов") + ".. ")
 
@@ -472,16 +474,14 @@ class installation_class( ExperimentBridge, analyse):
             self.queue.task_done()
 
     def update_remaining_time(self, remaining_time: float):
-        logger.info(f"update_remaining_time {remaining_time}")
+        logger.debug(f"update_remaining_time {remaining_time}")
         self.remaining_exp_time = remaining_time
 
     def update_measurement_data(self, measurement_data: dict):
         #TODO: оценить с точки зрения потокобезопасности, может быть нужно делать копии, а не ссылаться на один объект
         self.measurement_parameters = measurement_data
-        if self.graph_window:
-            self.graph_window.update_graphics( self.measurement_parameters )
 
-        print(self.measurement_parameters)
+        self.graph_controller.update_session_data(self.current_session_graph_id, self.measurement_parameters)
 
     def create_buf_file(self):
         name_file = ""

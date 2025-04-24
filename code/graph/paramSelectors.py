@@ -13,7 +13,10 @@ import logging
 from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QHBoxLayout,QLabel,
                              QListWidget, QSizePolicy, QVBoxLayout, QWidget)
-from numShowPoints_win import numShowPointsClass
+try:
+    from numShowPoints_win import numShowPointsClass
+except:
+    from graph.numShowPoints_win import numShowPointsClass
 logger = logging.getLogger(__name__)
 
 class customQListWidget(QListWidget):

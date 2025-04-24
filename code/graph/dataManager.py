@@ -122,8 +122,8 @@ class graphDataManager( QObject ):
 	def get_name_params(self):
 		return list(self.__sessions_data['osc'].data.keys()) + list( self.__sessions_data['main'].data.keys())
 
-	def start_new_session(self, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None):
-		if not session_id or not isinstance(session_id, str):
+	def start_new_session(self, session_id: int, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None):
+		if not session_id or not isinstance(session_id, int):
 			raise ValueError("Invalid session_id")
 
 		if use_timestamps:
@@ -212,7 +212,6 @@ class graphDataManager( QObject ):
 
 		return status
 	
-
 	def _handle_three_level_data(self, data: Dict[str, Dict[str, dict[str, Any]]]) -> tuple[bool, bool, bool]:
 		is_new_param_added = False
 		is_old_param_udated = False

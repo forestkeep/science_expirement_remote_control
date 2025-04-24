@@ -223,6 +223,9 @@ class saving_data:
                             dev.data["time"].append(buf[0])
                         else:
                             dev.data["time"] = [buf[0]]
+
+                        time_data_len = len(dev.data["time"])
+
                         current_time = buf[0]
                         buf = buf[3 : len(buf)]
                         for param in buf:
@@ -245,13 +248,14 @@ class saving_data:
                                     data.data.append(val)
 
                                 dev.osc_data.append(data)
-                            else:
+                            else:        
                                 if param[0] in dev.data:
-                                    dev.data[param[0]].append(param[1])
-                                else:
-                                    if len(param) > 1:
-                                        dev.data[param[0]] = [param[1]]
-
+                                    arr = dev.data[param[0]]
+                                    arr.extend(['fail'] * (time_data_len - len(arr) - 1))
+                                    arr.append(param[1])
+                                elif len(param) > 1:
+                                    dev.data[param[0]] = ['fail'] * (time_data_len - 1) + [param[1]]
+                                    
     def build_data_frame(self, result_description = None) -> pandas.DataFrame:
         column_number = 0
         max_dev_data_len = 0
@@ -392,8 +396,6 @@ class saving_data_processing:
             self.output_file_path, message, status = save.save_data(
                     self.input_file_path, self.output_file_path, self.output_type, self.result_name, self.result_description
                 )
-            
-            print(f"{message=} {status=}")
             
             if status:
                 if self.is_delete_buf_file == True:

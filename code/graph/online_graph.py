@@ -26,10 +26,9 @@ try:
     from tabPage_win import tabPage
     from tree_curves import treeWin
     from dataManager import graphDataManager
-    from importData import controlImportData
-    from importData import importDataWin
     from paramSelectors import paramSelector, paramController
     from graphSelectAdapter import graphSelectAdapter
+    from select_session import SessionSelectControl
 except:
     from graph.filters_win import filtersClass
     from graph.graph_main import graphMain
@@ -38,10 +37,9 @@ except:
     from graph.tabPage_win import tabPage
     from graph.tree_curves import treeWin
     from graph.dataManager import graphDataManager
-    from graph.importData import controlImportData
-    from graph.importData import importDataWin
     from graph.paramSelectors import paramSelector, paramController
     from graph.graphSelectAdapter import graphSelectAdapter
+    from graph.select_session import SessionSelectControl
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +65,6 @@ class GraphWindow(QMainWindow):
         self.initUI(import_data_win=import_data_win)
 
     def initUI(self, import_data_win):
-
         self.__add_menu()
 
         self.mainWidget = QWidget(self)
@@ -77,8 +74,14 @@ class GraphWindow(QMainWindow):
 
         self.stack = QStackedWidget(self)
 
-        self.main_lay.addWidget(self.stack)
-        self.main_lay.addWidget(import_data_win)
+        splitter = QSplitter(0)
+        
+        splitter.addWidget(self.stack)
+        splitter.addWidget(import_data_win)
+
+        splitter.setSizes([self.height() // 2, self.height() // 8])
+
+        self.main_lay.addWidget(splitter)
 
     def __add_menu(self):
         self.menubar = self.menuBar()
@@ -131,9 +134,11 @@ class GraphWindow(QMainWindow):
 class GraphSession(QWidget):
     graph_win_close_signal = pyqtSignal(int)
 
-    def __init__(self):
+    def __init__(self, id, name):
         super().__init__()
         self.notification = None
+        self.session_id = id
+        self.session_name = name
         self.initUI()
 
     def initUI(self):
@@ -245,53 +250,85 @@ class running_exp_test(QWidget):
         self.graph_class = graph_class
 
     def run(self):
-        self.graph_class.start_new_session("test",is_experiment_running=True, use_timestamps=True)
-        self.graph_class.import_data_manager.add_new_data_name("test")
+        self.id = self.graph_class.start_new_session("test",is_experiment_running=True, use_timestamps=True)
         self.timer.start(int(self.periodsec*1000))
 
     def gen_new_data(self):
         """функция раз в n секунд генерирует словарь и обновляет данные"""
-        self.graph_class.graph_sessions["test"].update_graphics(next(self.gen))
+        self.graph_class.update_session_data(self.id, (next(self.gen)))
         self.counter_test += 1
 
         if self.counter_test >= self.max_points:
             self.counter_test = 0
             self.timer.stop()
-            self.graph_class.graph_sessions["test"].data_manager.stop_session_running()
+            self.graph_class.stop_session_running( self.id )
 
 class sessionController():
     def __init__(self):
-        self.import_data_win = importDataWin()
-        self.import_data_manager = controlImportData(self.import_data_win)
-        self.import_data_manager.exp_name_changed.connect(self.change_session)
-        self.import_data_manager.new_data_imported.connect(self.data_imported)
+        self.session_selector = SessionSelectControl()
+        self.controll_sessions_win = self.session_selector.widget
 
-        self.graphics_win = GraphWindow(self.import_data_win)
+        self.session_selector.current_session_changed.connect(self.change_session)
+        self.session_selector.session_deleted.connect(self.delete_session)
+        self.session_selector.new_data_imported.connect(self.data_imported)
+        self.session_selector.session_name_changed.connect(self.change_session_name)
+
+        self.graphics_win = GraphWindow(self.controll_sessions_win)
 
         self.graph_sessions = {}
 
-    def start_new_session(self, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None):
-        new_session_graph = GraphSession()
+    def show(self):
+        self.graphics_win.show()
+
+    def stop_session_running(self, session_id):
+        if self.graph_sessions.get(session_id):
+            self.graph_sessions[session_id].data_manager.stop_session_running()
+
+    def start_new_session(self, session_name: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None) -> int:
+        session_id = self.session_selector.get_free_id()
+        self.__create_session(session_name, session_id, use_timestamps, is_experiment_running, new_data)
+        if is_experiment_running:
+            status = "running"
+        self.session_selector.add_session({'id': session_id, 'name': session_name, 'status': status})
+        return session_id
+
+    def __create_session(self, session_name: str, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None):
+        new_session_graph = GraphSession(session_id, session_name)
         try:
             new_session_graph.data_manager.start_new_session(session_id, use_timestamps, is_experiment_running, new_data)
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to start session {session_id} {e}")
 
         self.graph_sessions[session_id] = new_session_graph
         self.graphics_win.stack.addWidget(new_session_graph)
 
-    def change_session(self, session_id: str):
+    def change_session(self, session_id: int):
         if self.graph_sessions.get(session_id) is not None:
             self.graphics_win.stack.setCurrentWidget(self.graph_sessions[session_id])
         else:
-            print(f"session {session_id} not found")
+            logger.warning(f"Session {session_id} not found")
 
-    def data_imported(self, session_id: str, data: dict):
-        self.start_new_session(session_id, new_data=data)
-        self.import_data_manager.win.experiment_selector.setCurrentIndex(self.import_data_manager.win.experiment_selector.findText(session_id))
+    def data_imported(self,session_name: str, session_id: str, data: dict):
+        self.__create_session(session_name, session_id, new_data=data)
 
-    def update_session_data(self, session_id: str, data: dict):
+    def delete_session(self, session_id: str):
+        self.graphics_win.stack.removeWidget(self.graph_sessions[session_id])
+        self.graph_sessions[session_id].deleteLater()
+        del self.graph_sessions[session_id]
+
+    def change_session_name(self, session_id: str, session_name: str):
+        self.graph_sessions[session_id].session_name = session_name
+
+    def update_session_data(self, session_id: str, data: dict) -> bool:
+        if self.graph_sessions.get(session_id) is None:
+            return False
         self.graph_sessions[session_id].data_manager.add_measurement_data(data)
+
+    def get_session_id(self, session_name: str) -> int:
+        for session_id in self.graph_sessions.keys():
+            if self.graph_sessions[session_id].session_name == session_name:
+                return session_id
+        return None
 
 if __name__ == "__main__":
     import os
@@ -312,7 +349,7 @@ if __name__ == "__main__":
     my_session_class = sessionController()
     my_session_class.graphics_win.show()
 
-    test_class = running_exp_test(my_session_class, 100, 0.1)
+    test_class = running_exp_test(my_session_class, 5, 1)
     test_class.run()
 
     sys.exit(app.exec_())

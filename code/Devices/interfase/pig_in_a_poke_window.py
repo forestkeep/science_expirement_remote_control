@@ -39,11 +39,13 @@ class pigInAPokeWindow(base_settings_window):
         self.downloaded_file_lable = QtWidgets.QLabel()
         self.command_text = QtWidgets.QTextEdit(self)
         self.download_button = QtWidgets.QPushButton(self)
+        self.check_not_command = QtWidgets.QCheckBox(self)
         
         self.Layout_set_dev_meas.addWidget(self.description_label)
-        self.Layout_set_dev_meas.addWidget(self.downloaded_file_lable, 2, 0, 1, 1)
-        self.Layout_set_dev_meas.addWidget(self.command_text, 3, 0, 1, 1)
-        self.Layout_set_dev_meas.addWidget(self.download_button, 4, 0, 1, 1)
+        self.Layout_set_dev_meas.addWidget(self.check_not_command, 2, 0, 1, 1)
+        self.Layout_set_dev_meas.addWidget(self.downloaded_file_lable, 3, 0, 1, 1)
+        self.Layout_set_dev_meas.addWidget(self.command_text, 4, 0, 1, 1)
+        self.Layout_set_dev_meas.addWidget(self.download_button, 5, 0, 1, 1)
 
         self.Layout_set_dev_meas.addWidget(self.timeotlabel)
         self.Layout_set_dev_meas.addWidget(self.timeout_line)
@@ -64,6 +66,8 @@ class pigInAPokeWindow(base_settings_window):
         self.description_label.setText(_translate("pigInAPoke", "Впишите или загрузите команды построчно"))
         self.download_button.setText(_translate("pigInAPoke", "Загрузить файл"))
         self.downloaded_file_lable.setToolTip(_translate("pigInAPoke", "Введите команды построчно, на каждом шаге прибора команды будут построчно выполнены, а полученные от них данные записаны в качесве результатов."))
+        self.check_not_command.setText(_translate("pigInAPoke", "Не отправлять команду перед чтением"))
+        self.check_not_command.setToolTip(_translate("pigInAPoke", "Отметьте этот пункт, если ваш прибор непрерывно посылает данные независимо от команды"))
 
 if __name__ == "__main__":
     import sys

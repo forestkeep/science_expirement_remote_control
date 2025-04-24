@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import QApplication
 from Adapter import Adapter, instrument
 from Devices.Classes import (not_ready_style_background,
                              not_ready_style_border, ready_style_border)
-from graph.online_graph import GraphWindow
+from graph.online_graph import sessionController
 
 from interface.Message import messageDialog
 from saving_data.Parse_data import process_and_export, type_save_file
@@ -113,7 +113,7 @@ class baseInstallation:
             priority += 1
 
     def add_text_to_log(self, text: str, status: str = None):
-        logger.info(f"add_text_to_log {text=} {status=}")
+        logger.debug(f"add_text_to_log {text=} {status=}")
         if status == "err":
             self.installation_window.log.setTextColor(QtGui.QColor("red"))
         elif status == "war":
@@ -123,16 +123,13 @@ class baseInstallation:
         else:
             self.installation_window.log.setTextColor(QtGui.QColor("white"))
 
-
         self.installation_window.log.append(
             (str(datetime.now().strftime("%H:%M:%S")) + " : " + str(text))
         )
         self.installation_window.log.ensureCursorVisible()
 
-        #cur_text = self.installation_window.log.toPlainText().split("\n")
-
     def set_state_text(self, text):
-        logger.info(f"set_state_text {text}")
+        logger.debug(f"set_state_text {text}")
         self.installation_window.label_state.setText(text)
 
     def show_window_installation(self):
@@ -350,13 +347,7 @@ class baseInstallation:
                 )
 
     def open_graph_in_exp(self):
-        if self.graph_window is not None:
-            pass
-        else:
-            self.graph_window = GraphWindow(experiment_controller = self)
-            self.graph_window.graph_win_close_signal.connect(self.graph_win_closed)
-            self.graph_window.update_graphics(self.measurement_parameters)
-        self.graph_window.show()
+        self.graph_controller.graphics_win.show()
 
     def add_new_device(self):
         logger.debug("нажата кнопка добавления нового прибора")
@@ -464,9 +455,8 @@ class baseInstallation:
             self.installation_window.start_button.setText(QApplication.translate('base_install',"Старт"))
             self.key_to_start_installation = False  # старт экспериепнта запрещаем
 
-    def write_data_to_buf_file(self, message: str, addTime: bool=False):
-        logger.debug(f"write_data_to_buf_file {message}")
-        message = f"{datetime.now().strftime('%H:%M:%S') + ' ' if addTime else ''}{message.replace('.', ',')}"
+    def write_data_to_buf_file(self, message: str, addTime: bool=False, ):
+        message = f"{datetime.now().strftime('%H:%M:%S.%f')[:-3] + ' ' if addTime else ''} {message.replace('.', ',')}"
         with open(self.buf_file, "a") as file:
             file.write( str(message) )
 
@@ -537,13 +527,13 @@ class baseInstallation:
         )
 
         self.preparation_experiment()
-        logger.info("передали настройки прибора установке")
+        logger.debug("передали настройки прибора установке")
 
     ##############################################
     def create_clients(self) -> list:
         self.is_search_resources = False
         """функция создает клиенты для приборов с учетом того, что несколько приборов могут быть подключены к одному порту. Возвращает список ресурсов, которые не удалось создать"""
-        logger.info("создаем клиенты для приборов")
+        logger.debug("создаем клиенты для приборов")
         list_type_connection = []
         list_COMs = []
         list_baud = []

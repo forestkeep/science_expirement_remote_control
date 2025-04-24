@@ -148,8 +148,7 @@ class ExperimentBridge(analyse):
         self.update_pbar( 0 )
         self.installation_window.label_time.setText( "" )
          
-        if self.graph_window is not None:
-            self.graph_window.update_graphics(self.measurement_parameters, is_exp_stop = True)
+        self.graph_controller.stop_session_running( self.current_session_graph_id )
 
         if error:
             if error_start_exp :

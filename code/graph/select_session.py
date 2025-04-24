@@ -34,7 +34,7 @@ except:
 logger = logging.getLogger(__name__)
 
 class SessionWidget(QWidget):
-    session_selected = pyqtSignal(str)  # session_id
+    session_selected = pyqtSignal(int)  # session_id
     session_deleted = pyqtSignal(int)
     import_data_requested = pyqtSignal()
     import_oscillograms_requested = pyqtSignal()
@@ -55,7 +55,7 @@ class SessionWidget(QWidget):
         button_layout.addWidget(self.btn_import_osc)
         
         self.table = QTableWidget()
-        self.table.setColumnCount(2)
+        self.table.setColumnCount(3)
         self.table.setHorizontalHeaderLabels(["ID", "Имя", "Статус"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -63,8 +63,8 @@ class SessionWidget(QWidget):
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)  # Включаем контекстное меню
         self.table.customContextMenuRequested.connect(self.show_context_menu)  # Подключаем обработчик
         
-        self.layout.addLayout(button_layout)
         self.layout.addWidget(self.table)
+        self.layout.addLayout(button_layout)
         
         # Сигналы
         self.btn_import_data.clicked.connect(self.import_data_requested)
@@ -79,16 +79,7 @@ class SessionWidget(QWidget):
         for row, session in enumerate(sessions):
             self.table.setItem(row, 0, QTableWidgetItem(str(session['id'])))
             self.table.setItem(row, 1, QTableWidgetItem(session['name']))
-            # Статус с иконкой (колонка 1)
-            status_label = QLabel()
-            status_label.setAlignment(Qt.AlignCenter)
-            status_label.setPixmap(self._get_status_icon(session['status']))
-            self.table.setCellWidget(row, 2, status_label)
-
-    def _get_status_icon(self, status):
-        # Пример реализации (замените на свои иконки)
-        icon_path = ":/icons/status_ok.png" if status == "ok" else ":/icons/status_error.png"
-        return QPixmap(icon_path).scaled(20, 20)
+            self.table.setItem(row, 2, QTableWidgetItem(session['status']))
 
     def show_context_menu(self, pos: QPoint):
         menu = QMenu(self)
@@ -131,10 +122,10 @@ class SessionWidget(QWidget):
             self._start_rename_session(row)
 
     def _on_cell_clicked(self, row, col):
-        session_name = self.table.item(row, 0).text()
-        self.session_selected.emit(session_name)
+        session_id = self.table.item(row, 0).text()
+        self.session_selected.emit(int(session_id))
 
-class SessionController(QObject):
+class SessionSelectControl(QObject):
     current_session_changed = pyqtSignal(int)
     session_name_changed = pyqtSignal(str, str)
     session_deleted = pyqtSignal(int)
@@ -154,12 +145,10 @@ class SessionController(QObject):
     def update_view(self):
         self.widget.update_sessions(self.sessions)
 
-    def handle_session_selected(self, session_name):
-        print(f"Selected session: {session_name}")
+    def handle_session_selected(self, session_id):
         for session in self.sessions:
-            if session['name'] == session_name:
+            if session['id'] == session_id:
                 self.current_session_changed.emit(session['id'])
-                print(session['id'])
                 break
 
     def add_session(self, session_data):
@@ -250,7 +239,7 @@ if __name__ == "__main__":
     import sys
     
     app = QApplication(sys.argv)
-    controller = SessionController()
+    controller = SessionSelectControl()
     
     # Тестовые данные
     controller.sessions = [

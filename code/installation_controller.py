@@ -27,7 +27,7 @@ import interface.info_window_dialog
 from device_creator.dev_creator import deviceCreator
 from device_creator.run_commands import TestCommands
 from Devices.svps34_control import Ui_SVPS34_control
-from graph.online_graph import GraphWindow
+from graph.online_graph import sessionController
 from Installation_class import installation_class
 from interface.main_window import Ui_MainWindow
 from controlDevicesJSON import search_devices_json
@@ -56,7 +56,7 @@ class MyWindow(QtWidgets.QMainWindow):
     def __init__(self, settings_manager: SettingsManager):
         self.settings_manager = settings_manager
 
-        self.graph_window   = None
+        self.graph_controller   = None
         self.device_creator = deviceCreator()
         self.device_selector = None
 
@@ -136,10 +136,11 @@ class MyWindow(QtWidgets.QMainWindow):
         self.settings_manager.save_settings({"language": lang})
 
     def open_graph_in_exp(self):
-        if self.graph_window is None:
-            self.graph_window = GraphWindow()
+        if self.graph_controller is None:
+            self.graph_controller = sessionController()
 
-        self.graph_window.show()
+
+        self.graph_controller.graphics_win.show()
         self.cur_install.stop_scan_thread = True#stop scanning thread
         self.close()
         del self

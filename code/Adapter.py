@@ -131,8 +131,8 @@ class Adapter:
                 self.client.write(command)
             except:
                 self.client.write(command.encode())
-
-            return self.client.readline()
+            ans = self.client.readline()
+            return ans
         elif self.which_resourse == resourse.pyvisa:
             if timeout:
                 self.client.timeout = timeout
@@ -141,7 +141,6 @@ class Adapter:
                 command = str(command)
 
             if self.client.write_termination in command:
-                pass
                 logger.debug(f"удаляем {self.client.write_termination=} из {command=}")
                 command = command.replace(self.client.write_termination, "")
             return self.client.query(command)
