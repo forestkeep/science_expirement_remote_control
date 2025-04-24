@@ -274,13 +274,14 @@ class graphDataManager( QObject ):
 		key = f"{device}{channel}{param}"
 
 		if "wavech" not in param:
-			val_list = np.array(value[0])
+			val_list = value[0] #[ [[osc1], [osc2]], [time1, time2]]
 		else:
-			val_list = [np.array(i) for i in value[0]]
+			val_list = value[0] #[ [val1, val2], [time1, time2]]
 
-		time_list = (np.array([i for i in range(len(val_list))]) if len(value) == 1 else np.array(value[1]))
+		time_list = ([i for i in range(len(val_list))] if len(value) == 1 else value[1])
 		if len(val_list) != len(time_list):
-			logger.warning(f"Длины списков параметра и времени не равны {device=} {channel=} {param=}")
+			logger.warning(f"Длины списков параметра и времени не равны {device=} {channel=} {param=} {value=}")
+			print(len(val_list), len(time_list))
 			return False, is_new_param_added, is_old_param_udated
 		
 		if "wavech" in param:
@@ -299,13 +300,64 @@ class graphDataManager( QObject ):
 			self.all_parameters[key_type].append(key)
 			is_new_param_added = True
 		else:
-			if len(existing_data.par_val) < len(value[0]):
-				existing_data.par_val = val_list
-				existing_data.num_or_time = time_list
-				self.updated_params[key_type][key] = existing_data
-				is_old_param_udated = True
+			existing_data.par_val.extend(val_list)
+			existing_data.num_or_time.extend(time_list)
+			self.updated_params[key_type][key] = existing_data
+			is_old_param_udated = True
 
 		return True, is_new_param_added, is_old_param_udated
+	
+	def update_parameters(self, data, entry, time):
+			try:
+				device, channel = entry[0].split()
+			except:
+				device, channel = "unknown_dev_1", "unknown_ch-1"
+			parameter_pairs = entry[1:]
+			status = True
+
+			if "pig_in_a_poke" in device:
+				new_pairs = []
+				for index, pair in enumerate(parameter_pairs):
+					new_pairs.append(pair)
+				parameter_pairs = new_pairs
+
+			if device not in data:
+				data[device] = {}
+
+			if channel not in data[device]:
+				data[device][channel] = {}
+
+			for parameter_pair in parameter_pairs:
+				try:
+					name, value = parameter_pair[0].split("=")
+				except:
+					logger.warning(f"ошибка при декодировании параметра {parameter_pair}")
+					continue
+
+				if "wavech" in name:  # oscilloscope wave
+					value = value.split("|")
+					buf = []
+					for val in value:
+						try:
+							buf.append(float(val))
+						except ValueError:
+							logger.warning(f"не удалось преобразовать в число: {device=} {channel=} {name=} {val=}")
+							continue
+					value = list(buf)
+
+				else:
+					try:
+						value = float(value)
+					except ValueError:
+						logger.info(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
+						continue
+
+				if name not in data[device][channel]:
+					data[device][channel][name] = [[], []]
+				data[device][channel][name][0].append(value)
+				data[device][channel][name][1].append(time)
+
+			return status, data
 
 def get_dict_depth(d):
 	if not isinstance(d, dict)  or not d:

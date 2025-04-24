@@ -349,7 +349,7 @@ if __name__ == "__main__":
     my_session_class = sessionController()
     my_session_class.graphics_win.show()
 
-    test_class = running_exp_test(my_session_class, 5, 1)
+    test_class = running_exp_test(my_session_class, 50, 1)
     test_class.run()
 
     sys.exit(app.exec_())

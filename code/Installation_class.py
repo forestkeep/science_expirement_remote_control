@@ -450,7 +450,9 @@ class installation_class( ExperimentBridge, analyse):
                         repeat_exp            =int(self.settings_manager.get_setting("repeat_exp")[1]),
                         repeat_meas           =int(self.settings_manager.get_setting("repeat_meas")[1]),
                         is_run_anywhere       =self.settings_manager.get_setting("is_exp_run_anywhere")[1],
-                        queue                 =self.queue
+                        queue                 =self.queue,
+                        graph_controller      =self.graph_controller,
+                        session_id            =self.current_session_graph_id
                     )
 
                     self.exp_controller.set_callbacks(
@@ -460,7 +462,8 @@ class installation_class( ExperimentBridge, analyse):
                         self.add_text_to_log,
                         self.set_state_text,
                         self.exp_call_stack.set_data,
-                        self.finalize_experiment
+                        self.finalize_experiment,
+
                     )
 
                     self.experiment_thread = threading.Thread(
@@ -478,9 +481,7 @@ class installation_class( ExperimentBridge, analyse):
         self.remaining_exp_time = remaining_time
 
     def update_measurement_data(self, measurement_data: dict):
-        #TODO: оценить с точки зрения потокобезопасности, может быть нужно делать копии, а не ссылаться на один объект
         self.measurement_parameters = measurement_data
-
         self.graph_controller.update_session_data(self.current_session_graph_id, self.measurement_parameters)
 
     def create_buf_file(self):

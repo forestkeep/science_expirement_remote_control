@@ -16,6 +16,7 @@ from datetime import datetime
 from PyQt5.QtWidgets import QApplication
 from Devices.Classes import ch_response_to_step
 from Handler_manager import messageBroker
+from graph.online_graph import sessionController
 #from profilehooks import profile
 import numpy
 import queue
@@ -76,7 +77,9 @@ class experimentControl( ):
 						repeat_exp:            int, 
 						repeat_meas:           int,
 						is_run_anywhere:       bool,
-						queue:                 queue.Queue
+						queue:                 queue.Queue,
+						graph_controller:      sessionController,
+						session_id:            int
 						):
 		
 		super().__init__()
@@ -86,6 +89,8 @@ class experimentControl( ):
 		self.is_experiment_endless = is_experiment_endless
 		self.repeat_experiment = repeat_exp
 		self.repeat_meas = repeat_meas
+		self.graph_controller = graph_controller
+		self.session_id = session_id
 
 		self.is_exp_run_anywhere = is_run_anywhere
 		self.queue = queue
@@ -115,7 +120,7 @@ class experimentControl( ):
 		self.meta_data_exp_updated = exp_call_stack
 		self.finalize_experiment = finalize_experiment
 
-		self.queue.put(lambda data=self.__measurement_parameters: self.update_measurement_data( data ))
+		#self.queue.put(lambda data=self.__measurement_parameters: self.update_measurement_data( data ))
 
 	#snakeviz baseline.prof - команда для просмотра профилирования
 	#@profile(stdout=False, filename='baseline.prof')
@@ -413,7 +418,8 @@ class experimentControl( ):
 
 				if status_update:
 
-					self.queue.put(lambda data=self.__measurement_parameters: self.update_measurement_data( data ))
+					#self.queue.put(lambda data=self.__measurement_parameters: self.update_measurement_data( data ))
+					self.graph_controller.update_session_data(self.session_id, self.__measurement_parameters)
 
 				ch.last_step_time = step_time
 
@@ -521,10 +527,9 @@ class experimentControl( ):
 						continue
 
 				if name not in data[device][channel]:
-					data[device][channel][name] = [numpy.array([]), numpy.array([])]
-				data[device][channel][name][0] = numpy.append(data[device][channel][name][0], value)
-				data[device][channel][name][1] = numpy.append(data[device][channel][name][1], time)
-				#TODO: нампай пеерсоздает массив каждый раз это может быть не эффективно, лучше создавать массив и преобразовывать его в нампай уже в конце. Необходимо увязать это с графиками и обновлением, может быть стоит преобразовывать в нампай только в моменты вывода графика 
+					data[device][channel][name] = [[], []]
+				data[device][channel][name][0].append(value)
+				data[device][channel][name][1].append(time)
 
 			return status, data
 

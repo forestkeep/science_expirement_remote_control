@@ -139,7 +139,7 @@ class test_graph:
         return random.choice(random_X)
 
     def get_values(self):
-        return [random.randint(1, 10) for _ in range(1)]
+        return [random.randint(1, 10)]
 
     def generate_random_list(self, size, lower_bound=0, upper_bound=100):
 
@@ -154,7 +154,7 @@ class test_graph:
         return sine_wave
 
     def update_dict(self, main_dict):
-        """добавляет в каждый конечный список число"""
+        """изменяет число в каждой конечной ветке"""
         for channels in main_dict.values():
             for channel, parameters in channels.items():
                 for key, value in parameters.items():
@@ -162,20 +162,17 @@ class test_graph:
                         isinstance(value, list)
                         and key != "wavech"
                     ):
-                        buf = value[0][-1] + random.randint(-10, 10)*(1 + random.uniform(-0.2, 0.2))
-                        value[0].append(buf)
-                        value[1].append(round(time.time() - self.start_time, 3))
+                        buf = value[0][0] + random.randint(-10, 10)*(1 + random.uniform(-0.2, 0.2))
+                        value[0] = [buf]
+                        value[1] = [round(time.time() - self.start_time, 3)]
                     elif (
                         isinstance(value, list)
                         or key == "wavech"
                     ):
                         # Если ключ содержит 'wave', добавляем случайное число в каждый вложенный список
-                        value[0].append(
-                            self.generate_random_list(
-                                size=10, lower_bound=0, upper_bound=10
-                            )
-                        )
-                        value[1].append(round(time.time() - self.start_time, 3))
+                        value[0] =[self.generate_random_list(
+                                size=10, lower_bound=0, upper_bound=10)]
+                        value[1] = [round(time.time() - self.start_time, 3)]
         return main_dict
 
     def append_values(self):

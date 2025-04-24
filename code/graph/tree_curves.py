@@ -39,15 +39,13 @@ class CurveTreeItem(QTreeWidgetItem):
         self.setText(0, f"Кривая {name}")
         self.font = QFont()
         self.font.setItalic(True)
-        self.font.setBold(True)
         self.font.setPointSize(10)
         self.setFont(0, self.font)
 
         self.setForeground(1, QBrush(QColor("#ff30ea")))
 
         self.col_font = QFont()
-        self.col_font.setBold(True)
-        self.col_font.setPointSize(20)
+        self.col_font.setPointSize(15)
         self.setFont(1, self.col_font)
 
         self.setText(1, "--●--")
