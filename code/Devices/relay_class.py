@@ -48,8 +48,8 @@ class relayPr1Class(base_device):
         self.part_ch = (
             which_part_in_ch.bouth
         )  # указываем, из каких частей состоиит канал в данном приборе
-        self.ch1_act = chActPR(1, self)
-        self.ch1_meas = chMeasPR(1, self)
+        self.ch1_act = chActPR(1, self.name, self.message_broker)
+        self.ch1_meas = chMeasPR(1, self.name, self.message_broker)
         self.channels = self.create_channel_array()
         self.polarity = current_polarity.pol_1
         self.state_output = out_state.off
@@ -467,8 +467,8 @@ class relayPr1Class(base_device):
             return False
 
 class chActPR(base_ch):
-    def __init__(self, number, device_class) -> None:
-        super().__init__(number, ch_type="act", device_class=device_class)
+    def __init__(self, number, device_class_name, message_broker) -> None:
+        super().__init__(number, ch_type="act", device_class_name=device_class_name, message_broker=message_broker)
         self.base_duration_step = 0.1  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.dict_buf_parameters["mode"] = ( QApplication.translate("Device", "Смена полярности") )
         self.dict_buf_parameters["num steps"] = "1"
@@ -480,8 +480,8 @@ class chActPR(base_ch):
 
 
 class chMeasPR(base_ch):
-    def __init__(self, number, device_class) -> None:
-        super().__init__(number, ch_type="meas", device_class=device_class)
+    def __init__(self, number, device_class_name, message_broker) -> None:
+        super().__init__(number, ch_type="meas", device_class_name=device_class_name, message_broker=message_broker)
         self.base_duration_step = 0.1  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.dict_buf_parameters["num steps"] = "1"
         self.dict_buf_parameters["hall1"] = False

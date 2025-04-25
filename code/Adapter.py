@@ -220,7 +220,10 @@ if __name__ == "__main__":
         my.write("*IDN?")
         time.sleep(1)
     '''
-    client = Adapter("COM9", baud = 9600)
+    import pickle
+    client = Adapter("COM7", baud = 9600)
+    client.close()
+    print(pickle.dumps(client))
     command = ""
     while True:
         start = time.perf_counter()

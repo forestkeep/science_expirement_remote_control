@@ -16,8 +16,8 @@ from Devices.oscilloscope import oscilloscopeClass
 
 
 class chMeasOscilloscope(base_ch):
-    def __init__(self, number, device_class, total_number_of_channels) -> None:
-        super().__init__(number, ch_type="meas", device_class=device_class)
+    def __init__(self, number, device_class_name, message_broker, total_number_of_channels) -> None:
+        super().__init__(number, ch_type="meas", device_class_name=device_class_name, message_broker=message_broker)
 
         self.base_duration_step = 2  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
 
@@ -82,7 +82,7 @@ class DS1052E(oscilloscopeClass):
         super().__init__(name, "serial", installation_class)
         # ===Создать каналы и массив из каналов===
         self.total_number_of_channels = 2  # указать число каналов в приборе
-        self.ch1_meas = chMeasOscilloscope(1, self, self.total_number_of_channels)
+        self.ch1_meas = chMeasOscilloscope(1, self.name, self.message_broker, self.total_number_of_channels)
         self.channels = self.create_channel_array()
 
         # ==========end==========

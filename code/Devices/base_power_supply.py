@@ -34,7 +34,8 @@ class chActPowerSupply(base_ch):
     def __init__(
         self,
         number,
-        device_class,
+        device_class_name,
+        message_broker,
         max_current,
         max_voltage,
         max_power,
@@ -42,7 +43,7 @@ class chActPowerSupply(base_ch):
         min_step_V=0.001,
         min_step_W=1,
     ) -> None:
-        super().__init__(number, ch_type="act", device_class=device_class)
+        super().__init__(number, ch_type="act", device_class_name=device_class_name, message_broker=message_broker)
         self.base_duration_step = 10  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.steps_current = []
         self.steps_voltage = []
@@ -66,8 +67,8 @@ class chActPowerSupply(base_ch):
 
 
 class chMeasPowerSupply(base_ch):
-    def __init__(self, number, device_class) -> None:
-        super().__init__(number, ch_type="meas", device_class=device_class)
+    def __init__(self, number, device_class_name, message_broker) -> None:
+        super().__init__(number, ch_type="meas", device_class_name=device_class_name, message_broker=message_broker)
         self.base_duration_step = 10  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.dict_buf_parameters["meas_cur"] = False
         self.dict_buf_parameters["meas_vol"] = False

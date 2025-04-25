@@ -40,6 +40,55 @@ from graph.online_graph import sessionController
 
 logger = logging.getLogger(__name__)
 
+import pickle
+
+def is_serializable(value):
+    """Проверяет, можно ли сериализовать значение с помощью pickle."""
+    try:
+        pickle.dumps(value)
+        return True
+    except (pickle.PickleError, TypeError):
+        return False
+
+def get_serializable_copy(obj):
+    """Создает копию объекта только с сериализуемыми атрибутами."""
+    # Создаем новый экземпляр класса без вызова __init__
+    new_obj = obj.__class__.__new__(obj.__class__)
+    
+    # Собираем атрибуты исходного объекта
+    attributes = {}
+    if hasattr(obj, '__dict__'):
+        # Для объектов с __dict__
+        attributes = vars(obj).copy()
+    else:
+        # Для объектов без __dict__ (например, с __slots__)
+        for attr_name in dir(obj):
+            if attr_name.startswith('__') and attr_name.endswith('__'):
+                continue  # Пропускаем служебные атрибуты
+            try:
+                attr_value = getattr(obj, attr_name)
+                if not callable(attr_value):  # Пропускаем методы
+                    attributes[attr_name] = attr_value
+            except AttributeError:
+                continue
+    
+    removed_attrs = []
+    
+    # Копируем только сериализуемые атрибуты
+    for attr_name, attr_value in attributes.items():
+        if is_serializable(attr_value):
+            try:
+                setattr(new_obj, attr_name, attr_value)
+            except AttributeError:
+                # Обработка атрибутов, которые нельзя установить (например, в __slots__)
+                removed_attrs.append(attr_name)
+        else:
+            removed_attrs.append(attr_name)
+    
+    return new_obj, removed_attrs
+
+
+
 
 class installation_class( ExperimentBridge, analyse):
     def __init__(self, settings_manager, version = None) -> None:
@@ -311,7 +360,7 @@ class installation_class( ExperimentBridge, analyse):
     def delete_device(self, device):
         if self.is_experiment_running() == False:
             for ch in self.dict_active_device_class[device].channels:
-                self.message_broker.clear_my_topicks(publisher=ch)
+                self.message_broker.clear_my_topicks(publisher_name=ch)
 
             del self.dict_active_device_class[device]
 
@@ -388,6 +437,10 @@ class installation_class( ExperimentBridge, analyse):
         """
         slot for start button, if experiment is running, stops it, if not, starts experiment
         """
+        for dev in self.dict_active_device_class.values():
+            print(get_serializable_copy(dev))
+            print(get_serializable_copy(dev.ch1_meas))
+            print(get_serializable_copy(dev.message_broker))
 
         if self.is_experiment_running():
             self.action_stop_experiment()

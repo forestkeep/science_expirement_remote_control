@@ -24,26 +24,26 @@ class commandsSR830:
         self.COMM_AUTO_APHS = "APHS"
         self.COMM_DISPLAY = "OUTR"  # запрос значения с дисплея
         self.COMM_SERIAL_PULL_STATUS_BYTE = "*STB?\r\n"
-        self.device = device
+        self.client = device.client
 
     def push_autogain(self):
-        self.device.client.write(bytes(self.COMM_AUTO_GAIN, "ascii") + b"\r\n")
+        self.client.write(bytes(self.COMM_AUTO_GAIN, "ascii") + b"\r\n")
 
     def push_autophase(self):
-        self.device.client.write(bytes(self.COMM_AUTO_APHS, "ascii") + b"\r\n")
+        self.client.write(bytes(self.COMM_AUTO_APHS, "ascii") + b"\r\n")
 
     def get_parameter(self, command, timeout=1, param=False):
         if param == False:
-            self.device.client.write(bytes(command, "ascii") + b"?\r\n")
+            self.client.write(bytes(command, "ascii") + b"?\r\n")
         else:
             param = str(param)
-            self.device.client.write(
+            self.client.write(
                 bytes(command, "ascii") + b"? " + bytes(param, "ascii") + b"\r\n"
             )
 
         start_time = time.perf_counter()
         while time.perf_counter() - start_time < timeout:
-            line = self.device.client.readline().decode().strip()
+            line = self.client.readline().decode().strip()
             if line:
                 return line
         return False
@@ -55,7 +55,7 @@ class commandsSR830:
             return False
         if ampl < 0.004 or ampl > 5:
             return False
-        self.device.client.write(
+        self.client.write(
             bytes("SLVL", "ascii") + bytes(str(ampl), "ascii") + b"\r\n"
         )
         return True
@@ -67,7 +67,7 @@ class commandsSR830:
             return False
         if freq > 102000 or freq < 2:
             return False
-        self.device.client.write(
+        self.client.write(
             bytes("FREQ", "ascii") + bytes(str(freq), "ascii") + b"\r\n"
         )
         return True
@@ -181,7 +181,7 @@ class commandsSR830:
                 code = key
                 break
         if code is not False:
-            self.device.client.write(
+            self.client.write(
                 bytes(command, "ascii") + bytes(str(code), "ascii") + b"\r\n"
             )
             return True
@@ -190,15 +190,15 @@ class commandsSR830:
     def _set_phase(self, x):
         if x < -360 or x > 730:
             return False
-        self.device.client.write(b"PHAS" + str(x) + b"\r\n")
+        self.client.write(b"PHAS" + str(x) + b"\r\n")
         b"PHAS" + str(x) + b"\r\n"  # -360.00 ≤ x ≤ 729.99
         return True
 
     def _set_reference_sourse(self, x):
         if x == "ext":
-            self.device.client.write(b"FMOD 0\r\n")
+            self.client.write(b"FMOD 0\r\n")
         else:
-            self.device.client.write(b"FMOD 1\r\n")
+            self.client.write(b"FMOD 1\r\n")
 
 if __name__ == "__main__":
     sr = commandsSR830(125)

@@ -61,7 +61,7 @@ class mnipiE720Class(base_device):
 
             
         self.commands = CommandsMNIPI()
-        self.ch1_meas = ch_mnipi_class(1, self)
+        self.ch1_meas = ch_mnipi_class(1, self.name, self.message_broker)
         self.channels = self.create_channel_array()
         self.device = None  # класс прибора будет создан при подтверждении параметров,
 
@@ -466,8 +466,8 @@ class mnipiE720Class(base_device):
                 return False
             
 class ch_mnipi_class(base_ch):
-    def __init__(self, number, device_class) -> None:
-        super().__init__(number, ch_type = "meas", device_class=device_class)
+    def __init__(self, number, device_class_name, message_broker) -> None:
+        super().__init__(number, ch_type = "meas", device_class_name=device_class_name, message_broker=message_broker)
         self.base_duration_step = 2#у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.dict_buf_parameters["meas L"] = False  
         self.dict_buf_parameters["meas R"] = False

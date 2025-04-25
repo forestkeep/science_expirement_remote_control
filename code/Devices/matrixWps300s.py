@@ -26,7 +26,8 @@ class matrixWps300s(power_supply):
         super().__init__(name, "serial", installation_class)
         self.ch1_act = chActPowerSupply(
             1,
-            self,
+            self.name,
+            message_broker=self.message_broker,
             max_current=10,
             max_voltage=80,
             max_power=300,
@@ -34,7 +35,7 @@ class matrixWps300s(power_supply):
             min_step_V=0.001,
             min_step_W=1,
         )
-        self.ch1_meas = chMeasPowerSupply(1, self)
+        self.ch1_meas = chMeasPowerSupply(1, self.name, self.message_broker)
         self.channels = self.create_channel_array()
 
     def _set_voltage(self, ch_num, voltage) -> bool:

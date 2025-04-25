@@ -31,13 +31,14 @@ class ATF20B(FreqGen):
         super().__init__(name, "modbus", installation_class)
         self.ch1_act = chActFreqGen(
             number = 1,
-            device_class = self,
+            device_class_name=self.name, 
+            message_broker = self.message_broker,
             max_ampl = 3,
             max_freq = 1000000,
             min_step_A=0.001,
             min_step_F=0.001,
         )
-        self.ch1_meas = chMeasFreqGen(1, self)
+        self.ch1_meas = chMeasFreqGen(1, self.name, self.message_broker)
         self.channels = self.create_channel_array()
 
 

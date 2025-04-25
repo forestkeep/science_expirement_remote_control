@@ -15,9 +15,14 @@ import time
 
 from PyQt5.QtWidgets import QApplication
 
-from Devices.Classes import (base_ch, base_device, ch_response_to_step,
+try:
+    from Devices.Classes import (base_ch, base_device, ch_response_to_step,
                              which_part_in_ch)
-from Devices.interfase.set_voltmeter_window import Ui_Set_voltmeter
+    from Devices.interfase.set_voltmeter_window import Ui_Set_voltmeter
+except:
+    from Classes import (base_ch, base_device, ch_response_to_step,
+                             which_part_in_ch)
+    from interfase.set_voltmeter_window import Ui_Set_voltmeter
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +52,8 @@ IDN?	                               Получить строку идентиф
 class akip2404Class(base_device):
     def __init__(self, name, installation_class) -> None:
         super().__init__(name, "serial", installation_class)
-        self.ch1_meas = ch_meas_akip_class(1, self)
-        self.ch2_meas = ch_meas_akip_class(2, self)
+        self.ch1_meas = ch_meas_akip_class(1, self.name, self.message_broker)
+        self.ch2_meas = ch_meas_akip_class(2, self.name, self.message_broker)
         self.channels = self.create_channel_array()
         self.device = None  # класс прибора будет создан при подтверждении параметров,
         # переменная хранит все возможные источники сигналов , сделать функцию, формирующую этот список в зависимости от структуры установки
@@ -274,8 +279,8 @@ class akip2404Class(base_device):
         self.client.write( command )
 
 class ch_meas_akip_class(base_ch):
-    def __init__(self, number, device_class) -> None:
-        super().__init__(number, ch_type="meas", device_class=device_class)
+    def __init__(self, number, device_class_name, message_broker) -> None:
+        super().__init__(number, ch_type="meas", device_class_name=device_class_name, message_broker=message_broker)
         self.base_duration_step = 0.1  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.dict_buf_parameters["type_meas"] = QApplication.translate("Voltmeter","Напряжение")  # секунды
         self.dict_buf_parameters["range"] = "Auto"  # dB
@@ -283,3 +288,22 @@ class ch_meas_akip_class(base_ch):
 
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
+
+class mock_dev:
+    def __init__(self) -> None:
+        self.name = "AKIP2404"
+        self.message_broker = mock_message_broker
+
+    def get_name(self):
+        return self.name
+    
+class mock_message_broker:
+    def create_subscribe(name_subscribe, publisher, description = ""):
+        pass
+
+if __name__ == "__main__":
+    AKIP2404_class = mock_dev()
+    my_ch = ch_meas_akip_class(1, AKIP2404_class)
+    import pickle
+
+    print(pickle.dumps(my_ch))

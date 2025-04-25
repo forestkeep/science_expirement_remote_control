@@ -15,8 +15,10 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 logger = logging.getLogger(__name__)
 
-
-from Devices.interfase.base_set_window import base_settings_window
+try:
+    from Devices.interfase.base_set_window import base_settings_window
+except:
+    from interfase.base_set_window import base_settings_window
 
 
 class Ui_Set_voltmeter(base_settings_window):

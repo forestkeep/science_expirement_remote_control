@@ -331,8 +331,7 @@ class base_device():
 
                     if self.setting_window.triger_act_enter.currentText() == QApplication.translate("Device","Таймер"):
                             try:
-                                if int(self.setting_window.sourse_act_enter.currentText()) < 1:
-                                    self.active_channel_act.is_time_act_correct = False
+                                float(self.setting_window.sourse_act_enter.currentText())
                             except:
                                 self.active_channel_act.is_time_act_correct = False
 
@@ -808,9 +807,9 @@ class base_device():
         
 class base_ch(control_in_experiment):
     '''базовый класс канала устройства'''
-    def __init__(self, number, ch_type, device_class, is_activate_standart_publish = True) -> None:
+    def __init__(self, number, ch_type, device_class_name, message_broker, is_activate_standart_publish = True) -> None:
         super().__init__()
-        self.device_class = device_class
+        self.device_class_name = device_class_name
         self.ch_type = ch_type
         self.number = number
         self.ch_name = f"ch-{self.number}_{self.ch_type}"
@@ -823,10 +822,10 @@ class base_ch(control_in_experiment):
                                     "num steps": "10",
                                     }
 
-        self.message_broker = device_class.message_broker
+        self.message_broker = message_broker
         if is_activate_standart_publish:
-            self.do_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} do_operation"
-            self.end_operation_trigger = f"{self.device_class.get_name()} {self.ch_name} end_work"
+            self.do_operation_trigger = f"{self.device_class_name} {self.ch_name} do_operation"
+            self.end_operation_trigger = f"{self.device_class_name} {self.ch_name} end_work"
             self.message_broker.create_subscribe(name_subscribe = self.do_operation_trigger, publisher = self, description = QApplication.translate("Device","Настраиваемый канал будет совершать действие всякий раз \r\n когда выбранный источник сделает какое-то действие или измерение.") )
             self.message_broker.create_subscribe(name_subscribe = self.end_operation_trigger, publisher = self, description = QApplication.translate("Device","Настраиваемый канал будет совершать действие всякий раз \r\n когда выбранный источник завершит свою работу в эксперименте.") )
 

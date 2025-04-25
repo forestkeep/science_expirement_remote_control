@@ -27,13 +27,14 @@ class chActFreqGen(base_ch):
     def __init__(
         self,
         number,
-        device_class,
+        device_class_name,
+        message_broker,
         max_ampl,
         max_freq,
         min_step_A=0.001,
         min_step_F=0.001,
     ) -> None:
-        super().__init__(number, ch_type="act", device_class=device_class)
+        super().__init__(number, ch_type="act", device_class_name=device_class_name, message_broker=message_broker)
         self.base_duration_step = 10  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.steps_current = []
         self.steps_voltage = []
@@ -52,8 +53,8 @@ class chActFreqGen(base_ch):
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
 class chMeasFreqGen(base_ch):
-    def __init__(self, number, device_class) -> None:
-        super().__init__(number, ch_type="meas", device_class=device_class)
+    def __init__(self, number, device_class_name, message_broker) -> None:
+        super().__init__(number, ch_type="meas", device_class_name=device_class_name, message_broker=message_broker)
         self.base_duration_step = 10  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
         self.dict_buf_parameters["meas_freq"] = False
         self.dict_buf_parameters["meas_ampl"] = False

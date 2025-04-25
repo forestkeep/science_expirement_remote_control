@@ -37,7 +37,8 @@ class maishengPowerClass(power_supply):
         super().__init__(name, "modbus", installation_class)
         self.ch1_act = chActPowerSupply(
             1,
-            self,
+            self.name,
+            message_broker=self.message_broker,
             max_current=15,
             max_voltage=200,
             max_power=600,
@@ -45,7 +46,7 @@ class maishengPowerClass(power_supply):
             min_step_V=0.01,
             min_step_W=1,
         )
-        self.ch1_meas = chMeasPowerSupply(1, self)
+        self.ch1_meas = chMeasPowerSupply(1, self.name, self.message_broker)
         self.channels = self.create_channel_array()
 
     def _set_voltage(

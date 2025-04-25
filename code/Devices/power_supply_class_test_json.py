@@ -62,7 +62,8 @@ class power_supply(basePowerSupply):
     def create_channels(self, channels_parameters: dict):
         for ch in range(self.channels_number):
             setattr(self, f'ch{ch+1}_act', chActPowerSupply(ch+1,
-                                                            self,
+                                                            self.name,
+                                                            message_broker=self.message_broker,
                                                             max_current=float(channels_parameters["max_channels_current"][ch+1]),
                                                             max_voltage=float(channels_parameters["max_channels_voltage"][ch+1]),
                                                             max_power=float(channels_parameters["max_channels_power"][ch+1]),
@@ -70,7 +71,7 @@ class power_supply(basePowerSupply):
                                                             min_step_V=float(channels_parameters["voltage_resolution"][ch+1]),
                                                             min_step_W=float(channels_parameters["power_resolution"][ch+1])
                                                             ))
-            setattr(self, f'ch{ch+1}_meas', chMeasPowerSupply(ch+1, self))
+            setattr(self, f'ch{ch+1}_meas', chMeasPowerSupply(ch+1, self.name, self.message_broker))
         self.channels = self.create_channel_array()
 
 class install_fake():
