@@ -307,7 +307,8 @@ class graphDataManager( QObject ):
 
 		return True, is_new_param_added, is_old_param_udated
 	
-	def update_parameters(self, data, entry, time):
+	def decode_add_exp_parameters(self, entry, time):
+			data = {}
 			try:
 				device, channel = entry[0].split()
 			except:
@@ -315,17 +316,17 @@ class graphDataManager( QObject ):
 			parameter_pairs = entry[1:]
 			status = True
 
+			if not parameter_pairs:
+				return False
+
 			if "pig_in_a_poke" in device:
 				new_pairs = []
 				for index, pair in enumerate(parameter_pairs):
 					new_pairs.append(pair)
 				parameter_pairs = new_pairs
 
-			if device not in data:
-				data[device] = {}
-
-			if channel not in data[device]:
-				data[device][channel] = {}
+			data[device] = {}
+			data[device][channel] = {}
 
 			for parameter_pair in parameter_pairs:
 				try:
@@ -349,7 +350,7 @@ class graphDataManager( QObject ):
 					try:
 						value = float(value)
 					except ValueError:
-						logger.info(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
+						logger.debug(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
 						continue
 
 				if name not in data[device][channel]:
@@ -357,7 +358,10 @@ class graphDataManager( QObject ):
 				data[device][channel][name][0].append(value)
 				data[device][channel][name][1].append(time)
 
-			return status, data
+			print(data)
+
+			return self.add_measurement_data(data)
+			
 
 def get_dict_depth(d):
 	if not isinstance(d, dict)  or not d:

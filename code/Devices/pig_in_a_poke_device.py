@@ -50,8 +50,9 @@ class pigInAPoke(base_device):
 		self.setting_window.download_button.clicked.connect(
 			lambda: self._download_commands()
 		)
-		self.setting_window.command_text.textChanged.connect(lambda: self._is_correct_parameters())
-		self.setting_window.timeout_line.textChanged.connect(lambda: self._is_correct_parameters())
+		self.setting_window.command_text.textChanged.connect( lambda: self._is_correct_parameters() )
+		self.setting_window.timeout_line.textChanged.connect( lambda: self._is_correct_parameters() )
+		self.setting_window.check_not_command.stateChanged.connect( lambda: self._is_correct_parameters() )
 		self.setting_window.num_act_label.setParent(None)
 		self.setting_window.num_act_enter.setParent(None)
 
@@ -94,7 +95,7 @@ class pigInAPoke(base_device):
 
 			text = self.setting_window.command_text.toPlainText()
 
-			if re.fullmatch(r'[\s]*', text):
+			if re.fullmatch(r'[\s]*', text) and not self.setting_window.check_not_command.isChecked():
 				self.setting_window.command_text.setStyleSheet(not_ready_style_border)
 				status2 = False
 			else:
@@ -195,6 +196,7 @@ class pigInAPoke(base_device):
 			timeout = ch.dict_settable_parameters["timeout_connect"]
 			if ch.dict_settable_parameters["is_not_command"]:
 				answer = self.client.query("", timeout)
+				
 				if answer:
 						val = [f"{''}raw=" + str(answer)]
 						parameters.append(val)

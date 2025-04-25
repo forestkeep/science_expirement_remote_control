@@ -40,6 +40,7 @@ from graph.online_graph import sessionController
 
 logger = logging.getLogger(__name__)
 
+
 class installation_class( ExperimentBridge, analyse):
     def __init__(self, settings_manager, version = None) -> None:
         super().__init__()
@@ -457,7 +458,6 @@ class installation_class( ExperimentBridge, analyse):
 
                     self.exp_controller.set_callbacks(
                         self.update_remaining_time,
-                        self.update_measurement_data,
                         self.write_data_to_buf_file,
                         self.add_text_to_log,
                         self.set_state_text,
@@ -472,17 +472,15 @@ class installation_class( ExperimentBridge, analyse):
                     self.experiment_thread.start()
     def second_thread_tasks(self):
         if not self.queue.empty():
-            task = self.queue.get_nowait()
+            task, name = self.queue.get_nowait()
+            timeStamp = time.perf_counter()
             task()
+            logger.info(f"time execution {name} {time.perf_counter() - timeStamp}")
             self.queue.task_done()
 
     def update_remaining_time(self, remaining_time: float):
         logger.debug(f"update_remaining_time {remaining_time}")
         self.remaining_exp_time = remaining_time
-
-    def update_measurement_data(self, measurement_data: dict):
-        self.measurement_parameters = measurement_data
-        self.graph_controller.update_session_data(self.current_session_graph_id, self.measurement_parameters)
 
     def create_buf_file(self):
         name_file = ""

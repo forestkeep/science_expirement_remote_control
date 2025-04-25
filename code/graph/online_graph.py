@@ -50,9 +50,7 @@ def time_decorator(func):
         end_time = time.perf_counter()
         logger.info(f"Метод {func.__name__} выполнялся {end_time - start_time} с")
         return result
-
     return wrapper
-
 
 class GraphWindow(QMainWindow):
     graph_win_close_signal = pyqtSignal(int)
@@ -329,6 +327,11 @@ class sessionController():
             if self.graph_sessions[session_id].session_name == session_name:
                 return session_id
         return None
+    
+    def decode_add_exp_parameters(self, session_id, entry, time) -> bool:
+        if self.graph_sessions.get(session_id) is None:
+            return False
+        return self.graph_sessions[session_id].data_manager.decode_add_exp_parameters(entry, time)
 
 if __name__ == "__main__":
     import os

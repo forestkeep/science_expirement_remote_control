@@ -17,6 +17,7 @@ import pyvisa
 import serial
 from serial import Serial
 from serial.tools import list_ports
+from profilehooks import profile
 
 logger = logging.getLogger(__name__)
 
@@ -119,13 +120,14 @@ class Adapter:
             return self.client.read_raw()
         else:
             raise AdapterException("unknown resource")
-
+    @profile(stdout=False, filename='baseline.prof')
     def query(self, command, timeout=False, end_symbol=False):
         '''timeout - ms'''
         if end_symbol:
             command = command + end_symbol
         if self.which_resourse == resourse.serial:
-            self.client.timeout = timeout/1000
+            if timeout:
+                self.client.timeout = timeout/1000
             self.client.reset_input_buffer()
             try:
                 self.client.write(command)
@@ -210,10 +212,19 @@ class AdapterException(Exception):
         super().__init__(message)
 
 if __name__ == "__main__":
+    '''
     for i in range(4):
         res = instrument.get_visa_resourses()
         print(res)
         my = Adapter(res[0])
         my.write("*IDN?")
         time.sleep(1)
-        print(instrument.get_available_com_ports())
+    '''
+    client = Adapter("COM9", baud = 9600)
+    command = ""
+    while True:
+        start = time.perf_counter()
+        timeout = 100
+        print(client.query("", timeout=timeout))
+        print(time.perf_counter() - start)
+    print(instrument.get_available_com_ports())
