@@ -332,6 +332,14 @@ class sessionController():
         if self.graph_sessions.get(session_id) is None:
             return False
         return self.graph_sessions[session_id].data_manager.decode_add_exp_parameters(entry, time)
+    
+
+def run_graph_process(queue):
+    app = QApplication([])
+    controller = sessionController()
+    controller.controll_sessions_win.show()
+      
+    app.exec_()
 
 if __name__ == "__main__":
     import os

@@ -128,7 +128,8 @@ class baseInstallation:
         )
         self.installation_window.log.ensureCursorVisible()
 
-    def set_state_text(self, text):
+    def set_state_text(self, **kwargs):
+        text = kwargs["text"]
         logger.debug(f"set_state_text {text}")
         self.installation_window.label_state.setText(text)
 
@@ -347,6 +348,7 @@ class baseInstallation:
                 )
 
     def open_graph_in_exp(self):
+        
         self.graph_controller.graphics_win.show()
 
     def add_new_device(self):
@@ -454,11 +456,6 @@ class baseInstallation:
             )
             self.installation_window.start_button.setText(QApplication.translate('base_install',"Старт"))
             self.key_to_start_installation = False  # старт экспериепнта запрещаем
-
-    def write_data_to_buf_file(self, message: str, addTime: bool=False, ):
-        message = f"{datetime.now().strftime('%H:%M:%S.%f')[:-3] + ' ' if addTime else ''} {message.replace('.', ',')}"
-        with open(self.buf_file, "a") as file:
-            file.write( str(message) )
 
     def message_from_device_settings(
         self,

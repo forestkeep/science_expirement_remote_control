@@ -34,9 +34,11 @@ from saving_data.Parse_data import process_and_export, type_save_file
 from available_devices import dict_device_class, JSON_dict_device_class
 from meas_session_data import measSession
 from experiment_control import ExperimentBridge
-from functions import get_active_ch_and_device
-from queue import Queue
-from graph.online_graph import sessionController
+from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe
+#from queue import Queue
+from graph.online_graph import sessionController, run_graph_process
+from multiprocessing import Process, Value, Array, Lock, shared_memory, Pipe, Queue
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +49,7 @@ def is_serializable(value):
     try:
         pickle.dumps(value)
         return True
-    except (pickle.PickleError, TypeError):
+    except Exception as e:
         return False
 
 def get_serializable_copy(obj):
@@ -215,7 +217,7 @@ class installation_class( ExperimentBridge, analyse):
 
         self.installation_window.clear_log_button.clicked.connect(self.clear_log)
         self.installation_window.clear_log_button.setToolTip(QApplication.translate('main install',"Очистить лог"))
-        self.set_state_text(QApplication.translate('main install',"Ожидание настройки приборов"))
+        self.set_state_text( text = QApplication.translate('main install',"Ожидание настройки приборов") )
         
         self.timer_for_open_base_instruction.start()
 
@@ -437,10 +439,6 @@ class installation_class( ExperimentBridge, analyse):
         """
         slot for start button, if experiment is running, stops it, if not, starts experiment
         """
-        for dev in self.dict_active_device_class.values():
-            print(get_serializable_copy(dev))
-            print(get_serializable_copy(dev.ch1_meas))
-            print(get_serializable_copy(dev.message_broker))
 
         if self.is_experiment_running():
             self.action_stop_experiment()
@@ -451,7 +449,7 @@ class installation_class( ExperimentBridge, analyse):
                 self.create_clients()
                 self.stop_experiment = True
                 self.set_clients_for_device()
-                self.set_state_text(QApplication.translate('main install',"Старт эксперимента"))
+                self.set_state_text(text = QApplication.translate('main install',"Старт эксперимента"))
                 self.installation_window.pause_button.setStyleSheet(ready_style_background)
                 self.installation_window.start_button.setStyleSheet(ready_style_background)
                 self.installation_window.start_button.setText(QApplication.translate('main install',"Стоп"))
@@ -461,18 +459,19 @@ class installation_class( ExperimentBridge, analyse):
                 
                 if status:
                     self.stop_experiment = False
+                    self.has_unsaved_data = False
                     
                     self.buf_file = self.create_buf_file()
 
-                    self.write_data_to_buf_file(message="installation start" + "\n\r")
+                    write_data_to_buf_file(file = self.buf_file,message="installation start" + "\n\r")
                     lst_dev = ""
                     for dev in self.dict_active_device_class.values():
                         lst_dev += dev.get_name() + " "
-                    self.write_data_to_buf_file(message="device list: " + lst_dev + "\r\n")
+                    write_data_to_buf_file(file = self.buf_file,message="device list: " + lst_dev + "\r\n")
 
                     self.write_settings_to_buf_file()
 
-                    self.add_text_to_log(QApplication.translate('main install',"Создан файл") + " " + self.buf_file)
+                    self.add_text_to_log(text =QApplication.translate('main install',"Создан файл") + " " + self.buf_file)
                     logger.debug("Эксперимент начат" + "Создан файл " + self.buf_file)
                     self.measurement_parameters = {}
 
@@ -481,7 +480,7 @@ class installation_class( ExperimentBridge, analyse):
                                                                                             is_experiment_running=True
                                                                                             )
 
-                    self.add_text_to_log(QApplication.translate('main install',"настройка приборов") + ".. ")
+                    self.add_text_to_log(text = QApplication.translate('main install',"настройка приборов") + ".. ")
 
                     self.start_exp_time = time.perf_counter()
                     self.remaining_exp_time = 0
@@ -492,45 +491,66 @@ class installation_class( ExperimentBridge, analyse):
                     self.timer_second_thread_tasks.timeout.connect(self.second_thread_tasks)
                     self.timer_second_thread_tasks.start(100)
 
-                    self.queue = Queue()
+                    #self.queue = Queue()
+                    self.experiment_queue = Queue()
+                    self.important_exp_queue = Queue()
 
                     self.meas_session = measSession()
 
+                    self.pipe_exp, self.pipe_installation = Pipe()
+
+                    serialize_divices_classes = {}
+                    for dev in self.dict_active_device_class.values():
+                        dev.client.close()
+                        serialize_divices_classes[dev.get_name()], unserial  = get_serializable_copy(dev)
+
                     self.exp_controller = experimentControl(
-                        device_classes        =self.dict_active_device_class,
+                        device_classes        =serialize_divices_classes,
                         message_broker        =self.message_broker,
                         is_debug              =self.is_debug,
                         is_experiment_endless =self.is_experiment_endless,
                         repeat_exp            =int(self.settings_manager.get_setting("repeat_exp")[1]),
                         repeat_meas           =int(self.settings_manager.get_setting("repeat_meas")[1]),
                         is_run_anywhere       =self.settings_manager.get_setting("is_exp_run_anywhere")[1],
-                        queue                 =self.queue,
-                        graph_controller      =self.graph_controller,
+                        simple_queue          =self.experiment_queue,
+                        important_queue       =self.important_exp_queue,
+                        buf_file              =self.buf_file,
+                        pipe_installation     =self.pipe_installation,
+                        #graph_controller      =self.graph_controller,
                         session_id            =self.current_session_graph_id
                     )
 
-                    self.exp_controller.set_callbacks(
-                        self.update_remaining_time,
-                        self.write_data_to_buf_file,
-                        self.add_text_to_log,
-                        self.set_state_text,
-                        self.exp_call_stack.set_data,
-                        self.finalize_experiment,
+                    self.experiment_process = Process(target=self.exp_controller.run)  # Предполагается метод run()
+                    self.experiment_process.start()
+                    self.timer_for_connection_main_exp_thread.start(1000)
 
-                    )
-
-                    self.experiment_thread = threading.Thread(
-                        target=self.exp_controller.run, daemon=True
-                    )
-                    self.experiment_thread.start()
     def second_thread_tasks(self):
-        if not self.queue.empty():
-            task, name = self.queue.get_nowait()
-            timeStamp = time.perf_counter()
-            task()
-            logger.info(f"time execution {name} {time.perf_counter() - timeStamp}")
-            self.queue.task_done()
+        if not self.important_exp_queue.empty():
+            event_type, data = self.important_exp_queue.get_nowait()
 
+            if event_type == "finalize_experiment":
+                self.finalize_experiment(**data)
+
+            elif event_type == "has_data_to_save":
+                self.has_unsaved_data = True
+
+        else:
+
+            if not self.experiment_queue.empty():
+                event_type, data = self.experiment_queue.get_nowait()
+
+                if event_type == "meta_data_exp_updated":
+                    self.exp_call_stack.set_data(**data)
+
+                elif event_type == "set_state_text":
+                    self.set_state_text(**data)
+
+                elif event_type == "update_remaining_time":
+                    self.update_remaining_time(**data)
+                    
+                elif event_type == "add_text_to_log":
+                    self.add_text_to_log(**data)
+                
     def update_remaining_time(self, remaining_time: float):
         logger.debug(f"update_remaining_time {remaining_time}")
         self.remaining_exp_time = remaining_time
@@ -552,28 +572,24 @@ class installation_class( ExperimentBridge, analyse):
     
     def write_settings_to_buf_file(self):
         for device_class in self.dict_active_device_class.values():
-            self.write_data_to_buf_file(
-                message="Settings " + str(device_class.get_name()) + "\r"
-            )
+            write_data_to_buf_file(file = self.buf_file, message="Settings " + str(device_class.get_name()) + "\r")
             settings = device_class.get_settings()
             for set, key in zip(settings.values(), settings.keys()):
-                self.write_data_to_buf_file(
-                    message=str(key) + " - " + str(set) + "\r"
-                )
+                write_data_to_buf_file(file = self.buf_file,message=str(key) + " - " + str(set) + "\r")
 
             for ch in device_class.channels:
                 if ch.is_ch_active():
 
-                    self.write_data_to_buf_file(
+                    write_data_to_buf_file(file = self.buf_file,
                         message="Settings " + str(ch.get_name()) + "\r"
                     )
                     settings = ch.get_settings()
                     for set, key in zip(settings.values(), settings.keys()):
-                        self.write_data_to_buf_file(
+                        write_data_to_buf_file(file = self.buf_file,
                             message=str(key) + " - " + str(set) + "\r"
                         )
 
-            self.write_data_to_buf_file(message="--------------------\n")
+            write_data_to_buf_file(file = self.buf_file,message="--------------------\n")
 
     def push_button_save_installation(self):
             logger.debug("нажата кнопка сохранения установки")

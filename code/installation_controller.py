@@ -123,6 +123,7 @@ class MyWindow(QtWidgets.QMainWindow):
                 except:
                     logger.warning("Функционал сворачивания в трей не добавлен")
 
+
     def change_language(self, lang):
 
         if lang == self.lang:
@@ -138,7 +139,6 @@ class MyWindow(QtWidgets.QMainWindow):
     def open_graph_in_exp(self):
         if self.graph_controller is None:
             self.graph_controller = sessionController()
-
 
         self.graph_controller.graphics_win.show()
         self.cur_install.stop_scan_thread = True#stop scanning thread

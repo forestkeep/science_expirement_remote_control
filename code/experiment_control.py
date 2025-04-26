@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import QApplication
 from Analyse_in_installation import analyse
 from Devices.Classes import not_ready_style_background, ready_style_background
 
-from functions import get_active_ch_and_device
+from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe
 
 logger = logging.getLogger(__name__)
 
@@ -35,14 +35,13 @@ class message_status(enum.Enum):
 class ExperimentBridge(analyse):
     def __init__(self) -> None:
         super().__init__()
-        self.experiment_thread = None
         self.stop_experiment   = False
         self.pause_start_time  = 0
         
     def is_experiment_running(self) -> bool:
         answer = False
-        if hasattr(self, "experiment_thread"):
-            answer = self.experiment_thread is not None and self.experiment_thread.is_alive()
+        if hasattr(self, "experiment_process"):
+            answer = self.experiment_process is not None and self.experiment_process.is_alive()
         return answer
 
     def connection_two_thread(self):
@@ -81,14 +80,14 @@ class ExperimentBridge(analyse):
 
     def stoped_experiment(self):
         self.stop_experiment = True
-        self.exp_controller.stop_exp()
-        self.set_state_text(QApplication.translate('exp_flow',"Остановка") + "...")
+        self.pipe_exp.send(["stop"])
+        self.set_state_text(text = QApplication.translate('exp_flow',"Остановка") + "...")
 
     def pause_exp(self):
         if self.is_experiment_running():
             if self.pause_flag:
                 self.pause_flag = False
-                self.exp_controller.unset_pause()
+                self.pipe_exp.send(["pause", 0])
                 self.installation_window.pause_button.setText(QApplication.translate('exp_flow',"Пауза"))
                 self.timer_for_pause_exp.stop()
 
@@ -102,9 +101,9 @@ class ExperimentBridge(analyse):
 
             else:
                 self.pause_flag = True
-                self.exp_controller.set_pause()
+                self.pipe_exp.send(["pause", 1])
                 self.installation_window.pause_button.setText(QApplication.translate('exp_flow',"Возобновить"))
-                self.set_state_text(QApplication.translate('exp_flow',"Ожидание продолжения") + "...")
+                self.set_state_text(text = QApplication.translate('exp_flow',"Ожидание продолжения") + "...")
                 self.timer_for_pause_exp.start(50)
                 self.pause_start_time = time.perf_counter()
 
@@ -163,9 +162,9 @@ class ExperimentBridge(analyse):
             self.add_text_to_log( text )
             self.show_information_window( text )
 
-        if self.exp_controller.has_unsaved_data:
+        if self.has_unsaved_data:
 
-            self.set_state_text(QApplication.translate('exp_flow',"Сохранение результатов"))
+            self.set_state_text(text = QApplication.translate('exp_flow',"Сохранение результатов"))
 
             if self.settings_manager.get_setting('should_prompt_for_session_name')[1]:
                 self.meas_session.ask_session_name_description( "Эксперимент завершен" )
@@ -181,11 +180,19 @@ class ExperimentBridge(analyse):
                 except Exception as e:
                     logger.warning(f"не удалось сохранить результаты {str(e)}", self.buf_file)
 
+        clear_pipe(self.pipe_exp)
+        clear_queue(self.experiment_queue)
+        clear_queue(self.important_exp_queue)
+
+        self.pipe_exp.close()
+        self.experiment_queue.close()
+        self.important_exp_queue.close()
+
         self.prepare_for_reexperiment()
 
     def prepare_for_reexperiment(self):
             # ------------------подготовка к повторному началу эксперимента---------------------
-            self.set_state_text(QApplication.translate('exp_flow',"Подготовка к эксперименту"))
+            self.set_state_text(text = QApplication.translate('exp_flow',"Подготовка к эксперименту"))
             self.message_broker.clear_all_subscribers()
             self.is_experiment_endless = False
             self.stop_experiment = False
@@ -193,7 +200,7 @@ class ExperimentBridge(analyse):
             self.pause_flag = True
             self.pause_exp()
             self.installation_window.pause_button.setStyleSheet(not_ready_style_background)
-            self.set_state_text(QApplication.translate('exp_flow',"Ожидание старта"))
+            self.set_state_text(text = QApplication.translate('exp_flow',"Ожидание старта"))
             self.is_search_resources = True#разрешение на сканирование ресурсов
 
     
