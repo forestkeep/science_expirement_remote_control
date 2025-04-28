@@ -499,6 +499,8 @@ class installation_class( ExperimentBridge, analyse):
 
                     self.pipe_exp, self.pipe_installation = Pipe()
 
+                    self.data_exp_to_installation, self.data_from_exp = Pipe()
+
                     serialize_divices_classes = {}
                     for dev in self.dict_active_device_class.values():
                         dev.client.close()
@@ -516,6 +518,7 @@ class installation_class( ExperimentBridge, analyse):
                         important_queue       =self.important_exp_queue,
                         buf_file              =self.buf_file,
                         pipe_installation     =self.pipe_installation,
+                        data_pipe             =self.data_exp_to_installation,
                         #graph_controller      =self.graph_controller,
                         session_id            =self.current_session_graph_id
                     )
