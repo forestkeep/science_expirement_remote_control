@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import QApplication
 
 from Analyse_in_installation import analyse
 from Devices.Classes import not_ready_style_background, ready_style_background
+from shared_buffer_manager import _process_received_data
 
 from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe
 
@@ -43,6 +44,18 @@ class ExperimentBridge(analyse):
         if hasattr(self, "experiment_process"):
             answer = self.experiment_process is not None and self.experiment_process.is_alive()
         return answer
+    
+    def receive_data_exp(self):
+        if self.is_experiment_running():
+            if self.data_from_exp.poll():
+                received = self.data_from_exp.recv()
+                if isinstance(received, tuple) and len(received) == 2:
+                    data = _process_received_data(self.data_from_exp, *received)
+                    val = [data[0], data[1]]
+                    status_update = self.graph_controller.decode_add_exp_parameters(session_id = self.current_session_graph_id, entry      = val,time       = data[2])
+                    if not status_update:
+                        logger.warning(f"Error updating parameters: {val}")
+                    
 
     def connection_two_thread(self):
         """функция для обновления интерфейса во время эксперимента"""
@@ -146,7 +159,7 @@ class ExperimentBridge(analyse):
         self.timer_second_thread_tasks.stop()
         self.update_pbar( 0 )
         self.installation_window.label_time.setText( "" )
-         
+        self.timer_for_receive_data_exp.stop()
         self.graph_controller.stop_session_running( self.current_session_graph_id )
 
         if error:

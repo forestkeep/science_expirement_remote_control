@@ -33,7 +33,7 @@ class sessionMeasData:
 
 class relationData:
 	def __init__(self, data_x_axis: measTimeData, data_y_axis: measTimeData):
-		self.x_name, self.y_name,self.name = self.create_names(data_x_axis.device, data_x_axis.ch, data_x_axis.param, data_y_axis.device, data_y_axis.ch, data_y_axis.param)
+		self.x_name, self.y_name, self.name = self.create_names(data_x_axis.device, data_x_axis.ch, data_x_axis.param, data_y_axis.device, data_y_axis.ch, data_y_axis.param)
 		self.data_x_axis = data_x_axis
 		self.data_y_axis = data_y_axis
 
@@ -313,7 +313,7 @@ class graphDataManager( QObject ):
 				device, channel = entry[0].split()
 			except:
 				device, channel = "unknown_dev_1", "unknown_ch-1"
-			parameter_pairs = entry[1:]
+			parameter_pairs = entry[1]
 			status = True
 
 			if not parameter_pairs:
@@ -330,9 +330,9 @@ class graphDataManager( QObject ):
 
 			for parameter_pair in parameter_pairs:
 				try:
-					name, value = parameter_pair[0].split("=")
-				except:
-					logger.warning(f"ошибка при декодировании параметра {parameter_pair}")
+					name, value = parameter_pair.split("=")
+				except Exception as e:
+					logger.warning(f"ошибка при декодировании параметра {parameter_pair} {e}")
 					continue
 
 				if "wavech" in name:  # oscilloscope wave
@@ -357,8 +357,6 @@ class graphDataManager( QObject ):
 					data[device][channel][name] = [[], []]
 				data[device][channel][name][0].append(value)
 				data[device][channel][name][1].append(time)
-
-			print(data)
 
 			return self.add_measurement_data(data)
 			

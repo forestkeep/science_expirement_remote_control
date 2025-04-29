@@ -107,6 +107,9 @@ class installation_class( ExperimentBridge, analyse):
         self.timer_for_pause_exp = QTimer()
         self.timer_for_pause_exp.timeout.connect(lambda: self.pause_actions())
 
+        self.timer_for_receive_data_exp = QTimer()
+        self.timer_for_receive_data_exp.timeout.connect(lambda: self.receive_data_exp())
+
         self.timer_for_connection_main_exp_thread = QTimer()
         self.timer_for_connection_main_exp_thread.timeout.connect( self.connection_two_thread )
 
@@ -498,7 +501,6 @@ class installation_class( ExperimentBridge, analyse):
                     self.meas_session = measSession()
 
                     self.pipe_exp, self.pipe_installation = Pipe()
-
                     self.data_exp_to_installation, self.data_from_exp = Pipe()
 
                     serialize_divices_classes = {}
@@ -523,9 +525,10 @@ class installation_class( ExperimentBridge, analyse):
                         session_id            =self.current_session_graph_id
                     )
 
-                    self.experiment_process = Process(target=self.exp_controller.run)  # Предполагается метод run()
+                    self.experiment_process = Process(target=self.exp_controller.run)
                     self.experiment_process.start()
                     self.timer_for_connection_main_exp_thread.start(1000)
+                    self.timer_for_receive_data_exp.start(100)
 
     def second_thread_tasks(self):
         if not self.important_exp_queue.empty():

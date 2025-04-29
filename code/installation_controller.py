@@ -34,7 +34,7 @@ from controlDevicesJSON import search_devices_json
 from localJSONControl import localDeviceControl
 from device_selector import deviceSelector
 
-VERSION_APP = "1.0.5"
+VERSION_APP = "1.1.0"
 logger = logging.getLogger(__name__)
 
 def is_admin():

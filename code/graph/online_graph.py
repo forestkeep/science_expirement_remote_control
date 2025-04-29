@@ -114,7 +114,6 @@ class GraphWindow(QMainWindow):
         self.version = QAction(self)
         self.setAcceptDrops(True)
 
-        # Меню "Файл"
         file_menu = self.menubar.addMenu("Файл") 
         file_menu.addAction(self.save_installation_button)
         file_menu.addAction(self.save_installation_button_as)
@@ -124,7 +123,6 @@ class GraphWindow(QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction(self.convert_buf_button)
 
-        # Меню "Настройки"
         settings_menu = self.menubar.addMenu("Сессия")
         settings_menu.addAction(self.develop_mode)
         settings_menu.addAction(self.general_settings)
@@ -187,7 +185,6 @@ class GraphSession(QWidget):
         self.adapter_main_graph = graphSelectAdapter(self.graph_main, self.select_controller, self.data_manager, self.tree_class, 'main', self)
 
         self.tabWidget.setCurrentIndex(0)
-
 
     def show_tooltip(self, message, show_while_not_click = False, timeout = 3000):
         if self.notification is None:
@@ -333,12 +330,10 @@ class sessionController():
             return False
         return self.graph_sessions[session_id].data_manager.decode_add_exp_parameters(entry, time)
     
-
 def run_graph_process(queue):
     app = QApplication([])
     controller = sessionController()
     controller.controll_sessions_win.show()
-      
     app.exec_()
 
 if __name__ == "__main__":
@@ -360,7 +355,7 @@ if __name__ == "__main__":
     my_session_class = sessionController()
     my_session_class.graphics_win.show()
 
-    test_class = running_exp_test(my_session_class, 50, 1)
+    test_class = running_exp_test(my_session_class, 50, 0.1)
     test_class.run()
 
     sys.exit(app.exec_())

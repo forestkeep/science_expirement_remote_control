@@ -115,22 +115,6 @@ class experimentControl( ):
 
 		self.has_unsaved_data = False 
 
-	def check_pipeo(self):
-		while not self.__stop_experiment:
-			if self.pipe_installation.poll():
-				buf = self.pipe_installation.recv()
-				if buf[0] == "stop":
-					self.__stop_experiment = True
-				elif buf[0] == "pause":
-					if buf[1]:
-						self.__is_paused = True
-					else:
-						self.__is_paused = False
-
-			time.sleep(1)
-		print("Поток эксперимента приема команд завершен")
-
-
 	def check_pipe(self):
 			if self.pipe_installation.poll():
 				buf = self.pipe_installation.recv()
@@ -142,9 +126,6 @@ class experimentControl( ):
 					else:
 						self.__is_paused = False
 
-
-
-
 	#snakeviz baseline.prof - команда для просмотра профилирования
 	#@profile(stdout=False, filename='baseline.prof')
 	def run(self):
@@ -152,8 +133,8 @@ class experimentControl( ):
 		for device, ch in get_active_ch_and_device( self.device_classes ):
 			device.client.open()
 
-		self.thread_check_installation_pipe = Thread(target=self.check_pipeo)
-		self.thread_check_installation_pipe.daemon = True
+		#self.thread_check_installation_pipe = Thread(target=self.check_pipeo)
+		#self.thread_check_installation_pipe.daemon = True
 		#self.thread_check_installation_pipe.start()
 
 		self.start_exp_time = time.perf_counter()
@@ -304,12 +285,16 @@ class experimentControl( ):
 																 Номер шага = {ch.number_meas} \n\r
 																 Приоритет = {current_priority}\n\r
 																''' )
-							
+					status_send = self.shared_buffer_manager.send_data()
 							#self.queue.put( (lambda data=self.meta_data_exp: self.meta_data_exp_updated( data ), "meta_data_exp_updated"))
-
 							
 		for dev, ch in get_active_ch_and_device( self.device_classes ):
 			ans = dev.action_end_experiment(ch)
+
+		#ждем пока все данные будут переданы в основной поток
+		status_send = True
+		while status_send:
+			status_send = self.shared_buffer_manager.send_data()
 
 		self.meta_data_exp.exp_stop_time = time.perf_counter()
 
@@ -317,7 +302,6 @@ class experimentControl( ):
 		time.sleep(1)
 		self.__stop_experiment = True
 
-		#self.thread_check_installation_pipe.join()
 		clear_pipe(self.pipe_installation)
 		clear_queue(self.queue)
 		clear_queue(self.important_queue)
@@ -450,11 +434,7 @@ class experimentControl( ):
 					par = {1:param}
 					
 				for val in par.values():
-						print(val, time_t)
-						#status_update = self.graph_controller.decode_add_exp_parameters(session_id = self.session_id, entry      = val,time       = time_t)
-						#if not status_update:
-						#	logger.warning(f"Error updating parameters: {val}")
-						pass
+						self.shared_buffer_manager.add_data(val, time_t)
 
 				ch.last_step_time = step_time
 

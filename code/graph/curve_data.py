@@ -87,7 +87,7 @@ class graphData:
 
         self.tree_item = CurveTreeItem(curve_data_obj=self)
 
-    def set_plot_obj(self, plot_obj, pen, highlight=False):
+    def set_plot_obj(self, plot_obj, pen, highlight = False):
         self.plot_obj = plot_obj
         self.plot_obj.setFocus()
         self.plot_obj.setZValue(100)
@@ -154,6 +154,7 @@ class graphData:
         legend_field : pg.LegendItem
             The LegendItem to add the curve to.
         """
+
         if self.parent_graph_field:
             if graph_field is not self.parent_graph_field:
                 self.parent_graph_field.removeItem(self.plot_obj)
@@ -165,8 +166,11 @@ class graphData:
         self.parent_graph_field = graph_field
         self.legend_field = legend_field
         self.number_axis = number_axis
+
+        #___________________исключение здесь__________________
         self.parent_graph_field.addItem(self.plot_obj)
-        
+        #====================================================
+
         if self.legend_field.getLabel( self.plot_obj ) is None:
             self.legend_field.addItem(self.plot_obj, self.legend.current_name)
 

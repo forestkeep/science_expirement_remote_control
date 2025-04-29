@@ -10,8 +10,10 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 try:
 	from curve_data import linearData
+	from dataManager import relationData
 except:
 	from graph.curve_data import linearData
+	from graph.dataManager import relationData
 from PyQt5.QtWidgets import QApplication
 import logging
 logger = logging.getLogger(__name__)
@@ -44,14 +46,17 @@ class graphSelectAdapter:
 		first_parameters = []
 		second_parameters = []
 		y_name = curve_data_obj.rel_data.y_name
-		if curve_data_obj.number_axis == 2:
-			second_parameters = [y_name]
-		if curve_data_obj.number_axis == 1:
-			first_parameters = [y_name]
+		if y_name == "gen":
+			curve_data_obj.delete_curve_from_graph()
+		else:
+			if curve_data_obj.number_axis == 2:
+				second_parameters = [y_name]
+			if curve_data_obj.number_axis == 1:
+				first_parameters = [y_name]
 
-		logger.debug(f"hide_curve {first_parameters=} {second_parameters=}")
+			logger.debug(f"hide_curve {first_parameters=} {second_parameters=}")
 
-		self.selector.clear_selections("", first_parameters, second_parameters)
+			self.selector.clear_selections("", first_parameters, second_parameters)
 
 	def stop_session(self):
 		self.graph.stop_session()
@@ -62,19 +67,39 @@ class graphSelectAdapter:
 		self.graph.destroy_curve(curve_data_obj)
 
 	def show_curve(self, curve_data_obj: linearData):
+		#возможны два случая, когда кривая сгенерирована из сырых данных и когда кривая посчитана по формуле. Когда кривая посчитана по формуле, мы просто проверяем пространства и напрямую отображаем ее
 		logger.debug(f"show_curve {curve_data_obj.rel_data.y_name=}")
 		paramx, paramy1, paramy2 = self.selector.get_parameters()
 		if paramx == curve_data_obj.rel_data.x_name:	
 			y_name = curve_data_obj.rel_data.y_name
-			self.selector.set_selections("", [y_name], [y_name])
+			if y_name == "gen":
+				curve_data_obj.place_curve_on_graph(graph_field  = curve_data_obj.parent_graph_field,
+                                                    legend_field  = curve_data_obj.legend_field,
+                                                    number_axis = curve_data_obj.number_axis
+                                                    )
+			else:
+				self.selector.set_selections("", [y_name], [y_name])
 		else:
 			self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Кривая принадлежит другому пространству") )
 
 	def reset_filters(self, curve_data_obj: linearData):
 		self.graph.reset_filters(curve_data_obj)
 
-	def curve_created(self, curve_data_obj: linearData):
-		pass
+	def curve_created(self, data: relationData, formula:str = None, description:str = None):
+		status = self.graph.create_and_place_curve(data = data)
+		if not status:
+			logger.warning(f"Кривая с именем {data.name} уже существует в системе")
+		else:
+			curve = self.graph.get_curve(data.name)
+			if curve:
+				blocks = {}
+				if formula:
+					blocks[QApplication.translate("GraphWindow","Формула")] = formula
+				if description:
+					blocks[QApplication.translate("GraphWindow","Описание")] = description
+
+				if blocks:
+					curve.tree_item.add_new_block( QApplication.translate("GraphWindow","Разное"), blocks)
 
 	def numPointsChanged(self, value):
 		self.graph.set_num_points(value)

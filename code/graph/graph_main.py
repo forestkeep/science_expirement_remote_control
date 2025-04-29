@@ -494,6 +494,9 @@ class graphMain(QObject):
     def set_multiple_mode(self, is_multiple):
         self.is_multiple = is_multiple
 
+    def get_curve(self, name):
+        return self.stack_curve.get(name)
+
     def create_curve(self, data: relationData) -> linearData:
             new_data = linearData(data=data)
             buf_color = next(self.color_warm_gen)
@@ -524,31 +527,31 @@ class graphMain(QObject):
             
             return new_data
     @time_decorator
-    def create_and_place_curve(self, data, graph_field, legend_field, number_axis):
-            new_data = self.create_curve(data = data)
-            self.main_class.tree_class.add_curve(new_data.tree_item)
-            self.stack_curve[data.name] = new_data
+    def create_and_place_curve(self, data,
+                                    graph_field = None,
+                                    legend_field = None,
+                                    number_axis = None):
+        if self.stack_curve.get(data.name):
+            return False
+        
+        if not graph_field:
+            graph_field = self.graphView
+        if not legend_field:
+            legend_field = self.legend
+        if not number_axis:
+            number_axis=1
+        new_data = self.create_curve(data = data)
+        self.main_class.tree_class.add_curve(new_data.tree_item)
+        self.stack_curve[data.name] = new_data
             
-            self.stack_curve[data.name].place_curve_on_graph(graph_field  = graph_field,
+        self.stack_curve[data.name].place_curve_on_graph(graph_field  = graph_field,
                                                              legend_field  = legend_field,
                                                              number_axis = number_axis
-                                                              )
+                                                            )
+        return True
         
     def add_curve_to_stack(self, curve_data_obj):   
         self.stack_curve[curve_data_obj.y_name + curve_data_obj.x_name] = curve_data_obj
-
-    def check_and_show_warning(self):
-        if self.is_show_warning == True:
-            points_num = 10000
-            self.is_show_warning = False
-            if len(self.x) > points_num:
-                text = QApplication.translate("GraphWindow", "Число точек превысило {points_num}, расчет зависимости одного параметра от другого может занимать некоторое время.\n Особенно, на слабых компьютерах. Рекомендуется выводить графики в зависимости от времени.")
-                text = text.format(points_num = points_num)
-                message = messageDialog(
-                    title=QApplication.translate("GraphWindow","Сообщение"),
-                    text=text
-                )
-                message.exec_()
 
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна
         self.graph_win_close_signal.emit(1)

@@ -19,7 +19,8 @@ from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QDialog,
                              QTreeWidget, QTreeWidgetItem, QVBoxLayout,
                              QWidget, QInputDialog)
 
-from pyqtgraph import siScale
+from dataManager import relationData, measTimeData
+import copy
 
 try:
     from calc_values_for_graph import ArrayProcessor
@@ -323,7 +324,7 @@ class treeWin(QWidget):
     curve_shown = pyqtSignal( object )
     curve_hide = pyqtSignal( object )
     curve_reset = pyqtSignal( object )
-    curve_created = pyqtSignal( object )
+    curve_created = pyqtSignal( object, str, str )
     def __init__(self, main_class = None):
         super().__init__()
         self.setMinimumSize(0,0)
@@ -440,12 +441,12 @@ class treeWin(QWidget):
             names_x_parameters = set()
             x_name = ""
             for id, curve in choised_curves.items():
-                if curve.curve_data_obj.x_name not in names_x_parameters and names_x_parameters:
+                if curve.curve_data_obj.rel_data.x_name not in names_x_parameters and names_x_parameters:
                     logger.info(f"Выбранные кривые построены в различных пространствах. {names_x_parameters}")
                     self.main_class.show_tooltip( QApplication.translate("GraphWindow","Выбранные кривые находятся в разных пространствах. Построение невозможно."), timeout=3000)
                     return
-                names_x_parameters.add(curve.curve_data_obj.x_name)
-                x_name = curve.curve_data_obj.x_name
+                names_x_parameters.add(curve.curve_data_obj.rel_data.x_name)
+                x_name = curve.curve_data_obj.rel_data.x_name
 
             context, all_x, status = self.preparation_arrays(context)
             if not status:
@@ -455,7 +456,33 @@ class treeWin(QWidget):
                 
             result = self.evaluate_expression(self.buf_formula, context)
 
-            curve_data = self.main_class.graph_main.create_curve(y_data = result, 
+            buf_rel_data = copy.deepcopy( curve.curve_data_obj.rel_data )
+            buf_rel_data.name = self.buf_new_curve_name
+            buf_rel_data.y_result = result
+
+            buf_rel_data.y_name = "gen"
+
+            #curve_data = self.main_class.graph_main.create_curve( buf_rel_data )
+
+            #self.curve_shown.emit(curve_data)
+            self.curve_created.emit(buf_rel_data, self.buf_formula, self.buf_description)
+            #self.add_curve(curve_data.tree_item)
+            #curve_data.set_full_legend_name()
+            #curve_data.tree_item.add_new_block( QApplication.translate("GraphWindow","Разное"),
+            #                                        {QApplication.translate("GraphWindow","Формула"): self.buf_formula,
+            #                                        QApplication.translate("GraphWindow","Описание"): self.buf_description})
+            
+            #если построение успешно, то очищаем буфер
+            self.buf_formula = None
+            self.buf_description = None
+            self.buf_new_curve_name = None
+
+    def create_autocorrelation(self, item: CurveTreeItem):
+        if item:
+            pass
+            '''
+            curve_data = self.main_class.graph_main.create_curve(
+                y_data = result, 
                                                     x_data = all_x[0],
                                                     name_device ="gene",
                                                     name_ch ="rate",
@@ -471,11 +498,8 @@ class treeWin(QWidget):
             curve_data.tree_item.add_new_block( QApplication.translate("GraphWindow","Разное"),
                                                     {QApplication.translate("GraphWindow","Формула"): self.buf_formula,
                                                      QApplication.translate("GraphWindow","Описание"): self.buf_description})
-            
-            #если построение успешно, то очищаем буфер
-            self.buf_formula = None
-            self.buf_description = None
-            self.buf_new_curve_name = None
+            '''
+
 
     def preparation_arrays(self, tree_curves: dict):
         keys = list(tree_curves.keys())
@@ -538,18 +562,21 @@ class treeWin(QWidget):
             delete_action = QAction( QApplication.translate("GraphWindow","Удалить график"), self)
             reset_data_action = QAction( QApplication.translate("GraphWindow","Сбросить фильтры"), self)
             add_note_action = QAction( QApplication.translate("GraphWindow","Добавить заметку"), self)
+            create_autocorrelation = QAction( QApplication.translate("GraphWindow","Построить автокорреляционную функцию"), self)
 
             context_menu.addAction(name_action)
             context_menu.addAction(color_action)
             context_menu.addAction(delete_action)
             context_menu.addAction(reset_data_action)
             context_menu.addAction(add_note_action)
+            context_menu.addAction(create_autocorrelation)
 
             name_action.triggered.connect(lambda: self.change_name_curve(root_item))
             color_action.triggered.connect(lambda: self.change_color_curve(root_item))
             delete_action.triggered.connect(lambda: self.delete_curve(root_item))
             reset_data_action.triggered.connect(lambda: self.reset_filters(root_item))
             add_note_action.triggered.connect(lambda: self.add_note(root_item))
+            create_autocorrelation.triggered.connect(lambda: self.create_autocorrelation(root_item))
 
             context_menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
     def reset_filters(self, item=None):
