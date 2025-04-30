@@ -11,6 +11,8 @@
 
 import random
 import time
+import math
+import itertools
 
 import numpy as np
 import pandas as pd
@@ -22,6 +24,8 @@ class test_graph:
         self.start_time = time.time()
         #ch1, ch2, step = self.read_param_from_test()
         ch1, ch2, step = [1], [2], 0.002
+
+        self.sin_gen = self.generate_sine_wave()
         
         self.main_dict = {
             '''
@@ -58,7 +62,7 @@ class test_graph:
             },
             
         }
-
+        val, x = next(self.sin_gen)
         self.main_dict = {
 
             "device3": {
@@ -69,6 +73,7 @@ class test_graph:
                 },
                 "ch_2": {
                     self.get_param(): [self.get_values(), [0] ],
+                    "SIN": [val, [x]]
                 }, 
             },
                   
@@ -104,6 +109,19 @@ class test_graph:
             }
         }
         '''
+
+    def generate_sine_wave(self, step=0.1, interval=10, amplitude=1, modulation_interval=100):
+        for x in range(1000):
+            t = x * step
+
+            modulating_amplitude = (math.sin(2 * math.pi * t / modulation_interval) + 1) / 2
+            
+            value = amplitude * modulating_amplitude * math.sin(2 * math.pi * t / interval)
+            
+            noise = random.uniform(-3, 3)
+            value += noise
+            
+            yield value, x
 
     def read_param_from_test(self):
         import os
@@ -158,7 +176,12 @@ class test_graph:
         for channels in main_dict.values():
             for channel, parameters in channels.items():
                 for key, value in parameters.items():
-                    if (
+                    if key == "SIN":
+                        pass
+                        val, x = next(self.sin_gen)
+                        value[0] = [val]
+                        value[1] = [x]
+                    elif (
                         isinstance(value, list)
                         and key != "wavech"
                     ):

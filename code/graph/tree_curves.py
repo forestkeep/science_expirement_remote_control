@@ -479,27 +479,20 @@ class treeWin(QWidget):
 
     def create_autocorrelation(self, item: CurveTreeItem):
         if item:
-            pass
-            '''
-            curve_data = self.main_class.graph_main.create_curve(
-                y_data = result, 
-                                                    x_data = all_x[0],
-                                                    name_device ="gene",
-                                                    name_ch ="rate",
-                                                    y_name =self.buf_new_curve_name,
-                                                    x_name =x_name,
-                                                    y_param_name =self.buf_new_curve_name,
-                                                    x_param_name=x_name)
+            curve = item.curve_data_obj
+            curve_rel_data = copy.deepcopy(curve.rel_data)
+            y_values = curve.filtered_y_data
+            x_values = curve.filtered_x_data
 
-            self.curve_shown.emit(curve_data)
-            self.curve_created.emit(curve_data)
-            self.add_curve(curve_data.tree_item)
-            curve_data.set_full_legend_name()
-            curve_data.tree_item.add_new_block( QApplication.translate("GraphWindow","Разное"),
-                                                    {QApplication.translate("GraphWindow","Формула"): self.buf_formula,
-                                                     QApplication.translate("GraphWindow","Описание"): self.buf_description})
-            '''
+            curve_rel_data.y_result = compute_autocorrelation(y_values)
+            curve_rel_data.x_result = x_values
 
+            curve_rel_data.y_name = "gen"
+            
+            curve_rel_data.name+=("(autocorr)")
+            desc = QApplication.translate("GraphWindow", "Автокорреляционная функция от {data}" )
+            desc = desc.format(data = curve.rel_data.name)
+            self.curve_created.emit(curve_rel_data, None, desc )
 
     def preparation_arrays(self, tree_curves: dict):
         keys = list(tree_curves.keys())
@@ -657,6 +650,52 @@ class treeWin(QWidget):
     def clear_all(self):
         for curve in self.curves:
             self.delete_curve(curve)
+
+def compute_autocorrelation(data, max_lag=None, normalized=True, method='direct'):
+    """
+    Вычисляет значения автокорреляционной функции для заданного массива данных.
+
+    Параметры:
+    data : numpy.ndarray
+        Одномерный массив входных данных
+    max_lag : int, optional
+        Максимальный лаг для вычисления (по умолчанию len(data)-1)
+    normalized : bool, optional
+        Нормализовать ли результат к [-1, 1] (по умолчанию True)
+    method : str, optional
+        Метод вычисления: 'direct' (прямой расчет) или 'fft' (через преобразование Фурье)
+
+    Возвращает:
+    numpy.ndarray
+        Массив значений АКФ для лагов от 0 до max_lag
+    """
+    data = np.asarray(data)
+    if data.ndim != 1:
+        raise ValueError("Входные данные должны быть одномерным массивом")
+    
+    n = len(data)
+    if max_lag is None:
+        max_lag = n - 1
+    else:
+        max_lag = min(int(max_lag), n - 1)
+    
+    data_centered = data - np.mean(data)
+    
+    if method == 'fft':
+        padding = 2 ** int(np.ceil(np.log2(2 * n - 1)))
+        fft = np.fft.fft(data_centered, padding)
+        autocorr = np.fft.ifft(fft * np.conj(fft))[:n].real
+        autocorr = autocorr[:max_lag+1]
+    else:
+        autocorr = np.zeros(max_lag + 1)
+        for k in range(max_lag + 1):
+            autocorr[k] = np.dot(data_centered[:n-k], data_centered[k:])
+
+    if normalized:
+        norm = np.dot(data_centered, data_centered)
+        autocorr = autocorr / norm if norm != 0 else autocorr * 0
+    
+    return autocorr
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -63,7 +63,7 @@ class graphSelectAdapter:
 		self.selector.stop_session()
 
 	def destroy_curve(self, curve_data_obj: linearData):
-		self.hide_curve(curve_data_obj)
+		#self.hide_curve(curve_data_obj)
 		self.graph.destroy_curve(curve_data_obj)
 
 	def show_curve(self, curve_data_obj: linearData):
