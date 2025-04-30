@@ -11,6 +11,9 @@ from collections import deque
 from multiprocessing import Process, Pipe
 from multiprocessing.shared_memory import SharedMemory
 from typing import Deque, List, Optional, Tuple
+import logging
+
+logger = logging.getLogger(__name__)
 
 class SentItem:
     __slots__ = ('id', 'data', 'attempts', 'last_sent', 'shm')
@@ -106,7 +109,7 @@ class SharedBufferManager:
                 shm = shm
             )
         except Exception as e:
-            print(f"Ошибка отправки: {e}")
+            logger.warning(f"Ошибка отправки данных в другой процесс: {e}")
             if 'shm' in locals():
                 shm.close()
                 shm.unlink()
@@ -126,7 +129,7 @@ class SharedBufferManager:
                             sent_item.shm.unlink()
                             break
             except Exception as e:
-                print(f"Ошибка подтверждения: {e}")
+                logger.warning(f"Ошибка подтверждения получения данных: {e}")
 
     def _retry_timeouts(self) -> None:
         """Повторяет отправку данных с истекшим таймаутом."""
@@ -146,7 +149,7 @@ class SharedBufferManager:
                     else:
                         new_sent_queue.append(item)
                 else:
-                    print(f"Количество попыток отправки истекло для объекта {item.id}")
+                    logger.warning(f"Количество попыток отправки истекло для объекта {item.id}")
                     item.shm.close()
                     item.shm.unlink()
             else:
@@ -221,13 +224,12 @@ def _process_received_data(conn , current_id: int, shm_name: str) -> None:
             str_len -= 4 + part_len
         
         float_value = struct.unpack('d', shm.buf[offset:offset+8])[0]
-        #print(f"Received key: {str_data}")
         shm.close()
         conn.send((current_id, "K"))
         return key, str_data, float_value
 
     except Exception as e:
-        print(f"Ошибка обработки: {e}")
+        logger.warning(f"Ошибка обработки входных данных: {e}")
         conn.send((current_id, "E"))
 
 if __name__ == "__main__":

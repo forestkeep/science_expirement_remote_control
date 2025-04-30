@@ -19,7 +19,6 @@ from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QDialog,
                              QTreeWidget, QTreeWidgetItem, QVBoxLayout,
                              QWidget, QInputDialog)
 
-from dataManager import relationData, measTimeData
 import copy
 
 try:

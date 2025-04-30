@@ -25,7 +25,7 @@ from multiprocessing import Process, Value, Array, Lock,  Queue
 from threading import Thread
 from shared_buffer_manager import SharedBufferManager
 
-from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe
+from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe, create_clients
 
 logger = logging.getLogger(__name__)
 
@@ -128,10 +128,17 @@ class experimentControl( ):
 
 	#snakeviz baseline.prof - команда для просмотра профилирования
 	#@profile(stdout=False, filename='baseline.prof')
+	def set_clients(self):
+		clients, _ = create_clients([], self.device_classes)
+		for device, client in zip(self.device_classes.values(), clients):
+			if client:
+				device.set_client(client)
+			else:
+				logger.warning(f"Для прибора {device.name} не создан клиент {client=}")
+
 	def run(self):
 		self.has_unsaved_data = False 
-		for device, ch in get_active_ch_and_device( self.device_classes ):
-			device.client.open()
+		self.set_clients()
 
 		#self.thread_check_installation_pipe = Thread(target=self.check_pipeo)
 		#self.thread_check_installation_pipe.daemon = True
@@ -311,8 +318,6 @@ class experimentControl( ):
 
 		for device, ch in get_active_ch_and_device( self.device_classes ):
 			device.client.close()
-
-		print("Поток эксперимента завершен")
 
 	def write_meta_data(self):
 		self.meta_data_exp.exp_start_time = self.start_exp_time

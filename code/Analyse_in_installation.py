@@ -195,7 +195,6 @@ class analyse(baseInstallation):
         i = 0
         for row in transposed_matrix:
             logger.debug(f"{i} {row=}")
-            #print(f"{i} {row=}")
             i += 1
 
         setted_dev = (
@@ -207,7 +206,6 @@ class analyse(baseInstallation):
                 if row[0] == False or row[i] in setted_dev:
                     break
                 if row[0] == row[i]:
-                    #print("зацикливание по строке ", row)
                     setted_dev.append(row[0])
                     dev, ch_name = row[0].split()[0], row[0].split()[1]
                     dev = self.name_to_class(name_device=dev)

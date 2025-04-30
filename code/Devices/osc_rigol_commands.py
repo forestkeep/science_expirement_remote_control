@@ -518,6 +518,7 @@ def test():
 if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
+    import pickle
 
     # test()
     res = pyvisa.ResourceManager().list_resources()
@@ -526,6 +527,7 @@ if __name__ == "__main__":
         client = rm.open_resource(res[0])
     except:
         client = "fake"
-    osc = oscRigolCommands(client)
+    osc = oscRigolCommands("eeer")
+    pickle.dumps(osc)
     osc.load_commands("hantek.json")
     osc.set_band_width(4, False)

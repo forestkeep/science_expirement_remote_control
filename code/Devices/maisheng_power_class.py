@@ -220,33 +220,12 @@ class maishengPowerClass(power_supply):
 
 
 if __name__ == "__main__":
-    # Создание клиента Modbus RTU
+    import pickle
     client = ModbusSerialClient(
-        method="rtu", port="COM3", baudrate=9600, stopbits=1, bytesize=8, parity="E"
+        port="COM5", baudrate=9600, stopbits=1, bytesize=8, parity="E"
     )
 
-    power_supply = maishengPowerClass("wsd", "rere")
-    power_supply.set_client(client)
-    power_supply.set_test_mode()
-    while True:
-        voltage = input()
-        flag = True
-        try:
-            voltage = float(voltage)
-        except:
-            # logger.info("ошибка, нужно ввести число")
-            flag = False
+    pickle.dumps(client)
+    client.close()
 
-        if flag:
-            ans = power_supply._set_voltage(voltage * 100)
-            # logger.info("ответ модуля:", ans)
-            time.sleep(2)
-            # logger.info("читаем установленное значение напряжения...")
-            ans = power_supply._get_setting_voltage()
-            # logger.info("ответ модуля на чтение установленного напряжения:", ans)
-            time.sleep(2)
-            # logger.info("читаем текущее значение напряжения...")
-            ans = power_supply._get_current_voltage()
-            # logger.info("ответ модуля на чтение текущего напряжения(с дисплея):", ans)
-
-            client.close()
+    

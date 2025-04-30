@@ -11,6 +11,15 @@
 import datetime
 from multiprocessing import Queue
 from queue import Empty
+from pymodbus.client import ModbusSerialClient
+from PyQt5 import QtGui, QtWidgets
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication
+
+from Adapter import Adapter, instrument
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_active_ch_and_device(device_classes: dict):
 	for device in device_classes.values():
@@ -34,3 +43,76 @@ def clear_pipe(pipe):
     """Очищает пайп от данных."""
     while pipe.poll():
         pipe.recv()
+
+def create_clients(clients, dict_devices) -> tuple:
+        """функция создает клиенты для приборов с учетом того, что несколько приборов могут быть подключены к одному порту. Возвращает список ресурсов, которые не удалось создать"""
+        list_type_connection = []
+        list_COMs = []
+        list_baud = []
+        dict_modbus_clients = {}
+        dict_serial_clients = {}
+        bad_resources = []
+        for client in clients:
+            try:
+                client.close()
+                del client
+            except:
+                pass
+        clients.clear()
+        for device in dict_devices.values():
+            is_dev_active = False
+            for ch in device.channels:
+                if ch.is_ch_active():
+                    is_dev_active = True
+                    break
+            if is_dev_active:
+                list_type_connection.append(device.get_type_connection())
+                list_COMs.append(device.get_COM())
+                list_baud.append(device.get_baud())
+            else:
+
+                list_type_connection.append(False)
+                list_COMs.append(False)
+                list_baud.append(False)
+        for i in range(len(list_baud)):
+
+            if list_type_connection[i] == False:
+                clients.append(False)
+
+            elif list_type_connection[i] != "modbus":
+                if list_COMs[i] in dict_serial_clients.keys():
+                    clients.append(dict_serial_clients[list_COMs[i]])
+                else:
+                    try:
+                        ser = Adapter(list_COMs[i], int(list_baud[i]))
+                    except Exception as e:
+                        logger.warning(f"Error create {list_COMs[i]} client: {str(e)}")
+                        bad_resources.append(list_COMs[i])
+                        ser = False
+
+                    dict_serial_clients[list_COMs[i]] = ser
+                    clients.append(ser)
+
+            elif list_type_connection[i] == "modbus":
+                if list_COMs[i] in dict_modbus_clients.keys():
+                    # если клиент был создан ранее, то просто добавляем ссылку на него
+                    clients.append(dict_modbus_clients[list_COMs[i]])
+                else:  # иначе создаем новый клиент и добавляем в список клиентов и список модбас клиентов
+
+                    try:
+                        dict_modbus_clients[list_COMs[i]] = ModbusSerialClient(
+                                port=list_COMs[i],
+                                baudrate=int(list_baud[i]),
+                                stopbits=1,
+                                bytesize=8,
+                                parity="E",
+                                timeout=0.3,
+                                retries=1,
+                        )
+                    except Exception as e:
+                        bad_resources.append(list_COMs[i])
+                        dict_modbus_clients[list_COMs[i]] = False
+                        logger.warning(f"Error create {list_COMs[i]} modbus client: {str(e)}")
+
+                    clients.append(dict_modbus_clients[list_COMs[i]])
+        return clients, bad_resources

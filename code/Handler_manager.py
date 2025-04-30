@@ -10,6 +10,9 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import unittest
+import logging
+
+logger = logging.getLogger(__name__)
 
 class subscribe:
     def __init__(self, name, publiser, description) -> None:
@@ -37,8 +40,8 @@ class subscribe:
         for sub in self.subscribers:
             try:
                 sub.receive_message(self.name)
-            except:
-                print(f"Ошибка при отправке сообщения от {self.name} подписчику {sub}")
+            except Exception as e:
+                logger.warning(f"Ошибка при отправке сообщения от {self.name} подписчику {sub} ошибка {e}")
 
     def get_name(self):
         return self.name
@@ -88,17 +91,14 @@ class messageBroker:
         self.subscribe_list = []
 
     def clear_my_topicks(self, publisher):
-        #print(self.subscribe_list)
         buf_list = []
         for ind, subscribe in enumerate(self.subscribe_list):
-                #print(f"{publisher=} {subscribe.publisher=}")
                 if publisher != subscribe.publisher:
                     buf_list.append(subscribe)
                 else:
                     del subscribe
 
         self.subscribe_list = buf_list
-        #print(self.subscribe_list)
                     
     def create_subscribe(self, name_subscribe, publisher, description=""):
         new_subscribe = subscribe(
@@ -113,9 +113,6 @@ class messageBroker:
                     sub.push_message()
                     return True
                 else:
-                    print(
-                        f"Ошибка, отправить публикацию может только создатель {sub.publisher=} {publisher=}"
-                    )
                     return False
         return False
 
@@ -125,7 +122,6 @@ class messageBroker:
                 if sub.publisher == publisher:
                     return sub.subscribers
                 else:
-                    print("Ошибка, отправить публикацию может только создатель")
                     return False
 
 class MockSubscriber:

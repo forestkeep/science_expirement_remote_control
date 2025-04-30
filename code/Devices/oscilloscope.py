@@ -868,6 +868,8 @@ class oscilloscopeClass(base_device):
     
     def action_before_experiment(self, number_of_channel) -> bool:
         self.switch_channel(number_of_channel)
+        if not hasattr(self, "command") or not self.command:
+            self.command = oscRigolCommands(device=self)
 
         # ===Действия перед экспериментом, запись настроек в прибор===
         pause = 0.1

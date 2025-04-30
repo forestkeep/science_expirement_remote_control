@@ -34,7 +34,7 @@ from saving_data.Parse_data import process_and_export, type_save_file
 from available_devices import dict_device_class, JSON_dict_device_class
 from meas_session_data import measSession
 from experiment_control import ExperimentBridge
-from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe
+from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe, create_clients
 #from queue import Queue
 from graph.online_graph import sessionController, run_graph_process
 from multiprocessing import Process, Value, Array, Lock, shared_memory, Pipe, Queue
@@ -365,7 +365,7 @@ class installation_class( ExperimentBridge, analyse):
     def delete_device(self, device):
         if self.is_experiment_running() == False:
             for ch in self.dict_active_device_class[device].channels:
-                self.message_broker.clear_my_topicks(publisher_name=ch)
+                self.message_broker.clear_my_topicks(publisher=ch)
 
             del self.dict_active_device_class[device]
 
@@ -449,7 +449,9 @@ class installation_class( ExperimentBridge, analyse):
             self.preparation_experiment()
             if self.key_to_start_installation:
 
-                self.create_clients()
+                self.is_search_resources = False
+                self.clients, _ = create_clients(self.clients, self.dict_active_device_class)
+                self.is_search_resources = True
                 self.stop_experiment = True
                 self.set_clients_for_device()
                 self.set_state_text(text = QApplication.translate('main install',"Старт эксперимента"))
@@ -507,6 +509,7 @@ class installation_class( ExperimentBridge, analyse):
                     for dev in self.dict_active_device_class.values():
                         dev.client.close()
                         serialize_divices_classes[dev.get_name()], unserial  = get_serializable_copy(dev)
+                        logger.warning(f"в приборе {dev} не сериализованы объекты  {unserial}")
 
                     self.exp_controller = experimentControl(
                         device_classes        =serialize_divices_classes,
@@ -624,7 +627,6 @@ class installation_class( ExperimentBridge, analyse):
                 self.way_to_save_installation_file = fileName
             else:
                 self.way_to_save_installation_file = fileName + ".ns"
-            # print(fileName)
             self.push_button_save_installation()
 
     def push_button_open_installation(self):
@@ -695,7 +697,7 @@ class installation_class( ExperimentBridge, analyse):
             with open(file_path, 'w') as outfile:
                 json.dump(install_dict, outfile, ensure_ascii=False, indent=4)
         except Exception as e:
-            print(f"Ошибка при записи в файл: {e}")
+            logger.warning(f"Ошибка при записи в файл: {e}")
 
     def read_info_by_saved_installation(self, filename: str) -> tuple[bool, dict[str, any]]:
 
@@ -827,6 +829,6 @@ class installation_class( ExperimentBridge, analyse):
                     self.answer_save_results
                 )
             else:
-                print("не выбран файл сохранения результатов")
+                pass
         else:
-            print("Не выбран баф файл")
+            pass

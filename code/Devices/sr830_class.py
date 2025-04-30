@@ -438,12 +438,10 @@ class sr830Class(base_device):
             # ===Действия при подтверждении параметров от класса установки, приготовления к старту===
             self.command = commandsSR830(self)
 
-            self.get_sin = self.sin_wave(
-                freq=1, amplitude=1, phase_shift=0, sample_rate=100
-            )
-            self.get_ln = self.natural_log_generator()
-            self.get_exp = self.exponential_function_generator()
-            self.get_mult = self.multiple_function_generator(3)
+            #self.get_sin = self.sin_wave(freq=1, amplitude=1, phase_shift=0, sample_rate=100)
+            #self.get_ln = self.natural_log_generator()
+            #self.get_exp = self.exponential_function_generator()
+            #self.get_mult = self.multiple_function_generator(3)
             # ==========end==========
         else:
             pass
@@ -605,10 +603,10 @@ class sr830Class(base_device):
             else:
                 if self.is_debug:
                     is_correct = True
-                    parameters.append(["SIN=" + next(self.get_sin)])
-                    parameters.append(["Ln=" + next(self.get_ln)])
-                    parameters.append(["EXP=" + next(self.get_exp)])
-                    parameters.append(["MULT=" + next(self.get_mult)])
+                    #parameters.append(["SIN=" + next(self.get_sin)])
+                    #parameters.append(["Ln=" + next(self.get_ln)])
+                    #parameters.append(["EXP=" + next(self.get_exp)])
+                    #parameters.append(["MULT=" + next(self.get_mult)])
                     parameters.append(["disp1=" + str(254)])
                     parameters.append(["disp2=" + str(847)])
                     parameters.append(["phase=" + str(777)])
