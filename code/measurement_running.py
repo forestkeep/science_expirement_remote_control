@@ -120,8 +120,10 @@ class experimentControl( ):
 				buf = self.pipe_installation.recv()
 				if buf[0] == "stop":
 					self.__stop_experiment = True
+					print(f"стоп {time.perf_counter()}")
 				elif buf[0] == "pause":
 					if buf[1]:
+						print(f"пауза {time.perf_counter()}")
 						self.__is_paused = True
 					else:
 						self.__is_paused = False
@@ -140,10 +142,6 @@ class experimentControl( ):
 		self.has_unsaved_data = False 
 		self.set_clients()
 
-		#self.thread_check_installation_pipe = Thread(target=self.check_pipeo)
-		#self.thread_check_installation_pipe.daemon = True
-		#self.thread_check_installation_pipe.start()
-
 		self.start_exp_time = time.perf_counter()
 		
 		self.write_meta_data()
@@ -155,7 +153,7 @@ class experimentControl( ):
 		if status != False:
 			status = self.set_settings_before_exp()
 
-		error = not status  # флаг ошибки, будет поднят при ошибке во время эксперимента
+		error = not status
 		error_start_exp = not status
 
 		if error is False and self.__stop_experiment is False:
@@ -296,12 +294,26 @@ class experimentControl( ):
 							#self.queue.put( (lambda data=self.meta_data_exp: self.meta_data_exp_updated( data ), "meta_data_exp_updated"))
 							
 		for dev, ch in get_active_ch_and_device( self.device_classes ):
-			ans = dev.action_end_experiment(ch)
+			try:
+				ans = dev.action_end_experiment(ch)
+			except Exception as e:
+				logger.warning(f"Ошибка действия прибора {dev} при окончании эксперимента {e}")
+
+		logger.info(f"основной цикл эксперимента завершен, ждем доставки всех данных")
 
 		#ждем пока все данные будут переданы в основной поток
 		status_send = True
+		text = QApplication.translate('exp_flow', "Обрабатываем данные. Осталось пакетов: {}")
+		text = text.format(len(self.shared_buffer_manager.buffer))
+		self.important_queue.put(("set_state_text", {"text": text}))
+		start_save_time = time.perf_counter()
 		while status_send:
 			status_send = self.shared_buffer_manager.send_data()
+			if time.perf_counter() - start_save_time > 1:
+				start_save_time = time.perf_counter()
+				text = QApplication.translate('exp_flow', "Обрабатываем данные. Осталось пакетов: {}")
+				text = text.format(len(self.shared_buffer_manager.buffer))
+				self.important_queue.put(("set_state_text", {"text": text}))
 
 		self.meta_data_exp.exp_stop_time = time.perf_counter()
 

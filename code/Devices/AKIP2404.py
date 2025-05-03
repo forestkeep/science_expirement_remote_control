@@ -220,7 +220,6 @@ class akip2404Class(base_device):
 
     def _get_current_voltage(self, ch_num) -> float:
         """возвращает значение установленного напряжения канала"""
-        self.open_port()
         self.select_channel(channel = ch_num)
         time.sleep(0.3)
         response = self.get_parameter("READ", 3)
@@ -237,7 +236,6 @@ class akip2404Class(base_device):
         return response
 
     def set_parameter(self, command, timeout, param):
-        self.open_port()
         param = str(param)
         self.client.write(
             bytes(command, "ascii") + b" " + bytes(param, "ascii") + b"\r\n"
@@ -251,7 +249,7 @@ class akip2404Class(base_device):
         return False
 
     def get_parameter(self, command, timeout, param=False):
-        self.open_port()
+
         if param == False:
             self.client.write(bytes(command, "ascii") + b"?\r\n")
         else:
@@ -260,7 +258,11 @@ class akip2404Class(base_device):
 
         start_time = time.perf_counter()
         while time.perf_counter() - start_time < timeout:
-            line = self.client.readline().decode().strip()
+            try:
+                line = self.client.readline().decode().strip()
+            except Exception as e:
+                logger.warning(f"Ошибка при запросе параметра {e}")
+                return False
             if line:
                 return line
         logger.warning("No answer from device AKIP2404 timeout")
@@ -274,7 +276,6 @@ class akip2404Class(base_device):
         return False
 
     def select_channel(self, channel):
-        self.open_port()
         command = bytes(f":VOLTage:AC:CH{channel}\n", "ascii")
         self.client.write( command )
 

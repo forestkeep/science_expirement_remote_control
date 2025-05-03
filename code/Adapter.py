@@ -54,6 +54,18 @@ class Adapter:
         except:
             pass
 
+    @staticmethod
+    def ensure_client_open(func):
+        """Декоратор для проверки и открытия клиента"""
+        def wrapper(self, *args, **kwargs):
+            if self.which_resourse == resourse.serial:
+                if not self.client.is_open:
+                    self.open()
+            elif self.which_resourse == resourse.pyvisa:
+                self.client.open()
+            return func(self, *args, **kwargs)
+        return wrapper
+
     def set_timeout(self, timeout: float):
         if isinstance(timeout, (float, int)) and timeout > 0:
             if self.which_resourse == resourse.serial:
@@ -74,6 +86,7 @@ class Adapter:
         else:
             raise AdapterException("unknown resource")
 
+    @ensure_client_open
     def write(self, data):
         if self.which_resourse == resourse.serial:
             try:
@@ -92,7 +105,7 @@ class Adapter:
             return ans
         else:
             raise AdapterException("unknown resource")
-
+        
     def open(self):
         if self.which_resourse == resourse.serial:
             try:
@@ -105,6 +118,7 @@ class Adapter:
         else:
             raise AdapterException("unknown resource")
 
+    @ensure_client_open
     def read(self, num_bytes=10):
         if self.which_resourse == resourse.serial:
             return self.client.read(size=num_bytes)
@@ -112,7 +126,8 @@ class Adapter:
             self.client.read()
         else:
             raise AdapterException("unknown resource")
-
+        
+    @ensure_client_open
     def readline(self):
         if self.which_resourse == resourse.serial:
             return self.client.readline()
@@ -120,14 +135,15 @@ class Adapter:
             return self.client.read_raw()
         else:
             raise AdapterException("unknown resource")
-    @profile(stdout=False, filename='baseline.prof')
+    #@profile(stdout=False, filename='baseline.prof')
+    @ensure_client_open
     def query(self, command, timeout=False, end_symbol=False):
         '''timeout - ms'''
         if end_symbol:
             command = command + end_symbol
         if self.which_resourse == resourse.serial:
             if timeout:
-                self.client.timeout = timeout/1000
+                self.set_timeout(timeout=timeout)
             self.client.reset_input_buffer()
             try:
                 self.client.write(command)
@@ -149,6 +165,7 @@ class Adapter:
         else:
             raise AdapterException("unknown resource")
 
+    @ensure_client_open
     def query_ascii_values(self, command):
         if self.which_resourse == resourse.serial:
             return False
@@ -157,6 +174,7 @@ class Adapter:
         else:
             raise AdapterException("unknown resource")
 
+    @ensure_client_open
     def read_raw(self):
         if self.which_resourse == resourse.serial:
             return self.client.readline()

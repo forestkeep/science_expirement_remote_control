@@ -242,35 +242,30 @@ class mnipiE720Class(base_device):
         is_correct = True
 
         if self.active_channel_meas.dict_settable_parameters["meas L"] == True:
-                self.open_port()
                 val, val2, status = self.meas_focus_parameter(focus_val="Lp", attempts=10)
                 parameters.append(val)
                 parameters.append(val2)
                 self.client.close()
 
         if self.active_channel_meas.dict_settable_parameters["meas R"] == True:
-                self.open_port()
                 val, val2, status = self.meas_focus_parameter(focus_val="Rp", attempts=10)
                 parameters.append(val)
                 parameters.append(val2)
                 self.client.close()
 
         if self.active_channel_meas.dict_settable_parameters["meas I"] == True:
-                self.open_port()
                 val, val2, status = self.meas_focus_parameter(focus_val='I', attempts=10)
                 parameters.append(val)
                 parameters.append(val2)
                 self.client.close()
 
         if self.active_channel_meas.dict_settable_parameters["meas C"] == True:
-                self.open_port()
                 val, val2, status = self.meas_focus_parameter(focus_val='Ср', attempts=10)
                 parameters.append(val)
                 parameters.append(val2)
                 self.client.close()
 
         if self.active_channel_meas.dict_settable_parameters["meas Z"] == True:
-                self.open_port()
                 val, val2, status = self.meas_focus_parameter(focus_val='|Z|', attempts=10)
                 parameters.append(val)
                 parameters.append(val2)

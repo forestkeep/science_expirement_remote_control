@@ -34,10 +34,11 @@ from saving_data.Parse_data import process_and_export, type_save_file
 from available_devices import dict_device_class, JSON_dict_device_class
 from meas_session_data import measSession
 from experiment_control import ExperimentBridge
-from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe, create_clients
+from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe, create_clients, ExperimentState
 #from queue import Queue
 from graph.online_graph import sessionController, run_graph_process
 from multiprocessing import Process, Value, Array, Lock, shared_memory, Pipe, Queue
+
 
 
 logger = logging.getLogger(__name__)
@@ -90,8 +91,6 @@ def get_serializable_copy(obj):
     return new_obj, removed_attrs
 
 
-
-
 class installation_class( ExperimentBridge, analyse):
     def __init__(self, settings_manager, version = None) -> None:
         super().__init__()
@@ -124,6 +123,8 @@ class installation_class( ExperimentBridge, analyse):
         self.message_broker = (
             messageBroker()
         )
+
+        self.current_state = ExperimentState.PREPARATION
 
     def format_bool_settings(self, value):
 
@@ -428,7 +429,6 @@ class installation_class( ExperimentBridge, analyse):
     
     def action_stop_experiment(self):
             self.stoped_experiment()
-            self.pause_flag = True
             self.pause_exp()
             self.installation_window.pause_button.setStyleSheet(
                 not_ready_style_background
@@ -452,7 +452,6 @@ class installation_class( ExperimentBridge, analyse):
                 self.is_search_resources = False
                 self.clients, _ = create_clients(self.clients, self.dict_active_device_class)
                 self.is_search_resources = True
-                self.stop_experiment = True
                 self.set_clients_for_device()
                 self.set_state_text(text = QApplication.translate('main install',"Старт эксперимента"))
                 self.installation_window.pause_button.setStyleSheet(ready_style_background)
@@ -463,7 +462,6 @@ class installation_class( ExperimentBridge, analyse):
                 status = self.set_depending()#setting subscribers
                 
                 if status:
-                    self.stop_experiment = False
                     self.has_unsaved_data = False
                     
                     self.buf_file = self.create_buf_file()
@@ -528,12 +526,21 @@ class installation_class( ExperimentBridge, analyse):
                         session_id            =self.current_session_graph_id
                     )
 
+                    self.current_state == ExperimentState.IN_PROGRESS
+
                     self.experiment_process = Process(target=self.exp_controller.run)
                     self.experiment_process.start()
                     self.timer_for_connection_main_exp_thread.start(1000)
                     self.timer_for_receive_data_exp.start(100)
 
+                else:
+                    self.current_state == ExperimentState.PREPARATION
+
     def second_thread_tasks(self):
+
+        if self.current_state != ExperimentState.IN_PROGRESS and not self.experiment_queue.empty():
+                    clear_queue(self.experiment_queue)
+
         if not self.important_exp_queue.empty():
             event_type, data = self.important_exp_queue.get_nowait()
 
@@ -543,8 +550,10 @@ class installation_class( ExperimentBridge, analyse):
             elif event_type == "has_data_to_save":
                 self.has_unsaved_data = True
 
-        else:
+            elif event_type == "set_state_text":
+                self.set_state_text(**data)
 
+        else:
             if not self.experiment_queue.empty():
                 event_type, data = self.experiment_queue.get_nowait()
 
@@ -819,6 +828,8 @@ class installation_class( ExperimentBridge, analyse):
 
             if result_file:
                 if ans == "Книга Excel (*.xlsx)":
+                    if result_file.find(".xlsx") == -1:
+                        result_file = result_file + ".xlsx"
                     process_and_export(
                     buf_file,
                     result_file,

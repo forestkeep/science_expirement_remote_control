@@ -874,7 +874,6 @@ class oscilloscopeClass(base_device):
         # ===Действия перед экспериментом, запись настроек в прибор===
         pause = 0.1
         status = True
-        self.open_port()
 
         for i in range(1, 5):
             if self.set_ch_settings(num_ch=i) == False:
@@ -1077,4 +1076,3 @@ class oscilloscopeClass(base_device):
         for chann in channels.values():
             chann.extend(general_param)
         return channels
-

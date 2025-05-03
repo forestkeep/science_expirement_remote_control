@@ -738,8 +738,6 @@ class base_device():
 
         return status
 
-    def open_port(self):
-        self.client.open()
     def set_parameters(self, parameters):
         self.dict_settable_parameters = parameters
 

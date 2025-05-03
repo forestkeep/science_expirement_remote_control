@@ -209,6 +209,8 @@ class pigInAPoke(base_device):
 								logger.info(f"не удалось преобразовать {nm} в float при ответе pig_in_a_poke_device")
 							val = [f"{''}{index}=" + str(nm)]
 							parameters.append(val)
+				else:
+					is_correct = False
 
 			else:
 				for command in ch.dict_settable_parameters["commands"]:

@@ -232,29 +232,30 @@ class saving_data:
                             param = param[2 : len(param) - 2]
                             # получили значение в формате ['name','xxx'] где name - название параметра, xxx - число или статус
                             param = param.split("=")
-                            if param[0] == "step":
-                                # гарантируется, что при снятии осциллограммы снимается и шаг между точками, так же гарантируется, что в строке результата он стоит до осциллограммы
-                                current_step = param[1]
-                            elif "wave" in param[0]:
-                                data = osc_data()
-                                data.name = (
-                                    f"{dev.name_device}_{param[0]}_{num_wave_osc}"
-                                )
-                                num_wave_osc += 1
-                                data.time = current_time
-                                data.step = current_step
-                                wave_osc = param[1].split("|")
-                                for val in wave_osc:
-                                    data.data.append(val)
+                            if len(param) >= 2:
+                                if param[0] == "step":
+                                    # гарантируется, что при снятии осциллограммы снимается и шаг между точками, так же гарантируется, что в строке результата он стоит до осциллограммы
+                                    current_step = param[1]
+                                elif "wave" in param[0]:
+                                    data = osc_data()
+                                    data.name = (
+                                        f"{dev.name_device}_{param[0]}_{num_wave_osc}"
+                                    )
+                                    num_wave_osc += 1
+                                    data.time = current_time
+                                    data.step = current_step
+                                    wave_osc = param[1].split("|")
+                                    for val in wave_osc:
+                                        data.data.append(val)
 
-                                dev.osc_data.append(data)
-                            else:        
-                                if param[0] in dev.data:
-                                    arr = dev.data[param[0]]
-                                    arr.extend(['fail'] * (time_data_len - len(arr) - 1))
-                                    arr.append(param[1])
-                                elif len(param) > 1:
-                                    dev.data[param[0]] = ['fail'] * (time_data_len - 1) + [param[1]]
+                                    dev.osc_data.append(data)
+                                else:        
+                                    if param[0] in dev.data:
+                                        arr = dev.data[param[0]]
+                                        arr.extend(['fail'] * (time_data_len - len(arr) - 1))
+                                        arr.append(param[1])
+                                    else:
+                                        dev.data[param[0]] = ['fail'] * (time_data_len - 1) + [param[1]]
                                     
     def build_data_frame(self, result_description = None) -> pandas.DataFrame:
         column_number = 0

@@ -21,8 +21,7 @@ from PyQt5.QtWidgets import QApplication
 from Analyse_in_installation import analyse
 from Devices.Classes import not_ready_style_background, ready_style_background
 from shared_buffer_manager import _process_received_data
-
-from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe
+from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe, create_clients, ExperimentState
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +35,6 @@ class message_status(enum.Enum):
 class ExperimentBridge(analyse):
     def __init__(self) -> None:
         super().__init__()
-        self.stop_experiment   = False
         self.pause_start_time  = 0
         
     def is_experiment_running(self) -> bool:
@@ -51,17 +49,19 @@ class ExperimentBridge(analyse):
                 received = self.data_from_exp.recv()
                 if isinstance(received, tuple) and len(received) == 2:
                     data = _process_received_data(self.data_from_exp, *received)
-                    val = [data[0], data[1]]
-                    status_update = self.graph_controller.decode_add_exp_parameters(session_id = self.current_session_graph_id, entry      = val,time       = data[2])
-                    if not status_update:
-                        logger.warning(f"Error updating parameters: {val}")
+                    if data:
+                        val = [data[0], data[1]]
+                        status_update = self.graph_controller.decode_add_exp_parameters(session_id = self.current_session_graph_id, entry      = val,time       = data[2])
+                        if not status_update:
+                            logger.warning(f"Error updating parameters: {val}")
+                    else:
+                        logger.warning(f"Ошибка в расшифровке принятых данных")
                     
-
     def connection_two_thread(self):
         """функция для обновления интерфейса во время эксперимента"""
         if self.is_experiment_running():
 
-            if not self.pause_flag:
+            if not self.current_state == ExperimentState.PAUSED:
                 if self.is_experiment_endless:
                     pbar_percent = 50
                     self.installation_window.label_time.setText(
@@ -88,18 +88,17 @@ class ExperimentBridge(analyse):
         else:
             self.timer_for_connection_main_exp_thread.stop()
             self.installation_window.pbar.setValue(0)
-            self.preparation_experiment()
+            #self.preparation_experiment()
             self.installation_window.label_time.setText("")
 
     def stoped_experiment(self):
-        self.stop_experiment = True
         self.pipe_exp.send(["stop"])
+        self.current_state == ExperimentState.FINALIZING
         self.set_state_text(text = QApplication.translate('exp_flow',"Остановка") + "...")
 
     def pause_exp(self):
         if self.is_experiment_running():
-            if self.pause_flag:
-                self.pause_flag = False
+            if self.current_state == ExperimentState.PAUSED:
                 self.pipe_exp.send(["pause", 0])
                 self.installation_window.pause_button.setText(QApplication.translate('exp_flow',"Пауза"))
                 self.timer_for_pause_exp.stop()
@@ -112,8 +111,7 @@ class ExperimentBridge(analyse):
 
                 self.installation_window.pause_button.style_sheet = ready_style_background
 
-            else:
-                self.pause_flag = True
+            elif self.current_state == ExperimentState.IN_PROGRESS:
                 self.pipe_exp.send(["pause", 1])
                 self.installation_window.pause_button.setText(QApplication.translate('exp_flow',"Возобновить"))
                 self.set_state_text(text = QApplication.translate('exp_flow',"Ожидание продолжения") + "...")
@@ -147,13 +145,14 @@ class ExperimentBridge(analyse):
             + str(self.bright)
             + ");"
         )
-        if not self.pause_flag:
+        if not self.current_state == ExperimentState.PAUSED:
             self.installation_window.pause_button.style_sheet = ready_style_background
 
         else:
             self.installation_window.pause_button.setStyleSheet(style)
 
     def finalize_experiment(self, error=False, error_start_exp=False):
+        self.current_state == ExperimentState.COMPLETED
 
         self.timer_for_connection_main_exp_thread.stop()
         self.timer_second_thread_tasks.stop()
@@ -208,12 +207,11 @@ class ExperimentBridge(analyse):
             self.set_state_text(text = QApplication.translate('exp_flow',"Подготовка к эксперименту"))
             self.message_broker.clear_all_subscribers()
             self.is_experiment_endless = False
-            self.stop_experiment = False
             self.installation_window.start_button.setText(QApplication.translate('exp_flow',"Старт"))
-            self.pause_flag = True
             self.pause_exp()
             self.installation_window.pause_button.setStyleSheet(not_ready_style_background)
             self.set_state_text(text = QApplication.translate('exp_flow',"Ожидание старта"))
             self.is_search_resources = True#разрешение на сканирование ресурсов
+            self.preparation_experiment()
 
     

@@ -41,7 +41,6 @@ class matrixWps300s(power_supply):
     def _set_voltage(self, ch_num, voltage) -> bool:
         """установить значение напряжения канала"""
         logger.debug(f"устанавливаем напряжение {voltage} канала {ch_num}")
-        self.open_port()
         self.select_channel(ch_num)
         self.client.write(f"VOLT {voltage}\r\n")
         time.sleep(0.2)
@@ -61,7 +60,6 @@ class matrixWps300s(power_supply):
     def _set_current(self, ch_num, current) -> bool:
         """установить значение тока канала"""
         logger.debug(f"устанавливаем ток {current} канала {ch_num}")
-        self.open_port()
         self.select_channel(ch_num)
         self.client.write(f"CURR {current}\r\n")
         time.sleep(0.2)
@@ -80,19 +78,16 @@ class matrixWps300s(power_supply):
 
     def _output_switching_on(self, ch_num) -> bool:
         """включить канал"""
-        self.open_port()
         self.client.write(f"OUTP ON\r\n")
         self.client.close()
 
     def _output_switching_off(self, ch_num) -> bool:
         """выключить канал"""
-        self.open_port()
         self.client.write(f"OUTP OFF\r\n")
         self.client.close()
 
     def _get_current_voltage(self, ch_num) -> float:
         """возвращает значение установленного напряжения канала"""
-        self.open_port()
         self.select_channel(ch_num)
         self.client.write(f"MEAS:VOLT?\r\n")
         time.sleep(0.2)
@@ -107,7 +102,6 @@ class matrixWps300s(power_supply):
 
     def _get_current_current(self, ch_num) -> float:
         """возвращает значение измеренного тока канала"""
-        self.open_port()
         self.select_channel(ch_num)
         self.client.write(f"MEAS:CURR?\r\n")
         time.sleep(0.2)
@@ -122,7 +116,6 @@ class matrixWps300s(power_supply):
 
     def _get_setting_voltage(self, ch_num) -> float:
         """возвращает значение установленного напряжения канала"""
-        self.open_port()
         self.select_channel(ch_num)
         self.client.write(f"VOLT?\r\n")
         time.sleep(0.2)
@@ -136,8 +129,7 @@ class matrixWps300s(power_supply):
         return response
 
     def _get_setting_current(self, ch_num) -> float:
-        """возвращает значение установленного тока канала"""
-        self.open_port()            
+        """возвращает значение установленного тока канала"""          
         self.select_channel(ch_num)
         self.client.write(f"CURR?\r\n")
         time.sleep(0.2)
@@ -155,5 +147,4 @@ class matrixWps300s(power_supply):
         pass
 
     def select_channel(self, channel):
-        self.open_port()
         self.client.write(f"INST CH{channel}\r\n")

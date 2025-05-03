@@ -21,6 +21,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from enum import Enum, auto
+class ExperimentState(Enum):
+    PREPARATION = auto()        # Подготовка к эксперименту
+    READY = auto()              # Готовность к старту
+    IN_PROGRESS = auto()        # Эксперимент идет
+    PAUSED = auto()             # Эксперимент приостановлен
+    FINALIZING = auto()         # Подготовка к окончанию
+    COMPLETED = auto()          # Эксперимент окончен
+
 def get_active_ch_and_device(device_classes: dict):
 	for device in device_classes.values():
 		for channel in device.channels:

@@ -817,7 +817,6 @@ class basePowerSupply(base_device):
     def _set_voltage(self, ch_num, voltage) -> bool:
         """установить значение напряжения канала"""
         logger.debug(f"устанавливаем напряжение {voltage} канала {ch_num}")
-        self.open_port()
         self.select_channel(ch_num)
         self.client.write( self.set_volt_cmd.format(voltage = voltage) )
         time.sleep(0.2)
@@ -827,7 +826,6 @@ class basePowerSupply(base_device):
     def _set_current(self, ch_num, current) -> bool:
         """установить значение тока канала"""
         logger.debug(f"устанавливаем ток {current} канала {ch_num}")
-        self.open_port()
         self.select_channel(ch_num)
         self.client.write( self.set_cur_cmd.format(current = current))
         time.sleep(0.2)
@@ -836,19 +834,16 @@ class basePowerSupply(base_device):
         
     def _output_switching_on(self, ch_num) -> bool:
         """включить канал"""
-        self.open_port()
         self.client.write( self.ON_CH_cmd.format(ch_num = ch_num) )
         self.client.close()
 
     def _output_switching_off(self, ch_num) -> bool:
         """выключить канал"""
-        self.open_port()
         self.client.write( self.OFF_CH_cmd.format(ch_num = ch_num) )
         self.client.close()
 
     def _get_current_voltage(self, ch_num) -> float:
         """возвращает значение установленного напряжения канала"""
-        self.open_port()
         self.select_channel(ch_num)
         # self.client.write(f'MEAS:VOLT?\n'.encode())
         self.client.write( self.meas_volt_cmd )
@@ -863,7 +858,6 @@ class basePowerSupply(base_device):
 
     def _get_current_current(self, ch_num) -> float:
         """возвращает значение измеренного тока канала"""
-        self.open_port()
         self.select_channel(ch_num)
         # self.client.write(f'MEAS:CURR?\n'.encode())
         self.client.write( self.meas_cur_cmd )
@@ -878,7 +872,6 @@ class basePowerSupply(base_device):
 
     def _get_setting_voltage(self, ch_num) -> float:
         """возвращает значение установленного напряжения канала"""
-        self.open_port()
         self.select_channel(ch_num)
         self.client.write( self.ask_volt_cmd )
         time.sleep(0.2)
@@ -892,7 +885,6 @@ class basePowerSupply(base_device):
 
     def _get_setting_current(self, ch_num) -> float:
         """возвращает значение установленного тока канала"""
-        self.open_port()
         self.select_channel(ch_num)
         self.client.write( self.ask_volt_cmd )
         time.sleep(0.2)
@@ -909,7 +901,6 @@ class basePowerSupply(base_device):
         pass
 
     def select_channel(self, channel):
-        self.open_port()
         self.client.write(self.select_CH_cmd.format(ch_num = channel))
 
 if __name__ == "__main__":

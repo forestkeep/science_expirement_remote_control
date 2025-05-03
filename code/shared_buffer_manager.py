@@ -49,8 +49,8 @@ class SharedBufferManager:
         
         self.timeout = 2    #Таймаут подтверждения в секундах
         self.max_attempts = 2 # Максимальноеколичество попыток отправки
-        self.max_pending = 2  # Максимум активных сессий передачи
-        self.max_single_pending = 2 # Максимальное количество передаваемых пакетов за один вход в функцию
+        self.max_pending = 15  # Максимум активных сессий передачи
+        self.max_single_pending = 5 # Максимальное количество передаваемых пакетов за один вход в функцию
 
     def _serialize_data(self, data_packet: list, float_value: float) -> bytes:
         """Упаковывает данные в бинарный формат."""
@@ -98,9 +98,9 @@ class SharedBufferManager:
             
             current_id = self.next_id
             self.next_id += 1
-            
+            logger.debug(f"данные {id} отправлены в {time.perf_counter()}")
             self.conn.send((current_id, shm_name))
-            
+
             return SentItem(
                 id = current_id,
                 data = data_bytes,
@@ -226,6 +226,7 @@ def _process_received_data(conn , current_id: int, shm_name: str) -> None:
         float_value = struct.unpack('d', shm.buf[offset:offset+8])[0]
         shm.close()
         conn.send((current_id, "K"))
+        logger.debug(f"данные {current_id} приняты в {time.perf_counter()}")
         return key, str_data, float_value
 
     except Exception as e:

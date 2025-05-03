@@ -28,7 +28,7 @@ from graph.online_graph import sessionController
 from interface.Message import messageDialog
 from saving_data.Parse_data import process_and_export, type_save_file
 
-from functions import get_active_ch_and_device
+from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe, create_clients, ExperimentState
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,6 @@ class baseInstallation:
         self.is_debug = False
         self.down_brightness = False
         self.bright = 50
-        self.pause_flag = False
         self.is_experiment_endless = False
         self.pbar_percent = 0
         self.type_file_for_result = type_save_file.excel
@@ -525,4 +524,3 @@ class baseInstallation:
 
         self.preparation_experiment()
         logger.debug("передали настройки прибора установке")
-
