@@ -93,12 +93,13 @@ class ExperimentBridge(analyse):
 
     def stoped_experiment(self):
         self.pipe_exp.send(["stop"])
-        self.current_state == ExperimentState.FINALIZING
+        self.current_state = ExperimentState.FINALIZING
         self.set_state_text(text = QApplication.translate('exp_flow',"Остановка") + "...")
 
     def pause_exp(self):
         if self.is_experiment_running():
             if self.current_state == ExperimentState.PAUSED:
+                self.current_state = ExperimentState.IN_PROGRESS
                 self.pipe_exp.send(["pause", 0])
                 self.installation_window.pause_button.setText(QApplication.translate('exp_flow',"Пауза"))
                 self.timer_for_pause_exp.stop()
@@ -112,6 +113,7 @@ class ExperimentBridge(analyse):
                 self.installation_window.pause_button.style_sheet = ready_style_background
 
             elif self.current_state == ExperimentState.IN_PROGRESS:
+                self.current_state = ExperimentState.PAUSED
                 self.pipe_exp.send(["pause", 1])
                 self.installation_window.pause_button.setText(QApplication.translate('exp_flow',"Возобновить"))
                 self.set_state_text(text = QApplication.translate('exp_flow',"Ожидание продолжения") + "...")
@@ -152,7 +154,7 @@ class ExperimentBridge(analyse):
             self.installation_window.pause_button.setStyleSheet(style)
 
     def finalize_experiment(self, error=False, error_start_exp=False):
-        self.current_state == ExperimentState.COMPLETED
+        self.current_state = ExperimentState.COMPLETED
 
         self.timer_for_connection_main_exp_thread.stop()
         self.timer_second_thread_tasks.stop()

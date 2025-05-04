@@ -17,7 +17,7 @@ import pyvisa
 import serial
 from serial import Serial
 from serial.tools import list_ports
-from profilehooks import profile
+#from profilehooks import profile
 
 logger = logging.getLogger(__name__)
 

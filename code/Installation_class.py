@@ -154,7 +154,7 @@ class installation_class( ExperimentBridge, analyse):
         """Reconstruct installation from list of device names"""
         self.dict_active_device_class = {}
         self.graph_controller = sessionController()
-        self.graph_controller.graphics_win.graph_win_close_signal.connect(self.graph_win_closed)
+        #self.graph_controller.graphics_win.graph_win_close_signal.connect(self.graph_win_closed)
         self.measurement_parameters = {}
         i = 0
         for device_name in installation_list:
@@ -232,7 +232,7 @@ class installation_class( ExperimentBridge, analyse):
 
     def preparation_experiment(self):
         logger.debug("подготовка к эксперименту")
-        self.key_to_start_installation = False
+        self.current_state = ExperimentState.PREPARATION
         
         self.message_broker.clear_all_subscribers()
         status = self.set_depending()#setting subscribers
@@ -254,11 +254,11 @@ class installation_class( ExperimentBridge, analyse):
                 self.set_priorities()
                 self.cycle_analyse()
                 self.is_experiment_endless = self.analyse_endless_exp()
-                self.key_to_start_installation = True
+                self.current_state = ExperimentState.READY
             else:
-                self.key_to_start_installation = False
+                self.current_state = ExperimentState.PREPARATION
 
-        if self.key_to_start_installation == True:
+        if self.current_state == ExperimentState.READY:
             self.installation_window.start_button.setStyleSheet(ready_style_background)
             self.installation_window.start_button.update_buf_style()
         else:
@@ -357,9 +357,9 @@ class installation_class( ExperimentBridge, analyse):
         self.graph_controller.graphics_win.close()
         self.stop_scan_thread = True
         self.thread_scan_resources.join()
-
-    def graph_win_closed(self):
-        pass
+        if self.is_experiment_running():
+            self.pipe_exp.send(["close", 1])
+        self.experiment_process.join()
 
     # handlers button, label etc...
 
@@ -447,7 +447,7 @@ class installation_class( ExperimentBridge, analyse):
             self.action_stop_experiment()
         else:
             self.preparation_experiment()
-            if self.key_to_start_installation:
+            if self.current_state == ExperimentState.READY:
 
                 self.is_search_resources = False
                 self.clients, _ = create_clients(self.clients, self.dict_active_device_class)
@@ -526,7 +526,7 @@ class installation_class( ExperimentBridge, analyse):
                         session_id            =self.current_session_graph_id
                     )
 
-                    self.current_state == ExperimentState.IN_PROGRESS
+                    self.current_state = ExperimentState.IN_PROGRESS
 
                     self.experiment_process = Process(target=self.exp_controller.run)
                     self.experiment_process.start()
@@ -534,12 +534,21 @@ class installation_class( ExperimentBridge, analyse):
                     self.timer_for_receive_data_exp.start(100)
 
                 else:
-                    self.current_state == ExperimentState.PREPARATION
+                    self.current_state = ExperimentState.PREPARATION
+    @property
+    def current_state(self):
+        return self._current_state
+    
+    @current_state.setter
+    def current_state(self, state):
+        self._current_state = state
+        print(f"установлено состояние  {state} {time.perf_counter()}")
+
 
     def second_thread_tasks(self):
 
         if self.current_state != ExperimentState.IN_PROGRESS and not self.experiment_queue.empty():
-                    clear_queue(self.experiment_queue)
+            clear_queue(self.experiment_queue)
 
         if not self.important_exp_queue.empty():
             event_type, data = self.important_exp_queue.get_nowait()

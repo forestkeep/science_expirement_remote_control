@@ -3,7 +3,7 @@ import struct
 from collections import deque
 from multiprocessing import Process, Pipe
 from multiprocessing.shared_memory import SharedMemory
-from profilehooks import profile
+#from profilehooks import profile
 
 import time
 import struct

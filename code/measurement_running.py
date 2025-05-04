@@ -102,6 +102,8 @@ class experimentControl( ):
 		self.buf_file = buf_file
 		self.pipe_installation = pipe_installation
 
+		self.is_closed = False
+
 		self.is_exp_run_anywhere = is_run_anywhere
 		self.queue = simple_queue
 		self.important_queue = important_queue
@@ -127,6 +129,8 @@ class experimentControl( ):
 						self.__is_paused = True
 					else:
 						self.__is_paused = False
+				elif buf[0] == "close":
+					self.is_closed = True
 
 	#snakeviz baseline.prof - команда для просмотра профилирования
 	#@profile(stdout=False, filename='baseline.prof')
@@ -186,7 +190,7 @@ class experimentControl( ):
 					self.__stop_experiment = False
 					self.set_between_experiments()
 					
-				while not self.__stop_experiment and not error:
+				while not self.__stop_experiment and not error and not self.is_closed:
 
 					self.check_pipe()
 
@@ -293,43 +297,49 @@ class experimentControl( ):
 					status_send = self.shared_buffer_manager.send_data()
 							#self.queue.put( (lambda data=self.meta_data_exp: self.meta_data_exp_updated( data ), "meta_data_exp_updated"))
 							
-		for dev, ch in get_active_ch_and_device( self.device_classes ):
-			try:
-				ans = dev.action_end_experiment(ch)
-			except Exception as e:
-				logger.warning(f"Ошибка действия прибора {dev} при окончании эксперимента {e}")
+		if not self.is_closed:
+			for dev, ch in get_active_ch_and_device( self.device_classes ):
+				try:
+					ans = dev.action_end_experiment(ch)
+				except Exception as e:
+					logger.warning(f"Ошибка действия прибора {dev} при окончании эксперимента {e}")
 
-		logger.info(f"основной цикл эксперимента завершен, ждем доставки всех данных")
+			logger.info(f"основной цикл эксперимента завершен, ждем доставки всех данных")
 
-		#ждем пока все данные будут переданы в основной поток
-		status_send = True
-		text = QApplication.translate('exp_flow', "Обрабатываем данные. Осталось пакетов: {}")
-		text = text.format(len(self.shared_buffer_manager.buffer))
-		self.important_queue.put(("set_state_text", {"text": text}))
-		start_save_time = time.perf_counter()
-		while status_send:
-			status_send = self.shared_buffer_manager.send_data()
-			if time.perf_counter() - start_save_time > 1:
-				start_save_time = time.perf_counter()
-				text = QApplication.translate('exp_flow', "Обрабатываем данные. Осталось пакетов: {}")
-				text = text.format(len(self.shared_buffer_manager.buffer))
-				self.important_queue.put(("set_state_text", {"text": text}))
+			#ждем пока все данные будут переданы в основной поток
+			status_send = True
+			text = QApplication.translate('exp_flow', "Обрабатываем данные. Осталось пакетов: {}")
+			text = text.format(len(self.shared_buffer_manager.buffer))
+			self.important_queue.put(("set_state_text", {"text": text}))
+			start_save_time = time.perf_counter()
+			while status_send:
+				status_send = self.shared_buffer_manager.send_data()
+				if time.perf_counter() - start_save_time > 1:
+					start_save_time = time.perf_counter()
+					text = QApplication.translate('exp_flow', "Обрабатываем данные. Осталось пакетов: {}")
+					text = text.format(len(self.shared_buffer_manager.buffer))
+					self.important_queue.put(("set_state_text", {"text": text}))
 
-		self.meta_data_exp.exp_stop_time = time.perf_counter()
+			self.meta_data_exp.exp_stop_time = time.perf_counter()
 
-		self.important_queue.put(("finalize_experiment", {"error": error, "error_start_exp": error_start_exp}))
-		time.sleep(1)
-		self.__stop_experiment = True
+			self.important_queue.put(("finalize_experiment", {"error": error, "error_start_exp": error_start_exp}))
 
-		clear_pipe(self.pipe_installation)
-		clear_queue(self.queue)
-		clear_queue(self.important_queue)
-		self.pipe_installation.close()
-		self.queue.close()
-		self.important_queue.close()
+			time.sleep(1)
 
-		for device, ch in get_active_ch_and_device( self.device_classes ):
-			device.client.close()
+			self.__stop_experiment = True
+
+			clear_pipe(self.pipe_installation)
+			clear_queue(self.queue)
+			clear_queue(self.important_queue)
+
+			self.pipe_installation.close()
+			self.queue.close()
+			self.important_queue.close()
+
+			for device, ch in get_active_ch_and_device( self.device_classes ):
+				device.client.close()
+		else:
+			logger.warning("процесс эксперимента закрыт")
 
 	def write_meta_data(self):
 		self.meta_data_exp.exp_start_time = self.start_exp_time
@@ -351,14 +361,11 @@ class experimentControl( ):
 			+ str(ch.get_name())
 		self.queue.put(("set_state_text", {"text": text}))
 
-
 		try:
 			ans, param, step_time = device.do_action(ch)
 		except Exception as ex:
 			ans = ch_response_to_step.Step_fail
-			logger.warning(
-				f"Ошибка действия прибора {device} в эксперименте: {str(ex)}"
-			)
+			logger.warning(f"Ошибка действия прибора {device} в эксперименте: {str(ex)}")
 
 		if ans == ch_response_to_step.Incorrect_ch:
 			pass

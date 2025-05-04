@@ -94,7 +94,7 @@ class MyWindow(QtWidgets.QMainWindow):
         #----------------------
         #self.ui.is_design_mode = True
         #self.message_from_new_installation( ['Maisheng'], [])
-        #---------------------------
+        #----------------------
 
         if False:
             if os.path.isfile("picture/tray.png"):
@@ -154,9 +154,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.test_commands_window.show()
 
     def load_language(self, lang):
-        file_path = {
-            'RUS': "translations/translation_ru.qm",
-        }.get(lang, next((p for p in ["translations/translation_en.qm", "translation_en.qm"] if os.path.isfile(p)), None))
+        file_path = {'RUS': "translations/translation_ru.qm"}.get(lang, next((p for p in ["translations/translation_en.qm", "translation_en.qm"] if os.path.isfile(p)), None))
 
         if file_path is not None:
             self.translator.load(file_path)
@@ -285,15 +283,15 @@ if __name__ == "__main__":
     console.setFormatter(logging.Formatter(FORMAT))
 
     folder_path = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
+    if not os.path.exists( folder_path ):
+        os.makedirs( folder_path )
 
-    log_file_path = os.path.join(folder_path, "loginstallation.log")
-    file_handler = RotatingFileHandler(
-        log_file_path, maxBytes=1000000, backupCount=5
-    )
-    file_handler.setLevel(logging.WARNING)
-    file_handler.setFormatter(logging.Formatter(FORMAT))
+    log_file_path = os.path.join( folder_path, "loginstallation.log" )
+
+    file_handler = RotatingFileHandler( log_file_path, maxBytes=1000000, backupCount=5 )
+    
+    file_handler.setLevel( logging.WARNING )
+    file_handler.setFormatter( logging.Formatter(FORMAT) )
 
     logging.basicConfig(handlers=[file_handler, console], level=logging.DEBUG)
 

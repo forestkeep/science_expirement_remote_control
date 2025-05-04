@@ -47,7 +47,7 @@ class baseInstallation:
 
         self.dict_active_device_class = {}
         self.clients = []
-        self.key_to_start_installation = False
+        self._current_state = None
 
         self.list_resources = []
         self.thread_scan_resources = threading.Thread(target=self._search_resources)
@@ -454,7 +454,7 @@ class baseInstallation:
                 not_ready_style_background
             )
             self.installation_window.start_button.setText(QApplication.translate('base_install',"Старт"))
-            self.key_to_start_installation = False  # старт экспериепнта запрещаем
+            self.current_state = ExperimentState.PREPARATION
 
     def message_from_device_settings(
         self,
