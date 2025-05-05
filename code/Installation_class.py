@@ -361,8 +361,6 @@ class installation_class( ExperimentBridge, analyse):
             self.pipe_exp.send(["close", 1])
         self.experiment_process.join()
 
-    # handlers button, label etc...
-
     def delete_device(self, device):
         if self.is_experiment_running() == False:
             for ch in self.dict_active_device_class[device].channels:
@@ -495,10 +493,17 @@ class installation_class( ExperimentBridge, analyse):
                     self.timer_second_thread_tasks.start(100)
 
                     #self.queue = Queue()
-                    self.experiment_queue = Queue()
+                    self.exp_third_queue = Queue()
+                    self.exp_first_queue = Queue()
+                    self.exp_second_queue = Queue()
                     self.important_exp_queue = Queue()
 
+                    self.count_excrt = 0
+
                     self.meas_session = measSession()
+
+                    self.meta_data_exp = metaDataExp()
+                    self.meta_data_exp.write_start_meta_data( self.dict_active_device_class )
 
                     self.pipe_exp, self.pipe_installation = Pipe()
                     self.data_exp_to_installation, self.data_from_exp = Pipe()
@@ -517,7 +522,9 @@ class installation_class( ExperimentBridge, analyse):
                         repeat_exp            =int(self.settings_manager.get_setting("repeat_exp")[1]),
                         repeat_meas           =int(self.settings_manager.get_setting("repeat_meas")[1]),
                         is_run_anywhere       =self.settings_manager.get_setting("is_exp_run_anywhere")[1],
-                        simple_queue          =self.experiment_queue,
+                        first_queue           =self.exp_first_queue,
+                        second_queue          =self.exp_second_queue,
+                        third_queue           =self.exp_third_queue,
                         important_queue       =self.important_exp_queue,
                         buf_file              =self.buf_file,
                         pipe_installation     =self.pipe_installation,
@@ -544,39 +551,47 @@ class installation_class( ExperimentBridge, analyse):
         self._current_state = state
         print(f"установлено состояние  {state} {time.perf_counter()}")
 
-
     def second_thread_tasks(self):
+        if self.current_state != ExperimentState.IN_PROGRESS and not self.exp_third_queue.empty():
+            clear_queue(self.exp_third_queue)
 
-        if self.current_state != ExperimentState.IN_PROGRESS and not self.experiment_queue.empty():
-            clear_queue(self.experiment_queue)
+        event_type = None
 
         if not self.important_exp_queue.empty():
             event_type, data = self.important_exp_queue.get_nowait()
 
+        elif not self.exp_first_queue.empty():
+            event_type, data = self.exp_first_queue.get_nowait()
+
+        elif not self.exp_second_queue.empty():
+            event_type, data = self.exp_second_queue.get_nowait()
+
+        elif not self.exp_third_queue.empty():
+                event_type, data = self.exp_third_queue.get_nowait()
+
+        if event_type:
             if event_type == "finalize_experiment":
                 self.finalize_experiment(**data)
 
             elif event_type == "has_data_to_save":
                 self.has_unsaved_data = True
 
+            elif event_type == "meta_data":
+                self.update_exp_meta_data(**data)
+
             elif event_type == "set_state_text":
                 self.set_state_text(**data)
 
-        else:
-            if not self.experiment_queue.empty():
-                event_type, data = self.experiment_queue.get_nowait()
+            elif event_type == "update_remaining_time":
+                self.update_remaining_time(**data)
+                
+            elif event_type == "add_text_to_log":
+                self.add_text_to_log(**data)
 
-                if event_type == "meta_data_exp_updated":
-                    self.exp_call_stack.set_data(**data)
-
-                elif event_type == "set_state_text":
-                    self.set_state_text(**data)
-
-                elif event_type == "update_remaining_time":
-                    self.update_remaining_time(**data)
-                    
-                elif event_type == "add_text_to_log":
-                    self.add_text_to_log(**data)
+    def update_exp_meta_data(self, name, info):
+        self.meta_data_exp.exp_queue.append( self.meta_data_exp.numbers[name] )
+        self.meta_data_exp.queue_info.append(info)
+        self.exp_call_stack.set_data( self.meta_data_exp )
                 
     def update_remaining_time(self, remaining_time: float):
         logger.debug(f"update_remaining_time {remaining_time}")
@@ -674,8 +689,6 @@ class installation_class( ExperimentBridge, analyse):
     def timer_open_timeout(self, buffer):
         self.timer_open.stop()
         self.add_parameter_devices(buffer)
-
-    # Saving data functions
 
     def write_data_to_save_installation_file(self, file_path: str):
 
@@ -852,3 +865,56 @@ class installation_class( ExperimentBridge, analyse):
                 pass
         else:
             pass
+
+class metaDataExp( ):
+
+    def __init__(self):
+        super().__init__()
+        self.actors_names   = {}
+        self.actors_classes = {}
+        self.numbers        = {}
+        self.exp_queue      = []
+        self.queue_info     = []
+        self.exp_start_time = 0
+        self.exp_stop_time  = 0
+ 
+    def get_meta_data(self):
+        pass
+
+    def write_start_meta_data(self, devices: dict):
+                self.exp_start_time = time.perf_counter()
+                
+                number = 1
+                for dev, ch in get_active_ch_and_device( devices ):
+                    key = f"{dev.get_name()} {ch.get_name()}"
+                    self.actors_classes[number] = ch
+                    self.actors_names[number] = key
+                    self.numbers[key] = number
+                    number+=1
+    
+    def print_meta_data(self):
+        print("number: \t name: \t steps:")
+        for num, obj in self.actors_classes.items():
+            name = self.actors_names[num]
+            num_steps = obj.dict_settable_parameters["num steps"]
+            print(f"{num} \t { name } \t { num_steps }")
+            
+        print("exp queue:")
+        print(self.exp_queue)
+        
+        print("queue info:")
+        print(self.queue_info)
+        
+        print(f"time exp = {self.exp_stop_time - self.exp_start_time} sec")
+        
+        max_chars = max(  len(act) for act in self.actors_names.values()  )
+        
+        for num_actor in self.actors_names.keys():
+            buf = []
+            name = self.actors_names[num_actor]
+            for act in self.exp_queue:
+                if num_actor == act:
+                    buf.append("###")
+                else:
+                    buf.append("...")
+            print(name.ljust(max_chars),  "".join(buf))

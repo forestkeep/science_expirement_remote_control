@@ -278,6 +278,7 @@ class sessionController():
     def stop_session_running(self, session_id):
         if self.graph_sessions.get(session_id):
             self.graph_sessions[session_id].data_manager.stop_session_running()
+            self.session_selector.set_session_status(session_id=session_id, status = "Exp completed")
 
     def start_new_session(self, session_name: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None) -> int:
         session_id = self.session_selector.get_free_id()

@@ -163,6 +163,10 @@ class ExperimentBridge(analyse):
         self.timer_for_receive_data_exp.stop()
         self.graph_controller.stop_session_running( self.current_session_graph_id )
 
+        while not self.exp_first_queue.empty() or not self.important_exp_queue.empty():
+            self.set_state_text(text = QApplication.translate('exp_flow',"Обработка мета данных..."))
+            self.second_thread_tasks()
+
         if error:
             if error_start_exp :
                 text = QApplication.translate('exp_flow',"Эксперимент прерван из-за ошибки при настройке прибора")
@@ -195,11 +199,16 @@ class ExperimentBridge(analyse):
                     logger.warning(f"не удалось сохранить результаты {str(e)}", self.buf_file)
 
         clear_pipe(self.pipe_exp)
-        clear_queue(self.experiment_queue)
-        clear_queue(self.important_exp_queue)
+
+        clear_queue(self.exp_second_queue)
+        clear_queue(self.exp_third_queue)
 
         self.pipe_exp.close()
-        self.experiment_queue.close()
+
+        self.exp_first_queue.close()
+        self.exp_second_queue.close()
+        self.exp_third_queue.close()
+
         self.important_exp_queue.close()
 
         self.prepare_for_reexperiment()

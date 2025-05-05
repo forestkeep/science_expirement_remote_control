@@ -29,48 +29,6 @@ from functions import get_active_ch_and_device, write_data_to_buf_file, clear_qu
 
 logger = logging.getLogger(__name__)
 
-class metaDataExp( ):
-
-	def __init__(self):
-		super().__init__()
-		self.actors_names   = {}
-		self.actors_classes = {}
-		self.numbers        = {}
-		self.exp_queue      = []
-		self.queue_info     = []
-		self.exp_start_time = 0
-		self.exp_stop_time  = 0
- 
-	def get_meta_data(self):
-		pass
-	
-	def print_meta_data(self):
-		print("number: \t name: \t steps:")
-		for num, obj in self.actors_classes.items():
-			name = self.actors_names[num]
-			num_steps = obj.dict_settable_parameters["num steps"]
-			print(f"{num} \t { name } \t { num_steps }")
-			
-		print("exp queue:")
-		print(self.exp_queue)
-		
-		print("queue info:")
-		print(self.queue_info)
-		
-		print(f"time exp = {self.exp_stop_time - self.exp_start_time} sec")
-		
-		max_chars = max(  len(act) for act in self.actors_names.values()  )
-		
-		for num_actor in self.actors_names.keys():
-			buf = []
-			name = self.actors_names[num_actor]
-			for act in self.exp_queue:
-				if num_actor == act:
-					buf.append("###")
-				else:
-					buf.append("...")
-			print(name.ljust(max_chars),  "".join(buf))
-
 class experimentControl( ):
 
 	def __init__(self, 
@@ -81,12 +39,13 @@ class experimentControl( ):
 						repeat_exp:            int, 
 						repeat_meas:           int,
 						is_run_anywhere:       bool,
-						simple_queue:          Queue,
+						first_queue:           Queue,
+						second_queue:          Queue,
+						third_queue:           Queue,
 						important_queue:       Queue,
 						buf_file:              str,
 						pipe_installation,
 						data_pipe,
-						#graph_controller:      sessionController,
 						session_id:            int
 						):
 		
@@ -97,7 +56,6 @@ class experimentControl( ):
 		self.is_experiment_endless = is_experiment_endless
 		self.repeat_experiment = repeat_exp
 		self.repeat_meas = repeat_meas
-		#self.graph_controller = graph_controller
 		self.session_id = session_id
 		self.buf_file = buf_file
 		self.pipe_installation = pipe_installation
@@ -105,10 +63,11 @@ class experimentControl( ):
 		self.is_closed = False
 
 		self.is_exp_run_anywhere = is_run_anywhere
-		self.queue = simple_queue
+		self.first_queue = first_queue
+		self.second_queue = second_queue
+		self.third_queue = third_queue
 		self.important_queue = important_queue
 
-		self.meta_data_exp = metaDataExp()
 		self.remaining_time = 10
 		self.__stop_experiment = False
 		self.__is_paused = False
@@ -147,11 +106,7 @@ class experimentControl( ):
 		self.set_clients()
 
 		self.start_exp_time = time.perf_counter()
-		
-		self.write_meta_data()
 		  
-		#self.queue.put( (lambda data=self.meta_data_exp: self.meta_data_exp_updated( data ), "meta_data_exp_updated"))
-
 		status = self.check_connections()
 
 		if status != False:
@@ -171,7 +126,7 @@ class experimentControl( ):
 				self.remaining_time = 100000
 				# не определено время
 
-			self.queue.put(("update_remaining_time", {"remaining_time": self.remaining_time}))
+			self.first_queue.put(("update_remaining_time", {"remaining_time": self.remaining_time}))
 
 			self.start_exp_time = time.perf_counter()
 
@@ -180,6 +135,8 @@ class experimentControl( ):
 		target_execute = False
 		number_active_device = 4
 		last_number_active_device = 0
+
+		self.count_excrt =0
 
 		#----------------------------------------------------------------------------------------------
 		if not error_start_exp:
@@ -197,7 +154,7 @@ class experimentControl( ):
 					if not self.__is_paused:
 						if number_active_device != last_number_active_device or target_execute!=False:
 							message_continue_exp = QApplication.translate('exp_flow',"Продолжение эксперимента, приборов:") + str(number_active_device)
-							self.queue.put(("set_state_text", {"text": message_continue_exp}))
+							self.third_queue.put(("set_state_text", {"text": message_continue_exp}))
 							last_number_active_device = number_active_device
 
 						number_active_device = 0
@@ -219,7 +176,7 @@ class experimentControl( ):
 						if number_active_device == 0:
 							"""остановка эксперимента, нет активных приборов"""
 							text = QApplication.translate('exp_flow',"Остановка эксперимента") + "..."
-							self.queue.put(("set_state_text", {"text": text}))
+							self.third_queue.put(("set_state_text", {"text": text}))
 
 							self.__stop_experiment = True
 						if (
@@ -236,21 +193,17 @@ class experimentControl( ):
 							ch = target_execute[1]
 							
 							device.set_status_step(ch_name=ch.get_name(), status=False)
-							t = time.perf_counter()
+
 							ans_device = device.on_next_step(ch, repeat=3)
 
 							ans_request = False
 
 							if ans_device == ch_response_to_step.Step_done:
-								t = (
-									time.perf_counter() - t
-								)
 
 								ch.number_meas += 1
 
 								if ch.get_type() == "act":
 									error, ans_request, time_step = self.do_act(device=device, ch=ch)
-
 
 								elif ch.get_type() == "meas":
 									error, ans_request, time_step = self.do_meas(device=device, ch=ch)
@@ -258,7 +211,6 @@ class experimentControl( ):
 								if not self.has_unsaved_data:
 									self.has_unsaved_data = True
 									self.important_queue.put(("has_data_to_save", {}))
-
 
 							elif ans_device == ch_response_to_step.End_list_of_steps:
 								ch.am_i_active_in_experiment = False
@@ -280,23 +232,23 @@ class experimentControl( ):
 										+ QApplication.translate('exp_flow',"завершил работу")
 								status = "ok"
 
-								self.queue.put(("add_text_to_log", {"text": text, "status": status}))
+								self.third_queue.put(("add_text_to_log", {"text": text, "status": status}))
 
 							current_priority = ch.get_priority()
 							self.manage_subscribers(ch = ch)
 							self.update_actors_priority(exclude_dev = device, exclude_ch = ch)
 
-							self.meta_data_exp.exp_queue.append( self.meta_data_exp.numbers[ch] )
-							self.meta_data_exp.queue_info.append( f'''\n\r 
-																{device.get_name()} {ch.get_name()} \n\r
-																 Status request = {ans_request} \n\r
-																 Step time = {round(time_step, 3)} s\n\r
-																 Номер шага = {ch.number_meas} \n\r
-																 Приоритет = {current_priority}\n\r
-																''' )
+							text = f'''\n\r 
+										{device.get_name()} {ch.get_name()} \n\r
+										Status request = {ans_request} \n\r
+										Step time = {round(time_step, 3)} s\n\r
+										Number step = {ch.number_meas} \n\r
+										Priority = {current_priority}\n\r
+									'''
+							self.first_queue.put( ("meta_data", {"name": f"{device.get_name()} {ch.get_name()}", "info": text}) )
+
 					status_send = self.shared_buffer_manager.send_data()
-							#self.queue.put( (lambda data=self.meta_data_exp: self.meta_data_exp_updated( data ), "meta_data_exp_updated"))
-							
+
 		if not self.is_closed:
 			for dev, ch in get_active_ch_and_device( self.device_classes ):
 				try:
@@ -320,8 +272,6 @@ class experimentControl( ):
 					text = text.format(len(self.shared_buffer_manager.buffer))
 					self.important_queue.put(("set_state_text", {"text": text}))
 
-			self.meta_data_exp.exp_stop_time = time.perf_counter()
-
 			self.important_queue.put(("finalize_experiment", {"error": error, "error_start_exp": error_start_exp}))
 
 			time.sleep(1)
@@ -329,27 +279,15 @@ class experimentControl( ):
 			self.__stop_experiment = True
 
 			clear_pipe(self.pipe_installation)
-			clear_queue(self.queue)
-			clear_queue(self.important_queue)
+			clear_queue(self.third_queue)
 
 			self.pipe_installation.close()
-			self.queue.close()
-			self.important_queue.close()
+			self.third_queue.close()
 
 			for device, ch in get_active_ch_and_device( self.device_classes ):
 				device.client.close()
 		else:
 			logger.warning("процесс эксперимента закрыт")
-
-	def write_meta_data(self):
-		self.meta_data_exp.exp_start_time = self.start_exp_time
-		
-		number = 1
-		for dev, ch in get_active_ch_and_device( self.device_classes ):
-			self.meta_data_exp.actors_classes[number] = ch
-			self.meta_data_exp.actors_names[number] = dev.name + " " + ch.ch_name
-			self.meta_data_exp.numbers[ch] = number
-			number+=1
 
 	def do_act(self, device, ch):
 		error = False
@@ -359,7 +297,7 @@ class experimentControl( ):
 			QApplication.translate('exp_flow',"Выполняется действие") + " "\
 			+ device.get_name()\
 			+ str(ch.get_name())
-		self.queue.put(("set_state_text", {"text": text}))
+		self.third_queue.put(("set_state_text", {"text": text}))
 
 		try:
 			ans, param, step_time = device.do_action(ch)
@@ -378,7 +316,7 @@ class experimentControl( ):
 				+ str(round(step_time, 3))\
 				+ " s"
 
-			self.queue.put(("add_text_to_log", {"text": text, "status": ""}))
+			self.third_queue.put(("add_text_to_log", {"text": text, "status": ""}))
 			
 		elif ans == ch_response_to_step.Step_fail:
 			ch.am_i_active_in_experiment = False
@@ -387,7 +325,7 @@ class experimentControl( ):
 				+ device.get_name()\
 				+ str(ch.get_name())
 
-			self.queue.put(("add_text_to_log", {"text": text, "status": "err"}))
+			self.first_queue.put(("add_text_to_log", {"text": text, "status": "err"}))
 
 			if not self.is_exp_run_anywhere:
 				error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
@@ -395,7 +333,7 @@ class experimentControl( ):
 			pass
 
 		self.remaining_time = self.calc_last_exp_time()
-		self.queue.put(("update_remaining_time", {"remaining_time": self.remaining_time}))
+		self.first_queue.put(("update_remaining_time", {"remaining_time": self.remaining_time}))
 
 		return error, ans, step_time
 
@@ -408,8 +346,7 @@ class experimentControl( ):
 			+ device.get_name()\
 			+ str(ch.get_name())
 
-		#self.queue.put((lambda data=text: self.set_state_text( data ), "set_state_text"))
-		self.queue.put(("set_state_text", {"text": text}))
+		self.third_queue.put(("set_state_text", {"text": text}))
 
 		logger.debug(
 			"Выполняется измерение "
@@ -447,7 +384,7 @@ class experimentControl( ):
 						+ str(ch.get_name())\
 						+ message
 					
-					self.queue.put(("add_text_to_log", {"text": text, "status": ""}))
+					self.third_queue.put(("add_text_to_log", {"text": text, "status": ""}))
 				
 				time_t = time.perf_counter() - self.start_exp_time
 
@@ -458,7 +395,8 @@ class experimentControl( ):
 					par = {1:param}
 					
 				for val in par.values():
-						self.shared_buffer_manager.add_data(val, time_t)
+						if len(val) > 1:#если размер меньше одного, то данных нет
+							self.shared_buffer_manager.add_data(val, time_t)
 
 				ch.last_step_time = step_time
 
@@ -476,8 +414,7 @@ class experimentControl( ):
 						+ str(round(step_time, 3))\
 						+ " s"
 
-					#self.queue.put( (lambda data=text, status="": self.add_text_to_log( data, status ), 'add_text_to_log') )
-					self.queue.put(("add_text_to_log", {"text": text, "status": ""}))
+					self.third_queue.put(("add_text_to_log", {"text": text, "status": ""}))
 					
 				elif ans == ch_response_to_step.Step_fail:
 					text = \
@@ -485,12 +422,11 @@ class experimentControl( ):
 						+ device.get_name() + " "\
 						+ str(ch.get_name())
 
-					#self.queue.put( (lambda data=text, status="err": self.add_text_to_log( data, status ), 'add_text_to_log') )
-					self.queue.put(("add_text_to_log", {"text": text, "status": "err"}))
+					self.first_queue.put(("add_text_to_log", {"text": text, "status": "err"}))
 
 					if not self.is_exp_run_anywhere :
 						ch.am_i_active_in_experiment = False
-						error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
+						error = True
 					break
 			else:
 
@@ -499,16 +435,15 @@ class experimentControl( ):
 					+ device.get_name() + " "\
 					+ str(ch.get_name())
 
-				#self.queue.put( (lambda data=text, status="err": self.add_text_to_log( data, status ), 'add_text_to_log') )
-				self.queue.put(("add_text_to_log", {"text": text, "status": "err"}))
+				self.first_queue.put(("add_text_to_log", {"text": text, "status": "err"}))
 
 				if not self.is_exp_run_anywhere :
 					ch.am_i_active_in_experiment = False
-					error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
+					error = True
 				break
 
 			self.remaining_time = self.calc_last_exp_time()
-			self.queue.put(("update_remaining_time", {"remaining_time": self.remaining_time}))
+			self.first_queue.put(("update_remaining_time", {"remaining_time": self.remaining_time}))
 
 		return error, ans, step_time
 	
@@ -521,6 +456,7 @@ class experimentControl( ):
 	def stop_exp(self):
 		self.__stop_experiment = True
 
+	'''
 	def update_parameters(self, data, entry, time):
 			try:
 				device, channel = entry[0].split()
@@ -572,7 +508,7 @@ class experimentControl( ):
 				data[device][channel][name][1].append(time)
 
 			return status, data
-
+	'''
 	def calc_last_exp_time(self) -> float:
 		buf_time = [0]
 		for device, ch in get_active_ch_and_device( self.device_classes ):
@@ -688,20 +624,17 @@ class experimentControl( ):
 					+ str(ch.number) + " "\
 					+ QApplication.translate('exp_flow',"перед экспериментом. Проверьте подключение."),
 					
-				#self.queue.put( (lambda data=text, status="err": self.add_text_to_log( data, status ), 'add_text_to_log') )
-				self.queue.put(("add_text_to_log", {"text": text, "status": "err"}))
+				self.first_queue.put(("add_text_to_log", {"text": text, "status": "err"}))
 
 				if not self.is_debug:
 					status = False
 					text = QApplication.translate('exp_flow',"Остановка, ошибка")
-					#self.queue.put((lambda data=text: self.set_state_text( data ), "set_state_text"))
-					self.queue.put(("set_state_text", {"text": text}))
+					self.third_queue.put(("set_state_text", {"text": text}))
 				# --------------------------------------------------------
 			else:
 				text = \
 					dev.get_name() + " ch-" + str(ch.number) + QApplication.translate('exp_flow'," настроен")
-				#self.queue.put( (lambda data=text, status="": self.add_text_to_log( data, status ), 'add_text_to_log') )
-				self.queue.put(("add_text_to_log", {"text": text, "status": ""}))
+				self.third_queue.put(("add_text_to_log", {"text": text, "status": ""}))
 
 		return status
 
@@ -719,14 +652,12 @@ class experimentControl( ):
 					+ " " + dev.get_name() + " "\
 					+ QApplication.translate('exp_flow',"не отвечает")
 					
-				#self.queue.put( (lambda data=text, status="err": self.add_text_to_log( data, status ), 'add_text_to_log') )
-				self.queue.put(("add_text_to_log", {"text": text, "status": "err"}))
+				self.first_queue.put(("add_text_to_log", {"text": text, "status": "err"}))
 			else:
 				if is_connect != None:
 					text =\
 						QApplication.translate('exp_flow',"Ответ") + " " + dev.get_name() + " " + str(is_connect)
-					#self.queue.put( (lambda data=text, status="": self.add_text_to_log( data, status ), 'add_text_to_log') )
-					self.queue.put(("add_text_to_log", {"text": text, "status": ""}))
+					self.third_queue.put(("add_text_to_log", {"text": text, "status": ""}))
 
 
 		if self.is_debug:
@@ -752,12 +683,10 @@ class experimentControl( ):
 							+ str(subscriber.get_name()) + " "\
 							+ QApplication.translate('exp_flow'," завершил работу")
 
-						#self.queue.put( (lambda data=text, status="ok": self.add_text_to_log( data, status ), 'add_text_to_log') )
-						self.queue.put(("add_text_to_log", {"text": text, "status": "ok"}))
+						self.third_queue.put(("add_text_to_log", {"text": text, "status": "ok"}))
 
 						subscriber.do_last_step = True
 
-			# испускаем сигнал о том, что работа закончена
 			self.message_broker.push_publish(
 				name_subscribe=ch.end_operation_trigger, publisher=ch
 			)

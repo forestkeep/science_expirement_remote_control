@@ -38,10 +38,11 @@ class SessionWidget(QWidget):
     session_deleted = pyqtSignal(int)
     import_data_requested = pyqtSignal()
     import_oscillograms_requested = pyqtSignal()
+    session_renamed = pyqtSignal(int, str)  # session_id, new_name
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.sessions_data = []  # Хранилище данных сессий
+        self.sessions_data = []
         self.init_ui()
         
     def init_ui(self):
@@ -60,21 +61,37 @@ class SessionWidget(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.table.setContextMenuPolicy(Qt.CustomContextMenu)  # Включаем контекстное меню
-        self.table.customContextMenuRequested.connect(self.show_context_menu)  # Подключаем обработчик
+        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self.show_context_menu)
         
         self.layout.addWidget(self.table)
         self.layout.addLayout(button_layout)
         
-        # Сигналы
         self.btn_import_data.clicked.connect(self.import_data_requested)
         self.btn_import_osc.clicked.connect(self.import_oscillograms_requested)
         self.table.cellDoubleClicked.connect(self._on_cell_double_click)
         self.table.cellClicked.connect(self._on_cell_clicked)
+        self.table.model().dataChanged.connect(self._on_data_changed)
+
+    def _on_data_changed(self, top_left, bottom_right):
+        if top_left.column() <= 1 <= bottom_right.column():
+            row = top_left.row()
+            session_id_item = self.table.item(row, 0)
+            new_name_item = self.table.item(row, 1)
+            
+            if session_id_item and new_name_item:
+                session_id = int(session_id_item.text())
+                new_name = new_name_item.text()
+                
+                for session in self.sessions_data:
+                    if session['id'] == session_id:
+                        session['name'] = new_name
+                        break
+                
+                self.session_renamed.emit(session_id, new_name)
 
     def update_sessions(self, sessions):
-        print(sessions)
-        self.sessions_data = sessions  # Сохраняем данные
+        self.sessions_data = sessions
         self.table.setRowCount(len(sessions))
         for row, session in enumerate(sessions):
             self.table.setItem(row, 0, QTableWidgetItem(str(session['id'])))
@@ -118,7 +135,7 @@ class SessionWidget(QWidget):
         pass
 
     def _on_cell_double_click(self, row, col):
-        if col == 1:  # Только для колонки с именем
+        if col == 1:
             self._start_rename_session(row)
 
     def _on_cell_clicked(self, row, col):
@@ -136,11 +153,16 @@ class SessionSelectControl(QObject):
         self.sessions = []  # Пример данных: [{'id': 1, 'name': 'test', 'status': 'ok'}]
         self.widget = SessionWidget()
         
-        # Подключение сигналов
         self.widget.session_selected.connect(self.handle_session_selected)
         self.widget.session_deleted.connect(self.handle_session_deleted)
         self.widget.import_data_requested.connect(self.handle_import_data)
         self.widget.import_oscillograms_requested.connect(self.handle_import_osc)
+        self.widget.session_renamed.connect(self._session_renamed)
+
+    def _session_renamed(self, session_id, new_name):
+        for session in self.sessions:
+            if session['id'] == session_id:
+                session['name'] = new_name
 
     def update_view(self):
         self.widget.update_sessions(self.sessions)
@@ -151,7 +173,14 @@ class SessionSelectControl(QObject):
                 self.current_session_changed.emit(session['id'])
                 break
 
-    def add_session(self, session_data):
+    def set_session_status(self, session_id, status: str):
+        for session in self.sessions:
+            if session['id'] == session_id:
+                session['status'] = status
+                self.update_view()
+                break
+
+    def add_session(self, session_data: dict):
         self.sessions.append(session_data)
         self.update_view()
 

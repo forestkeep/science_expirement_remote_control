@@ -49,7 +49,7 @@ class SharedBufferManager:
         
         self.timeout = 2    #Таймаут подтверждения в секундах
         self.max_attempts = 2 # Максимальноеколичество попыток отправки
-        self.max_pending = 15  # Максимум активных сессий передачи
+        self.max_pending = 50  # Максимум активных сессий передачи
         self.max_single_pending = 5 # Максимальное количество передаваемых пакетов за один вход в функцию
 
     def _serialize_data(self, data_packet: list, float_value: float) -> bytes:
