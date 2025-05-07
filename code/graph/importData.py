@@ -10,32 +10,23 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import logging
-from PyQt5.QtCore import QObject, Qt, pyqtSignal
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QHBoxLayout,QLabel,
-                             QListWidget, QSizePolicy, QVBoxLayout, QWidget, QPushButton, QSpacerItem, QComboBox)
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QFileDialog, QHBoxLayout,
-                             QLabel, QListWidget, QListWidgetItem, QPushButton,
-                             QSizePolicy, QSpacerItem, QVBoxLayout, QWidget, QDialog, QComboBox, QLineEdit)
-from PyQt5.QtGui import QFont, QFontMetrics
+from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtWidgets import (QApplication, QHBoxLayout,QLabel,QSizePolicy, QWidget, QPushButton, QSpacerItem, QComboBox)
+from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout,
+                             QLabel, QPushButton,
+                             QSizePolicy, QSpacerItem, QWidget, QDialog, QComboBox)
+from PyQt5.QtGui import QFontMetrics
 import pandas as pd
 import numpy as np
 
 try:
-    from calc_values_for_graph import ArrayProcessor
-    from colors import GColors, cold_colors, warm_colors
     from Link_data_import_win import Check_data_import_win
-    from curve_data import linearData
     from Message_graph import messageDialog
     from dataManager import graphDataManager
 except:
-    from graph.calc_values_for_graph import ArrayProcessor
-    from graph.colors import GColors, cold_colors, warm_colors
     from graph.Link_data_import_win import Check_data_import_win
-    from graph.curve_data import linearData
     from graph.Message_graph import messageDialog
     from graph.dataManager import graphDataManager
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +49,7 @@ class importDataWin(QWidget):
         self.main_lay.addWidget(self.import_button)
         self.main_lay.addWidget(self.import_button_osc)
         
-        exp_label = QLabel("Выберите сессию: ")
+        exp_label = QLabel(QApplication.translate("filters","Выберите сессию: "))
         self.main_lay.addItem(self.selector)
         self.main_lay.addWidget(exp_label)
         self.main_lay.addWidget(self.experiment_selector)
@@ -66,9 +57,8 @@ class importDataWin(QWidget):
         self.retranslateUi()
 
     def retranslateUi(self):
-        __translate = QApplication.translate
-        self.import_button.setText(__translate("GraphWindow", "Импортировать.."))
-        self.import_button_osc.setText(__translate("GraphWindow", "Импортировать осциллограммы.."))
+        self.import_button.setText(QApplication.translate("filters","Импортировать.."))
+        self.import_button_osc.setText(QApplication.translate("filters","Импортировать осциллограммы.."))
 
 class CustomComboBox(QComboBox):
     def __init__(self, parent=None):
@@ -94,11 +84,9 @@ class CustomComboBox(QComboBox):
 class controlImportData(QObject):
     exp_name_changed = pyqtSignal(str)
     new_data_imported = pyqtSignal(str, dict)
-    def __init__(self, window, data_manager = None, main_class = None):
+    def __init__(self, window):
         super().__init__()
         self.win = window
-        #self.main_class = main_class
-        #self.data_manager = data_manager
         self.win.import_button.clicked.connect(self.import_data)
 
         self.win.experiment_selector.currentIndexChanged.connect(self.experimental_data_changed)

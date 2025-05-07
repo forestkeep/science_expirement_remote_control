@@ -55,10 +55,10 @@ class deviceCreator(QDialog):
         self.initUI() 
 
     def initUI(self):
-        self.setWindowTitle('Конструктор')
+        self.setWindowTitle(QApplication.translate('device_creator','Конструктор'))
         self.setMinimumWidth(500)
 
-        welcome_message = QApplication.translate('device_creator',"""Добро пожаловать в Конструктор нового прибора!
+        welcome_message = QApplication.translate('device_creator', """ Добро пожаловать в Конструктор нового прибора!
                         Здесь вы сможете добавить новый прибор для использования 
                         в автоматическом контроллере физического эксперимента. 
                         Вам будет предложено ввести информацию о приборе, выбрать тип подключения, 
@@ -131,14 +131,14 @@ class deviceCreator(QDialog):
         row = len(self.parameters)
         col = self.number_of_channels
         self.table = QTableWidget(int(row), int(col) )
-        self.table.setHorizontalHeaderItem(0, QTableWidgetItem('Параметры'))
+        self.table.setHorizontalHeaderItem(0, QTableWidgetItem(QApplication.translate('device_creator','Параметры')))
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.table.setSelectionMode(QTableWidget.NoSelection)
 
         for i in range(int(self.number_of_channels)):
-            self.table.setHorizontalHeaderItem(i, QTableWidgetItem(f'Канал {i + 1}'))
+            self.table.setHorizontalHeaderItem(i, QTableWidgetItem(QApplication.translate('device_creator',f'Канал {i + 1}')))
 
         for row, (param, default_value) in enumerate(self.parameters.items()):
             self.table.setVerticalHeaderItem(row, QTableWidgetItem(f'{param}'))
@@ -164,7 +164,7 @@ class deviceCreator(QDialog):
             for column in range(1, int(self.number_of_channels) + 1):  # Проверяем только столбцы с данными
                 item = self.table.item(row, column)
                 if item is not None and item.background() != self.correct_color:
-                    QMessageBox.warning(self, 'Ошибка', 'Пожалуйста, проверьте корректность введенных данных.')
+                    QMessageBox.warning(self, QApplication.translate('device_creator','Ошибка'), QApplication.translate('device_creator','Пожалуйста, проверьте корректность введенных данных.'))
                     return
 
         for row, key in enumerate(self.result_parameters.keys()):

@@ -49,17 +49,17 @@ class filterWin(QWidget):
 
         self.spin_exp_mean.setSingleStep(0.01)
 
-        main_layout.addLayout(self.create_layer_filter("Медианный фильтр", [self.create_spin_box("Окно", self.spin_median)],
+        main_layout.addLayout(self.create_layer_filter(QApplication.translate("filters","Медианный фильтр"), [self.create_spin_box("Окно", self.spin_median)],
                                                                             self.median_button) )
         
-        main_layout.addLayout(self.create_layer_filter("Бегущее среднее", [self.create_spin_box("Окно", self.spin_average)],
+        main_layout.addLayout(self.create_layer_filter(QApplication.translate("filters","Бегущее среднее"), [self.create_spin_box("Окно", self.spin_average)],
                                                                            self.average_button) )
         '''
-        main_layout.addLayout(self.create_layer_filter("Фильтр Калмана", [self.create_spin_box("Q", self.spin_calman),
+        main_layout.addLayout(self.create_layer_filter(QApplication.translate("filters","Фильтр Калмана"), [self.create_spin_box("Q", self.spin_calman),
                                                                           self.create_spin_box("R", self.spin_calman2)],
                                                                           self.calman_button) )
         '''
-        main_layout.addLayout(self.create_layer_filter("Экспоненциальное \n среднее",
+        main_layout.addLayout(self.create_layer_filter(QApplication.translate("filters","Экспоненциальное \n среднее"),
                                                         [self.create_spin_box("Коэфф", self.spin_exp_mean)],
                                                          self.exp_mean_button)  )
 

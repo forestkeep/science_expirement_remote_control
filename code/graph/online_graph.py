@@ -114,7 +114,7 @@ class GraphWindow(QMainWindow):
         self.version = QAction(self)
         self.setAcceptDrops(True)
 
-        file_menu = self.menubar.addMenu("Файл") 
+        file_menu = self.menubar.addMenu(QApplication.translate("filters","Файл") )
         file_menu.addAction(self.save_installation_button)
         file_menu.addAction(self.save_installation_button_as)
         file_menu.addAction(self.open_installation_button)
@@ -123,7 +123,7 @@ class GraphWindow(QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction(self.convert_buf_button)
 
-        settings_menu = self.menubar.addMenu("Сессия")
+        settings_menu = self.menubar.addMenu(QApplication.translate("filters","Сессия"))
         settings_menu.addAction(self.develop_mode)
         settings_menu.addAction(self.general_settings)
 

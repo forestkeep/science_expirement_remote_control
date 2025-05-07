@@ -3,14 +3,8 @@ import struct
 from collections import deque
 from multiprocessing import Process, Pipe
 from multiprocessing.shared_memory import SharedMemory
-#from profilehooks import profile
 
-import time
-import struct
-from collections import deque
-from multiprocessing import Process, Pipe
-from multiprocessing.shared_memory import SharedMemory
-from typing import Deque, List, Optional, Tuple
+from typing import List, Optional
 import logging
 
 logger = logging.getLogger(__name__)

@@ -16,13 +16,10 @@ from datetime import datetime
 from PyQt5.QtWidgets import QApplication
 from Devices.Classes import ch_response_to_step
 from Handler_manager import messageBroker
-from graph.online_graph import sessionController
-from PyQt5.QtCore import QTimer, QThread
 #from profilehooks import profile
 import numpy
 
-from multiprocessing import Process, Value, Array, Lock,  Queue
-from threading import Thread
+from multiprocessing import Queue
 from shared_buffer_manager import SharedBufferManager
 
 from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe, create_clients
@@ -328,7 +325,7 @@ class experimentControl( ):
 			self.first_queue.put(("add_text_to_log", {"text": text, "status": "err"}))
 
 			if not self.is_exp_run_anywhere:
-				error = True  # ошибка при выполнении шага прибора, заканчиваем с ошибкой
+				error = True 
 		else:
 			pass
 

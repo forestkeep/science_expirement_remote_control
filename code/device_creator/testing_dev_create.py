@@ -20,10 +20,10 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.device_creator = device_creator
         
-        self.setWindowTitle("Главное окно")
+        self.setWindowTitle(QApplication.translate("device creator","Главное окно"))
         self.setGeometry(100, 100, 300, 200)
 
-        self.run_device_creator_button = QPushButton("Запустить Конструктор", self)
+        self.run_device_creator_button = QPushButton(QApplication.translate("device creator","Запустить Конструктор"), self)
         self.run_device_creator_button.setGeometry(50, 50, 200, 50)
         self.run_device_creator_button.clicked.connect(self.run_device_creator)
 

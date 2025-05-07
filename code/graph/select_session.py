@@ -1,34 +1,19 @@
 from PyQt5.QtWidgets import (QWidget, QTableWidget, QTableWidgetItem, QHeaderView,
                              QHBoxLayout, QVBoxLayout, QPushButton, QMenu, QAbstractItemView,
-                             QLabel, QAction, QLineEdit, QFileDialog,)
+                             QAction, QFileDialog, QApplication, QDialog)
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QPoint
-from PyQt5.QtGui import QIcon, QContextMenuEvent, QPixmap
 
 import logging
-from PyQt5.QtCore import QObject, Qt, pyqtSignal
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QHBoxLayout,QLabel,
-                             QListWidget, QSizePolicy, QVBoxLayout, QWidget, QPushButton, QSpacerItem, QComboBox)
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QFileDialog, QHBoxLayout,
-                             QLabel, QListWidget, QListWidgetItem, QPushButton,
-                             QSizePolicy, QSpacerItem, QVBoxLayout, QWidget, QDialog, QComboBox, QLineEdit)
-from PyQt5.QtGui import QFont, QFontMetrics
+
 import pandas as pd
 import numpy as np
 
 try:
-    from calc_values_for_graph import ArrayProcessor
-    from colors import GColors, cold_colors, warm_colors
     from Link_data_import_win import Check_data_import_win
-    from curve_data import linearData
     from Message_graph import messageDialog
-    from dataManager import graphDataManager
 except:
-    from graph.calc_values_for_graph import ArrayProcessor
-    from graph.colors import GColors, cold_colors, warm_colors
     from graph.Link_data_import_win import Check_data_import_win
-    from graph.curve_data import linearData
     from graph.Message_graph import messageDialog
-    from graph.dataManager import graphDataManager
 
 
 logger = logging.getLogger(__name__)
@@ -48,8 +33,8 @@ class SessionWidget(QWidget):
     def init_ui(self):
         self.layout = QVBoxLayout(self)
         
-        self.btn_import_data = QPushButton("Импортировать данные")
-        self.btn_import_osc = QPushButton("Импортировать осциллограммы")
+        self.btn_import_data = QPushButton(QApplication.translate("filters","Импортировать данные"))
+        self.btn_import_osc = QPushButton(QApplication.translate("filters","Импортировать осциллограммы"))
         
         button_layout = QHBoxLayout()
         button_layout.addWidget(self.btn_import_data)
@@ -57,7 +42,7 @@ class SessionWidget(QWidget):
         
         self.table = QTableWidget()
         self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["ID", "Имя", "Статус"])
+        self.table.setHorizontalHeaderLabels(["ID", QApplication.translate("filters","Имя"), QApplication.translate("filters","Статус")])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)

@@ -54,6 +54,8 @@ class baseInstallation:
         self.thread_scan_resources.daemon = True
         self.stop_scan_thread = False
 
+        self.experiment_process = None
+
         self.thread_scan_resources.start()
 
     def show_information_window(self, message):

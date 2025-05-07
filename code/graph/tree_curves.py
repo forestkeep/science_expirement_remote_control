@@ -71,7 +71,7 @@ class CurveTreeItem(QTreeWidgetItem):
         self.add_basic_characteristics()
 
     def change_name(self, name):
-        self.setText(0, f"Кривая {name}")
+        self.setText(0, QApplication.translate("filters",f"Кривая {name}"))
         self.parameters["name"] = name
         self.curve_data_obj.set_legend_name(name)
 
@@ -297,7 +297,7 @@ def choose_color():
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Приложение с графиком и древовидной структурой")
+        self.setWindowTitle("")
         self.setGeometry(100, 100, 800, 600)
         main_widget = treeWin()
         self.setCentralWidget(main_widget)
@@ -539,12 +539,12 @@ class treeWin(QWidget):
             context_menu = QMenu(self) 
 
             if root_item.curve_data_obj.is_draw:
-                text_show = "Скрыть"
+                text_show = QApplication.translate("filters","Скрыть")
                 show_action = QAction(text_show, self)
                 context_menu.addAction(show_action)
                 show_action.triggered.connect(lambda: self.hide_curve(root_item))
             else:
-                text_show = "Отобразить"
+                text_show = QApplication.translate("filters","Отобразить")
                 show_action = QAction(text_show, self)
                 context_menu.addAction(show_action)
                 show_action.triggered.connect(lambda: self.show_curve(root_item))

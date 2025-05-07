@@ -13,7 +13,6 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtGui import QBrush, QColor
 import logging
-from pyqtgraph import siScale
 
 logger = logging.getLogger(__name__)
 

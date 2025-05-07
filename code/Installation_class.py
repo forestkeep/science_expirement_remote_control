@@ -11,15 +11,13 @@
 
 import logging
 import os
-import sys
-import threading
+
 import time
 import json
 from datetime import datetime
 
-import qdarktheme
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import QTimer, QThread
+from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication
 
 from Analyse_in_installation import analyse
@@ -359,7 +357,8 @@ class installation_class( ExperimentBridge, analyse):
         self.thread_scan_resources.join()
         if self.is_experiment_running():
             self.pipe_exp.send(["close", 1])
-        self.experiment_process.join()
+        if self.experiment_process:
+            self.experiment_process.join()
 
     def delete_device(self, device):
         if self.is_experiment_running() == False:
@@ -490,7 +489,7 @@ class installation_class( ExperimentBridge, analyse):
                     self.timer_for_connection_main_exp_thread.start(1000)
                     self.timer_second_thread_tasks = QTimer()
                     self.timer_second_thread_tasks.timeout.connect(self.second_thread_tasks)
-                    self.timer_second_thread_tasks.start(100)
+                    self.timer_second_thread_tasks.start(50)
 
                     #self.queue = Queue()
                     self.exp_third_queue = Queue()
@@ -538,7 +537,7 @@ class installation_class( ExperimentBridge, analyse):
                     self.experiment_process = Process(target=self.exp_controller.run)
                     self.experiment_process.start()
                     self.timer_for_connection_main_exp_thread.start(1000)
-                    self.timer_for_receive_data_exp.start(100)
+                    self.timer_for_receive_data_exp.start(30)
 
                 else:
                     self.current_state = ExperimentState.PREPARATION

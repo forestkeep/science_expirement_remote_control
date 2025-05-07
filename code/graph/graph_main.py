@@ -12,33 +12,20 @@
 import time
 from datetime import datetime
 
-import numpy as np
-import pandas as pd
 import pyqtgraph as pg
 import logging
-from PyQt5.QtCore import QItemSelectionModel, QObject, Qt, pyqtSignal, QPoint, QPointF
+from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QFont, QFontMetrics
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QFileDialog, QHBoxLayout,
-                             QLabel, QListWidget, QListWidgetItem, QPushButton,
-                             QSizePolicy, QSpacerItem, QVBoxLayout, QWidget, QDialog, QComboBox, QLineEdit)
+from PyQt5.QtWidgets import (QApplication, QHBoxLayout,
+                             QSizePolicy, QSpacerItem, QVBoxLayout, QComboBox, QLineEdit)
 
 try:
-    from calc_values_for_graph import ArrayProcessor
-    from colors import GColors, cold_colors, warm_colors
-    from Link_data_import_win import Check_data_import_win
+    from colors import GColors
     from curve_data import linearData
-    from Message_graph import messageDialog
-    from paramSelectors import paramSelector, paramController
-    from graphSelectAdapter import graphSelectAdapter
     from dataManager import relationData
 except:
-    from graph.calc_values_for_graph import ArrayProcessor
-    from graph.colors import GColors, cold_colors, warm_colors
-    from graph.Link_data_import_win import Check_data_import_win
+    from graph.colors import GColors
     from graph.curve_data import linearData
-    from graph.Message_graph import messageDialog
-    from graph.paramSelectors import paramSelector, paramController
-    from graph.graphSelectAdapter import graphSelectAdapter
     from graph.dataManager import relationData
 
 logger = logging.getLogger(__name__)
