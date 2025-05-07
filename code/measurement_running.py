@@ -173,7 +173,7 @@ class experimentControl( ):
 						if number_active_device == 0:
 							"""остановка эксперимента, нет активных приборов"""
 							text = QApplication.translate('exp_flow',"Остановка эксперимента") + "..."
-							self.third_queue.put(("set_state_text", {"text": text}))
+							self.first_queue.put(("set_state_text", {"text": text}))
 
 							self.__stop_experiment = True
 						if (
@@ -214,7 +214,7 @@ class experimentControl( ):
 							else:
 								ch.am_i_active_in_experiment = False
 
-							if device.get_steps_number(ch) is not False:#проверка останвки по количеству шагов
+							if device.get_steps_number(ch) is not False:
 								if (ch.number_meas >= device.get_steps_number(ch) ):
 									ch.am_i_active_in_experiment = False
 
@@ -229,7 +229,7 @@ class experimentControl( ):
 										+ QApplication.translate('exp_flow',"завершил работу")
 								status = "ok"
 
-								self.third_queue.put(("add_text_to_log", {"text": text, "status": status}))
+								self.first_queue.put(("add_text_to_log", {"text": text, "status": status}))
 
 							current_priority = ch.get_priority()
 							self.manage_subscribers(ch = ch)
@@ -261,15 +261,20 @@ class experimentControl( ):
 			text = text.format(len(self.shared_buffer_manager.buffer))
 			self.important_queue.put(("set_state_text", {"text": text}))
 			start_save_time = time.perf_counter()
+			print("начали обрабатывать оставшиеся данные в буфере")
+			
+			self.shared_buffer_manager.max_single_pending = 50#уыеличиваем количество отправляемых за раз пакетов
 			while status_send:
 				status_send = self.shared_buffer_manager.send_data()
 				if time.perf_counter() - start_save_time > 1:
 					start_save_time = time.perf_counter()
 					text = QApplication.translate('exp_flow', "Обрабатываем данные. Осталось пакетов: {}")
-					text = text.format(len(self.shared_buffer_manager.buffer))
+					text = text.format(len(self.shared_buffer_manager.buffer) + len(self.shared_buffer_manager.sent_queue))
 					self.important_queue.put(("set_state_text", {"text": text}))
 
 			self.important_queue.put(("finalize_experiment", {"error": error, "error_start_exp": error_start_exp}))
+
+			print("Отправили команду остановки эксперимента")
 
 			time.sleep(1)
 

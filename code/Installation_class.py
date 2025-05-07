@@ -32,12 +32,9 @@ from saving_data.Parse_data import process_and_export, type_save_file
 from available_devices import dict_device_class, JSON_dict_device_class
 from meas_session_data import measSession
 from experiment_control import ExperimentBridge
-from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe, create_clients, ExperimentState
-#from queue import Queue
-from graph.online_graph import sessionController, run_graph_process
-from multiprocessing import Process, Value, Array, Lock, shared_memory, Pipe, Queue
-
-
+from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, create_clients, ExperimentState
+from graph.online_graph import sessionController
+from multiprocessing import Process, Pipe, Queue
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +104,9 @@ class installation_class( ExperimentBridge, analyse):
         self.timer_for_receive_data_exp = QTimer()
         self.timer_for_receive_data_exp.timeout.connect(lambda: self.receive_data_exp())
 
+        self.timer_second_thread_tasks = QTimer()
+        self.timer_second_thread_tasks.timeout.connect(self.second_thread_tasks)
+
         self.timer_for_connection_main_exp_thread = QTimer()
         self.timer_for_connection_main_exp_thread.timeout.connect( self.connection_two_thread )
 
@@ -123,6 +123,16 @@ class installation_class( ExperimentBridge, analyse):
         )
 
         self.current_state = ExperimentState.PREPARATION
+
+        self.second_thread_tasks_handlers = {
+            "finalize_experiment": self.finalize_experiment,
+            "has_data_to_save": lambda **d: setattr(self, 'has_unsaved_data', True),
+            "meta_data": self.update_exp_meta_data,
+            "set_state_text": self.set_state_text,
+            "update_remaining_time": self.update_remaining_time,
+            "add_text_to_log": self.add_text_to_log,
+        }
+        self.second_thread_tasks_counter = 0
 
     def format_bool_settings(self, value):
 
@@ -486,12 +496,6 @@ class installation_class( ExperimentBridge, analyse):
                     self.remaining_exp_time = 0
                     self.update_pbar(0)
 
-                    self.timer_for_connection_main_exp_thread.start(1000)
-                    self.timer_second_thread_tasks = QTimer()
-                    self.timer_second_thread_tasks.timeout.connect(self.second_thread_tasks)
-                    self.timer_second_thread_tasks.start(50)
-
-                    #self.queue = Queue()
                     self.exp_third_queue = Queue()
                     self.exp_first_queue = Queue()
                     self.exp_second_queue = Queue()
@@ -528,7 +532,6 @@ class installation_class( ExperimentBridge, analyse):
                         buf_file              =self.buf_file,
                         pipe_installation     =self.pipe_installation,
                         data_pipe             =self.data_exp_to_installation,
-                        #graph_controller      =self.graph_controller,
                         session_id            =self.current_session_graph_id
                     )
 
@@ -537,6 +540,7 @@ class installation_class( ExperimentBridge, analyse):
                     self.experiment_process = Process(target=self.exp_controller.run)
                     self.experiment_process.start()
                     self.timer_for_connection_main_exp_thread.start(1000)
+                    self.timer_second_thread_tasks.start(30)
                     self.timer_for_receive_data_exp.start(30)
 
                 else:
@@ -554,38 +558,38 @@ class installation_class( ExperimentBridge, analyse):
         if self.current_state != ExperimentState.IN_PROGRESS and not self.exp_third_queue.empty():
             clear_queue(self.exp_third_queue)
 
+        tasks = []
         event_type = None
 
         if not self.important_exp_queue.empty():
             event_type, data = self.important_exp_queue.get_nowait()
+            tasks.append( (event_type, data) )
 
-        elif not self.exp_first_queue.empty():
-            event_type, data = self.exp_first_queue.get_nowait()
+        else:
+            if not self.exp_first_queue.empty():
+                event_type, data = self.exp_first_queue.get_nowait()
+                tasks.append( (event_type, data) )
+                self.second_thread_tasks_counter +=1
+            else:
+                self.second_thread_tasks_counter = 30
 
-        elif not self.exp_second_queue.empty():
-            event_type, data = self.exp_second_queue.get_nowait()
+            if self.second_thread_tasks_counter >= 30:
+                self.second_thread_tasks_counter = 0
 
-        elif not self.exp_third_queue.empty():
-                event_type, data = self.exp_third_queue.get_nowait()
+                if not self.exp_second_queue.empty():
+                    event_type, data = self.exp_second_queue.get_nowait()
+                    tasks.append( (event_type, data) )
 
-        if event_type:
-            if event_type == "finalize_experiment":
-                self.finalize_experiment(**data)
+                elif not self.exp_third_queue.empty():
+                    event_type, data = self.exp_third_queue.get_nowait()
+                    tasks.append( (event_type, data) )
 
-            elif event_type == "has_data_to_save":
-                self.has_unsaved_data = True
-
-            elif event_type == "meta_data":
-                self.update_exp_meta_data(**data)
-
-            elif event_type == "set_state_text":
-                self.set_state_text(**data)
-
-            elif event_type == "update_remaining_time":
-                self.update_remaining_time(**data)
-                
-            elif event_type == "add_text_to_log":
-                self.add_text_to_log(**data)
+        for buf in tasks:
+            event_type = buf[0]
+            data = buf[1]
+            handler = self.second_thread_tasks_handlers.get(event_type)
+            if handler:
+                handler(**data)
 
     def update_exp_meta_data(self, name, info):
         self.meta_data_exp.exp_queue.append( self.meta_data_exp.numbers[name] )
