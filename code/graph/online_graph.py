@@ -11,6 +11,7 @@
 
 import sys
 import time
+import random
 
 import logging
 from PyQt5.QtCore import QPoint, QTimer, pyqtSignal
@@ -235,8 +236,10 @@ class GraphSession(QWidget):
 class running_exp_test(QWidget):
     def __init__(self,graph_class, max_points, periodsec):
         super().__init__()
-        self.test = test_graph()
-        self.gen = self.test.append_values()
+        self.test1 = test_graph(is_sine_wave=True)
+        self.test2 = test_graph()
+        self.gen1 = self.test1.append_values()
+        self.gen2 = self.test2.append_values()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.gen_new_data)
         self.counter_test = 0
@@ -250,7 +253,13 @@ class running_exp_test(QWidget):
 
     def gen_new_data(self):
         """функция раз в n секунд генерирует словарь и обновляет данные"""
-        self.graph_class.update_session_data(self.id, (next(self.gen)))
+        if random.random() < 0.5:
+            gen = self.gen1
+            print(1)
+        else:
+            gen = self.gen2
+            print(2)
+        self.graph_class.update_session_data(self.id, (next(gen)))
         self.counter_test += 1
 
         if self.counter_test >= self.max_points:
@@ -356,7 +365,7 @@ if __name__ == "__main__":
     my_session_class = sessionController()
     my_session_class.graphics_win.show()
 
-    test_class = running_exp_test(my_session_class, 500, 0.01)
+    test_class = running_exp_test(my_session_class, 500, 1)
     test_class.run()
 
     sys.exit(app.exec_())
