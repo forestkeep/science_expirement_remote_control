@@ -686,12 +686,14 @@ class installation_class( ExperimentBridge, analyse):
         status, buffer = self.read_info_by_saved_installation(fileName)
         self.show_window_installation()
         self.timer_open = QTimer()
-        self.timer_open.timeout.connect(lambda: self.timer_open_timeout(buffer))
+        self.timer_open.timeout.connect(lambda: self.timer_open_timeout(buffer, fileName))
         self.timer_open.start(800)
 
-    def timer_open_timeout(self, buffer):
+    def timer_open_timeout(self, buffer, fileName):
         self.timer_open.stop()
         self.add_parameter_devices(buffer)
+        self.installation_window.setWindowTitle("Experiment control - " + fileName + " " + self.version_app)
+        self.way_to_save_installation_file = fileName
 
     def write_data_to_save_installation_file(self, file_path: str):
 

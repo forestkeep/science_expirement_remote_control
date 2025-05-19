@@ -33,8 +33,8 @@ from functions import get_active_ch_and_device, write_data_to_buf_file, clear_qu
 logger = logging.getLogger(__name__)
 
 class baseInstallation:
-    def __init__(self) -> None:
-        self.way_to_save_installation_file = None
+    def __init__(self, way_to_save_installation_file = None) -> None:
+        self.way_to_save_installation_file = way_to_save_installation_file
         self.save_results_now = False
         self.is_search_resources = True
 
