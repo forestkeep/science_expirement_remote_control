@@ -410,7 +410,8 @@ class graphMain(QObject):
         for key, curve in self.stack_curve.items():    
             if curve.is_draw:
                 if key not in [data.name for data in data_first_axis] and key not in [data.name for data in data_second_axis]:
-                        curve.delete_curve_from_graph()
+                        #curve.delete_curve_from_graph()
+                        print(f"кривая удалена {key=}")
 
         for data in data_first_axis:
             if self.stack_curve.get(data.name) is None:

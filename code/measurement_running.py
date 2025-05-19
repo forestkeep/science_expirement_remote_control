@@ -616,7 +616,7 @@ class experimentControl( ):
 					f"Ошибка действия прибора {dev} перед экспериментом: {str(ex)}"
 				)
 			if not ans:
-				logger.debug(
+				logger.warning(
 					"ошибка при настройке " + dev.get_name() + " перед экспериментом"
 				)
 
@@ -675,28 +675,32 @@ class experimentControl( ):
 		if not ch.am_i_active_in_experiment :
 			"""останавливаем подписчиков, которые срабатывали по завершению операции"""
 
-			for subscriber in subscribers_do_operation:     
-				if subscriber.am_i_active_in_experiment :            
-					dev = subscriber.device_class
-					if "do_operation" in dev.get_trigger_value(subscriber):                   
+			try:
+				for subscriber in subscribers_do_operation:     
+					if subscriber.am_i_active_in_experiment :            
+						dev = subscriber.device_class
+						#TODO: device class не сузествуует здесь убрать
+						if "do_operation" in dev.get_trigger_value(subscriber):                   
 
-						text=dev.get_name()\
-							+ " "\
-							+ str(subscriber.get_name()) + " "\
-							+ QApplication.translate('exp_flow'," завершил работу")
+							text=dev.get_name()\
+								+ " "\
+								+ str(subscriber.get_name()) + " "\
+								+ QApplication.translate('exp_flow'," завершил работу")
 
-						self.third_queue.put(("add_text_to_log", {"text": text, "status": "ok"}))
+							self.third_queue.put(("add_text_to_log", {"text": text, "status": "ok"}))
 
-						subscriber.do_last_step = True
+							subscriber.do_last_step = True
 
-			self.message_broker.push_publish(
-				name_subscribe=ch.end_operation_trigger, publisher=ch
-			)
-			subscribers_end_operation = self.message_broker.get_subscribers(
-				publisher=ch, name_subscribe=ch.end_operation_trigger
-			)
-			for subscriber in subscribers_end_operation:
-				subscriber.do_last_step = True
+				self.message_broker.push_publish(
+					name_subscribe=ch.end_operation_trigger, publisher=ch
+				)
+				subscribers_end_operation = self.message_broker.get_subscribers(
+					publisher=ch, name_subscribe=ch.end_operation_trigger
+				)
+				for subscriber in subscribers_end_operation:
+					subscriber.do_last_step = True
+			except Exception as e:
+				print(f"{e=}")
 		
 
 		"""передаем сигнал всем подписчикам о том, что операция произведена"""

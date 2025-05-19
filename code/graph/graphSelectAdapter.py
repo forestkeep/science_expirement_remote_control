@@ -124,6 +124,8 @@ class graphSelectAdapter:
 		'''вызывается контроллером данных в момент, когда какие-то из ранее добавленных данных были обновлены.
 		  Например, поступило новое значение'''
 		paramx, paramy1, paramy2 = self.selector.get_parameters()
+		print(f"{paramx=}, {paramy1=}")
+		logger.warning(f"обновленные параметры{parameters=}")
 
 		datax = ''
 		datay1 = {}

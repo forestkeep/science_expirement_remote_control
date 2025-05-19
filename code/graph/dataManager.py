@@ -81,6 +81,7 @@ class graphDataManager( QObject ):
 		}
 
 	def get_relation_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> list[relationData]:
+		print(f"{keysx=} {keysy1=}")
 		relations_first_axis = []
 		relations_second_axis = []
 		if data_type not in self.__sessions_data.keys():
@@ -263,6 +264,10 @@ class graphDataManager( QObject ):
 	def _add_new_data(self, device: Optional[str], channel: Optional[str], param: str, value: list) -> tuple[bool, bool, bool]:
 		is_new_param_added = False
 		is_old_param_udated = False
+		
+		if not value:
+			return True, is_new_param_added, is_old_param_udated
+		
 		if device is None:
 			device = ""
 		else:
@@ -350,16 +355,15 @@ class graphDataManager( QObject ):
 					try:
 						value = float(value)
 					except ValueError:
-						logger.debug(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
+						logger.warning(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
 						continue
 
 				if name not in data[device][channel]:
 					data[device][channel][name] = [[], []]
 				data[device][channel][name][0].append(value)
 				data[device][channel][name][1].append(time)
-
+			#print(f"{data=}")
 			return self.add_measurement_data(data)
-			
 
 def get_dict_depth(d):
 	if not isinstance(d, dict)  or not d:

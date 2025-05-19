@@ -540,8 +540,8 @@ class installation_class( ExperimentBridge, analyse):
                     self.experiment_process = Process(target=self.exp_controller.run)
                     self.experiment_process.start()
                     self.timer_for_connection_main_exp_thread.start(1000)
-                    self.timer_second_thread_tasks.start(30)
-                    self.timer_for_receive_data_exp.start(30)
+                    self.timer_second_thread_tasks.start(90)
+                    self.timer_for_receive_data_exp.start(10)
 
                 else:
                     self.current_state = ExperimentState.PREPARATION
