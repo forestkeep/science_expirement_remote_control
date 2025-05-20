@@ -263,6 +263,10 @@ class graphDataManager( QObject ):
 	def _add_new_data(self, device: Optional[str], channel: Optional[str], param: str, value: list) -> tuple[bool, bool, bool]:
 		is_new_param_added = False
 		is_old_param_udated = False
+
+		if not param or not value:
+			return False, is_new_param_added, is_old_param_udated
+		
 		if device is None:
 			device = ""
 		else:
