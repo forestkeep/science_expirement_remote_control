@@ -130,12 +130,17 @@ class metaDataExp():
 def actions_table():
 	test_data = metaDataExp()
 	test_data.actors_names = {1: "Приборeerere 1", 2: "Прибор 2", 3: "Прибор 3", 4: "Прибор 4"}
-	test_data.exp_queue = [1, 3, 2, 1, 3, 1, 2, 2, 2, 3, 1, 2, 1, 4, 4, 1] 
-	test_data.queue_info = ["1", "3","2", "один измерение вот эо вот \n 444444444444444444444444444", "3", "1", "2", "2", "2", "3", "1", "2", "1", "4", "4", "1"]
+	test_data.exp_queue = [1, 3, 2, 1, 3, 1, 2, 2, 2, 3, 1, 2, 1, 4, 4] 
+	test_data.queue_info = ["1", "3","2", "один измерение вот эо вот \n 444444444444444444444444444", "3", "1", "2", "2", "2", "3", "1", "2", "1", "4", "4"]
 
 	drawing_field = callStack()
-
-	drawing_field.set_data(test_data)
+	import time
+	start = time.perf_counter()
+	for i in range(1000):
+		test_data.exp_queue.append(1)
+		test_data.queue_info.append("1")
+		drawing_field.set_data(test_data)
+	print(time.perf_counter() - start)
 	drawing_field.show()
 
 	return drawing_field
