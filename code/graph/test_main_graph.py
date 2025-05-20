@@ -13,6 +13,7 @@ import random
 import time
 import math
 import itertools
+import random
 
 import numpy as np
 import pandas as pd
@@ -20,12 +21,12 @@ import pandas as pd
 
 class test_graph:
 
-    def __init__(self):
+    def __init__(self, is_sine_wave = False):
         self.start_time = time.time()
         #ch1, ch2, step = self.read_param_from_test()
         ch1, ch2, step = [1], [2], 0.002
-
-        self.sin_gen = self.generate_sine_wave()
+        if is_sine_wave:
+            self.sin_gen = self.generate_sine_wave()
         
         self.main_dict = {
             '''
@@ -62,22 +63,37 @@ class test_graph:
             },
             
         }
-        val, x = next(self.sin_gen)
-        self.main_dict = {
 
-            "device3": {
-                "ch_1": {
-                    self.get_param(): [self.get_values(), [0] ],
-                    "wavech": [[ch1], [0] ],
-                    "scale": [[step], [0] ],
-                },
-                "ch_2": {
-                    self.get_param(): [self.get_values(), [0] ],
-                    "SIN": [val, [x]]
-                }, 
-            },
-                  
-        }
+        if is_sine_wave:   
+            val, x = next(self.sin_gen)
+
+            self.main_dict = {
+                "device3": {
+                    "ch_1": {
+                        self.get_param(): [self.get_values(), [0] ],
+                        "wavech": [[ch1], [0] ],
+                        "scale": [[step], [0] ],
+                    },
+                    "ch_2": {
+                        self.get_param(): [self.get_values(), [0] ],
+                        "SIN": [val, [x]]
+                    }, 
+                },  
+            }
+
+        else:
+            self.main_dict = {
+                "device3": {
+                    "ch_1": {
+                        self.get_param(): [self.get_values(), [0] ],
+                        "wavech": [[ch1], [0] ],
+                        "scale": [[step], [0] ],
+                    },
+                    "ch_2": {
+                        self.get_param(): [self.get_values(), [0] ],
+                    }, 
+                },  
+            }
 
         '''
         
@@ -153,7 +169,7 @@ class test_graph:
         return data_dict["CH1"], data_dict["CH2"], data_dict["Increment"][0]
 
     def get_param(self):
-        random_X = ["R", "L", "C", "PHAS", "V", "I", "D", "|Z|", "Q"]
+        random_X = ["R", "L", "C", "PHAS", "V", "I", "D", "|Z|", "Q", "T", "Freq", "len"]
         return random.choice(random_X)
 
     def get_values(self):
@@ -172,10 +188,16 @@ class test_graph:
         return sine_wave
 
     def update_dict(self, main_dict):
-        """изменяет число в каждой конечной ветке"""
+        """изменяет число в каждой конечной ветке c 50% шансом"""
         for channels in main_dict.values():
             for channel, parameters in channels.items():
                 for key, value in parameters.items():
+                    if random.random() < 0.5:
+                        #value[0] = [[]]
+                        #value[1] = [[]]
+                        pass
+                        #continue
+
                     if key == "SIN":
                         pass
                         val, x = next(self.sin_gen)

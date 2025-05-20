@@ -49,6 +49,7 @@ class ExperimentBridge(analyse):
                 received = self.data_from_exp.recv()
                 if isinstance(received, tuple) and len(received) == 2:
                     data = _process_received_data(self.data_from_exp, *received)
+                    #logger.warning(f"received data : {data}")
                     if data:
                         val = [data[0], data[1]]
                         status_update = self.graph_controller.decode_add_exp_parameters(session_id = self.current_session_graph_id, entry      = val,time       = data[2])

@@ -559,8 +559,10 @@ class basePowerSupply(base_device):
         self.switch_channel(number_of_channel)
         is_correct = True
         if ( self._set_voltage( self.active_channel_act.number, self.active_channel_act.min_step_V ) == False ):
+            logger.warning("ошибка установки тока")
             is_correct = False
         if ( self._set_current( self.active_channel_act.number, self.active_channel_act.min_step_A ) == False ):
+            logger.warning("ошибка установки напряжения")
             is_correct = False
 
         if is_correct:
@@ -816,8 +818,9 @@ class basePowerSupply(base_device):
 
     def _set_voltage(self, ch_num, voltage) -> bool:
         """установить значение напряжения канала"""
-        logger.debug(f"устанавливаем напряжение {voltage} канала {ch_num}")
+        logger.warning(f"устанавливаем напряжение {voltage} канала {ch_num}")
         self.select_channel(ch_num)
+        print(777777)
         self.client.write( self.set_volt_cmd.format(voltage = voltage) )
         time.sleep(0.2)
         response = self._get_setting_voltage(ch_num=ch_num)
@@ -885,13 +888,17 @@ class basePowerSupply(base_device):
 
     def _get_setting_current(self, ch_num) -> float:
         """возвращает значение установленного тока канала"""
+        print(3333333)
         self.select_channel(ch_num)
+        print(4444434)
         self.client.write( self.ask_volt_cmd )
         time.sleep(0.2)
         try:
             response = self.client.readline().decode().strip()
+            print(f"{response=}")
             response = float(response)
-        except:
+        except Exception as e:
+            print(f"{e=}")
             response = False
         self.client.close()
         return response

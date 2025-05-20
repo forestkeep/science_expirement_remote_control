@@ -99,18 +99,19 @@ class maishengPowerClass(power_supply):
     def _write_reg(self, address, count, slave, values) -> bool:
         if self.is_test == True:
             return self.client.write_registers(
-                address=address, count=count, slave=slave, values=values
+                address=address, slave=slave, values=values
             )
         else:
             try:
                 ans = self.client.write_registers(
-                    address=address, count=count, slave=slave, values=values
+                    address=address, slave=slave, values=values
                 )
                 if ans.isError():
                     return False
                 else:
                     pass
-            except:
+            except Exception as e:
+                print(f"eerr write registers {e=}")
                 return False
             return True
 

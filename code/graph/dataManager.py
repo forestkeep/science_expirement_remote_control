@@ -266,7 +266,7 @@ class graphDataManager( QObject ):
 
 		if not param or not value:
 			return False, is_new_param_added, is_old_param_udated
-		
+
 		if device is None:
 			device = ""
 		else:
@@ -285,7 +285,6 @@ class graphDataManager( QObject ):
 		time_list = ([i for i in range(len(val_list))] if len(value) == 1 else value[1])
 		if len(val_list) != len(time_list):
 			logger.warning(f"Длины списков параметра и времени не равны {device=} {channel=} {param=} {value=}")
-			print(len(val_list), len(time_list))
 			return False, is_new_param_added, is_old_param_udated
 		
 		if "wavech" in param:
@@ -354,16 +353,15 @@ class graphDataManager( QObject ):
 					try:
 						value = float(value)
 					except ValueError:
-						logger.debug(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
+						logger.warning(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
 						continue
 
 				if name not in data[device][channel]:
 					data[device][channel][name] = [[], []]
 				data[device][channel][name][0].append(value)
 				data[device][channel][name][1].append(time)
-
+			#print(f"{data=}")
 			return self.add_measurement_data(data)
-			
 
 def get_dict_depth(d):
 	if not isinstance(d, dict)  or not d:
