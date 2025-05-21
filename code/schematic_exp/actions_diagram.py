@@ -37,7 +37,7 @@ class actionField(QWidget):
         super().__init__(parent)
         self.layout = QGridLayout()
         self.layout.setContentsMargins(5, 5, 5, 5)
-        self.layout.setSpacing(0)
+        self.layout.setSpacing(5)
         self.setLayout(self.layout)
         self.column_count = 0
         

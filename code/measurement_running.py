@@ -83,7 +83,13 @@ class experimentControl( ):
 					if buf[1]:
 						print(f"пауза {time.perf_counter()}")
 						self.__is_paused = True
+						self.pause_start_time = time.perf_counter()
 					else:
+						for device, ch in get_active_ch_and_device( self.device_classes ):
+							if ch.am_i_active_in_experiment:
+								if device.get_trigger(ch) == QApplication.translate('exp_flow', "Таймер"):
+									ch.previous_step_time += time.perf_counter() - self.pause_start_time
+						self.adjusted_start_time += time.perf_counter() - self.pause_start_time
 						self.__is_paused = False
 				elif buf[0] == "close":
 					self.is_closed = True
@@ -103,6 +109,7 @@ class experimentControl( ):
 		self.set_clients()
 
 		self.start_exp_time = time.perf_counter()
+		self.adjusted_start_time = time.perf_counter()
 		  
 		status = self.check_connections()
 
@@ -126,6 +133,7 @@ class experimentControl( ):
 			self.first_queue.put(("update_remaining_time", {"remaining_time": self.remaining_time}))
 
 			self.start_exp_time = time.perf_counter()
+			self.adjusted_start_time = time.perf_counter()
 
 			self.set_start_priorities()
 
@@ -526,7 +534,7 @@ class experimentControl( ):
 							* float(self.repeat_meas)
 						)
 						buf_time.append(t)
-		remaining_time = max(buf_time) + (time.perf_counter() - self.start_exp_time)
+		remaining_time = max(buf_time) + (time.perf_counter() - self.adjusted_start_time)
 		return remaining_time
 
 	def calculate_exp_time(self):

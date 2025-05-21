@@ -383,8 +383,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.pbar.setMinimum(0)
         self.pbar.setMaximum(100)
         self.pbar.setValue(0)
-
-        
+ 
         font = QtGui.QFont()
         font.setPointSize(9)
         self.label_state = QtWidgets.QLabel(self.central_widget)
@@ -394,8 +393,12 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.label_time = QtWidgets.QLabel(self.central_widget)
         self.label_time.setFont(font)
 
+        self.label_cont_time = QtWidgets.QLabel(self.central_widget)
+        self.label_cont_time.setFont(font)
+
         self.horizontalLayout_for_label = QtWidgets.QHBoxLayout()
         self.horizontalLayout_for_label.addWidget(self.label_state)
+        self.horizontalLayout_for_label.addWidget(self.label_cont_time)
         self.horizontalLayout_for_label.addWidget(self.label_time)
 
         self.horizontalLayout_for_label.setStretch(0, 3)
@@ -582,6 +585,9 @@ class Ui_Installation(QtWidgets.QMainWindow):
             "settings_save", "Состояние"))
         
         self.label_time.setText(_translate(
+            "settings_save", ""))
+        
+        self.label_cont_time.setText(_translate(
             "settings_save", ""))
         
         self.convert_buf_button.setText(_translate(

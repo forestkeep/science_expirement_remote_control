@@ -495,9 +495,10 @@ class installation_class( ExperimentBridge, analyse):
 
                     self.exp_call_stack.clear_action_field()
 
-                    self.start_exp_time = time.perf_counter()
+                    self.exp_start_time = time.perf_counter()
+                    self.adjusted_start_time = time.perf_counter()
                     self.remaining_exp_time = 0
-                    self.update_pbar(0)
+                    #self.update_pbar(0)
 
                     self.exp_third_queue = Queue()
                     self.exp_first_queue = Queue()
@@ -893,21 +894,22 @@ class metaDataExp( ):
         self.exp_queue      = []
         self.queue_info     = []
         self.exp_start_time = 0
+        self.adjusted_start_time = 0
         self.exp_stop_time  = 0
  
     def get_meta_data(self):
         pass
 
     def write_start_meta_data(self, devices: dict):
-                self.exp_start_time = time.perf_counter()
-                
-                number = 1
-                for dev, ch in get_active_ch_and_device( devices ):
-                    key = f"{dev.get_name()} {ch.get_name()}"
-                    self.actors_classes[number] = ch
-                    self.actors_names[number] = key
-                    self.numbers[key] = number
-                    number+=1
+        self.exp_start_time = time.perf_counter()
+        
+        number = 1
+        for dev, ch in get_active_ch_and_device( devices ):
+            key = f"{dev.get_name()} {ch.get_name()}"
+            self.actors_classes[number] = ch
+            self.actors_names[number] = key
+            self.numbers[key] = number
+            number+=1
     
     def print_meta_data(self):
         print("number: \t name: \t steps:")

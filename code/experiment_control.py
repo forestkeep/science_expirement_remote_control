@@ -60,6 +60,11 @@ class ExperimentBridge(analyse):
                     
     def connection_two_thread(self):
         """функция для обновления интерфейса во время эксперимента"""
+
+        min_elapsed = int((time.perf_counter() - self.exp_start_time) / 60)
+        sec_elapsed = int((time.perf_counter() - self.exp_start_time) % 60)
+        logger.warning(f"{self.remaining_exp_time=}")
+
         if self.is_experiment_running():
 
             if not self.current_state == ExperimentState.PAUSED:
@@ -71,26 +76,30 @@ class ExperimentBridge(analyse):
                 else:
                     if self.remaining_exp_time == 0:
                         self.remaining_exp_time = 1
-                    pbar_percent = ( ((time.perf_counter() - self.start_exp_time) / self.remaining_exp_time) ) * 100
+                    pbar_percent = ( ((time.perf_counter() - self.adjusted_start_time) / self.remaining_exp_time) ) * 100
 
-                    min = 0
-                    sec = 0
-                    if self.remaining_exp_time - (time.perf_counter() - self.start_exp_time) > 0:
-                        min = int((self.remaining_exp_time - (time.perf_counter() - self.start_exp_time))/ 60)
-                        sec = int((self.remaining_exp_time - (time.perf_counter() - self.start_exp_time))% 60)
+                    min_remain = 0
+                    sec_remain = 0
+                    if self.remaining_exp_time - (time.perf_counter() - self.adjusted_start_time) > 0:
+                        min_remain = int((self.remaining_exp_time - (time.perf_counter() - self.adjusted_start_time))/ 60)
+                        sec_remain = int((self.remaining_exp_time - (time.perf_counter() - self.adjusted_start_time))% 60)
 
                     self.installation_window.label_time.setText(
-                        QApplication.translate('exp_flow',f"Осталось {min}:{sec} мин"))
+                        QApplication.translate('exp_flow',f"Осталось {min_remain}:{sec_remain} мин"))
                     
                 self.update_pbar( pbar_percent )
             else:
-                self.installation_window.label_time.setText(QApplication.translate('exp_flow',"Осталось -- мин"))
+                pass
+                #self.installation_window.label_time.setText(QApplication.translate('exp_flow',"Осталось -- мин"))
+
+            self.installation_window.label_cont_time.setText(
+                        QApplication.translate('exp_flow',f"Прошло {min_elapsed}:{sec_elapsed} мин"))
 
         else:
             self.timer_for_connection_main_exp_thread.stop()
-            self.installation_window.pbar.setValue(0)
-            #self.preparation_experiment()
+            self.update_pbar( 0 )
             self.installation_window.label_time.setText("")
+            self.installation_window.label_cont_time.setText(QApplication.translate('exp_flow',f"Общее время эксперимента: {min_elapsed}:{sec_elapsed} мин"))
 
     def stoped_experiment(self):
         self.pipe_exp.send(["stop"])
@@ -105,11 +114,7 @@ class ExperimentBridge(analyse):
                 self.installation_window.pause_button.setText(QApplication.translate('exp_flow',"Пауза"))
                 self.timer_for_pause_exp.stop()
 
-                self.start_exp_time += time.perf_counter() - self.pause_start_time
-                for device, ch in get_active_ch_and_device( self.dict_active_device_class):
-                    if ch.am_i_active_in_experiment:
-                        if device.get_trigger(ch) == QApplication.translate('exp_flow', "Таймер"):
-                            ch.previous_step_time += time.perf_counter() - self.pause_start_time
+                self.adjusted_start_time += time.perf_counter() - self.pause_start_time
 
                 self.installation_window.pause_button.style_sheet = ready_style_background
 
@@ -157,10 +162,10 @@ class ExperimentBridge(analyse):
     def finalize_experiment(self, error=False, error_start_exp=False):
         self.current_state = ExperimentState.COMPLETED
 
-        self.timer_for_connection_main_exp_thread.stop()
+        #self.timer_for_connection_main_exp_thread.stop()
         self.timer_second_thread_tasks.stop()
-        self.update_pbar( 0 )
-        self.installation_window.label_time.setText( "" )
+        #self.update_pbar( 0 )
+        #self.installation_window.label_time.setText( "" )
         self.timer_for_receive_data_exp.stop()
         self.graph_controller.stop_session_running( self.current_session_graph_id )
 
