@@ -28,6 +28,7 @@ from Handler_manager import messageBroker
 from interface.installation_window import Ui_Installation
 from schematic_exp.construct_diagramexp import expDiagram
 from schematic_exp.exp_time_line import callStack
+from schematic_exp.actions_diagram import actDiagram
 from saving_data.Parse_data import process_and_export, type_save_file
 from available_devices import dict_device_class, JSON_dict_device_class
 from meas_session_data import measSession
@@ -188,14 +189,14 @@ class installation_class( ExperimentBridge, analyse):
                 i += 1
 
         self.exp_diagram = expDiagram()
-        self.exp_call_stack = callStack()
+        self.exp_call_stack = actDiagram()
         
         self.installation_window = Ui_Installation()
         self.installation_window.setWindowTitle(
                     "Experiment control " + self.version_app
                 )
         self.installation_window.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-        self.installation_window.setupUi(self.installation_window, self, self.dict_active_device_class, self.exp_diagram, self.exp_call_stack)
+        self.installation_window.setupUi(self.installation_window, self, self.dict_active_device_class, self.exp_diagram, self.exp_call_stack.diagram)
 
         self.installation_window.start_button.clicked.connect(self.push_button_start)
         self.installation_window.start_button.setToolTip(
@@ -492,6 +493,8 @@ class installation_class( ExperimentBridge, analyse):
 
                     self.add_text_to_log(text = QApplication.translate('main install',"настройка приборов") + ".. ")
 
+                    self.exp_call_stack.clear_action_field()
+
                     self.start_exp_time = time.perf_counter()
                     self.remaining_exp_time = 0
                     self.update_pbar(0)
@@ -541,7 +544,7 @@ class installation_class( ExperimentBridge, analyse):
                     self.experiment_process.start()
                     self.timer_for_connection_main_exp_thread.start(1000)
                     self.timer_second_thread_tasks.start(90)
-                    self.timer_for_receive_data_exp.start(10)
+                    self.timer_for_receive_data_exp.start(5)
 
                 else:
                     self.current_state = ExperimentState.PREPARATION
@@ -594,7 +597,11 @@ class installation_class( ExperimentBridge, analyse):
     def update_exp_meta_data(self, name, info):
         self.meta_data_exp.exp_queue.append( self.meta_data_exp.numbers[name] )
         self.meta_data_exp.queue_info.append(info)
-        self.exp_call_stack.set_data( self.meta_data_exp )
+
+        if not self.exp_call_stack.actors.get(name):
+            self.exp_call_stack.add_actor(name)
+
+        self.exp_call_stack.add_action(actor_name=name, action_info=info)
                 
     def update_remaining_time(self, remaining_time: float):
         logger.debug(f"update_remaining_time {remaining_time}")
@@ -641,12 +648,15 @@ class installation_class( ExperimentBridge, analyse):
             if self.way_to_save_installation_file == None:
                 self.push_button_save_installation_as()
             else:
-                self.write_data_to_save_installation_file(
+                status_save = self.write_data_to_save_installation_file(
                     self.way_to_save_installation_file
                 )
-                self.installation_window.setWindowTitle(
-                    "Experiment control - " + self.way_to_save_installation_file + " " + self.version_app
-                )
+                if status_save:
+                    self.installation_window.setWindowTitle(
+                        "Experiment control - " + self.way_to_save_installation_file + " " + self.version_app
+                    )
+                    self.add_text_to_log(
+                        QApplication.translate('main install',"Установка сохранена в файл ") + self.way_to_save_installation_file, "ok")
 
     def push_button_save_installation_as(self):
         options = QtWidgets.QFileDialog.Options()
@@ -695,7 +705,7 @@ class installation_class( ExperimentBridge, analyse):
         self.installation_window.setWindowTitle("Experiment control - " + fileName + " " + self.version_app)
         self.way_to_save_installation_file = fileName
 
-    def write_data_to_save_installation_file(self, file_path: str):
+    def write_data_to_save_installation_file(self, file_path: str) -> bool:
 
         """
         Сохраняет данные об установке устройств в JSON файл.
@@ -732,8 +742,10 @@ class installation_class( ExperimentBridge, analyse):
         try:
             with open(file_path, 'w') as outfile:
                 json.dump(install_dict, outfile, ensure_ascii=False, indent=4)
+            return True
         except Exception as e:
             logger.warning(f"Ошибка при записи в файл: {e}")
+            return False
 
     def read_info_by_saved_installation(self, filename: str) -> tuple[bool, dict[str, any]]:
 

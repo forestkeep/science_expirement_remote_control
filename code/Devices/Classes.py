@@ -862,4 +862,7 @@ def time_decorator(func):
         return result
     return wrapper
 
+
+if __name__ == "__main__":
+    print(float(False))
     

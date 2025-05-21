@@ -10,152 +10,265 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import sys
-
 import qdarktheme
 import logging
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QLabel, QScrollArea,
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QGridLayout, QLabel, QScrollArea,
                              QSizePolicy, QVBoxLayout, QWidget)
+from dataclasses import dataclass
+import time
 
-try:
-	from actions_line import actionLine, blockInfo
-	from stack_experiment import unique_colors1
-except:
-	from schematic_exp.actions_line import actionLine, blockInfo
-	from schematic_exp.stack_experiment import unique_colors1
- 
 logger = logging.getLogger(__name__)
+
+class deviceAction(QLabel):
+    def __init__(self, name, info=None, color=None):
+        super().__init__(name)
+        self.base_color = color
+        if color:
+            self.setStyleSheet(f"background-color: {self.base_color};")
+        if info:
+            self.setToolTip(info)
+        self.setContentsMargins(0, 0, 0, 0)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setFixedHeight(30)
+
+class actionField(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.layout = QGridLayout()
+        self.layout.setContentsMargins(5, 5, 5, 5)
+        self.layout.setSpacing(0)
+        self.setLayout(self.layout)
+        self.column_count = 0
+        
+    def add_new_block(self, action: deviceAction, num_row, num_col=None ):
+        if num_col is None:
+            num_col = self.column_count
+            self.layout.addWidget(action, num_row+1, num_col, 1, 1)
+            self.layout.addWidget(deviceAction(f"{num_col}"), 0, num_col, 1, 1)
+        else:
+            self.layout.addWidget(action, num_row+1, num_col, 1, 1)
+
+        self.column_count += 1
 
 class actDiagramWin(QWidget):
     def __init__(self):
         super().__init__()
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         
-        main_layout = QVBoxLayout()
-
         main_widget = QWidget()
-        main_layout_horizontal = QHBoxLayout()
-        main_widget.setLayout(main_layout_horizontal)
-
-        main_layout.addWidget(main_widget)
-
+        main_layout_horizontal = QHBoxLayout(main_widget)
+        main_layout_horizontal.setContentsMargins(5, 5, 5, 5)
+        main_layout_horizontal.setSpacing(0)
+        
+        # Левая область с именами
         self.names_widget = QWidget()
-        self.names_layout = QVBoxLayout()
-        self.names_layout.setContentsMargins(0, 0, 0, 0)
+        self.names_layout = QGridLayout(self.names_widget)
+        self.names_layout.setContentsMargins(5, 5, 5, 5)
         self.names_layout.setSpacing(0)
-        self.names_widget.setLayout(self.names_layout)
-        self.names_widget.setMinimumHeight(0)
-
-        self.actions_widget = QWidget()
-        self.actions_layout = QVBoxLayout()
-        self.actions_layout.setContentsMargins(0, 0, 0, 0)
-        self.actions_layout.setSpacing(0)
-        self.actions_widget.setLayout(self.actions_layout)
-        self.actions_widget.setMinimumHeight(0)
         
         self.scroll_area_hind = QScrollArea()
         self.scroll_area_hind.setWidget(self.names_widget)
         self.scroll_area_hind.setWidgetResizable(True)
         self.scroll_area_hind.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.scroll_area_hind.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scroll_area_hind.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
-        self.scroll_area_hind.setContentsMargins(0, 0, 0, 0)
-
+        
+        # Правая область с действиями
+        self.action_field = actionField()
         self.scroll_area_horizontal = QScrollArea()
-        self.scroll_area_horizontal.setWidget(self.actions_widget)
+        self.scroll_area_horizontal.setWidget(self.action_field)
         self.scroll_area_horizontal.setWidgetResizable(True)
         self.scroll_area_horizontal.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         
-        main_layout_horizontal.addWidget(self.scroll_area_hind)
-        main_layout_horizontal.addWidget(self.scroll_area_horizontal)
+        # Синхронизация скролла
+        self.scroll_area_hind.verticalScrollBar().valueChanged.connect(
+            self.scroll_area_horizontal.verticalScrollBar().setValue
+        )
+        self.scroll_area_horizontal.verticalScrollBar().valueChanged.connect(
+            self.scroll_area_hind.verticalScrollBar().setValue
+        )
         
-        main_layout_horizontal.setContentsMargins(0, 0, 0, 0)
-        main_layout_horizontal.setSpacing(0)
+        main_layout_horizontal.addWidget(self.scroll_area_hind, 1)
+        main_layout_horizontal.addWidget(self.scroll_area_horizontal, 5)
+        main_layout.addWidget(main_widget)
 
-        # Подключаем сигнал для синхронизации прокрутки
-        self.scroll_area_horizontal.verticalScrollBar().valueChanged.connect(self.sync_scroll)
+@dataclass
+class actorInfo:
+    actor_name: str
+    number_row: int
+    color: str
+    label: deviceAction  # Добавляем ссылку на виджет
 
-        self.setLayout(main_layout)
-
-    def sync_scroll(self, value):
-        self.scroll_area_hind.verticalScrollBar().setValue(value)
-               
-        
-class actDiagram():
+class actDiagram:
     def __init__(self):
         self.diagram = actDiagramWin()
         self.actors = {}
+        self.actor_actions = {}  # Словарь для отслеживания действий по актору
         self.current_number = 1
-        self.max_width_name_actors = 0
-  
-        #self.diagram.show()
+
+        self.diagram.names_layout.addWidget(deviceAction("Actors"), 0, 0)
 
     def add_actor(self, actor_name):
+        new_color = "#%06x" % (0x809080 + self.current_number * 1000)
+        number_row_actor = len(self.actors) + 1
+        lb = deviceAction(actor_name, actor_name, new_color)
+        self.actors[actor_name] = actorInfo(actor_name, number_row_actor, new_color, lb)
+        self.diagram.names_layout.addWidget(lb, number_row_actor, 0)
+        empty_block = deviceAction(f"")
+        self.diagram.action_field.add_new_block(empty_block, number_row_actor, 0)
+        if actor_name not in self.actor_actions:
+            self.actor_actions[actor_name] = []
+        self.actor_actions[actor_name].append(empty_block)
+        self.current_number += 1
+
+    def add_action(self, actor_name, action_info, action_name = ""):
+        actor = self.actors.get(actor_name)
+        if not actor:
+            return False
         
-        new_color = unique_colors1[self.current_number - 1]
-        new_act_line = actionLine(name=actor_name,
-                            number = self.current_number,
-                            color = f"background-color: {new_color};"
-                            )
-  
-        self.actors[actor_name] = new_act_line
+        new_block = deviceAction(action_name, action_info, actor.color)
+        self.diagram.action_field.add_new_block(new_block, actor.number_row)
+        if actor_name not in self.actor_actions:
+            self.actor_actions[actor_name] = []
+        self.actor_actions[actor_name].append(new_block)
 
-        self.diagram.actions_layout.addWidget( new_act_line )
-        lb = QLabel(actor_name)
-        self.diagram.names_layout.addWidget( lb )
-     
-        self.current_number+=1
-  
-        font_metrics = lb.fontMetrics()
-        text_size = font_metrics.size(0, lb.text())
+        scroll_bar = self.diagram.scroll_area_horizontal.horizontalScrollBar()
+        scroll_bar.setValue(scroll_bar.maximum())
+        return True
 
-        if self.max_width_name_actors < text_size.width():
-            self.max_width_name_actors = int(text_size.width()*1.2)
-   
-        self.diagram.scroll_area_hind.setMaximumWidth(self.max_width_name_actors)
-        self.diagram.scroll_area_hind.setMinimumWidth(self.max_width_name_actors)
+    def set_actor_inactive(self, actor_name):
+        """Визуально отображает неактивный прибор"""
+        actor = self.actors.get(actor_name)
+        if not actor:
+            return False
+
+        actor.label.setStyleSheet(
+            f"background-color: #808080;"
+            "color: #FFFFFF;"
+            "text-decoration: line-through;"
+        )
+        return True
+
+    def activate_all_actors(self):
+        """Возвращает всем приборам активный вид"""
+        for actor in self.actors.values():
+            actor.label.setStyleSheet(f"background-color: {actor.color};")
+
+    def clear_action_field(self):
+        """Очищает поле действий, кроме виджетов в первом столбце"""
+        layout = self.diagram.action_field.layout
+
+        self.diagram.action_field.column_count = 0
+        widgets_to_remove = []
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            widget = item.widget()
+            if widget:
+                row, column, row_span, column_span = layout.getItemPosition(i)
+                if column != 0:
+                    widgets_to_remove.append(widget)
         
-        self.diagram.show()
+        for widget in widgets_to_remove:
+            layout.removeWidget(widget)
+            widget.deleteLater()
+        for lst in self.actor_actions.values():
+            del lst[1:]
 
-    def add_action(self, actor_name, action_name, action_info) -> bool:
-     
-        if actor_name in self.actors.keys():
-            logger.info(f"добавлено действие{actor_name}")
-      
-            new_block = blockInfo(name = action_name,
-                              info = action_info
-                              )
-   
-            for name, line in self.actors.items():
-                    if name == actor_name:
-                        line.add_new_block(new_block)
-                    else:
-                        line.add_new_block()
-      
-            return True
-
-        return False
         
-def test_act_diag():
-    diag = actDiagram()
-    diag.diagram.setWindowTitle("Demo Act Diagram")
-    actors = ["Ch1", "Ch2333rrrrrrrrrrrrr3", "Ch3333", "Ch4", "Ch5"]
-    print("добавляем акторов")
-    for actor in actors:
-        diag.add_actor(actor_name = actor)
-    print("действия")
-    
-    for i in range(3):
-        for actor in actors:
-            if not diag.add_action(actor_name  = actor,
-                            action_name = f"Действие {i}",
-                            action_info = f"Описание действия {i}"):
-                print("Ошибка добавления действия")
-
-    return diag
         
+    def remove_actor(self, actor_name):
+        """Удаляет прибор и связанные с ним действия"""
+        actor = self.actors.get(actor_name)
+        if not actor:
+            return False
+
+        # Удаление метки прибора
+        self.diagram.names_layout.removeWidget(actor.label)
+        actor.label.deleteLater()
+
+        # Удаление связанных действий
+        for action in self.actor_actions.get(actor_name, []):
+            self.diagram.action_field.layout.removeWidget(action)
+            action.deleteLater()
+        if actor_name in self.actor_actions:
+            del self.actor_actions[actor_name]
+
+        # Обновление номеров строк для оставшихся приборов
+        del self.actors[actor_name]
+        removed_row = actor.number_row
+        for a in self.actors.values():
+            if a.number_row > removed_row:
+                a.number_row -= 1
+
+        # Перемещение оставшихся виджетов в names_layout
+        for a in self.actors.values():
+            if a.number_row >= removed_row:
+                self.diagram.names_layout.addWidget(a.label, a.number_row, 0)
+
+        return True
+
+class tester_diag(QWidget):
+    def __init__(self, diag):
+        super().__init__()
+        self.diag = diag
+        self.add_timer = QTimer(self)
+        self.add_timer.timeout.connect(self.test_act_diag)
+        self.actors_def = ["Ch1", "Ch2", "Ch3", "Ch4", "Ch5"]
+        self.actors_added = []
+        self.actors_removing = []
+        self.counter_step = 0
+
+    def test_act_diag(self):
+        self.counter_step += 1
+        if self.actors_def and random.randint(0, 1):
+                new_actor = self.actors_def.pop(0)
+                self.actors_added.append(new_actor)
+                diag.add_actor(new_actor)
+
+        elif self.actors_added:
+                focus_actor = random.choice(self.actors_added)
+                name = ""
+                is_name = random.randint(0, 1)
+                if is_name:
+                    name = f"Action {random.randint(0, 100)}"
+                diag.add_action(focus_actor, name, f"Description {random.randint(0, 100)}")
+
+        if random.random() > 1 and not self.actors_def:
+            diag.clear_action_field()
+            print("Action field cleared")
+
+        elif self.counter_step % 3 == 0 and self.actors_added:
+            inactive_actor = random.choice(self.actors_added)
+            self.actors_added.remove(inactive_actor)
+            self.actors_removing.append(inactive_actor)
+            diag.set_actor_inactive(inactive_actor)
+            print(f"Actor {inactive_actor} set inactive")
+
+        elif not self.actors_def and not self.actors_added and self.actors_removing:
+            rem_actor = random.choice(self.actors_removing)
+            self.actors_removing.remove(rem_actor)
+            self.diag.remove_actor(rem_actor)
+            print(f"Actor {rem_actor} removed")
+
+        gc.collect()
+        all_objects = gc.get_objects()
+        print("Количество отслеживаемых объектов:", len(all_objects))
+
+    def run(self):
+        self.counter_step = 0
+        self.add_timer.start(1000)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    qdarktheme.setup_theme(corner_shape="sharp")
-    win = test_act_diag()
+    qdarktheme.setup_theme()
+    import random
+    import gc
+
+    diag = actDiagram()
+    diag.diagram.setWindowTitle("Demo Act Diagram")
+
+    test_diag = tester_diag(diag)
+    test_diag.run()
+
+    diag.diagram.show()
     sys.exit(app.exec_())
