@@ -231,13 +231,11 @@ class experimentControl( ):
 								ch.do_last_step = False
 
 							if not ch.am_i_active_in_experiment:
-								text = device.get_name()\
+								actor = device.get_name()\
 										+ " "\
-										+ str(ch.get_name()) + " "\
-										+ QApplication.translate('exp_flow',"завершил работу")
-								status = "ok"
+										+ str(ch.get_name())
 
-								self.first_queue.put(("add_text_to_log", {"text": text, "status": status}))
+								self.first_queue.put( ("end_work", {"actor": actor}) )
 
 							current_priority = ch.get_priority()
 							self.manage_subscribers(ch = ch)

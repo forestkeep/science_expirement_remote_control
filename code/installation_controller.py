@@ -122,7 +122,27 @@ class MyWindow(QtWidgets.QMainWindow):
                     self.close_event.activated.connect(self.close)
                 except:
                     logger.warning("Функционал сворачивания в трей не добавлен")
+    def check_open_type(self, file_path):
+        status = False
+        if os.path.isfile(file_path):
+            self.cur_install.reconstruct_installation([], [])
+            status = self.cur_install.open_saved_installation(fileName=file_path)
+            if status:
+                self.cur_install.installation_window.installation_close_signal.connect(
+                self.unlock_to_create_new_installation
+            )
+                if not self.device_selector:
+                    self.device_selector = deviceSelector()
+                self.cur_install.device_selector = self.device_selector
 
+                if self.ui.is_design_mode:
+                    self.cur_install.change_check_debug()
+
+                self.close()
+            else:
+                print("ошибка восстановления установки")
+
+        return status
 
     def change_language(self, lang):
 
@@ -266,6 +286,20 @@ class MyWindow(QtWidgets.QMainWindow):
     def search_devices_json(self, directory):
         return search_devices_json(directory)
     
+class fileNotFound(Exception):
+    def __init__(self, message, info):
+        super().__init__(message)
+        self.info = info
+    
+class savedTypeUnknow(Exception):
+    def __init__(self, message, info):
+        super().__init__(message)
+        self.info = info
+
+class savedSetError(Exception):
+    def __init__(self, message, info):
+        super().__init__(message)
+        self.info = info
 
 def get_installation_controller_path():
 
@@ -290,7 +324,7 @@ if __name__ == "__main__":
 
     file_handler = RotatingFileHandler( log_file_path, maxBytes=1000000, backupCount=5 )
     
-    file_handler.setLevel( logging.WARNING )
+    file_handler.setLevel( logging.INFO )
     file_handler.setFormatter( logging.Formatter(FORMAT) )
 
     logging.basicConfig(handlers=[file_handler, console], level=logging.DEBUG)
@@ -319,9 +353,15 @@ if __name__ == "__main__":
         "is_delete_buf_file": False,
         "should_prompt_for_session_name": True
         }
+    
+    file_path = None
+    if len(sys.argv) > 1:
+        file_path = os.path.normpath(sys.argv[1].strip('"'))
 
-    settings_manager = SettingsManager(settings, VERSION_APP)
+    settings_manager = SettingsManager(settings=settings, VERSION_APP=VERSION_APP, def_persistent_sett=persistent_settings)
 
     start_window = MyWindow( settings_manager)
-    start_window.show()
+    if not start_window.check_open_type(file_path):
+        #TODO: добавить контроллер открывтия , открываться может установка, сессия обработки данных. Контроллер должен управлять открытием, выдавать сообщения в случае ошибок и т.д.
+        start_window.show()
     sys.exit(app.exec_())

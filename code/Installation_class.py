@@ -132,9 +132,14 @@ class installation_class( ExperimentBridge, analyse):
             "set_state_text": self.set_state_text,
             "update_remaining_time": self.update_remaining_time,
             "add_text_to_log": self.add_text_to_log,
+            "end_work": self.actor_end_work
         }
         self.second_thread_tasks_counter = 0
 
+    def actor_end_work(self, actor: str):
+        self.exp_call_stack.set_actor_inactive(actor)
+        self.add_text_to_log(f"{actor}" + QApplication.translate('exp_flow',"завершил работу"), "ok")
+        
     def format_bool_settings(self, value):
 
         if isinstance(value, str ):
@@ -688,17 +693,27 @@ class installation_class( ExperimentBridge, analyse):
             options=options,
         )
         if ans == "Installation(*.ns)":
-            install_list = self.extract_saved_installlation(fileName=fileName)
-            # self.add_parameter_devices(install_list)
+            self.open_saved_installation(fileName)
+
+    def open_saved_installation(self, fileName) -> bool:
+        status = self.extract_saved_installlation(fileName=fileName)
+        if status:
             self.way_to_save_installation_file = fileName
             self.installation_window.setWindowTitle("Experiment control - " + fileName + " " + self.version_app)
-
-    def extract_saved_installlation(self, fileName):
+            return True
+        else:
+            return False
+        
+    def extract_saved_installlation(self, fileName) -> bool:
         status, buffer = self.read_info_by_saved_installation(fileName)
-        self.show_window_installation()
-        self.timer_open = QTimer()
-        self.timer_open.timeout.connect(lambda: self.timer_open_timeout(buffer, fileName))
-        self.timer_open.start(800)
+        if status:
+            self.show_window_installation()
+            self.timer_open = QTimer()
+            self.timer_open.timeout.connect(lambda: self.timer_open_timeout(buffer, fileName))
+            self.timer_open.start(800)
+            return True
+        else:
+            return False
 
     def timer_open_timeout(self, buffer, fileName):
         self.timer_open.stop()

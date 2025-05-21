@@ -186,6 +186,7 @@ class ExperimentBridge(analyse):
             self.add_text_to_log( text )
             self.show_information_window( text )
 
+
         if self.has_unsaved_data:
 
             self.set_state_text(text = QApplication.translate('exp_flow',"Сохранение результатов"))
@@ -218,6 +219,8 @@ class ExperimentBridge(analyse):
         self.exp_third_queue.close()
 
         self.important_exp_queue.close()
+
+        self.exp_call_stack.activate_all_actors()
 
         self.prepare_for_reexperiment()
 

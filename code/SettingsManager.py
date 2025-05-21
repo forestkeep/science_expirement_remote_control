@@ -21,6 +21,9 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox,
                             QSizePolicy, QPushButton, QLabel)
 
 import enum
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class type_save_file(enum.Enum):
@@ -31,20 +34,19 @@ class type_save_file(enum.Enum):
 class SettingsManager():
     def __init__(self,settings: QtCore.QSettings, VERSION_APP: str, def_persistent_sett: dict=None, def_cache_sett: dict=None):
         self.persistent_settings = settings
-
         self.cache_settings = {}
         self.load_all_settings()
-
-        if def_persistent_sett is not None:
-            for key, value in def_persistent_sett.items():
-                if not self.persistent_settings.contains(key):
-                    self.save_settings({key: value})
 
         if def_cache_sett is not None:
             for key, value in def_cache_sett.items():
                 self.cache_settings[key] = value
 
         self.experiment_settings = ExperimentSettings( self.cache_settings )
+
+        if def_persistent_sett is not None:
+            for key, value in def_persistent_sett.items():
+                if not self.persistent_settings.contains(key):
+                    self.save_settings({key: value})
 
         all_set, persistent_set = self.experiment_settings.get_settings()
         self.save_settings(persistent_set)
@@ -60,7 +62,8 @@ class SettingsManager():
         for key, value in data.items():
             self.cache_settings[key] = value
             self.persistent_settings.setValue(key, value)
-            self.experiment_settings.set_settings(data)
+
+        self.experiment_settings.set_settings(data)
 
     def set_settings(self, data: dict):
         """
@@ -71,7 +74,8 @@ class SettingsManager():
         """
         for key, value in data.items():
             self.cache_settings[key] = value
-            self.experiment_settings.set_settings(data)
+
+        self.experiment_settings.set_settings(data)
 
     def load_settings(self, keys: list | str) -> dict:
         """
@@ -87,16 +91,16 @@ class SettingsManager():
 
         if isinstance(keys, str):
             keys = [keys]
-
+        
         for key in keys:
             val = self.format_settings( self.persistent_settings.value(key) )
             data[key] = val
             self.cache_settings[key] = val
+
         return data
     
     def get_settings(self, keys: list | str) -> dict:
         data = {}
-
         if isinstance(keys, str):
             keys = [keys]
 
@@ -116,11 +120,12 @@ class SettingsManager():
         Returns:
             tuple: A tuple containing a boolean indicating if the setting exists and its value if it does.
         """
-        if self.cache_settings.get(key, None):
 
-            return True, self.cache_settings.get(key, None)
-        return False, None
-    
+        if key in self.cache_settings:
+            return True, self.cache_settings[key]
+        else:
+            return False, None
+        
     def ask_exp_settings(self):
         all_set, persistent_set = self.experiment_settings.show()
         self.save_settings(persistent_set)
