@@ -111,7 +111,7 @@ class maishengPowerClass(power_supply):
                 else:
                     pass
             except Exception as e:
-                print(f"eerr write registers {e=}")
+                logger.warning(f"ошибка записи регистров {str(e)}")
                 return False
             return True
 
@@ -130,7 +130,8 @@ class maishengPowerClass(power_supply):
                     return False
                 else:
                     return ans.registers
-            except:
+            except Exception as e:
+                logger.warning(f"ошибка чтения регистров {str(e)}")
                 return False
 
     def _get_current_voltage(self, ch_num):
@@ -170,7 +171,8 @@ class maishengPowerClass(power_supply):
                 return False
             else:
                 return ans.registers
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка чтения регистров {str(e)}")
             return False
 
     def _get_setting_voltage(self, ch_num):

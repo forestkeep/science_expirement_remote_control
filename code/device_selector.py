@@ -42,7 +42,7 @@ class deviceSelector():
             self.directory_devices = os.path.join(current_dir, "my_devices")
             self.JSON_devices = get_new_JSON_devs(self.directory_devices)
         except FileNotFoundError:
-            print("FileNotFoundError")
+            logger.warning(f"Ошибка поиска установленных устройств")
             self.JSON_devices = {}
 
     def get_single_device(self):

@@ -1,0 +1,88 @@
+{
+    "Maisheng_1": {
+        "settings": {
+            "baudrate": "9600",
+            "COM": "COM12"
+        },
+        "channels": {
+            "ch-1_act": {
+                "settings": {
+                    "trigger": "Внешний сигнал",
+                    "sourse/time": "Maisheng_1 ch-1_meas do_operation",
+                    "num steps": 6,
+                    "type_of_work": "Стабилизация напряжения",
+                    "type_step": "Заданный шаг",
+                    "high_limit": "5.0",
+                    "low_limit": "0.01",
+                    "step": "1.0",
+                    "second_value": "15.0",
+                    "repeat_reverse": false,
+                    "soft_start": false,
+                    "soft_off": false
+                },
+                "state": "active"
+            },
+            "ch-1_meas": {
+                "settings": {
+                    "trigger": "Внешний сигнал",
+                    "sourse/time": "SR830_2 ch-1_meas end_work",
+                    "num steps": "10",
+                    "meas_cur": false,
+                    "meas_vol": false,
+                    "meas_set_cur": false,
+                    "meas_set_vol": false
+                },
+                "state": "active"
+            }
+        }
+    },
+    "SR830_2": {
+        "settings": {
+            "baudrate": "9600",
+            "COM": "COM12"
+        },
+        "channels": {
+            "ch-1_meas": {
+                "settings": {
+                    "trigger": "Внешний сигнал",
+                    "sourse/time": "pig_in_a_poke_3 ch-1_meas do_operation",
+                    "num steps": 20.0,
+                    "time_const": 1000.0,
+                    "filter_slope": 6.0,
+                    "SYNK_200_Hz": "On",
+                    "sensitivity": true,
+                    "reserve": "high reserve",
+                    "input_channel": "A",
+                    "input_type": "AC",
+                    "input_connect": "ground",
+                    "filters": "line",
+                    "frequency": 400.0,
+                    "amplitude": true
+                },
+                "state": "active"
+            }
+        }
+    },
+    "pig_in_a_poke_3": {
+        "settings": {
+            "baudrate": "9600",
+            "COM": "COM12"
+        },
+        "channels": {
+            "ch-1_meas": {
+                "settings": {
+                    "trigger": "Внешний сигнал",
+                    "sourse/time": "Maisheng_1 ch-1_act do_operation",
+                    "num steps": 10.0,
+                    "commands": [
+                        ""
+                    ],
+                    "commands_file": "",
+                    "timeout_connect": 1000.0,
+                    "is_not_command": true
+                },
+                "state": "active"
+            }
+        }
+    }
+}

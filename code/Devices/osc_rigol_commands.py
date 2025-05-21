@@ -140,7 +140,8 @@ class oscRigolCommands:
             data = data.split(",")
             for i in range(1, len(data) - 1, 1):
                 new_data.append(round(float(data[i]), 2))
-        except pyvisa.errors.VisaIOError:
+        except pyvisa.errors.VisaIOError as e:
+            logger.error(f"Ошибка чтения данных: {e}")
             status = False
 
         return status, new_data

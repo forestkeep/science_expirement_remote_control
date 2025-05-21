@@ -92,7 +92,8 @@ class rigolDp832aClass(power_supply):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
+        except Exception as e:
+            logger.warning(f"установка тока ошибка{str(e)}")
             response = False
         self.client.close()
         logger.debug(f"статус {response == current}")
@@ -119,7 +120,8 @@ class rigolDp832aClass(power_supply):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка запроса напряжения {str(e)}")
             response = False
         self.client.close()
         return response
@@ -133,7 +135,8 @@ class rigolDp832aClass(power_supply):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка запроса тока {str(e)}")
             response = False
         self.client.close()
         return response
@@ -147,7 +150,8 @@ class rigolDp832aClass(power_supply):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка запроса напряжения {str(e)}")
             response = False
         self.client.close()
         return response
@@ -161,7 +165,8 @@ class rigolDp832aClass(power_supply):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка запроса тока {str(e)}")
             response = False
         self.client.close()
         return response

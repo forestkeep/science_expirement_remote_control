@@ -373,7 +373,7 @@ class baseInstallation:
 
                     number_device = number_device + 1
                 except:
-                    logger.debug("под прибор |" + key + "| не удалось создать экземпляр")
+                    logger.warning("под прибор |" + key + "| не удалось создать экземпляр")
 
             for key in json_device_list.values():
                 try:
@@ -387,7 +387,7 @@ class baseInstallation:
 
                     number_device = number_device + 1
                 except KeyError:
-                    logger.debug(f"Извините, под тип {key.json_data['device_type']} пока не разработан шаблон класса")
+                    logger.warning(f"под тип {key.json_data['device_type']} пока не разработан шаблон класса")
 
                 except Exception as e:
                     logger.error(f"Failed to create instance of {key.name} {e}")

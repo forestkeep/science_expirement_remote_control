@@ -354,9 +354,11 @@ if __name__ == "__main__":
         "should_prompt_for_session_name": True
         }
     
-    file_path = None
+    file_path = ""
     if len(sys.argv) > 1:
         file_path = os.path.normpath(sys.argv[1].strip('"'))
+
+    file_path = r"C:\Users\User\Desktop\exp_controll_development\science_expirement_remote_control\code\test_subs.ns"
 
     settings_manager = SettingsManager(settings=settings, VERSION_APP=VERSION_APP, def_persistent_sett=persistent_settings)
 

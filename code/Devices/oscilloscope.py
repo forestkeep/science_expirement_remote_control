@@ -1056,20 +1056,17 @@ class oscilloscopeClass(base_device):
         device, ch = input_array[0].split()
         general_param = []
 
-        for item in input_array[1:]:  # Пропускаем первый элемент
-            # Извлекаем параметр и его значение
+        for item in input_array[1:]:
+
             param_str = item[0]
             param_name, param_value = param_str.split("=")
 
-            # Находим номер канала (последняя цифра в имени параметра)
             try:
                 channel_number = int(param_name[-1])
 
-                # Создаем массив для канала, если он еще не существует
                 if channel_number not in channels.keys():
                     channels[channel_number] = [f"{device} ch-{channel_number}_meas"]
 
-                # Добавляем параметр в соответствующий массив
                 channels[channel_number].append([f"{param_name[0:-1]}={param_value}"])
             except:
                 general_param.append([item[0]])

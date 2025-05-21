@@ -63,6 +63,7 @@ class analyse(baseInstallation):
         - в случае, если в зацикленной линии ни один прибор не имеет конечное количество шагов"'''
         sourses = self.cycle_analyse()
         if sourses:
+            logger.info(f"зацикливание обнаружено {sourses}")
             for sourse in sourses:
                 first = sourse
 
@@ -149,7 +150,7 @@ class analyse(baseInstallation):
                 dev = self.name_to_class(name_device=dev_name)
                 if dev is not False:
                     ch = dev.get_object_ch(ch_name=ch_name)
-                    if dev.get_trigger(ch) == "Внешний сигнал" and trg == "do_operation":
+                    if (dev.get_trigger(ch) == "Внешний сигнал") and (trg == "do_operation" or trg == "end_work"):
                         s = dev.get_trigger_value(ch)
                     else:
                         s = False
@@ -167,8 +168,7 @@ class analyse(baseInstallation):
         names = copy.deepcopy(list(self.dict_active_device_class.keys()))
         sourse = []
         i = 0
-        sourse_lines = []
-        array = names
+
         logger.debug("анализируем зацикливания приборов")
         # формируем первую линию сигналов
         for dev, ch in get_active_ch_and_device( self.dict_active_device_class ):
@@ -182,6 +182,10 @@ class analyse(baseInstallation):
             # получаем матрицу источников сигналов с количеством столбцом равным количеству каналов в установке и количеством строк на 1 больше, чем столбцом
             matrix_sourse.append(self.get_sourse_line(matrix_sourse[i]))
             i += 1
+        print("матрица сигналов")
+        for row in matrix_sourse:
+            print(row)
+        print("--------------------------------")
 
         # ищем зацикливания, запоминаем первый элемент в столбце и идем по столбцу, если встретим такоц же элемент, то зацикливание обнаружено(кроме false)
         transposed_matrix = []
@@ -194,7 +198,7 @@ class analyse(baseInstallation):
 
         i = 0
         for row in transposed_matrix:
-            logger.debug(f"{i} {row=}")
+            logger.warning(f"{i} {row=}")
             i += 1
 
         setted_dev = (
@@ -211,6 +215,7 @@ class analyse(baseInstallation):
                     dev = self.name_to_class(name_device=dev)
 
                     dev.set_status_step(ch_name=ch_name, status=True)
+                    logger.warning(f"установка готовности шага {dev.get_name()} {ch_name}")
                     break
 
 

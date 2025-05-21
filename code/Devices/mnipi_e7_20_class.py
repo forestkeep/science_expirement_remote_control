@@ -15,7 +15,6 @@ import math
 import time
 
 import serial
-import serial.tools.list_ports
 from PyQt5.QtWidgets import QApplication
 
 from Devices.Classes import (base_ch, base_device, ch_response_to_step,

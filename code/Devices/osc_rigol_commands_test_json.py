@@ -148,7 +148,8 @@ class oscRigolCommands:
             data = self.device.client.read_raw()
             data = str(data).split(",")
             new_data = [round(float(data[i]), 2) for i in range(1, len(data) - 1)]
-        except pyvisa.errors.VisaIOError:
+        except pyvisa.errors.VisaIOError as e:
+            logger.error(f"Ошибка чтения данных: {e}")
             status = False
 
         return status, new_data
@@ -635,4 +636,3 @@ if __name__ == "__main__":
     client = rm.open_resource(res[0])
 
     print(client.query(":CHANnel2:BWLimit?"))
-

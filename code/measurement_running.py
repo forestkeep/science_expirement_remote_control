@@ -464,59 +464,6 @@ class experimentControl( ):
 	def stop_exp(self):
 		self.__stop_experiment = True
 
-	'''
-	def update_parameters(self, data, entry, time):
-			try:
-				device, channel = entry[0].split()
-			except:
-				device, channel = "unknown_dev_1", "unknown_ch-1"
-			parameter_pairs = entry[1:]
-			status = True
-
-			if "pig_in_a_poke" in device:
-				new_pairs = []
-				for index, pair in enumerate(parameter_pairs):
-					new_pairs.append(pair)
-				parameter_pairs = new_pairs
-
-			if device not in data:
-				data[device] = {}
-
-			if channel not in data[device]:
-				data[device][channel] = {}
-
-			for parameter_pair in parameter_pairs:
-				try:
-					name, value = parameter_pair[0].split("=")
-				except:
-					logger.warning(f"ошибка при декодировании параметра {parameter_pair}")
-					continue
-
-				if "wavech" in name:  # oscilloscope wave
-					value = value.split("|")
-					buf = []
-					for val in value:
-						try:
-							buf.append(float(val))
-						except ValueError:
-							logger.warning(f"не удалось преобразовать в число: {device=} {channel=} {name=} {val=}")
-							continue
-					value = numpy.array(buf)
-
-				else:
-					try:
-						value = float(value)
-					except ValueError:
-						logger.info(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
-						continue
-
-				if name not in data[device][channel]:
-					data[device][channel][name] = [[], []]
-				data[device][channel][name][0].append(value)
-				data[device][channel][name][1].append(time)
-
-			return status, data
-	'''
 	def calc_last_exp_time(self) -> float:
 		buf_time = [0]
 		for device, ch in get_active_ch_and_device( self.device_classes ):
@@ -539,8 +486,6 @@ class experimentControl( ):
 		"""оценивает продолжительность эксперимента, возвращает результат в секундах, если эксперимент бесконечно долго длится, то вернется ответ True. В случае ошибки при расчете количества секунд вернется False"""
 		# проверить, есть ли бесконечный эксперимент, если да, то расчет не имеет смысла, и анализ в процессе выполнения тоже
 		# во время эксперимента после каждого измерения пересчитывается максимальное время каждого прибора и выбирается максимум, от этого максимума рассчитывается оставшийся процент времени
-
-		#self.is_experiment_endless = self.analyse_endless_exp()
 
 		if self.is_experiment_endless :
 			return True  # вернем правду в случае бесконечного эксперимента
@@ -681,33 +626,31 @@ class experimentControl( ):
 		if not ch.am_i_active_in_experiment :
 			"""останавливаем подписчиков, которые срабатывали по завершению операции"""
 
-			try:
-				for subscriber in subscribers_do_operation:     
-					if subscriber.am_i_active_in_experiment :            
-						dev = subscriber.device_class
-						#TODO: device class не сузествуует здесь убрать
-						if "do_operation" in dev.get_trigger_value(subscriber):                   
 
-							text=dev.get_name()\
-								+ " "\
-								+ str(subscriber.get_name()) + " "\
-								+ QApplication.translate('exp_flow'," завершил работу")
+			for subscriber in subscribers_do_operation:     
+				if subscriber.am_i_active_in_experiment :            
+					dev_name = subscriber.device_class_name
+					dev = self.device_classes[dev_name]
 
-							self.third_queue.put(("add_text_to_log", {"text": text, "status": "ok"}))
+					if "do_operation" in dev.get_trigger_value(subscriber):                   
 
-							subscriber.do_last_step = True
+						text=dev.get_name()\
+							+ " "\
+							+ str(subscriber.get_name()) + " "\
+							+ QApplication.translate('exp_flow'," завершил работу")
 
-				self.message_broker.push_publish(
-					name_subscribe=ch.end_operation_trigger, publisher=ch
-				)
-				subscribers_end_operation = self.message_broker.get_subscribers(
-					publisher=ch, name_subscribe=ch.end_operation_trigger
-				)
-				for subscriber in subscribers_end_operation:
-					subscriber.do_last_step = True
-			except Exception as e:
-				print(f"{e=}")
-		
+						self.third_queue.put(("add_text_to_log", {"text": text, "status": "ok"}))
+
+						subscriber.do_last_step = True
+
+			self.message_broker.push_publish(
+				name_subscribe=ch.end_operation_trigger, publisher=ch
+			)
+			subscribers_end_operation = self.message_broker.get_subscribers(
+				publisher=ch, name_subscribe=ch.end_operation_trigger
+			)
+			for subscriber in subscribers_end_operation:
+				subscriber.do_last_step = True
 
 		"""передаем сигнал всем подписчикам о том, что операция произведена"""
 		self.message_broker.push_publish(

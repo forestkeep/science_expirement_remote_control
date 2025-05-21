@@ -50,8 +50,8 @@ class matrixWps300s(power_supply):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
-            logger.warning(f"настройка напряжения ответ-{response}")
+        except Exception as e:
+            logger.warning(f"настройка напряжения ответ-{response} {str(e)}")
             response = False
         self.client.close()
         logger.debug(f"статус {response == voltage}")
@@ -69,8 +69,8 @@ class matrixWps300s(power_supply):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
-            logger.warning(f"установка тока ответ-{response}")
+        except Exception as e:
+            logger.warning(f"установка тока ответ-{response} {str(e)}")
             response = False
         self.client.close()
         logger.debug(f"статус {response == current}")
@@ -95,7 +95,8 @@ class matrixWps300s(power_supply):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка запроса напряжения {str(e)}")
             response = False
         self.client.close()
         return response
@@ -109,7 +110,8 @@ class matrixWps300s(power_supply):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка запроса тока {str(e)}")
             response = False
         self.client.close()
         return response
@@ -123,7 +125,8 @@ class matrixWps300s(power_supply):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка запроса напряжения {str(e)}")
             response = False
         self.client.close()
         return response
@@ -137,7 +140,8 @@ class matrixWps300s(power_supply):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка запроса тока {str(e)}")
             response = False
         self.client.close()
         return response

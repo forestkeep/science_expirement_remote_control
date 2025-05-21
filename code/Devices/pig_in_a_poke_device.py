@@ -89,7 +89,8 @@ class pigInAPoke(base_device):
 			try:
 				text_time = float(text_timeout)
 				self.setting_window.timeout_line.setStyleSheet(ready_style_border)
-			except:
+			except Exception as e:
+				logger.warning(e)
 				status1 = False
 				self.setting_window.timeout_line.setStyleSheet(not_ready_style_border)
 

@@ -10,18 +10,16 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 
-import copy
 import enum
 import logging
 import time
 
-import numpy
 from PyQt5.QtWidgets import QApplication
 
 from Analyse_in_installation import analyse
 from Devices.Classes import not_ready_style_background, ready_style_background
 from shared_buffer_manager import _process_received_data
-from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe, create_clients, ExperimentState
+from functions import clear_queue, clear_pipe, ExperimentState
 
 logger = logging.getLogger(__name__)
 

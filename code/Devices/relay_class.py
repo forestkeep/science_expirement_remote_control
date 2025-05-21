@@ -446,7 +446,8 @@ class relayPr1Class(base_device):
             if isinstance(ans, ModbusIOException):
                 return False
 
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка записи регистра {str(e)}")
             return False
         return True
 
@@ -463,7 +464,8 @@ class relayPr1Class(base_device):
                 return False
 
             return ans
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка чтения регистров {str(e)}")
             return False
 
 class chActPR(base_ch):

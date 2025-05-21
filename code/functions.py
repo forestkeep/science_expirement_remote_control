@@ -12,11 +12,8 @@ import datetime
 from multiprocessing import Queue
 from queue import Empty
 from pymodbus.client import ModbusSerialClient
-from PyQt5 import QtGui, QtWidgets
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication
 
-from Adapter import Adapter, instrument
+from Adapter import Adapter
 import logging
 
 logger = logging.getLogger(__name__)

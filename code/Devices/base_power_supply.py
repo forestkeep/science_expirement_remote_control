@@ -854,7 +854,8 @@ class basePowerSupply(base_device):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка запроса напряжения: {str(e)}")
             response = False
         self.client.close()
         return response
@@ -868,7 +869,8 @@ class basePowerSupply(base_device):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка запроса тока {str(e)}")
             response = False
         self.client.close()
         return response
@@ -881,24 +883,22 @@ class basePowerSupply(base_device):
         try:
             response = self.client.readline().decode().strip()
             response = float(response)
-        except:
+        except Exception as e:
+            logger.warning(f"ошибка запроса напряжения {str(e)}")
             response = False
         self.client.close()
         return response
 
     def _get_setting_current(self, ch_num) -> float:
         """возвращает значение установленного тока канала"""
-        print(3333333)
         self.select_channel(ch_num)
-        print(4444434)
         self.client.write( self.ask_volt_cmd )
         time.sleep(0.2)
         try:
             response = self.client.readline().decode().strip()
-            print(f"{response=}")
             response = float(response)
         except Exception as e:
-            print(f"{e=}")
+            logger.warning(f"ошибка запроса тока {str(e)}")
             response = False
         self.client.close()
         return response
