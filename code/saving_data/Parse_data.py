@@ -127,10 +127,10 @@ class saving_data:
                 return dev
         return False
 
-    def save_data(self, input_file_path, output_file_path, output_type, result_name, result_description):
+    def save_data(self, input_file_path, output_file_path, output_type, result_name, result_description, meta_data):
 
         self.__parse_data(input_file_path)
-        self.resul_df = self.build_data_frame(result_description)
+        self.resul_df = self.build_data_frame(result_description, meta_data)
 
         if not result_name:
             result_name = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
@@ -257,7 +257,7 @@ class saving_data:
                                     else:
                                         dev.data[param[0]] = ['fail'] * (time_data_len - 1) + [param[1]]
                                     
-    def build_data_frame(self, result_description = None) -> pandas.DataFrame:
+    def build_data_frame(self, result_description = None, meta_data = None) -> pandas.DataFrame:
         column_number = 0
         max_dev_data_len = 0
         max_dev_set_len = 0
@@ -275,6 +275,12 @@ class saving_data:
             if result_description:
                 if h == 0:
                     data_frame[h].append(result_description)
+                else:
+                    data_frame[h].append(" ")
+
+            if meta_data:
+                if h == 0:
+                    data_frame[h].append(meta_data)
                 else:
                     data_frame[h].append(" ")
 
@@ -376,11 +382,12 @@ class saving_data:
 class saving_data_processing:
         def __init__(self):
             self.saving_data = threading.Thread(target=self.run_saving)
-        def set_parameters(self, input_file_path, output_file_path, output_type, is_delete_buf_file, result_name, result_description):
+        def set_parameters(self, input_file_path, output_file_path, output_type, is_delete_buf_file, result_name, result_description, meta_data):
             self.input_file_path = input_file_path
             self.output_file_path = output_file_path
             self.output_type = output_type
             self.is_delete_buf_file = is_delete_buf_file
+            self.meta_data = meta_data
             self.result_name = "Result"
             self.result_description = ""
             if result_name:
@@ -395,7 +402,7 @@ class saving_data_processing:
             message = ""
 
             self.output_file_path, message, status = save.save_data(
-                    self.input_file_path, self.output_file_path, self.output_type, self.result_name, self.result_description
+                    self.input_file_path, self.output_file_path, self.output_type, self.result_name, self.result_description, self.meta_data
                 )
             
             if status:
@@ -411,8 +418,11 @@ class saving_data_processing:
                 self.adress_return(status = status, output_file_path = self.output_file_path, message = message)
 
 def process_and_export(
-    input_file_path, output_file_path, output_type, result_name, result_descriptions,  is_delete_buf_file, func_result
+    input_file_path, output_file_path, output_type, meas_session_data,  is_delete_buf_file, func_result
 ):
+    result_name = meas_session_data.session_name
+    result_descriptions = meas_session_data.session_description
+    meta_data = meas_session_data.get_meta_data()
     save = saving_data_processing()
     save.set_parameters(
         input_file_path, 
@@ -420,7 +430,8 @@ def process_and_export(
         output_type, 
         is_delete_buf_file,
         result_name,
-        result_descriptions
+        result_descriptions,
+        meta_data
     )
     save.set_adress_return(func_result)
     save.saving_data.start()

@@ -263,11 +263,7 @@ class experimentControl( ):
 
 			#ждем пока все данные будут переданы в основной поток
 			status_send = True
-			text = QApplication.translate('exp_flow', "Обрабатываем данные. Осталось пакетов: {}")
-			text = text.format(len(self.shared_buffer_manager.buffer))
-			self.important_queue.put(("set_state_text", {"text": text}))
 			start_save_time = time.perf_counter()
-			print("начали обрабатывать оставшиеся данные в буфере")
 			
 			self.shared_buffer_manager.max_single_pending = 50#уыеличиваем количество отправляемых за раз пакетов
 			while status_send:
@@ -279,8 +275,6 @@ class experimentControl( ):
 					self.important_queue.put(("set_state_text", {"text": text}))
 
 			self.important_queue.put(("finalize_experiment", {"error": error, "error_start_exp": error_start_exp}))
-
-			print("Отправили команду остановки эксперимента")
 
 			time.sleep(1)
 

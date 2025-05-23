@@ -23,7 +23,7 @@ class subscribe:
 
     def add_subscriber(self, sub):
         self.subscribers.append(sub)
-        logger.info(f"Добавлен подписчик {sub} в подписку {self.name}")
+        logger.debug(f"Добавлен подписчик {sub} в подписку {self.name}")
 
     def remove_all_subscribers(self):
         self.subscribers = []

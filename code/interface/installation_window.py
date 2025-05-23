@@ -15,6 +15,7 @@ import os
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtWidgets import QSizePolicy, QSplitter
 
 from Devices.Classes import (not_ready_style_background,
                              not_ready_style_border, ready_style_background,
@@ -312,7 +313,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.exp_diagram = exp_diagram
         self.exp_call_stack = exp_call_stack
 
-        base_window.resize(self.N*120+10+500, 600)
+        base_window.resize(self.N*120+10+600, 700)
 
         self.horLayout = QtWidgets.QHBoxLayout()
         self.horLayout.setObjectName("horLayout")
@@ -446,10 +447,30 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.schematic_exp_name = QtWidgets.QLabel()
         self.schematic_exp_name.setAlignment(QtCore.Qt.AlignCenter)
         self.schematic_exp_name.setFont(font)
+        #===============================
+        splitter = QSplitter()
+        splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        splitter.setOrientation(0)
+
+        splitter.addWidget(self.scroll_area_diagram)
+        splitter.addWidget(self.scroll_area_stack)
+
+        splitter.setHandleWidth(1)
+
+        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(1, 2)
+
+
+        #one_deca_part = int(self.width()/10)
+        #splitter.setSizes([one_deca_part, one_deca_part*9, 0])
+        #==============================
 
         self.verticalLayout_2.addWidget(self.schematic_exp_name)
-        self.verticalLayout_2.addWidget(self.scroll_area_diagram, stretch=10)
-        self.verticalLayout_2.addWidget(self.scroll_area_stack, stretch=6)
+
+        self.verticalLayout_2.addWidget(splitter, stretch=12)
+        #self.verticalLayout_2.addWidget(self.scroll_area_diagram, stretch=10)
+        #self.verticalLayout_2.addWidget(self.scroll_area_stack, stretch=6)
         
         self.verticalLayout_2.addWidget(self.open_graph_button)
         # ================================================================

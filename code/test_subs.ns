@@ -57,7 +57,7 @@
                     "input_connect": "ground",
                     "filters": "line",
                     "frequency": 400.0,
-                    "amplitude": true
+                    "amplitude": 3
                 },
                 "state": "active"
             }

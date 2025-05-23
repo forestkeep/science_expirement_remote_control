@@ -11,6 +11,7 @@
 
 import logging
 import os
+import threading
 
 import time
 import json
@@ -261,14 +262,14 @@ class installation_class( ExperimentBridge, analyse):
             ############################
 
             logger.debug("все каналы имеют статус настроен")
-            if self.analyse_com_ports():
+            matrix = self.get_call_matrix()
 
-                # если оказались в этой точке, значит приборы настроены корректно и нет проблем с конфликтами ком портов, если подключение не будет установлено, то ключ снова будет сброшен
-                self.confirm_devices_parameters()
-                self.set_priorities()
-                self.cycle_analyse()
-                self.is_experiment_endless = self.analyse_endless_exp()
-                self.current_state = ExperimentState.READY
+            self.cycle_analyse(matrix)
+            self.is_experiment_endless = self.analyse_endless_exp( matrix )
+            ans_com = self.analyse_com_ports()
+            ans_corr_call = self.is_correct_call_stack(matrix)
+            if (ans_com and ans_corr_call) or self.is_debug:
+                    self.current_state = ExperimentState.READY
             else:
                 self.current_state = ExperimentState.PREPARATION
 
@@ -706,20 +707,27 @@ class installation_class( ExperimentBridge, analyse):
         
     def extract_saved_installlation(self, fileName) -> bool:
         status, buffer = self.read_info_by_saved_installation(fileName)
+
         if status:
             self.show_window_installation()
             self.timer_open = QTimer()
             self.timer_open.timeout.connect(lambda: self.timer_open_timeout(buffer, fileName))
+            self.timer_open.setSingleShot(True)
             self.timer_open.start(800)
             return True
         else:
             return False
 
     def timer_open_timeout(self, buffer, fileName):
-        self.timer_open.stop()
         self.add_parameter_devices(buffer)
         self.installation_window.setWindowTitle("Experiment control - " + fileName + " " + self.version_app)
         self.way_to_save_installation_file = fileName
+
+        self.thread_scan_resources = threading.Thread(target=self._search_resources)
+        self.thread_scan_resources.daemon = True
+        self.stop_scan_thread = False
+
+        self.thread_scan_resources.start()
 
     def write_data_to_save_installation_file(self, file_path: str) -> bool:
 
@@ -807,7 +815,6 @@ class installation_class( ExperimentBridge, analyse):
 
         self.reconstruct_installation(installation_list, json_devices)
 
-
         return True, buffer
 
     def add_parameter_devices(self, buffer: dict[str, any]):
@@ -867,6 +874,7 @@ class installation_class( ExperimentBridge, analyse):
         if ans == "text(*.txt)":
             options = QtWidgets.QFileDialog.Options()
             options |= QtWidgets.QFileDialog.DontUseNativeDialog
+            options |= QtWidgets.QFileDialog.DontConfirmOverwrite
             result_file, ans = QtWidgets.QFileDialog.getSaveFileName(
                 self.installation_window,
                 QApplication.translate('base_install',"укажите путь сохранения результатов"),
@@ -878,8 +886,6 @@ class installation_class( ExperimentBridge, analyse):
 
             buf_session = measSession()
             buf_session.ask_session_name_description()
-            result_name = buf_session.session_name
-            result_description = buf_session.session_description
 
             if result_file:
                 if ans == "Книга Excel (*.xlsx)":
@@ -889,8 +895,7 @@ class installation_class( ExperimentBridge, analyse):
                     buf_file,
                     result_file,
                     type_save_file.excel,
-                    result_name,
-                    result_description,
+                    self.buf_session.meas_session_data,
                     False,
                     self.answer_save_results
                 )

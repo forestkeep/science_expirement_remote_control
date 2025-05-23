@@ -55,17 +55,15 @@ class analyse(baseInstallation):
 
         return time_lines
 
-    def analyse_endless_exp(self) -> bool:
+    def analyse_endless_exp(self, matrix) -> bool:
         """определяет зацикливания по сигналам и выдает предупреждение о бесконечном эксперименте"""
 
         '''эксперимент будет бесконечен:
         - в случае, если есть минимум 2 канала с тригером таймером и количеством шагов, равном "пока активны другие приборы"
         - в случае, если в зацикленной линии ни один прибор не имеет конечное количество шагов"'''
-        sourses = self.cycle_analyse()
+        sourses = self.cycle_analyse( matrix )
         if sourses:
-            logger.info(f"зацикливание обнаружено {sourses}")
-            for sourse in sourses:
-                first = sourse
+            logger.warning(f"зацикливание обнаружено {sourses}")
 
         first_array = copy.deepcopy(list(self.dict_active_device_class.keys()))
 
@@ -74,9 +72,6 @@ class analyse(baseInstallation):
         for dev in first_array:
             name.append(dev)
         i = 0
-        sourse_lines = []
-        array = name
-        cycle_device = []
 
         # ----------анализ по таймерам-----------------------
         experiment_endless = False
@@ -96,7 +91,7 @@ class analyse(baseInstallation):
         # --------------------------------------------------
 
         # -----------------анализ других случаев------------
-        sourses = self.cycle_analyse()
+        #sourses = self.cycle_analyse()
         if sourses:
             for sourse in sourses:
                 dev, ch_name = sourse.split()[0], sourse.split()[1]
@@ -161,15 +156,12 @@ class analyse(baseInstallation):
             else:
                 out.append(False)
         return out
-
-    def cycle_analyse(self):
-        """проводим анализ на предмет зацикливания, если оно обнаружено, то необходимо установить флаг готовности одного прибора из цикла, чтобы цикл начался."""
-
-        names = copy.deepcopy(list(self.dict_active_device_class.keys()))
+    
+    def get_call_matrix(self) -> list:
+        "вернет матрицу вызовов триггеров приборов, где по строкам расположены вызовы прибора один за другим"
         sourse = []
         i = 0
 
-        logger.debug("анализируем зацикливания приборов")
         # формируем первую линию сигналов
         for dev, ch in get_active_ch_and_device( self.dict_active_device_class ):
             if dev.get_trigger(ch) == "Внешний сигнал":
@@ -182,10 +174,6 @@ class analyse(baseInstallation):
             # получаем матрицу источников сигналов с количеством столбцом равным количеству каналов в установке и количеством строк на 1 больше, чем столбцом
             matrix_sourse.append(self.get_sourse_line(matrix_sourse[i]))
             i += 1
-        print("матрица сигналов")
-        for row in matrix_sourse:
-            print(row)
-        print("--------------------------------")
 
         # ищем зацикливания, запоминаем первый элемент в столбце и идем по столбцу, если встретим такоц же элемент, то зацикливание обнаружено(кроме false)
         transposed_matrix = []
@@ -196,16 +184,14 @@ class analyse(baseInstallation):
                 transposed_row.append(row[i])
             transposed_matrix.append(transposed_row)
 
-        i = 0
-        for row in transposed_matrix:
-            logger.warning(f"{i} {row=}")
-            i += 1
+        return transposed_matrix
 
-        setted_dev = (
-            []
-        )  # массмив для хранения источников, которые уже были обнаружены в зацикливании и для которых установлена готовность шага
-        for row in transposed_matrix:
-            logger.debug(f"{row=}")
+    def cycle_analyse(self, matrix):
+        """проводит анализ зациливаний в матрице вызовов и возвращает корни всех обнаруженных зацикливаний в случае отсутствия корней вернет пстой список"""
+
+        setted_dev = []  # массмив для хранения источников, которые уже были обнаружены в зацикливании и для которых установлена готовность шага
+        for row in matrix:
+            print(f"{row=}")
             for i in range(1, len(row), 1):
                 if row[0] == False or row[i] in setted_dev:
                     break
@@ -218,9 +204,34 @@ class analyse(baseInstallation):
                     logger.warning(f"установка готовности шага {dev.get_name()} {ch_name}")
                     break
 
-
         return setted_dev
+    
+    def is_correct_call_stack(self, matrix) -> bool:
 
+        ans = True
+        checked = []
+        for row in matrix:
+            has_end_work = False
+            for i in range(1, len(row), 1):
+                if isinstance(row[i], str) and "end_work" in row[i]:
+                    has_end_work = True
+                if row[i] == False or row[i] in checked:
+                    break
+                if row[0] == row[i]:
+                    if has_end_work:
+                        for dev in row:
+                            checked.append(dev)
+
+                        logger.warning(f"в зацикливании есть прибор с триггером окончания работы другого прибора, запрещаем запуск")
+                        ans = False
+                        self.add_text_to_log(f"в цикле:" , status="war")
+                        for dev in row:
+                            self.add_text_to_log(f" {dev} ->", status="war", is_add_time=False)
+                        self.add_text_to_log(f"обнаружен прибор с триггером окончания работы другого прибора, эксперимент остановится навсегда. Измените процедуру эксперимента",
+                                             status="war",
+                                             is_add_time=False)
+
+        return ans
     def get_subscribers(self, signals, trig) -> list[list[str, str]]:
         """возвращает массив пар [имя прибора, имя канала] подписчиков данного сигнала-триггера и всех последующих подписчиков, рекурсивная функция"""
 
@@ -384,9 +395,6 @@ class analyse(baseInstallation):
             except:
                 pass
         self.clients.clear()
-
-        if self.is_debug:
-            status = True
 
         self.is_search_resources = True#разрешение на сканирование ресурсов
         logger.info(f"ВЫход из функции analyse_com_port status={status}\n")

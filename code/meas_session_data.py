@@ -20,7 +20,6 @@ class measSessionData:
     '''
         Объект для хранения данных сессии измерений.
     '''
-
     def __init__(self):
         self.session_name = ''
         self.session_description = ''
@@ -28,6 +27,9 @@ class measSessionData:
         self.session_end_time = ''
         self.session_duration = ''
         self.measurement_parameters = {}
+
+    def get_meta_data(self) -> str:
+        return f"start_time={self.session_start_time}\nend_time={self.session_end_time}\nduration={self.session_duration}"
 
 class measSession():
     '''
@@ -54,8 +56,8 @@ class measSession():
         askwin.exec_()
         return True
     def set_default_session_name_description(self):
-        self.meas_session_data.session_name = None
-        self.meas_session_data.session_description = None
+        self.meas_session_data.session_name = ""
+        self.meas_session_data.session_description = ""
     @property
     def session_name(self) -> str:
         return self.meas_session_data.session_name

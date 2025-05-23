@@ -113,7 +113,7 @@ class baseInstallation:
             ch.set_priority(priority=priority)
             priority += 1
 
-    def add_text_to_log(self, text: str, status: str = None):
+    def add_text_to_log(self, text: str, status: str = None, is_add_time: bool = True):
         logger.debug(f"add_text_to_log {text=} {status=}")
         if status == "err":
             self.installation_window.log.setTextColor(QtGui.QColor("red"))
@@ -124,9 +124,11 @@ class baseInstallation:
         else:
             self.installation_window.log.setTextColor(QtGui.QColor("white"))
 
-        self.installation_window.log.append(
-            (str(datetime.now().strftime("%H:%M:%S")) + " : " + str(text))
-        )
+        if is_add_time:
+            text = str(datetime.now().strftime("%H:%M:%S")) + " : " + str(text)
+        else:
+            text = str(text)
+        self.installation_window.log.append(text)
         self.installation_window.log.ensureCursorVisible()
 
     def set_state_text(self, **kwargs):
@@ -151,7 +153,7 @@ class baseInstallation:
             if self.is_search_resources and not self.is_experiment_running():
                 self.list_resources = instrument.get_resourses()
                 self.list_visa_resources = instrument.get_visa_resourses()
-                time.sleep(0.1)
+                time.sleep(0.3)
 
     def get_list_resources(self) -> list:
         return self.list_resources
@@ -162,6 +164,7 @@ class baseInstallation:
     def set_way_save(self):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        options |= QtWidgets.QFileDialog.DontConfirmOverwrite
         fileName, ans = QtWidgets.QFileDialog.getSaveFileName(
             self.installation_window,
             QApplication.translate('base_install',"укажите путь сохранения результатов"),
@@ -191,14 +194,11 @@ class baseInstallation:
             if self.save_results_now == True:
                 self.save_results_now = False
 
-                session_name, session_description = self.meas_session.session_name, self.meas_session.session_description
-
                 process_and_export(
                     self.buf_file,
                     fileName,
                     self.type_file_for_result,
-                    session_name,
-                    session_description,
+                    self.meas_session.meas_session_data,
                     self.settings_manager.get_setting('is_delete_buf_file')[1],
                     self.answer_save_results
                 )
@@ -243,8 +243,6 @@ class baseInstallation:
 
     def save_results(self) -> bool:
 
-        session_name, session_description = self.meas_session.session_name, self.meas_session.session_description
-
         status, way_to_save = self.settings_manager.get_setting('way_to_save')
         if status and way_to_save:
 
@@ -261,8 +259,7 @@ class baseInstallation:
                 self.buf_file,
                 way_to_save,
                 self.type_file_for_result,
-                session_name,
-                session_description,
+                self.meas_session.meas_session_data,
                 self.settings_manager.get_setting('is_delete_buf_file')[1],
                 self.answer_save_results
             )

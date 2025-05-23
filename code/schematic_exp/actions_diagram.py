@@ -14,9 +14,8 @@ import qdarktheme
 import logging
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QGridLayout, QLabel, QScrollArea,
-                             QSizePolicy, QVBoxLayout, QWidget)
+                             QSizePolicy, QVBoxLayout, QWidget, QSplitter)
 from dataclasses import dataclass
-import time
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +65,7 @@ class actDiagramWin(QWidget):
         self.names_widget = QWidget()
         self.names_layout = QGridLayout(self.names_widget)
         self.names_layout.setContentsMargins(5, 5, 5, 5)
-        self.names_layout.setSpacing(0)
+        self.names_layout.setSpacing(5)
         
         self.scroll_area_hind = QScrollArea()
         self.scroll_area_hind.setWidget(self.names_widget)
@@ -87,10 +86,24 @@ class actDiagramWin(QWidget):
         self.scroll_area_horizontal.verticalScrollBar().valueChanged.connect(
             self.scroll_area_hind.verticalScrollBar().setValue
         )
+
+        splitter = QSplitter()
+        splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        splitter.setOrientation(1)
+
+        splitter.addWidget(self.scroll_area_hind)
+        splitter.addWidget(self.scroll_area_horizontal)
+
+        splitter.setHandleWidth(1)
+
+        splitter.setStretchFactor(0, 1)
+        splitter.setStretchFactor(1, 5)
         
-        main_layout_horizontal.addWidget(self.scroll_area_hind, 1)
-        main_layout_horizontal.addWidget(self.scroll_area_horizontal, 5)
-        main_layout.addWidget(main_widget)
+        #main_layout_horizontal.addWidget(self.scroll_area_hind, 1)
+        #main_layout_horizontal.addWidget(self.scroll_area_horizontal, 5)
+        #main_layout.addWidget(main_widget)
+        main_layout.addWidget(splitter)
 
 @dataclass
 class actorInfo:
@@ -260,6 +273,7 @@ class tester_diag(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
     qdarktheme.setup_theme()
     import random
     import gc

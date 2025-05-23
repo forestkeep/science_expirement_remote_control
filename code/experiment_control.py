@@ -61,7 +61,6 @@ class ExperimentBridge(analyse):
 
         min_elapsed = int((time.perf_counter() - self.exp_start_time) / 60)
         sec_elapsed = int((time.perf_counter() - self.exp_start_time) % 60)
-        logger.warning(f"{self.remaining_exp_time=}")
 
         if self.is_experiment_running():
 
@@ -160,12 +159,20 @@ class ExperimentBridge(analyse):
     def finalize_experiment(self, error=False, error_start_exp=False):
         self.current_state = ExperimentState.COMPLETED
 
-        #self.timer_for_connection_main_exp_thread.stop()
         self.timer_second_thread_tasks.stop()
-        #self.update_pbar( 0 )
-        #self.installation_window.label_time.setText( "" )
         self.timer_for_receive_data_exp.stop()
         self.graph_controller.stop_session_running( self.current_session_graph_id )
+
+
+        clear_pipe(self.pipe_exp)
+        clear_queue(self.exp_second_queue)
+        clear_queue(self.exp_third_queue)
+
+        self.pipe_exp.close()
+        self.exp_second_queue.close()
+        self.exp_third_queue.close()
+
+        self.exp_call_stack.activate_all_actors()
 
         while not self.exp_first_queue.empty() or not self.important_exp_queue.empty():
             self.set_state_text(text = QApplication.translate('exp_flow',"Обработка мета данных..."))
@@ -184,8 +191,14 @@ class ExperimentBridge(analyse):
             self.add_text_to_log( text )
             self.show_information_window( text )
 
-
         if self.has_unsaved_data:
+            end_time = time.perf_counter()
+            duration = end_time - self.exp_start_time
+            start_time_local = time.localtime(time.time() - duration)
+
+            self.meas_session.meas_session_data.session_end_time = time.strftime("%H:%M:%S", time.localtime())
+            self.meas_session.meas_session_data.session_start_time = time.strftime("%H:%M:%S", start_time_local)
+            self.meas_session.meas_session_data.session_duration = f"{round(duration, 3)} sek"
 
             self.set_state_text(text = QApplication.translate('exp_flow',"Сохранение результатов"))
 
@@ -204,21 +217,6 @@ class ExperimentBridge(analyse):
                     self.save_results()
                 except Exception as e:
                     logger.warning(f"не удалось сохранить результаты {str(e)}", self.buf_file)
-
-        clear_pipe(self.pipe_exp)
-
-        clear_queue(self.exp_second_queue)
-        clear_queue(self.exp_third_queue)
-
-        self.pipe_exp.close()
-
-        self.exp_first_queue.close()
-        self.exp_second_queue.close()
-        self.exp_third_queue.close()
-
-        self.important_exp_queue.close()
-
-        self.exp_call_stack.activate_all_actors()
 
         self.prepare_for_reexperiment()
 

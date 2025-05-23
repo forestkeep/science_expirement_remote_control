@@ -77,7 +77,6 @@ class Ui_MainWindow(object):
         self.open_test_commands.setObjectName("open_test_commands")
         self.open_test_commands.triggered.connect(self.main_class.open_test_cmd)
 
-
         self.services.addAction(self.open_graph)
         self.services.addAction(self.open_test_commands)
 
