@@ -12,6 +12,7 @@
 import sys
 import qdarktheme
 import logging
+import copy
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QGridLayout, QLabel, QScrollArea,
                              QSizePolicy, QVBoxLayout, QWidget, QSplitter)
@@ -187,8 +188,6 @@ class actDiagram:
         for lst in self.actor_actions.values():
             del lst[1:]
 
-        
-        
     def remove_actor(self, actor_name):
         """Удаляет прибор и связанные с ним действия"""
         actor = self.actors.get(actor_name)
@@ -219,6 +218,12 @@ class actDiagram:
                 self.diagram.names_layout.addWidget(a.label, a.number_row, 0)
 
         return True
+    
+    def remove_all_actors(self):
+        actors_list = copy.deepcopy(list(self.actors.keys()))
+        for actor in actors_list:
+            self.remove_actor(actor)
+        self.current_number = 1
 
 class tester_diag(QWidget):
     def __init__(self, diag):

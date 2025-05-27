@@ -72,12 +72,12 @@ class sr830Class(base_device):
             str(self.active_channel_meas.dict_buf_parameters["amplitude"])
         )
         self.setting_window.sourse_meas_enter.setCurrentText(
-            self.active_channel_meas.dict_buf_parameters["sourse/time"]
+            str(self.active_channel_meas.dict_buf_parameters["sourse/time"])
         )
         self.setting_window.boudrate.setCurrentText(
-            self.dict_buf_parameters["baudrate"]
+            str(self.dict_buf_parameters["baudrate"])
         )
-        self.setting_window.comportslist.setCurrentText(self.dict_buf_parameters["COM"])
+        self.setting_window.comportslist.setCurrentText( str(self.dict_buf_parameters["COM"]) )
 
         number, factor, dec_factor = self.get_parts_time_const(
             float(self.active_channel_meas.dict_buf_parameters["time_const"])
@@ -101,19 +101,19 @@ class sr830Class(base_device):
         self.setting_window.sensitivity_enter_decimal_factor.setCurrentText(dec_factor)
 
         self.setting_window.input_channels_enter.setCurrentText(
-            self.active_channel_meas.dict_buf_parameters["input_channel"]
+            str(self.active_channel_meas.dict_buf_parameters["input_channel"])
         )
         self.setting_window.input_type_enter.setCurrentText(
-            self.active_channel_meas.dict_buf_parameters["input_type"]
+            str(self.active_channel_meas.dict_buf_parameters["input_type"])
         )
         self.setting_window.connect_ch_enter.setCurrentText(
-            self.active_channel_meas.dict_buf_parameters["input_connect"]
+            str(self.active_channel_meas.dict_buf_parameters["input_connect"])
         )
         self.setting_window.reserve_enter.setCurrentText(
-            self.active_channel_meas.dict_buf_parameters["reserve"]
+            str(self.active_channel_meas.dict_buf_parameters["reserve"])
         )
         self.setting_window.filters_enter.setCurrentText(
-            self.active_channel_meas.dict_buf_parameters["filters"]
+            str(self.active_channel_meas.dict_buf_parameters["filters"])
         )
         # ==========end==========
 
@@ -448,6 +448,9 @@ class sr830Class(base_device):
 
     def action_before_experiment(self, number_of_channel) -> bool:
         self.switch_channel(number_of_channel)
+
+        if not hasattr(self, "command") or not self.command:
+            self.command = commandsSR830(self)
 
         # ===Действия перед экспериментом, запись настроек в прибор===
         pause = 0.1

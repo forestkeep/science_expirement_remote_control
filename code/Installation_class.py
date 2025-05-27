@@ -499,7 +499,8 @@ class installation_class( ExperimentBridge, analyse):
 
                     self.add_text_to_log(text = QApplication.translate('main install',"настройка приборов") + ".. ")
 
-                    self.exp_call_stack.clear_action_field()
+                    #self.exp_call_stack.clear_action_field()
+                    self.exp_call_stack.remove_all_actors()
 
                     self.exp_start_time = time.perf_counter()
                     self.adjusted_start_time = time.perf_counter()
@@ -895,7 +896,7 @@ class installation_class( ExperimentBridge, analyse):
                     buf_file,
                     result_file,
                     type_save_file.excel,
-                    self.buf_session.meas_session_data,
+                    buf_session.meas_session_data,
                     False,
                     self.answer_save_results
                 )

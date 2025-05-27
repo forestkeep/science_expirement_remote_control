@@ -93,6 +93,7 @@ class saving_data:
             excel_writer.close()
 
         return output_file_path, message, status
+    
     def get_free_file_name(self, output_file_path):
         output_file_path = output_file_path[:-5] + "(0).xlsx"
         for i in range(1, 100):
@@ -103,6 +104,7 @@ class saving_data:
                 continue
             else:
                 return output_file_path
+            
     def __save_txt(self, output_file_path, result_name):
         status = False
 
@@ -145,6 +147,7 @@ class saving_data:
             logger.warning(f"тип сохранения не определен {output_type}")
             message = "Тип сохранения не определен"
             status = False
+
         return output_file_path, message, status
 
     def __parse_data(self, input_file_path):

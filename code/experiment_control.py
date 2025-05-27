@@ -163,16 +163,9 @@ class ExperimentBridge(analyse):
         self.timer_for_receive_data_exp.stop()
         self.graph_controller.stop_session_running( self.current_session_graph_id )
 
-
         clear_pipe(self.pipe_exp)
         clear_queue(self.exp_second_queue)
         clear_queue(self.exp_third_queue)
-
-        self.pipe_exp.close()
-        self.exp_second_queue.close()
-        self.exp_third_queue.close()
-
-        self.exp_call_stack.activate_all_actors()
 
         while not self.exp_first_queue.empty() or not self.important_exp_queue.empty():
             self.set_state_text(text = QApplication.translate('exp_flow',"Обработка мета данных..."))
@@ -217,6 +210,12 @@ class ExperimentBridge(analyse):
                     self.save_results()
                 except Exception as e:
                     logger.warning(f"не удалось сохранить результаты {str(e)}", self.buf_file)
+
+        self.exp_call_stack.activate_all_actors()
+        
+        self.pipe_exp.close()
+        self.exp_second_queue.close()
+        self.exp_third_queue.close()
 
         self.prepare_for_reexperiment()
 

@@ -313,7 +313,7 @@ if __name__ == "__main__":
     FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
 
     console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
+    console.setLevel(logging.WARNING)
     console.setFormatter(logging.Formatter(FORMAT))
 
     folder_path = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")
@@ -324,7 +324,7 @@ if __name__ == "__main__":
 
     file_handler = RotatingFileHandler( log_file_path, maxBytes=1000000, backupCount=5 )
     
-    file_handler.setLevel( logging.INFO )
+    file_handler.setLevel( logging.WARNING )
     file_handler.setFormatter( logging.Formatter(FORMAT) )
 
     logging.basicConfig(handlers=[file_handler, console], level=logging.DEBUG)

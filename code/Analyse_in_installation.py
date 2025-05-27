@@ -191,7 +191,6 @@ class analyse(baseInstallation):
 
         setted_dev = []  # массмив для хранения источников, которые уже были обнаружены в зацикливании и для которых установлена готовность шага
         for row in matrix:
-            print(f"{row=}")
             for i in range(1, len(row), 1):
                 if row[0] == False or row[i] in setted_dev:
                     break

@@ -14,6 +14,8 @@ from typing import Dict, Any, Optional
 from PyQt5.QtCore import pyqtSignal, QObject
 import logging
 import numpy as np
+import pandas as pd
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +117,9 @@ class graphDataManager( QObject ):
 				returned_y2[key] = self.__sessions_data[data_type].data[key]
 
 		return returned_x, returned_y1, returned_y2
+	
+	def get_all_data(self):
+		return self.__sessions_data
 	
 	def get_name(self):
 		return self.name
@@ -353,7 +358,7 @@ class graphDataManager( QObject ):
 					try:
 						value = float(value)
 					except ValueError:
-						logger.warning(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
+						logger.info(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
 						continue
 
 				if name not in data[device][channel]:
@@ -362,6 +367,73 @@ class graphDataManager( QObject ):
 				data[device][channel][name][1].append(time)
 			#print(f"{data=}")
 			return self.add_measurement_data(data)
+	
+	def create_dataframe(self) -> pd.DataFrame:
+		"""
+		Формирует DataFrame с мультииндексом и уникальными столбцами.
+		Дубликаты данных устраняются за счет проверки уникальности параметров.
+		"""
+
+		groups = defaultdict(list)
+		unique_params = defaultdict(set)
+
+		for data_type in ['osc', 'main']:
+			session = self.__sessions_data.get(data_type)
+			if session and session.data:
+				for mtd in session.data.values():
+					device = mtd.device.strip() if mtd.device else ""
+					ch = mtd.ch.strip() if mtd.ch else ""
+					group_key = (device, ch)
+					
+					if mtd.param not in unique_params[group_key]:
+						groups[group_key].append(mtd)
+						unique_params[group_key].add(mtd.param)
+
+		max_length = 0
+		for group_key, mtd_list in groups.items():
+			if mtd_list:
+				base_time = mtd_list[0].num_or_time
+				if all(np.array_equal(mtd.num_or_time, base_time) for mtd in mtd_list):
+					max_length = max(max_length, len(base_time))
+
+		columns = []
+		data = {}
+		specified_data = self.current_spicified_data
+		added_columns = set()
+
+		for (device, ch), mtd_list in sorted(groups.items(), key=lambda x: (x[0][0], x[0][1])):
+			if not mtd_list:
+				continue
+
+			base_time = mtd_list[0].num_or_time
+			if not all(np.array_equal(mtd.num_or_time, base_time) for mtd in mtd_list):
+				continue
+
+			time_key = (device, ch, specified_data)
+			if time_key not in added_columns:
+				padded_time = np.pad(base_time, (0, max_length - len(base_time)), 
+								mode='constant', constant_values=np.nan)
+				columns.append(time_key)
+				data[time_key] = padded_time
+				added_columns.add(time_key)
+
+			for mtd in mtd_list:
+				param_key = (device, ch, mtd.param)
+				if param_key not in added_columns:
+					padded_vals = np.pad(mtd.par_val, (0, max_length - len(mtd.par_val)),
+									mode='constant', constant_values=np.nan)
+					columns.append(param_key)
+					data[param_key] = padded_vals
+					added_columns.add(param_key)
+
+		df = pd.DataFrame(data).fillna('-')
+		df = df.reindex(columns=columns)
+		df.columns = pd.MultiIndex.from_tuples(
+			columns,
+			names=["Прибор", "Канал", "Параметр"]
+		)
+		
+		return df
 
 def get_dict_depth(d):
 	if not isinstance(d, dict)  or not d:

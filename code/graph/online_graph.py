@@ -14,6 +14,7 @@ import time
 import random
 
 import logging
+import json
 from PyQt5.QtCore import QPoint, QTimer, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
@@ -230,6 +231,16 @@ class GraphSession(QWidget):
         self.graph_main.set_default()
         self.graph_wave.set_default()
 
+    def get_all_session_data(self):
+        print(self.data_manager.create_dataframe())
+        '''
+        returned_data = { "name": self.session_name, "id": self.session_id, "notification": self.notification, "data": self.data_manager.get_all_data() }
+        test_name = "test"
+        with open(f"{test_name}.json", 'w') as outfile:
+            json.dump(returned_data, outfile, indent=4)
+        return returned_data
+        '''
+
     def closeEvent(self, event):
         self.graph_win_close_signal.emit(1)
 
@@ -288,6 +299,8 @@ class sessionController():
         if self.graph_sessions.get(session_id):
             self.graph_sessions[session_id].data_manager.stop_session_running()
             self.session_selector.set_session_status(session_id=session_id, status = "Exp completed")
+            print("Exp completed")
+            self.graph_sessions[session_id].get_all_session_data()
 
     def start_new_session(self, session_name: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None) -> int:
         session_id = self.session_selector.get_free_id()
@@ -295,6 +308,9 @@ class sessionController():
         if is_experiment_running:
             status = "running"
         self.session_selector.add_session({'id': session_id, 'name': session_name, 'status': status})
+
+        self.change_session(session_id)
+
         return session_id
 
     def __create_session(self, session_name: str, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None):
@@ -321,8 +337,8 @@ class sessionController():
         self.graph_sessions[session_id].deleteLater()
         del self.graph_sessions[session_id]
 
-    def change_session_name(self, session_id: str, session_name: str):
-        self.graph_sessions[session_id].session_name = session_name
+    def change_session_name(self, session_id: str, new_session_name: str):
+        self.graph_sessions[session_id].session_name = new_session_name
 
     def update_session_data(self, session_id: str, data: dict) -> bool:
         if self.graph_sessions.get(session_id) is None:

@@ -299,6 +299,9 @@ class base_device():
                                 float(self.setting_window.sourse_meas_enter.currentText())
                             except:
                                 self.active_channel_meas.is_time_meas_correct = False
+                    else:
+                        if not self.setting_window.sourse_meas_enter.currentText():
+                            self.active_channel_meas.is_time_meas_correct = False
 
                     try:
                         if int(self.setting_window.num_meas_enter.currentText()) < 1:
