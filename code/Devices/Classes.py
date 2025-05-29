@@ -760,9 +760,9 @@ class base_device():
                 status = True
 
         for param, value in parameters["settings"].items():
-            if value == "false" or value == False:
+            if value == "false" or value is False:
                 self.active_channel.dict_buf_parameters[param] = False
-            elif value == "true" or value == True:
+            elif value == "true" or value is True:
                 self.active_channel.dict_buf_parameters[param] = True
             else:
                 try:
