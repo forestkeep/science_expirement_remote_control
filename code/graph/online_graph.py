@@ -12,6 +12,7 @@
 import sys
 import time
 import random
+import pandas as pd
 
 import logging
 import json
@@ -232,7 +233,11 @@ class GraphSession(QWidget):
         self.graph_wave.set_default()
 
     def get_all_session_data(self):
-        print(self.data_manager.create_dataframe())
+
+        result = self.data_manager.create_dataframe()
+        with pd.ExcelWriter("1254.xlsx", engine='openpyxl', mode='w') as excel_writer:
+            result.to_excel(excel_writer, sheet_name="3434", index=True)
+
         '''
         returned_data = { "name": self.session_name, "id": self.session_id, "notification": self.notification, "data": self.data_manager.get_all_data() }
         test_name = "test"
@@ -286,7 +291,7 @@ class sessionController():
         self.session_selector.current_session_changed.connect(self.change_session)
         self.session_selector.session_deleted.connect(self.delete_session)
         self.session_selector.new_data_imported.connect(self.data_imported)
-        self.session_selector.session_name_changed.connect(self.change_session_name)
+        self.session_selector.session_name_changed.connect(self._session_renamed)
 
         self.graphics_win = GraphWindow(self.controll_sessions_win)
 
@@ -299,47 +304,65 @@ class sessionController():
         if self.graph_sessions.get(session_id):
             self.graph_sessions[session_id].data_manager.stop_session_running()
             self.session_selector.set_session_status(session_id=session_id, status = "Exp completed")
-            print("Exp completed")
+
             self.graph_sessions[session_id].get_all_session_data()
 
-    def start_new_session(self, session_name: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None) -> int:
+    def start_new_session(self, session_name: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None) -> str | bool:
         session_id = self.session_selector.get_free_id()
-        self.__create_session(session_name, session_id, use_timestamps, is_experiment_running, new_data)
-        if is_experiment_running:
-            status = "running"
-        self.session_selector.add_session({'id': session_id, 'name': session_name, 'status': status})
+        is_session_created = self.__create_session(session_name, session_id, use_timestamps, is_experiment_running, new_data)
 
-        self.change_session(session_id)
+        if is_session_created:
+            if is_experiment_running:
+                status = "running"
+            self.session_selector.add_session({'id': session_id, 'name': session_name, 'status': status})
 
-        return session_id
+            self.change_session(session_id)
 
-    def __create_session(self, session_name: str, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None):
+        return session_id if is_session_created else False
+
+    def __create_session(self, session_name: str, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None) -> bool:
         new_session_graph = GraphSession(session_id, session_name)
         try:
             new_session_graph.data_manager.start_new_session(session_id, use_timestamps, is_experiment_running, new_data)
+            logger.info(f"Session {session_id} created")
         except Exception as e:
             logger.warning(f"Failed to start session {session_id} {e}")
+            return False
 
         self.graph_sessions[session_id] = new_session_graph
         self.graphics_win.stack.addWidget(new_session_graph)
 
-    def change_session(self, session_id: int):
+        return True
+
+    def change_session(self, session_id: str):
         if self.graph_sessions.get(session_id) is not None:
             self.graphics_win.stack.setCurrentWidget(self.graph_sessions[session_id])
         else:
             logger.warning(f"Session {session_id} not found")
 
     def data_imported(self,session_name: str, session_id: str, data: dict):
-        self.__create_session(session_name, session_id, new_data=data)
+        status = self.__create_session(session_name, session_id, new_data=data)
+        if status:
+            self.graph_sessions[session_id].data_manager.stop_session_running()
 
     def delete_session(self, session_id: str):
         self.graphics_win.stack.removeWidget(self.graph_sessions[session_id])
         self.graph_sessions[session_id].deleteLater()
         del self.graph_sessions[session_id]
 
-    def change_session_name(self, session_id: str, new_session_name: str):
-        self.graph_sessions[session_id].session_name = new_session_name
+    def _session_renamed(self, session_id: str, new_session_name: str):
+        if self.graph_sessions.get(session_id) is not None:
+            self.graph_sessions[session_id].session_name = new_session_name
+        else:
+            logger.warning(f"Session {session_id} not found")
 
+    def change_session_name(self, session_id: str, new_session_name: str) -> bool:
+        if self.graph_sessions.get(session_id) is None:
+            return False
+        self._session_renamed(session_id, new_session_name)
+        self.session_selector.set_session_name(session_id, new_session_name)
+        return True
+    
     def update_session_data(self, session_id: str, data: dict) -> bool:
         if self.graph_sessions.get(session_id) is None:
             return False

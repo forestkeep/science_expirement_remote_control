@@ -202,6 +202,8 @@ class ExperimentBridge(analyse):
                 logger.info("имя сессии и описание устанавливаем дефолтными")
                 self.meas_session.set_default_session_name_description()
 
+            self.graph_controller.change_session_name(self.current_session_graph_id, self.meas_session.session_name)
+
             if not self.settings_manager.get_setting('way_to_save')[1]:
                 self.set_way_save()
 

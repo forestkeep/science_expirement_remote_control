@@ -19,11 +19,11 @@ except:
 logger = logging.getLogger(__name__)
 
 class SessionWidget(QWidget):
-    session_selected = pyqtSignal(int)  # session_id
-    session_deleted = pyqtSignal(int)
+    session_selected = pyqtSignal(str)  # session_id
+    session_deleted = pyqtSignal(str)
     import_data_requested = pyqtSignal()
     import_oscillograms_requested = pyqtSignal()
-    session_renamed = pyqtSignal(int, str)  # session_id, new_name
+    session_renamed = pyqtSignal(str, str)  # session_id, new_name
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -65,7 +65,7 @@ class SessionWidget(QWidget):
             new_name_item = self.table.item(row, 1)
             
             if session_id_item and new_name_item:
-                session_id = int(session_id_item.text())
+                session_id = session_id_item.text()
                 new_name = new_name_item.text()
                 
                 for session in self.sessions_data:
@@ -79,7 +79,7 @@ class SessionWidget(QWidget):
         self.sessions_data = sessions
         self.table.setRowCount(len(sessions))
         for row, session in enumerate(sessions):
-            self.table.setItem(row, 0, QTableWidgetItem(str(session['id'])))
+            self.table.setItem(row, 0, QTableWidgetItem(session['id']))
             self.table.setItem(row, 1, QTableWidgetItem(session['name']))
             self.table.setItem(row, 2, QTableWidgetItem(session['status']))
 
@@ -125,13 +125,13 @@ class SessionWidget(QWidget):
 
     def _on_cell_clicked(self, row, col):
         session_id = self.table.item(row, 0).text()
-        self.session_selected.emit(int(session_id))
+        self.session_selected.emit(session_id)
 
 class SessionSelectControl(QObject):
-    current_session_changed = pyqtSignal(int)
+    current_session_changed = pyqtSignal(str)
     session_name_changed = pyqtSignal(str, str)
-    session_deleted = pyqtSignal(int)
-    new_data_imported = pyqtSignal(str, int, dict)
+    session_deleted = pyqtSignal(str)
+    new_data_imported = pyqtSignal(str, str, dict)
 
     def __init__(self):
         super().__init__()
@@ -148,6 +148,8 @@ class SessionSelectControl(QObject):
         for session in self.sessions:
             if session['id'] == session_id:
                 session['name'] = new_name
+                logger.info(f"session_name_changed emitted {session_id}")
+                self.session_name_changed.emit(session_id, str(new_name))
 
     def update_view(self):
         self.widget.update_sessions(self.sessions)
@@ -155,8 +157,22 @@ class SessionSelectControl(QObject):
     def handle_session_selected(self, session_id):
         for session in self.sessions:
             if session['id'] == session_id:
+                logger.info(f"current_session_changed emitted {session_id}")
                 self.current_session_changed.emit(session['id'])
                 break
+
+    def set_current_session(self, session_id):
+        for session in self.sessions:
+            if session['id'] == session_id:
+                logger.info(f"current_session_changed emitted {id}")
+                self.current_session_changed.emit(session['id'])
+                break
+
+    def set_session_name(self, session_id, name: str):
+        for session in self.sessions:
+            if session['id'] == session_id:
+                session['name'] = name
+                self.update_view()
 
     def set_session_status(self, session_id, status: str):
         for session in self.sessions:
@@ -166,6 +182,7 @@ class SessionSelectControl(QObject):
                 break
 
     def add_session(self, session_data: dict):
+        logger.info(f"Adding session {session_data}")
         self.sessions.append(session_data)
         self.update_view()
 
@@ -178,8 +195,10 @@ class SessionSelectControl(QObject):
     def get_all_ids(self):
         return [s['id'] for s in self.sessions]
     
-    def get_free_id(self):
-        return max(self.get_all_ids(), default=0) + 1
+    def get_free_id(self) -> str:
+        all_ids = self.get_all_ids()
+        new_id = str( max( [int(s) for s in self.get_all_ids()], default=0) + 1)
+        return new_id
 
     def handle_import_data(self):
 
@@ -240,8 +259,10 @@ class SessionSelectControl(QObject):
                     result[col_] = [ buf, np.array([i for i in range(len(buf))]) ]
 
                 id = self.get_free_id()
-                self.add_session({'id': id, 'name': fileName, 'status': 'imported'})
+                #self.add_session({'id': id, 'name': fileName, 'status': 'imported'})
+                logger.info(f"Data imported emitted {id}")
                 self.new_data_imported.emit(fileName, id, result)
+                self.add_session({'id': id, 'name': fileName, 'status': 'imported'})
 
     def handle_import_osc(self):
         # Логика импорта осциллограмм

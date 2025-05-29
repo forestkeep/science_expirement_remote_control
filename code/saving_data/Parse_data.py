@@ -74,7 +74,6 @@ class saving_data:
 
         if excel_writer is None:
             mode = "w"
-            print(output_file_path)
             excel_writer = pandas.ExcelWriter(
                 output_file_path, 
                 engine='openpyxl', 

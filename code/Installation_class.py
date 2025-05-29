@@ -476,6 +476,16 @@ class installation_class( ExperimentBridge, analyse):
                 status = self.set_depending()#setting subscribers
                 
                 if status:
+                    self.current_session_graph_id = self.graph_controller.start_new_session(session_name=str(datetime.now()),
+                                                                                            use_timestamps=True,
+                                                                                            is_experiment_running=True
+                                                                                            )
+                    
+                    if isinstance(self.current_session_graph_id, bool) and self.current_session_graph_id is False:
+                        self.add_text_to_log(text =QApplication.translate('main install',"Не удалось создать новую сессию измерений"), status = "war")
+                        logger.warning("Не удалось создать новую сессию измерений")
+                        return
+                    
                     self.has_unsaved_data = False
                     
                     self.buf_file = self.create_buf_file()
@@ -492,14 +502,9 @@ class installation_class( ExperimentBridge, analyse):
                     logger.debug("Эксперимент начат" + "Создан файл " + self.buf_file)
                     self.measurement_parameters = {}
 
-                    self.current_session_graph_id = self.graph_controller.start_new_session(session_name=str(datetime.now()),
-                                                                                            use_timestamps=True,
-                                                                                            is_experiment_running=True
-                                                                                            )
-
                     self.add_text_to_log(text = QApplication.translate('main install',"настройка приборов") + ".. ")
 
-                    #self.exp_call_stack.clear_action_field()
+                    self.exp_call_stack.clear_action_field()
                     self.exp_call_stack.remove_all_actors()
 
                     self.exp_start_time = time.perf_counter()
@@ -837,7 +842,6 @@ class installation_class( ExperimentBridge, analyse):
             settings_dev = data["settings"]
             device.set_parameters(settings_dev)
 
-
             for ch in device.channels:
 
                 ch_name = ch.get_name()
@@ -852,7 +856,6 @@ class installation_class( ExperimentBridge, analyse):
                     self.add_text_to_log(text=log_message, status="err")
 
                 else:
-
                     ch_data = data["channels"][ch_name]
                     is_open = ch_data.get("state") != "not active"
                     self.get_device_widget(device.get_name()).set_state_ch_widget(ch.number, is_open)
