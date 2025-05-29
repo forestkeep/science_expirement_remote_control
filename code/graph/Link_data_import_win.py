@@ -57,6 +57,11 @@ class Check_data_import_win(QDialog):
 
             layout_hor.addLayout(lay_combo)
 
+        if not is_osc:
+            self.all_checkbox = QCheckBox(QApplication.translate("GraphWindow","Выбрать все"))
+            lay_columns.addWidget(self.all_checkbox)
+            self.all_checkbox.clicked.connect(self.on_all_checkbox_checked)
+
         self.checkboxes = []
 
         for string in strings:
@@ -77,6 +82,10 @@ class Check_data_import_win(QDialog):
 
     def on_ok(self):
         self.accept()
+
+    def on_all_checkbox_checked(self, checked):
+        for checkbox in self.checkboxes:
+            checkbox.setChecked(checked)
 
     def retranslateUi(self):
         self.setWindowTitle( QApplication.translate("GraphWindow","Мастер импорта") )
