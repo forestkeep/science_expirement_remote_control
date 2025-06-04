@@ -169,16 +169,23 @@ class SharedBufferManager:
 
     def send_data(self) -> bool:
         """Основной метод обработки отправки данных."""
-        if self.state == 0:
+        if self.get_average_metric('put_intervals', 5) > 3:
             self._send_new_data()
-        elif self.state == 1:
             self._handle_acknowledgments()
-        elif self.state == 2:
             self._retry_timeouts()
+        else:
+            if self.state == 0:
+                self._send_new_data()
+            elif self.state == 1:
+                self._handle_acknowledgments()
+            elif self.state == 2:
+                self._retry_timeouts()
 
-        self.state+=1
-        if self.state > 2:
-            self.state = 0
+            #print(f"среднее время добавления данных {self.get_average_metric('put_intervals', 5)}")
+
+            self.state+=1
+            if self.state > 2:
+                self.state = 0
         
         return len(self.buffer) > 0 or len(self.sent_queue) > 0
 
