@@ -13,6 +13,7 @@ import logging
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QDialog, QApplication
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,10 @@ class measSession():
     @property
     def session_name(self) -> str:
         return self.meas_session_data.session_name
+    
+    @session_name.setter
+    def session_name(self, value):
+        self.meas_session_data.session_name = value
     @property
     def session_description(self) -> str:
         return self.meas_session_data.session_description

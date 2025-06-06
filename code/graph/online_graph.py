@@ -235,8 +235,8 @@ class GraphSession(QWidget):
     def get_all_session_data(self):
 
         result = self.data_manager.create_dataframe()
-        with pd.ExcelWriter("1254.xlsx", engine='openpyxl', mode='w') as excel_writer:
-            result.to_excel(excel_writer, sheet_name="3434", index=True)
+        #with pd.ExcelWriter("1254.xlsx", engine='openpyxl', mode='w') as excel_writer:
+        #    result.to_excel(excel_writer, sheet_name="3434", index=True)
 
         '''
         returned_data = { "name": self.session_name, "id": self.session_id, "notification": self.notification, "data": self.data_manager.get_all_data() }
@@ -346,9 +346,15 @@ class sessionController():
             self.graph_sessions[session_id].data_manager.stop_session_running()
 
     def delete_session(self, session_id: str):
-        self.graphics_win.stack.removeWidget(self.graph_sessions[session_id])
-        self.graph_sessions[session_id].deleteLater()
-        del self.graph_sessions[session_id]
+        if self.graph_sessions.get(session_id) is not None:
+            if not self.graph_sessions[session_id].data_manager.is_session_running():   
+                self.graphics_win.stack.removeWidget(self.graph_sessions[session_id])
+                self.graph_sessions[session_id].deleteLater()
+                del self.graph_sessions[session_id]
+                self.session_selector.delete_session(session_id)
+            else:
+                self.graph_sessions[session_id].show_tooltip(QApplication.translate("graph", "Сессию можно удалить только после остановки."))
+                logger.warning(f"Session {session_id} is running. Broke session deletion.")
 
     def _session_renamed(self, session_id: str, new_session_name: str):
         if self.graph_sessions.get(session_id) is not None:
@@ -373,6 +379,11 @@ class sessionController():
             if self.graph_sessions[session_id].session_name == session_name:
                 return session_id
         return None
+    
+    def get_session_name(self, session_id: str) -> str:
+        if self.graph_sessions.get(session_id) is None:
+            return None
+        return self.graph_sessions[session_id].session_name
     
     def decode_add_exp_parameters(self, session_id, entry, time) -> bool:
         if self.graph_sessions.get(session_id) is None:

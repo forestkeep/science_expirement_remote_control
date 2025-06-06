@@ -13,6 +13,7 @@
 import enum
 import logging
 import time
+from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
 
@@ -201,6 +202,12 @@ class ExperimentBridge(analyse):
             else:
                 logger.info("имя сессии и описание устанавливаем дефолтными")
                 self.meas_session.set_default_session_name_description()
+
+            if not self.meas_session.session_name:
+                name = self.graph_controller.get_session_name(self.current_session_graph_id)
+                if not name:
+                    name = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                self.meas_session.session_name = name
 
             self.graph_controller.change_session_name(self.current_session_graph_id, self.meas_session.session_name)
 

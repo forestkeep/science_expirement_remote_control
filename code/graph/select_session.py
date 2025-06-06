@@ -187,9 +187,10 @@ class SessionSelectControl(QObject):
         self.update_view()
 
     def handle_session_deleted(self, session_id):
-        # Логика удаления сессии
-        self.sessions = [s for s in self.sessions if s['id'] != session_id]
         self.session_deleted.emit(session_id)
+
+    def delete_session(self, session_id):
+        self.sessions = [s for s in self.sessions if s['id'] != session_id]
         self.update_view()
 
     def get_all_ids(self):
