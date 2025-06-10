@@ -172,7 +172,7 @@ class oscilloscopeClass(base_device):
                 self.active_channel_meas.dict_buf_parameters[f"BW_Limitch{num_ch}"]
             )
             self.setting_window.com_boxes[num_ch - 1]["Probe"].setCurrentText(
-                self.active_channel_meas.dict_buf_parameters[f"Probech{num_ch}"]
+                str(self.active_channel_meas.dict_buf_parameters[f"Probech{num_ch}"])
             )
             self.setting_window.com_boxes[num_ch - 1]["Invert"].setCurrentText(
                 self.active_channel_meas.dict_buf_parameters[f"Invertch{num_ch}"]
@@ -289,7 +289,7 @@ class oscilloscopeClass(base_device):
                         != "Hand control"
                     ):
                         index = (
-                            self.setting_window.trig_box["Sourse"].currentText()[:-1]
+                            int(self.setting_window.trig_box["Sourse"].currentText()[-1])
                             - 1
                         )
                         self.setting_window.vert_scale_boxes[index][0].setStyleSheet(
@@ -1022,12 +1022,14 @@ class oscilloscopeClass(base_device):
             # ===проведение измерений и действия с прибором===
             if not self.is_debug:
                 timeout = 3
-
+                print("single")
                 self.command.single()
+                print("run")
                 time_stamp = time.perf_counter()
                 while self.command.get_status() != "STOP\n":
                     if time.perf_counter() - time_stamp > timeout:
                         message = QApplication.translate("Device","Остановки по триггеру не произошло, останавливаем принудительно")
+                        print(message)
                         self.command.stop()
             else:
                 pass
