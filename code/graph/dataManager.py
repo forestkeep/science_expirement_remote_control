@@ -28,6 +28,15 @@ class measTimeData:
 	num_or_time: np.array = None
 
 @dataclass
+class oscData:
+	device : str = ''
+	ch : str = ''
+	param: str = ''
+	time_stamp = float
+	par_val: np.array = None
+	steps_time: np.array = None
+
+@dataclass
 class sessionMeasData:
 	data : dict
 	spicified_data : str
@@ -63,10 +72,7 @@ class graphDataManager( QObject ):
 	list_parameters_updated = pyqtSignal(dict)
 	val_parameters_added = pyqtSignal(dict)
 	stop_current_session = pyqtSignal()
-	'''
-	класс предназначен для управления данными для графиков. он менеджерит поток данных - от эксперимента или импортирует их извне.
-	Рассчитывает, отправляет данные в соответсвующий график.
-	'''
+
 	def __init__(self):
 		super().__init__()
 		self.__sessions_data = {}
@@ -176,6 +182,22 @@ class graphDataManager( QObject ):
 		self.__sessions_data['osc'].is_running = False
 		self.stop_current_session.emit()
 
+	def get_filtered_data(self,data_type: str, device: str = None, channel: str = None, param: str = None) -> list[measTimeData]:
+		returned_data = []
+		for data in self.__sessions_data[data_type].data.values():
+			if device:
+				if data.device != device:
+					continue
+			if channel:
+				if data.ch != channel:
+					continue
+			if param:
+				if data.param != param:
+					continue
+			returned_data.append(data)
+
+		return returned_data
+
 	def add_measurement_data(self, new_param: Dict[str, Any]) -> bool:
 		"""
 		Добавление измерительных данных с учетом различной глубины вложенности.
@@ -247,7 +269,6 @@ class graphDataManager( QObject ):
 					is_old_param_udated = True
 				if not ans:
 					return False, is_new_param_added, is_old_param_udated
-				
 		return True, is_new_param_added, is_old_param_udated
 
 	def _handle_one_level_data(self, data: Dict[str, any])  -> bool:
@@ -283,11 +304,11 @@ class graphDataManager( QObject ):
 		key = f"{device}{channel}{param}"
 
 		if "wavech" not in param:
-			val_list = value[0] #[ [[osc1], [osc2]], [time1, time2]]
+			val_list = value[0] #[ [val1, val2], [time1, time2] ]
 		else:
-			val_list = value[0] #[ [val1, val2], [time1, time2]]
+			val_list = value[0] #[ [[osc1], [osc2]], [time1, time2] ]
 
-		time_list = ([i for i in range(len(val_list))] if len(value) == 1 else value[1])
+		time_list = ( [ i for i in range(len(val_list)) ] if len(value) == 1 else value[1] )
 		if len(val_list) != len(time_list):
 			logger.warning(f"Длины списков параметра и времени не равны {device=} {channel=} {param=} {value=}")
 			return False, is_new_param_added, is_old_param_udated
@@ -365,7 +386,6 @@ class graphDataManager( QObject ):
 					data[device][channel][name] = [[], []]
 				data[device][channel][name][0].append(value)
 				data[device][channel][name][1].append(time)
-			#print(f"{data=}")
 			return self.add_measurement_data(data)
 	
 	def create_dataframe(self) -> pd.DataFrame:

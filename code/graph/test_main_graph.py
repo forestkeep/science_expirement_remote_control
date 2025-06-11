@@ -36,7 +36,7 @@ class test_graph:
                 "ch_1": {
                     self.get_param(): [self.get_values(), [0] ],
                     "wavech": [[ch1], [0] ],
-                    "scale": [[step], [0] ],
+                    "step": [[step], [0] ],
                 },
                 
                 "ch_2": {
@@ -45,10 +45,10 @@ class test_graph:
                     self.get_param(): [self.get_values(), [0] ],
                 },
                 
-                "ch_3": {"wavech": [[ch2], [0] ], "scale": [[step], [0] ]},
+                "ch_3": {"wavech": [[ch2], [0] ], "step": [[step], [0] ]},
                 "ch_4": {
                     "wavech": [ [self.generate_random_list(10, 0, 10)], [0] ],
-                    "scale": [[0.002], [0]],
+                    "step": [[0.002], [0]],
                 
                 },
                 
@@ -57,7 +57,7 @@ class test_graph:
             "device4": {
                 "ch_1": {
                     "wavech": [[self.generate_random_list(10, 0, 10)], [0] ],
-                    "scale": [[0.002], [0] ],
+                    "step": [[0.002], [0] ],
                 }
             
             },
@@ -72,7 +72,7 @@ class test_graph:
                     "ch_1": {
                         self.get_param(): [self.get_values(), [0] ],
                         "wavech": [[ch1], [0] ],
-                        "scale": [[step], [0] ],
+                        "step": [[step], [0] ],
                     },
                     "ch_2": {
                         self.get_param(): [self.get_values(), [0] ],
@@ -87,7 +87,7 @@ class test_graph:
                     "ch_1": {
                         self.get_param(): [self.get_values(), [0] ],
                         "wavech": [[ch1], [0] ],
-                        "scale": [[step], [0] ],
+                        "step": [[step], [0] ],
                     },
                     "ch_2": {
                         self.get_param(): [self.get_values(), [0] ],
@@ -216,7 +216,7 @@ class test_graph:
                     ):
                         # Если ключ содержит 'wave', добавляем случайное число в каждый вложенный список
                         value[0] =[self.generate_random_list(
-                                size=10, lower_bound=0, upper_bound=10)]
+                                size=100, lower_bound=0, upper_bound=10)]
                         value[1] = [round(time.time() - self.start_time, 3)]
         return main_dict
 

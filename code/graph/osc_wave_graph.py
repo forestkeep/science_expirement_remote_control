@@ -28,11 +28,15 @@ try:
     from curve_data import hystLoop, oscData
     from Link_data_import_win import Check_data_import_win
     from Message_graph import messageDialog
+    from dataManager import measTimeData
+    from dataManager import relationData
 except:
     from graph.colors import GColors
     from graph.curve_data import hystLoop, oscData
     from graph.Link_data_import_win import Check_data_import_win
     from graph.Message_graph import messageDialog
+    from graph.dataManager import measTimeData
+    from graph.dataManager import relationData
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +49,14 @@ def time_decorator(func):
     return wrapper
 
 class graphOsc:
-    def __init__(self, tablet_page, main_class):
+    def __init__(self, tablet_page, selector_wave, main_class):
         self.page = tablet_page
         self.legend = pg.LegendItem(size=(80, 60), offset=(10, 10))
         self.is_show_warning = True
         self.key_to_update_plot = True
         self.x = []
         self.y = []
+        self.selector_wave = selector_wave
         self.dict_param = {}
 
         self.stack_osc = {}
@@ -114,146 +119,10 @@ class graphOsc:
             except Exception as e:
                 self.new_dev_checked()
                 self.update_num_waveforms()
-
-    def extract_data(self, input_dict):
-        devices = []
-        channels = []
-        wavechs = []
-
-        for (device, channel), wavech_list in input_dict.items():
-            devices.append(device)
-            channels.append(channel)
-            wavechs.extend(wavech_list)
-
-        return devices, channels, wavechs
-
-    def extract_wavech_devices(self, main_dict):
-        wavech_devices = []
-        wavech_channels = {}
-        channel_wavech_keys = {}
-
-        for device, channels in main_dict.items():
-            for channel, data in channels.items():
-                wavech_keys = [key for key in data.keys() if "wavech" in key]
-                if wavech_keys:
-                    wavech_devices.append(device)
-                    if device not in wavech_channels:
-                        wavech_channels[device] = []
-                    wavech_channels[device].append(channel)
-                    channel_wavech_keys[(device, channel)] = wavech_keys
-
-        return channel_wavech_keys
-
-    def extract_ch_with_wave(self, main_dict):
-
-        channel_with_wave = {}
-        for device in main_dict.keys():
-            if device not in channel_with_wave.keys():
-                channel_with_wave[device] = []
-
-            for channel in main_dict[device].keys():
-                if "wavech" in main_dict[device][channel].keys():
-                    channel_with_wave[device].append(channel)
-        return channel_with_wave
-
-    def import_data(self, *args, **kwargs):
-
-        if self.main_class.experiment_controller is not None:
-            if self.main_class.experiment_controller.is_experiment_running():
-                self.main_class.show_tooltip( QApplication.translate("GraphWindow","Дождитесь окончания эксперимента"), timeout=3000)
-                return
-            
-        
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        fileName, ans = QFileDialog.getOpenFileName(
-            caption=QApplication.translate("GraphWindow","укажите путь импорта"),
-            directory="",
-            filter="Книга Excel (*.xlsx)",
-            options=options,
-        )
-        
-        if fileName:
-            if ans == "Книга Excel (*.xlsx)":
-                df = pd.read_excel(fileName, engine='openpyxl')
-
-                if 'time' not in df.columns:
-                    self.is_time_column = False
-
-                df = df.dropna(axis=1, how='all')
-
-                window = Check_data_import_win(sorted([col for col in df.columns]), self.update_dict_param, True)
-                ans = window.exec_()
-                if ans == QDialog.Accepted: 
-                    selected_step = window.step_combo.currentText()
-                    selected_channels = [cb.text() for cb in window.checkboxes if cb.isChecked()]
-                else:
-                    return
-
-                selected_channels.append(selected_step)
-                errors_col = []
-
-                for col in selected_channels:
-                    try:
-                        df[col] = pd.to_numeric(df[col], errors='raise')
-                    except ValueError:
-                        errors_col.append(col)
-                        continue
-                    
-                if errors_col != []:
-                    res = ', '.join(errors_col)
-
-                    text = QApplication.translate("GraphWindow","В столбцах {res} обнаружены данные,\n которые не получается преобразовать в числа.\n При построение эти точки будут пропущены.")
-                    text = text.format(res = res)
-                    self.main_class.show_tooltip( text, timeout=4000)
-
-                selected_channels.pop()
-
-                import_time_scale_column = pd.to_numeric(df[selected_step], errors='coerce')
-
-                import_time_scale = None
-                for scale in import_time_scale_column:
-                    if isinstance(scale, (float, int)) and scale > 0:
-                        import_time_scale = scale
-                        break
-
-                if import_time_scale is None:
-                    message = messageDialog(
-                        title = QApplication.translate("GraphWindow","Сообщение"),
-                        text= QApplication.translate("GraphWindow","Выбранный шаг не является числом или равен нулю, проверьте столбец с шагом времени")
-                    )
-                    return
-                
-
-                dev = {fileName: {}}
-                df = df[[col for col in df.columns if col in selected_channels]]
-                for col in selected_channels:
-                    df[col] = (pd.to_numeric(df[col], errors='coerce'))
-                df = df.dropna()
-                for col in selected_channels:
-                    col_ = col.replace('(', '[').replace(')', ']') + ' wavech'
-                    volt_val = np.array( df[col].tolist() )
-                    dev[fileName][col] = {col_: {0 : volt_val}, "scale": [import_time_scale for i in range(len(volt_val))]}
-
-                self.update_dict_param(new = dev, is_remove_old = False)
-                self.new_dev_checked()
-            
+  
     def initUI(self):
 
         self.tab1Layout = QVBoxLayout()
-        # Add all data source selectors and graph area to tab1Layout
-        self.hor_lay = QHBoxLayout()
-        self.choice_device = QComboBox()
-        self.choice_device_default_text = QApplication.translate('graph_win',"Выберите устройство" )
-        self.choice_device.addItems([""])
-
-        self.choice_device.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.choice_device.setMaximumSize(150, 20)
-
-        self.choice_device.currentTextChanged.connect(lambda: self.new_dev_checked())
-        self.choice_device.currentIndexChanged.connect(lambda: self.new_dev_checked())
-
-        self.hor_lay.addWidget(self.choice_device)
 
         self.graphView = self.setupGraphView()
 
@@ -262,22 +131,13 @@ class graphOsc:
         self.graphView.scene().setClickRadius(20)
         self.legend.setParentItem(self.graphView.plotItem)
 
-
         self.graphView.setLabel("left", self.y_main_axis_label, color="#ffffff")
         self.graphView.setLabel("bottom", self.x_axis_label, color="#ffffff")
         self.graphView.getAxis("left").setGrid(True)
         self.graphView.getAxis("bottom").setGrid(True)
 
-        self.import_data_button = QPushButton(
-            QApplication.translate('graph_win',"Импорт данных")
-        )
-
-        self.import_data_button.setMaximumSize(150, 30)
-        self.import_data_button.clicked.connect(self.import_data)
-
-        self.tab1Layout.addLayout(self.hor_lay)
+        self.tab1Layout.addWidget(self.selector_wave)
         self.tab1Layout.addWidget(self.build_hyst_loop_check)
-        self.tab1Layout.addWidget(self.import_data_button)
 
         splitter = QSplitter()
         splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -306,15 +166,6 @@ class graphOsc:
 
         self.page.subscribe_to_key_press(key = Qt.Key_Escape, callback = self.reset_filters)
 
-        '''
-        Escape: Qt.Key_Escape
-        Space: Qt.Key_Space
-        Enter: Qt.Key_Return или Qt.Key_Enter
-        Control: Qt.Key_Control
-        Shift: Qt.Key_Shift
-        Minus: Qt.Key_Minus
-        Plus: Qt.Key_Plus
-        '''
         self.retranslateUI(self.page)
 
     def click_scene_main_graph(self, event):
@@ -351,7 +202,6 @@ class graphOsc:
 
                 osc.plot_obj.setData(osc.filtered_x_data, osc.filtered_y_data)
 
-        
     def delete_key_press(self):
         self.clear_highlight_loop()
 
@@ -370,51 +220,6 @@ class graphOsc:
         graphView.setMinimumSize(300, 200)
 
         return graphView
-
-    def create_checkbox_layer(self, channels, waves_num):
-        # waves_num = список, в элементах которого указано количество осциллограмм для соответствующего канала
-        layout = QGridLayout()
-        checkboxes = []
-        channels_wave_forms = {}
-
-        for index, name_ch in enumerate(channels):
-            col = index // 4
-            row = (
-                index % 4 + 1
-            )  # Строка для размещения чекбокса и комбобокса, смещение на 1 для лейблов
-
-            if row == 1:  # Лейбл добавляется в первую строку
-                lay = QHBoxLayout()
-                self.label = QLabel()
-                self.label2 = QLabel()
-                lay.addWidget(self.label)
-                lay.addWidget(self.label2)
-                layout.addLayout(lay, 0, col)
-
-            # Создание горизонтального лэйаута для чекбокса и комбобокса
-            lay = QHBoxLayout()
-            checkbox = QCheckBox(name_ch)
-            list_osc = QComboBox()
-            list_osc.addItems([str(i) for i in range(1, waves_num[index] + 1)])
-            lay.addWidget(checkbox)
-            lay.addWidget(list_osc)
-
-            list_osc.currentIndexChanged.connect(lambda: self.checked_channel())
-            layout.addLayout(
-                lay, row, col
-            )  
-            checkboxes.append(checkbox)
-            checkbox.stateChanged.connect(lambda: self.checked_channel())
-            channels_wave_forms[name_ch] = list_osc
-
-        self.tooltip = QLabel("X:0,Y:0")
-        layout.addWidget(self.tooltip)
-
-        for ch, obj in channels_wave_forms.items():
-            ch_name = copy.deepcopy(ch)
-            obj.currentIndexChanged.connect(lambda: self.update_status_vert_line())
-
-        return layout, checkboxes, channels_wave_forms
 
     def create_hyst_calc_layer(self):
 
@@ -645,63 +450,6 @@ class graphOsc:
                 self.graphView_loop.removeItem(loop.plot_obj)
             self.loops_stack.clear()
 
-    def update_num_waveforms(self):
-
-        devices = self.extract_ch_with_wave(self.dict_param)
-
-        current_dev = self.choice_device.currentText()
-        if current_dev == self.choice_device_default_text:
-            pass
-        else:
-            for ch in devices[current_dev]:
-                waves_num = len(self.dict_param[current_dev][ch]["wavech"])
-                current = self.channels_wave_choice[ch].currentText()
-                self.key = False
-                self.channels_wave_choice[ch].clear()
-                self.channels_wave_choice[ch].addItems(
-                    [str(i) for i in range(1, waves_num + 1)]
-                )
-                self.channels_wave_choice[ch].setCurrentText(current)
-                self.key = True
-
-    def new_dev_checked(self):
-        """функция считывает имя устройства, на основании имени перестраивает поле выбора каналов и осциллограмм, отмечает, чтобы построенные осциллограммы не отображались при новом построении"""
-        if self.key:
-            for osc in self.stack_osc.values():
-                osc.is_draw = False
-                osc.current_highlight = False
-
-            dev_name = self.choice_device.currentText()
-
-            if dev_name == self.choice_device_default_text:
-                self.clear_layout(self.hor_lay, self.choice_device)
-            else:
-                self.clear_layout(self.hor_lay, self.choice_device)
-
-                channel_keys = self.extract_wavech_devices(self.dict_param)
-                devices, channels, wavechs = self.extract_data(channel_keys)
-
-                current_dev = self.choice_device.currentText()
-
-                channel_names = []
-                waves_num = []
-                for i in range(len(devices)):
-                    if devices[i] == current_dev:
-                        channel_names.append(channels[i])
-                        waves_num.append(
-                            len(self.dict_param[devices[i]][channels[i]][wavechs[i]])
-                        )
-
-                self.field_ch_choice.clear()
-                self.sig_ch_choice.clear()
-                self.field_ch_choice.addItems(channel_names)
-                self.sig_ch_choice.addItems(channel_names)
-
-                ch_check_layer, self.ch_check, self.channels_wave_choice = (
-                    self.create_checkbox_layer(channel_names, waves_num)
-                )
-                self.hor_lay.addLayout(ch_check_layer)
-
     def clear_layout(self, layout, widget_to_keep):
         for i in reversed(range(layout.count())):
             item = layout.itemAt(i)
@@ -717,70 +465,49 @@ class graphOsc:
                     layout.removeItem(item)
                     item.layout().deleteLater()
 
-    def checked_channel(self):
-        """сканирует выбранные каналы и строит соответсвующие осциллограммы"""
-        # self.ch_check, self.channels_wave_choice
-        if self.key:
-            #self.y_values = [[], [], [], [], [], [], [], []]
-            self.y_values = {}
-            self.scales = {}
-            self.legend_ch_names = {}
-            for ch in self.ch_check:
-                ch_name = ch.text()
+    def set_data(self, osc_data, step_data, index):
+        device = osc_data.device
+        ch_name = osc_data.ch
+        num_wave = index
 
-                device = self.choice_device.currentText()
-                num_wave = (
-                        int(self.channels_wave_choice[ch.text()].currentText()) - 1
-                )
+        key_stack = str(device) + str(ch_name) + str(num_wave)
+        
+        if self.stack_osc.get(key_stack, None) == None:
 
-                key_stack = str(device) + str(ch_name) + str(num_wave)
+            y = np.array(osc_data.par_val[index])
+            x = np.array([abs(step_data.par_val[index]*i) for i in range(1, len(y)+1)])
 
-                if ch.isChecked():
-                    
-                    if self.stack_osc.get(key_stack, None) == None:
-
-                        for key in self.dict_param[device][ch_name].keys():
-                            if "wavech" in key:
-                                key_wave = key
-                                break
-
-                        self.y_values[ch_name] = self.dict_param[device][ch_name][key_wave][num_wave]
-                        self.scales[ch_name] = self.dict_param[device][ch_name]["scale"][num_wave]
-                        self.legend_ch_names[ch_name] = ch_name
-
-                        scale = self.dict_param[device][ch_name]["scale"][num_wave]
-
-                        #TODO:добавить десятичные приставки к подписям осей, вертикальной и горизонтальной
-
-                        y = np.array(self.dict_param[device][ch_name][key_wave][num_wave])
-                        x = np.array([scale*i for i in range(1, len(y)+1)])
-
-                        new_osc = oscData( raw_x  = x, 
-                                           raw_y  = y, 
-                                           device = device, 
-                                           ch     = ch_name, 
-                                           name   = key_wave, 
-                                           number = num_wave)
-                        
-                        self.stack_osc[key_stack] = new_osc
-
-                    for key in self.stack_osc.keys():
-                        if key != key_stack:
-                            if str(device) + str(ch_name) in key:
-                                self.stack_osc[key].is_draw = False
-                                self.stack_osc[key].current_highlight = False
-
-                    self.stack_osc[key_stack].is_draw = True                
+            meas_y_data = measTimeData( 
+                                        device = device,
+                                        ch = ch_name,
+                                        param = 'wave',
+                                        par_val = y,
+                                        num_or_time = x)
+            meas_x_data = measTimeData( 
+                                        device = device,
+                                        ch = ch_name,
+                                        param = 'step',
+                                        par_val = x,
+                                        num_or_time = x)
             
-                else:
-                    self.y_values[ch_name] = []
+            relation_data = relationData(meas_x_data, meas_y_data)
 
-                    if self.stack_osc.get(key_stack, None) != None:
-                        self.stack_osc[key_stack].is_draw = False
+            logger.warning(f"{y=}")
+            logger.warning(f"{x=}")
 
-                        self.stack_osc[key_stack].current_highlight = False
+            new_osc = oscData(  data = relation_data )
+            
+            self.stack_osc[key_stack] = new_osc
 
-            self.update_draw()
+        for key in self.stack_osc.keys():
+            if key != key_stack:
+                if str(device) + str(ch_name) in key:
+                    self.stack_osc[key].is_draw = False
+                    self.stack_osc[key].current_highlight = False
+
+        self.stack_osc[key_stack].is_draw = True                
+
+        self.update_draw()
 
     def set_default(self):
         """привести класс к исходному состоянию"""
@@ -809,18 +536,12 @@ class graphOsc:
 
                     graph = self.graphView.plot(obj.filtered_x_data, 
                                                 obj.filtered_y_data, 
-                                                pen  = buf_pen,
-                                                name = obj.legend_name
+                                                pen  = buf_pen
                                                 )
 
                     obj.set_plot_obj(plot_obj = graph,
                                     pen       = buf_pen)
                     
-                legend_name = obj.legend_name
-                self.legend.addItem(
-                        obj.plot_obj, obj.legend_name
-                )
-
             else:
                 if obj.plot_obj != None:
                     self.graphView.removeItem(obj.plot_obj)
@@ -1221,7 +942,6 @@ class graphOsc:
         self.auto_button.setText(_translate("GraphWindow", "Авто") )
         self.name_sig.setText(_translate("GraphWindow", "Сигнал") )
         self.name_field.setText(_translate("GraphWindow", "Поле") )
-        self.import_data_button.setText(_translate("GraphWindow", "Импортировать...") )
         
 class verticals_lines:
 

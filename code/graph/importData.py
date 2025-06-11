@@ -88,6 +88,7 @@ class controlImportData(QObject):
         super().__init__()
         self.win = window
         self.win.import_button.clicked.connect(self.import_data)
+        self.win.import_button_osc.clicked.connect(self.import_data)
 
         self.win.experiment_selector.currentIndexChanged.connect(self.experimental_data_changed)
 
@@ -110,7 +111,6 @@ class controlImportData(QObject):
         return data_name
 
     def import_data(self):
-
         '''
         if self.__is_exp_running:
             if self.main_class.experiment_controller.is_experiment_running():

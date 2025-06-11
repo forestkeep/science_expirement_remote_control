@@ -264,13 +264,11 @@ class linearData(graphData):
         )
 
 class oscData(graphData):
-    def __init__(self, raw_x, raw_y, device, ch, name, number) -> None:
-        super().__init__(raw_x, raw_y)
-        self.device = device
-        self.ch = ch
-        self.name = name
-        self.number = number
-        self.legend_name = ch
+    def __init__(self, data: relationData) -> None:
+        super().__init__(data)
+        self.rel_data = data
+        self.curve_name = self.rel_data.name
+        self.legend = legendName(self.curve_name)
 
 class hystLoop(graphData):
     '''хранит данные о петле и ее исходных параметрах, содержит методы расчета петли'''

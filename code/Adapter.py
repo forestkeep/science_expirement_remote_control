@@ -62,7 +62,10 @@ class Adapter:
                 if not self.client.is_open:
                     self.open()
             elif self.which_resourse == resourse.pyvisa:
-                self.client.open()
+                try:
+                    self.client.open()
+                except:
+                    pass
             return func(self, *args, **kwargs)
         return wrapper
 

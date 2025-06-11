@@ -32,6 +32,8 @@ try:
     from paramSelectors import paramSelector, paramController
     from graphSelectAdapter import graphSelectAdapter
     from select_session import SessionSelectControl
+    from osc_selector import OscilloscopeSelector
+    from waveSelectAdapter import waveSelectAdapter
 except:
     from graph.filters_win import filtersClass
     from graph.graph_main import graphMain
@@ -43,6 +45,8 @@ except:
     from graph.paramSelectors import paramSelector, paramController
     from graph.graphSelectAdapter import graphSelectAdapter
     from graph.select_session import SessionSelectControl
+    from graph.osc_selector import OscilloscopeSelector
+    from graph.waveSelectAdapter import waveSelectAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -182,10 +186,14 @@ class GraphSession(QWidget):
         self.tabWidget.addTab(self.tab1, QApplication.translate("GraphWindow", "Графики") )
         self.tabWidget.addTab(self.tab2, QApplication.translate("GraphWindow", "Осциллограммы") )  # Placeholder for another tab
 
+        self.selector_osc = OscilloscopeSelector()
+
         self.graph_main = graphMain(tablet_page=self.tab1, main_class=self, select_data_wid = self.select_win)
-        self.graph_wave = graphOsc(self.tab2, self)
+        self.graph_wave = graphOsc(self.tab2, self.selector_osc, self)
 
         self.adapter_main_graph = graphSelectAdapter(self.graph_main, self.select_controller, self.data_manager, self.tree_class, 'main', self)
+
+        self.adapter_osc_graph = waveSelectAdapter(self.graph_wave, self.selector_osc, self.data_manager, 'osc', self)
 
         self.tabWidget.setCurrentIndex(0)
 
@@ -271,10 +279,8 @@ class running_exp_test(QWidget):
         """функция раз в n секунд генерирует словарь и обновляет данные"""
         if random.random() < 0.5:
             gen = self.gen1
-            print(1)
         else:
             gen = self.gen2
-            print(2)
         self.graph_class.update_session_data(self.id, (next(gen)))
         self.counter_test += 1
 
@@ -344,6 +350,7 @@ class sessionController():
         status = self.__create_session(session_name, session_id, new_data=data)
         if status:
             self.graph_sessions[session_id].data_manager.stop_session_running()
+            self.session_selector.add_session({'id': session_id, 'name': session_name, 'status': 'imported'})
 
     def delete_session(self, session_id: str):
         if self.graph_sessions.get(session_id) is not None:
@@ -415,7 +422,7 @@ if __name__ == "__main__":
     my_session_class = sessionController()
     my_session_class.graphics_win.show()
 
-    test_class = running_exp_test(my_session_class, 500, 1)
+    test_class = running_exp_test(my_session_class, 5, 0.1)
     test_class.run()
 
     sys.exit(app.exec_())

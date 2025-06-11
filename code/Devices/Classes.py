@@ -253,7 +253,7 @@ class base_device():
                     num_meas_list.append( QApplication.translate("Device","Пока активны другие приборы") )
                 self.setting_window.num_meas_enter.clear()
                 self.setting_window.num_meas_enter.addItems(num_meas_list)
-                self.setting_window.num_meas_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["num steps"]))
+                self.setting_window.num_meas_enter.setCurrentText(str(int(self.active_channel_meas.dict_buf_parameters["num steps"])))
 
             self.key_to_signal_func = True
             return func(self, *args, **kwargs)
