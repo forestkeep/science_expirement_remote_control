@@ -13,8 +13,9 @@ import time
 from datetime import datetime
 
 import pyqtgraph as pg
+import numpy as np
 import logging
-from PyQt5.QtCore import QObject, Qt, pyqtSignal
+from PyQt5.QtCore import QObject, Qt, pyqtSignal, QPoint
 from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout,
                              QSizePolicy, QSpacerItem, QVBoxLayout, QComboBox, QLineEdit)
@@ -131,6 +132,7 @@ class graphMain(QObject):
             }
         )
         self.targetItem2.label().setAngle(45)
+        
 
         self.lr = pg.LinearRegionItem(values=[70, 80])
         label = pg.InfLineLabel(self.lr.lines[1], "region 1", position=0.95, rotateAxis=(1,0), anchor=(1, 1))
@@ -141,13 +143,13 @@ class graphMain(QObject):
 
 
         self.err = pg.ErrorBarItem(x=self.x, y=self.y, top=top, bottom=top, beam=0.5)
-        self.graphView.addItem(self.err)
+        #self.graphView.addItem(self.err)
         self.graphView.plot(self.x, self.y, symbol='o', pen={'color': 0.8, 'width': 2})
 
 
         self.graphView.addItem(self.lr)
         self.graphView.addItem(self.inf2)
-        self.graphView.addItem(self.targetItem2)
+        #self.graphView.addItem(self.targetItem2)
         '''
         #--------------------------------------------------------------------
         

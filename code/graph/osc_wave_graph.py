@@ -30,6 +30,8 @@ try:
     from Message_graph import messageDialog
     from dataManager import measTimeData
     from dataManager import relationData
+    from toolBarWidget import tool_bar_widget
+    from custom_inf_line import RemovableInfiniteLine
 except:
     from graph.colors import GColors
     from graph.curve_data import hystLoop, oscData
@@ -37,6 +39,8 @@ except:
     from graph.Message_graph import messageDialog
     from graph.dataManager import measTimeData
     from graph.dataManager import relationData
+    from graph.toolBarWidget import tool_bar_widget
+    from graph.custom_inf_line import RemovableInfiniteLine
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +64,9 @@ class graphOsc:
         self.dict_param = {}
 
         self.stack_osc = {}
+
+        self.inf_line_vert = None
+        self.inf_line_hor = None
 
         self.main_class = main_class
 
@@ -93,33 +100,6 @@ class graphOsc:
         self.list_vert_curve = []
         self.initUI()
 
-    def update_dict_param(self, new: dict, is_exp_stop = False, is_remove_old = True):
-        if new:
-            if is_remove_old:
-                self.dict_param = new
-            else:
-                self.dict_param.update(new)
-            channel_keys = self.extract_wavech_devices(self.dict_param)
-
-            devices, channels, wavechs = self.extract_data(channel_keys)
-            current_dev = self.choice_device.currentText()
-            self.key = False
-            devices = set(devices)
-            devices = list(devices)
-            if not devices:
-                devices.append(self.choice_device_default_text)
-            self.choice_device.clear()
-            self.choice_device.addItems(devices)
-            if current_dev in devices:
-                self.choice_device.setCurrentText(current_dev)
-            self.key = True
-            self.extract_ch_with_wave(self.dict_param)
-            try:
-                self.update_num_waveforms()
-            except Exception as e:
-                self.new_dev_checked()
-                self.update_num_waveforms()
-  
     def initUI(self):
 
         self.tab1Layout = QVBoxLayout()
@@ -136,37 +116,78 @@ class graphOsc:
         self.graphView.getAxis("left").setGrid(True)
         self.graphView.getAxis("bottom").setGrid(True)
 
-        self.tab1Layout.addWidget(self.selector_wave)
-        self.tab1Layout.addWidget(self.build_hyst_loop_check)
+        splitter_graph_fields = QSplitter()
+        splitter_graph_fields.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        splitter = QSplitter()
-        splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        splitter.setOrientation(1)
+        splitter_graph_fields.setOrientation(1)
 
         self.graphView_loop = self.setupGraphView()
 
         self.graphView_loop.scene().sigMouseMoved.connect(self.showToolTip_loop)
         self.graphView_loop.scene().sigMouseClicked.connect(self.click_scene_loop_graph)
 
-        splitter.addWidget(self.graphView)
-        splitter.addWidget(self.graphView_loop)
+        splitter_graph_fields.addWidget(self.graphView)
+        splitter_graph_fields.addWidget(self.graphView_loop)
 
-        splitter.setStretchFactor(0, 5)
-        splitter.setStretchFactor(1, 5)  
-        self.tab1Layout.addWidget(splitter)
+        splitter_graph_fields.setStretchFactor(0, 5)
+        splitter_graph_fields.setStretchFactor(1, 5)  
         self.graphView_loop.hide()
+
+        tool_bar_graph = tool_bar_widget()
+
+        graph_bar_lay = QVBoxLayout()
+        graph_bar_lay.addWidget(tool_bar_graph)
+        graph_bar_lay.addWidget(splitter_graph_fields)
+
+        tool_bar_wid = QWidget()
+        tool_bar_wid.setLayout(graph_bar_lay)
+
+        splitter_graph_selector = QSplitter()
+        splitter_graph_selector.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        splitter_graph_selector.setOrientation(0)
+        splitter_graph_selector.setStretchFactor(0, 5)
+        splitter_graph_selector.setStretchFactor(1, 5)
 
         self.hyst_loop_layer = self.create_hyst_calc_layer()
         self.hyst_loop_layer.hide()
-        self.tab1Layout.addWidget(self.hyst_loop_layer)
+
+        splitter_graph_selector.addWidget( self.selector_wave )
+        splitter_graph_selector.addWidget( tool_bar_wid )
+        splitter_graph_selector.addWidget( self.hyst_loop_layer )
+
+        self.tab1Layout.addWidget(splitter_graph_selector)
+        self.tab1Layout.addWidget(self.build_hyst_loop_check)
+
         self.page.setLayout(self.tab1Layout)
 
         self.page.subscribe_to_key_press(key = Qt.Key_Delete, callback = self.delete_key_press)
 
         self.page.subscribe_to_key_press(key = Qt.Key_Escape, callback = self.reset_filters)
 
+        tool_bar_graph.add_tool_button(tooltip = "Вертикальный курсор",is_change_style = False, icon_path = None, callback = self.click_vert_infinite_line)
+        tool_bar_graph.add_tool_button(tooltip = "Горизонтальный курсор",is_change_style = False, icon_path = None, callback = self.click_hor_infinite_line)
+
         self.retranslateUI(self.page)
+
+    def click_vert_infinite_line(self, state):
+        self.add_inf_line(0)
+
+    def click_hor_infinite_line(self, state):
+        self.add_inf_line(90)
+
+    def add_inf_line(self, angle):
+        inf_line_vert = RemovableInfiniteLine(
+            movable=True,
+            angle=angle,
+            pen=(0, 0, 200),
+            hoverPen=(0, 200, 0),
+            label='y={value:0.4f}',
+            labelOpts={'color': (200, 0, 0), 'movable': True, 'fill': (0, 0, 200, 100)}
+        )
+
+        self.graphView.addItem(inf_line_vert)
+
+        inf_line_vert.removeRequested.connect(lambda line: self.graphView.removeItem(line))
 
     def click_scene_main_graph(self, event):
         self.__callback_click_scene(self.stack_osc.values())
@@ -816,7 +837,7 @@ class graphOsc:
         self.list_vert_curve = [self.ver_curve_right, self.ver_curve_left]
 
     def hyst_loop_activate(self):
-        if self.build_hyst_loop_check.isChecked() == True:
+        if self.build_hyst_loop_check.isChecked():
             self.hyst_loop_layer.setVisible(True)
             self.graphView_loop.setVisible(True)
         else:
@@ -824,7 +845,7 @@ class graphOsc:
             self.graphView_loop.setVisible(False)
 
     def draw_loop(self):
-        if self.is_all_hyst_correct() == True:
+        if self.is_all_hyst_correct():
             device = self.choice_device.currentText()
             ch_field = self.field_ch_choice.currentText()
             ch_sig = self.sig_ch_choice.currentText()

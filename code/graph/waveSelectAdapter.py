@@ -34,7 +34,7 @@ class waveSelectAdapter:
 		self.selector.waveform_selected.connect(self._handle_waveform_selected)
 	
 		self.data_manager.list_parameters_updated.connect(self.update_params)
-		self.data_manager.val_parameters_added.connect(self.data_updated)
+		self.data_manager.val_parameters_added.connect(self.data_added)
 
 	def _handle_device_selected(self, device_name: str = None):
 		if device_name != self.current_device:
@@ -57,11 +57,11 @@ class waveSelectAdapter:
 				#в эксперименте мы ожидаем, что в списке будет всего один элемент с заданным прибором и каналом
 				if len(list_data) == 1 and len(step_data) == 1:
 					data = list_data[0]
-					index = int(waveform_name)
+					index = int(waveform_name)-1
 					self.graph.set_data(data, step_data[0], index)
+
 				else:
 					logger.warning(f'ошибка в получении списка данных по прибору {device_name} и каналу {channel_name}, ожидается только один набор осциллограмм')
-
 
 	def update_params(self, parameters):
 		'''
@@ -79,31 +79,17 @@ class waveSelectAdapter:
 			self.selector.add_channel(device, channel)
 			self.selector.update_waveforms_count(device, channel, num_wave)
 
-	def data_updated(self, parameters):
+	def data_added(self, parameters):
 		'''вызывается контроллером данных в момент, когда какие-то из ранее добавленных данных были обновлены.
 		  Например, поступило новое значение'''
-		pass
-	'''
-		paramx, paramy1, paramy2 = self.selector.get_parameters()
-
-		datax = ''
-		datay1 = {}
-		datay2 = {}
-
-		buf = parameters[self.type_data].get(paramx)
-		if buf:
-			datax = paramx
-
-		for param in paramy1:
-			buf = parameters[self.type_data].get(param)
-			if buf:
-				datay1[param] = parameters[self.type_data][param]
-		for param in paramy2:
-			buf = parameters[self.type_data].get(param)
-			if buf:
-				datay2[param] = parameters[self.type_data][param]
-
-		data_first_axis, data_second_axis = self.data_manager.get_relation_data(datax, datay1, datay2, self.type_data)
-
-		self.graph.update_data(data_first_axis, data_second_axis, is_updated = True)
-	'''
+		list_parameters = parameters[self.type_data]
+		for param in list_parameters.keys():
+			if 'wavech' in param:
+				meastimedata = list_parameters[param]
+				device = meastimedata.device
+				channel = meastimedata.ch
+				num_wave = len(meastimedata.par_val)
+				#self.selector.add_device(device)
+				#self.selector.add_channel(device, channel)
+				self.selector.update_waveforms_count(device, channel, num_wave)
+				
