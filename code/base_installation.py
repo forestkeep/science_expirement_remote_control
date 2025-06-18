@@ -26,7 +26,7 @@ from Devices.Classes import (not_ready_style_background,
 from graph.online_graph import sessionController
 
 from interface.Message import messageDialog
-from saving_data.Parse_data import process_and_export, type_save_file
+from saving_data.Parse_data import savingController, type_save_file
 
 from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe, create_clients, ExperimentState
 
@@ -55,6 +55,9 @@ class baseInstallation:
         self.stop_scan_thread = False
 
         self.experiment_process = None
+
+        self.saving_controller = savingController()
+        self.saving_controller.set_info_callback( self.add_text_to_log )
 
         self.thread_scan_resources.start()
 
@@ -194,7 +197,7 @@ class baseInstallation:
             if self.save_results_now == True:
                 self.save_results_now = False
 
-                process_and_export(
+                self.saving_controller.process_and_export(
                     self.buf_file,
                     fileName,
                     self.type_file_for_result,
@@ -255,7 +258,7 @@ class baseInstallation:
             else:
                 self.type_file_for_result = type_save_file.excel
 
-            process_and_export(
+            self.saving_controller.process_and_export(
                 self.buf_file,
                 way_to_save,
                 self.type_file_for_result,

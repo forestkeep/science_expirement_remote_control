@@ -13,13 +13,17 @@ import copy
 import enum
 import logging
 import os
-import threading
 from datetime import datetime
 
 import pandas
-from pandas.io.excel import ExcelWriter
+import openpyxl
+from pathlib import Path
 from PyQt5.QtWidgets import QApplication
 from send2trash import send2trash
+from PyQt5 import QtWidgets
+import multiprocessing
+import time
+from PyQt5.QtCore import QTimer
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +49,7 @@ class type_save_file(enum.Enum):
     excel = 2
     origin = 3
 
-class saving_data:
+class savingDataClass:
     def __init__(self) -> None:
         pass
 
@@ -86,6 +90,7 @@ class saving_data:
             result.to_excel(excel_writer, sheet_name=result_name, index=False)
 
         except Exception as e:
+            message += f"{type(e).__name__} - {e}"
             return output_file_path, message, False
 
         finally:
@@ -130,22 +135,31 @@ class saving_data:
 
     def save_data(self, input_file_path, output_file_path, output_type, result_name, result_description, meta_data):
 
-        self.__parse_data(input_file_path)
-        self.resul_df = self.build_data_frame(result_description, meta_data)
-
-        if not result_name:
-            result_name = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-
-        if output_type == type_save_file.txt:
-            output_file_path, message, status = self.__save_txt(output_file_path, result_name)
-        elif output_type == type_save_file.excel:
-            output_file_path, message, status = self.__save_excell(output_file_path, result_name)
-        elif output_type == type_save_file.origin:
-            output_file_path, message, status = self.__save_origin(output_file_path, result_name)
-        else:
-            logger.warning(f"тип сохранения не определен {output_type}")
-            message = "Тип сохранения не определен"
+        status = True
+        try:
+            self.__parse_data(input_file_path)
+        except MemoryError:
+            logger.warning(f"Недостаточно памяти при парсинге буферного файла")
+            message = QApplication.translate("parse_data","Не хватает оперативной памяти для обработки буферного файла. " \
+            "Не волнуйтесь, данные измерений не пострадали. Попробуйте перезагрузить приложение и сохранить результаты из буферного файла.")
             status = False
+
+        if status:
+            self.resul_df = self.build_data_frame(result_description, meta_data)
+
+            if not result_name:
+                result_name = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+
+            if output_type == type_save_file.txt:
+                output_file_path, message, status = self.__save_txt(output_file_path, result_name)
+            elif output_type == type_save_file.excel:
+                output_file_path, message, status = self.__save_excell(output_file_path, result_name)
+            elif output_type == type_save_file.origin:
+                output_file_path, message, status = self.__save_origin(output_file_path, result_name)
+            else:
+                logger.warning(f"тип сохранения не определен {output_type}")
+                message = QApplication.translate("parse_data","Тип сохранения не определен")
+                status = False
 
         return output_file_path, message, status
 
@@ -273,18 +287,18 @@ class saving_data:
 
         data_frame = {}
         for h in range(column_number):
-            data_frame[h] = []
+            data_frame[str(h)] = []
             if result_description:
                 if h == 0:
-                    data_frame[h].append(result_description)
+                    data_frame[str(h)].append(result_description)
                 else:
-                    data_frame[h].append(" ")
+                    data_frame[str(h)].append(" ")
 
             if meta_data:
                 if h == 0:
-                    data_frame[h].append(meta_data)
+                    data_frame[str(h)].append(meta_data)
                 else:
-                    data_frame[h].append(" ")
+                    data_frame[str(h)].append(" ")
 
         h = 0
         number_tab = []
@@ -292,7 +306,7 @@ class saving_data:
         for i in range(len(self.devices)):
             text = QApplication.translate("parse_data", "Прибор:{device} канал:{ch}")
             text = text.format(device=self.devices[i].name_device, ch=self.devices[i].ch)
-            data_frame[h].append(
+            data_frame[str(h)].append(
                 text
             )
             h += 1
@@ -300,15 +314,15 @@ class saving_data:
             number_tab.append(len(self.devices[i].data))
             k += 1
             for j in range(number_tab[k - 1]):
-                data_frame[h].append(" ")
+                data_frame[str(h)].append(" ")
                 h += 1
 
         h = 0
         for i in range(len(self.devices)):
             for param_name in self.devices[i].data.keys():
-                data_frame[h].append(f"{param_name}")
+                data_frame[str(h)].append(f"{param_name}")
                 h += 1
-            data_frame[h].append(" ")
+            data_frame[str(h)].append(" ")
             h += 1
 
         h = 0
@@ -322,12 +336,12 @@ class saving_data:
             for dev in self.devices:
                 for param_val in dev.data.values():
                     try:
-                        data_frame[h].append(f"{param_val[i]}")
+                        data_frame[str(h)].append(f"{param_val[i]}")
                         h += 1
                     except:
-                        data_frame[h].append(f"---")
+                        data_frame[str(h)].append(f"---")
                         h += 1
-                data_frame[h].append(" ")
+                data_frame[str(h)].append(" ")
                 h += 1
             h = 0
 
@@ -340,14 +354,14 @@ class saving_data:
             d = 0
             for i in range(len(self.devices)):
                 try:
-                    data_frame[h].append(f"{self.devices[i].settings[k]}")
+                    data_frame[str(h)].append(f"{self.devices[i].settings[k]}")
                     h += 1
                 except:
-                    data_frame[h].append(f"---")
+                    data_frame[str(h)].append(f"---")
                     h += 1
                 if i < len(self.devices):
                     for j in range(number_tab[d]):
-                        data_frame[h].append(" ")
+                        data_frame[str(h)].append(" ")
                         h += 1
                     d += 1
             h = 0
@@ -369,78 +383,214 @@ class saving_data:
 
             if waves_dict != {" ": [QApplication.translate("parse_data","Время") , QApplication.translate("parse_data","Шаг")]}:
                 data = waves_dict
-                df = pandas.DataFrame(
-                    dict([(k, pandas.Series(v)) for k, v in data.items()])
-                )
+                df = pandas.DataFrame(dict([(k, pandas.Series(v)) for k, v in data.items()]))
+
                 waves_frames.append(df)
 
         df = pandas.DataFrame(data_frame)
 
         waves_frames.insert(0, df)
+
         result_df = pandas.concat(waves_frames, axis=1)
+
 
         return result_df
 
-class saving_data_processing:
-        def __init__(self):
-            self.saving_data = threading.Thread(target=self.run_saving)
-        def set_parameters(self, input_file_path, output_file_path, output_type, is_delete_buf_file, result_name, result_description, meta_data):
-            self.input_file_path = input_file_path
-            self.output_file_path = output_file_path
-            self.output_type = output_type
-            self.is_delete_buf_file = is_delete_buf_file
-            self.meta_data = meta_data
-            self.result_name = "Result"
-            self.result_description = ""
-            if result_name:
-                self.result_name = result_name
-            if result_description:
-                self.result_description = result_description
-        def set_adress_return(self, adress_return):
-            self.adress_return = adress_return
-        def run_saving(self):
-            save = saving_data()
-            status = True
-            message = ""
+def run_saving_worker(queue, input_file_path, output_file_path, output_type, 
+                      is_delete_buf_file, result_name, result_description, meta_data):
+    try:
+        save_class = savingDataClass()
+        status = True
+        message = ""
 
-            self.output_file_path, message, status = save.save_data(
-                    self.input_file_path, self.output_file_path, self.output_type, self.result_name, self.result_description, self.meta_data
-                )
-            
-            if status:
-                if self.is_delete_buf_file == True:
-                    try:
-                        send2trash(self.input_file_path)
-                    except Exception as e:
-                        message += f"файл сохранен, но буферный файл не уудалось отправить в корзину - {e}"
-                    self.adress_return(status = status, output_file_path = self.output_file_path, message = message, deleted_buf_file = self.input_file_path)
-                else:
-                    self.adress_return(status = status, output_file_path = self.output_file_path, message = message)
+        output_file_path, message, status = save_class.save_data(
+                input_file_path, output_file_path, output_type, result_name, result_description, meta_data
+            )
+        if status:
+            if is_delete_buf_file:
+                try:
+                    send2trash(input_file_path)
+                    queue.put({
+                        'status': status,
+                        'output_file_path': output_file_path,
+                        'message': message,
+                        'deleted_buf_file': input_file_path
+                    })
+                except Exception as e:
+                    message += f"\nФайл сохранен, но буферный файл не удалось отправить в корзину - {e}"
+                    queue.put({
+                        'status': status,
+                        'output_file_path': output_file_path,
+                        'message': message
+                    })
             else:
-                self.adress_return(status = status, output_file_path = self.output_file_path, message = message)
+                queue.put({
+                    'status': status,
+                    'output_file_path': output_file_path,
+                    'message': message
+                })
+        else:
+            queue.put({
+                'status': status,
+                'output_file_path': output_file_path,
+                'message': message
+            })
+    except Exception as e:
+        print(e)
+        queue.put({
+            'status': False,
+            'output_file_path': None,
+            'message': f"Критическая ошибка: {str(e)}"
+        })
 
-def process_and_export(
-    input_file_path, output_file_path, output_type, meas_session_data,  is_delete_buf_file, func_result
-):
-    result_name = meas_session_data.session_name
-    result_descriptions = meas_session_data.session_description
-    meta_data = meas_session_data.get_meta_data()
-    save = saving_data_processing()
-    save.set_parameters(
-        input_file_path, 
-        output_file_path, 
-        output_type, 
-        is_delete_buf_file,
-        result_name,
-        result_descriptions,
-        meta_data
-    )
-    save.set_adress_return(func_result)
-    save.saving_data.start()
+class saving_data_processing:
+    def __init__(self, info_callback=None):
+        self.info_callback = info_callback
+        self.queue = multiprocessing.Queue()
+        self.saving_process = None
+        self.process_start_time = 0
+        self.next_report_time = 0
+        self.timer = QTimer()
+        self.timer.timeout.connect(self._check_queue_and_status)
 
-import time
+        self.input_file_path = None
+        self.output_file_path = None
+        self.output_type = None
+        self.is_delete_buf_file = None
+        self.result_name = "Result"
+        self.result_description = ""
+        self.meta_data = None
+        self.adress_return = None
+
+    def terminate(self):
+        if self.saving_process and self.saving_process.is_alive():
+            self.saving_process.terminate()
+            self.saving_process.join()
+
+    def set_parameters(self, input_file_path, output_file_path, output_type, 
+                       is_delete_buf_file, result_name, result_description, meta_data):
+        self.input_file_path = input_file_path
+        self.output_file_path = output_file_path
+        self.output_type = output_type
+        self.is_delete_buf_file = is_delete_buf_file
+        self.meta_data = meta_data
+        
+        if result_name:
+            self.result_name = result_name
+        if result_description:
+            self.result_description = result_description
+
+    def set_adress_return(self, adress_return):
+        self.adress_return = adress_return
+
+    def start_saving(self):
+        if not all([self.input_file_path, self.output_file_path, self.adress_return]):
+            raise ValueError("Не установлены обязательные параметры или callback")
+        
+        self.saving_process = multiprocessing.Process(
+            target=run_saving_worker,
+            args=(
+                self.queue,
+                self.input_file_path,
+                self.output_file_path,
+                self.output_type,
+                self.is_delete_buf_file,
+                self.result_name,
+                self.result_description,
+                self.meta_data
+            )
+        )
+        self.process_start_time = time.perf_counter()
+        self.next_report_time = self.process_start_time + 60*3
+        self.timer.start(5000)
+        self.saving_process.start()
+        if self.info_callback is not None:
+                self.info_callback(f"Сохраняем результаты {self.input_file_path} в {self.output_file_path}")
+
+    def _check_queue_and_status(self):
+        while not self.queue.empty():
+            try:
+                result = self.queue.get_nowait()
+                self._handle_result(result)
+                return
+            except:
+                break
+
+        current_time = time.perf_counter()
+
+        if current_time >= self.next_report_time:
+            elapsed = int(current_time - self.process_start_time)
+
+            if self.info_callback is not None:
+                self.info_callback(f"Сохранение результатов в {self.output_file_path} идет дольше обычного: {elapsed // 60} мин {elapsed % 60} сек. Пожалуйста, подождите...")
+                
+            self.next_report_time = current_time + 60*30
+        
+        if not self.saving_process.is_alive():
+            self.timer.stop()
+            self.saving_process.join()
+
+    def _handle_result(self, result):
+        self.timer.stop()
+        if self.saving_process.is_alive():
+            self.saving_process.terminate()
+        
+        if result['status']:
+            if 'deleted_buf_file' in result:
+                self.adress_return(
+                    status=result['status'],
+                    output_file_path=result['output_file_path'],
+                    message=result['message'],
+                    deleted_buf_file=result['deleted_buf_file']
+                )
+            else:
+                self.adress_return(
+                    status=result['status'],
+                    output_file_path=result['output_file_path'],
+                    message=result['message']
+                )
+        else:
+            self.adress_return(
+                status=result['status'],
+                output_file_path=result['output_file_path'],
+                message=result['message']
+            )
+
+class savingController():
+    def __init__(self):
+        self.saving_processes = []
+        self.info_callback = None
+
+    def set_info_callback(self, func):
+        self.info_callback = func
+
+    def terminate_saving_processes(self):
+        for process in self.saving_processes:
+            process.saving_process.terminate()
+        self.saving_processes = []
+
+    def process_and_export(self,input_file_path, output_file_path, output_type, meas_session_data,  is_delete_buf_file, func_result):
+        result_name = meas_session_data.session_name
+        result_descriptions = meas_session_data.session_description
+        meta_data = meas_session_data.get_meta_data()
+        save = saving_data_processing(self.info_callback)
+        save.set_parameters(
+            input_file_path, 
+            output_file_path, 
+            output_type, 
+            is_delete_buf_file,
+            result_name,
+            result_descriptions,
+            meta_data
+        )
+        save.set_adress_return(func_result)
+        save.start_saving()
+        self.saving_processes.append(save)
 
 start = time.perf_counter()
+
+def info_callback(message):
+    print(message)
     
 def func_answer_test(status, output_file_path, message, deleted_buf_file = False):
     global start
@@ -452,12 +602,30 @@ def func_answer_test(status, output_file_path, message, deleted_buf_file = False
 
     print(f"Время выполнения {time.perf_counter() - start}")
 
+class mock_measSessionData:
+    def __init__(self):
+        self.session_name = ''
+        self.session_description = ''
+        self.session_start_time = ''
+        self.session_end_time = ''
+        self.session_duration = ''
+        self.measurement_parameters = {}
+
+    def get_meta_data(self) -> str:
+        return f"start_time={self.session_start_time}\nend_time={self.session_end_time}\nduration={self.session_duration}"
+
 if __name__ == "__main__":
-    input_file = "pig_in_a_poke_1_2025-04-14 13-15-38.txt"
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    input_file = "pig_in_a_poke_1_2025-06-03 15-57-25.txt"
     is_delete_buf_file = False
     output_file_path = "testData.xlsx"
+    meas_session_data = mock_measSessionData()
+    saving_ctrl = savingController()
+    saving_ctrl.set_info_callback(info_callback)
 
-    process_and_export(input_file, output_file_path, type_save_file.excel,'name_test',"description_test", is_delete_buf_file, func_answer_test)
+    saving_ctrl.process_and_export(input_file, output_file_path, type_save_file.excel,meas_session_data,is_delete_buf_file, func_answer_test)
+    sys.exit(app.exec_())
     
 
     

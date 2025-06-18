@@ -1021,15 +1021,13 @@ class oscilloscopeClass(base_device):
 
             # ===проведение измерений и действия с прибором===
             if not self.is_debug:
-                timeout = 3
-                print("single")
+                timeout = 10
+                #TODO: вынести таймаут в интерфейс пользователя
                 self.command.single()
-                print("run")
                 time_stamp = time.perf_counter()
                 while self.command.get_status() != "STOP\n":
                     if time.perf_counter() - time_stamp > timeout:
                         message = QApplication.translate("Device","Остановки по триггеру не произошло, останавливаем принудительно")
-                        print(message)
                         self.command.stop()
             else:
                 pass

@@ -820,7 +820,6 @@ class basePowerSupply(base_device):
         """установить значение напряжения канала"""
         logger.warning(f"устанавливаем напряжение {voltage} канала {ch_num}")
         self.select_channel(ch_num)
-        print(777777)
         self.client.write( self.set_volt_cmd.format(voltage = voltage) )
         time.sleep(0.2)
         response = self._get_setting_voltage(ch_num=ch_num)

@@ -68,6 +68,8 @@ class graphOsc:
         self.inf_line_vert = None
         self.inf_line_hor = None
 
+        self.line_counter = 0
+
         self.main_class = main_class
 
         self.used_colors = set()
@@ -176,18 +178,37 @@ class graphOsc:
         self.add_inf_line(90)
 
     def add_inf_line(self, angle):
-        inf_line_vert = RemovableInfiniteLine(
+        view_range = self.graphView.viewRange()
+        x_center = (view_range[0][0] + view_range[0][1]) / 2.0
+        y_center = (view_range[1][0] + view_range[1][1]) / 2.0
+        center_point = QtCore.QPointF(x_center, y_center)
+
+        self.line_counter += 1
+        line_number = self.line_counter
+
+        if angle == 90:
+            pos = x_center
+        elif angle == 0:
+            pos = y_center
+        else:
+            pos = center_point
+
+        inf_line = RemovableInfiniteLine(
             movable=True,
             angle=angle,
             pen=(0, 0, 200),
             hoverPen=(0, 200, 0),
-            label='y={value:0.4f}',
-            labelOpts={'color': (200, 0, 0), 'movable': True, 'fill': (0, 0, 200, 100)}
+            label=f'#{line_number}: {{value:0.9f}}',
+            labelOpts={
+                'color': (200, 0, 0), 
+                'movable': True, 
+                'fill': (0, 0, 200, 100)
+            },
+            pos=pos
         )
 
-        self.graphView.addItem(inf_line_vert)
-
-        inf_line_vert.removeRequested.connect(lambda line: self.graphView.removeItem(line))
+        self.graphView.addItem(inf_line)
+        inf_line.removeRequested.connect(lambda line: self.graphView.removeItem(line))
 
     def click_scene_main_graph(self, event):
         self.__callback_click_scene(self.stack_osc.values())

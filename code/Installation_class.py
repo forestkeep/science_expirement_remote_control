@@ -30,7 +30,7 @@ from interface.installation_window import Ui_Installation
 from schematic_exp.construct_diagramexp import expDiagram
 from schematic_exp.exp_time_line import callStack
 from schematic_exp.actions_diagram import actDiagram
-from saving_data.Parse_data import process_and_export, type_save_file
+from saving_data.Parse_data import type_save_file
 from available_devices import dict_device_class, JSON_dict_device_class
 from meas_session_data import measSession
 from experiment_control import ExperimentBridge
@@ -376,6 +376,7 @@ class installation_class( ExperimentBridge, analyse):
             self.pipe_exp.send(["close", 1])
         if self.experiment_process:
             self.experiment_process.join()
+        self.saving_controller.terminate_saving_processes()
 
     def delete_device(self, device):
         if self.is_experiment_running() == False:
@@ -895,14 +896,14 @@ class installation_class( ExperimentBridge, analyse):
                 if ans == "Книга Excel (*.xlsx)":
                     if result_file.find(".xlsx") == -1:
                         result_file = result_file + ".xlsx"
-                    process_and_export(
-                    buf_file,
-                    result_file,
-                    type_save_file.excel,
-                    buf_session.meas_session_data,
-                    False,
-                    self.answer_save_results
-                )
+                    self.saving_controller.process_and_export(
+                        buf_file,
+                        result_file,
+                        type_save_file.excel,
+                        buf_session.meas_session_data,
+                        False,
+                        self.answer_save_results
+                    )
             else:
                 pass
         else:
