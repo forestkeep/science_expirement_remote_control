@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class ChannelManager(QWidget):
 
-	channel_toggled = pyqtSignal(str, str, bool)
+	channel_toggled = pyqtSignal(str, str, str, bool)
 	waveform_changed = pyqtSignal(str, str, int)
 	
 	def __init__(self, device_name):
@@ -88,7 +88,11 @@ class ChannelManager(QWidget):
 
 	def _handle_channel_toggle(self, state, channel_name):
 		checked = state == Qt.Checked
-		self.channel_toggled.emit(self.device_name, channel_name, checked)
+		try:
+			number_osc = int(self.waveform_combos[channel_name].currentText())-1
+		except:
+			number_osc = ""
+		self.channel_toggled.emit(self.device_name, channel_name, str(number_osc), checked)
 
 	def _handle_waveform_change(self, index, channel_name):
 		checkbox = self.checkbox_dict.get(channel_name)
@@ -119,7 +123,7 @@ class ChannelManager(QWidget):
 class OscilloscopeSelector(QWidget):
 
 	device_selected = pyqtSignal(str)
-	channel_selected = pyqtSignal(str, str, bool)
+	channel_selected = pyqtSignal(str, str, str, bool)
 	waveform_selected = pyqtSignal(str, str, int)
 	
 	def __init__(self):

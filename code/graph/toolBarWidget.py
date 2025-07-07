@@ -1,9 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QSizePolicy, QApplication
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt, QSize
-
-
-
+from PyQt5.QtCore import QSize
 
 class ToolButton(QPushButton):
     def __init__(self, is_change_style=True, parent=None):

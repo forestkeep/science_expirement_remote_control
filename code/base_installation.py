@@ -10,7 +10,6 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import logging
-import sys
 import threading
 import time
 from datetime import datetime

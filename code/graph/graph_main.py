@@ -13,7 +13,6 @@ import time
 from datetime import datetime
 
 import pyqtgraph as pg
-import numpy as np
 import logging
 from PyQt5.QtCore import QObject, Qt, pyqtSignal, QPoint
 from PyQt5.QtGui import QFont, QFontMetrics

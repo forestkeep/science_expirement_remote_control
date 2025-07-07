@@ -17,7 +17,6 @@ from PyQt5.QtWidgets import QApplication
 from Devices.Classes import ch_response_to_step
 from Handler_manager import messageBroker
 #from profilehooks import profile
-import numpy
 
 from multiprocessing import Queue
 from shared_buffer_manager import SharedBufferManager

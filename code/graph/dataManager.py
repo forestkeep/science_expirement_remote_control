@@ -133,7 +133,7 @@ class graphDataManager( QObject ):
 	def get_name_params(self):
 		return list(self.__sessions_data['osc'].data.keys()) + list( self.__sessions_data['main'].data.keys())
 
-	def start_new_session(self, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None):
+	def start_new_session(self, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None, type_data: str = None):
 		if not session_id or not isinstance(session_id, str):
 			raise ValueError("Invalid session_id")
 
@@ -150,7 +150,7 @@ class graphDataManager( QObject ):
 			self.name = session_id
 
 			if new_data is not None:
-				status = self.add_measurement_data(new_data)
+				status = self.add_measurement_data(new_data, type_data)
 				if not status:
 					raise ValueError("Failed to add measurement data")
 
@@ -198,7 +198,7 @@ class graphDataManager( QObject ):
 
 		return returned_data
 
-	def add_measurement_data(self, new_param: Dict[str, Any]) -> bool:
+	def add_measurement_data(self, new_param: Dict[str, Any], type_data: str = None) -> bool:
 		"""
 		Добавление измерительных данных с учетом различной глубины вложенности.
 		
@@ -226,7 +226,7 @@ class graphDataManager( QObject ):
 		is_old_param_udated = False
 
 		if handler:
-			status, is_new_param_added, is_old_param_udated = handler(new_param)
+			status, is_new_param_added, is_old_param_udated = handler(new_param, type_data)
 		else:
 			logger.warning(f"Слишком глубокая структура данных {new_param=} не знаем, как с ней работать")
 			status = False
@@ -239,13 +239,13 @@ class graphDataManager( QObject ):
 
 		return status
 	
-	def _handle_three_level_data(self, data: Dict[str, Dict[str, dict[str, Any]]]) -> tuple[bool, bool, bool]:
+	def _handle_three_level_data(self, data: Dict[str, Dict[str, dict[str, Any]]], type_data: str = None) -> tuple[bool, bool, bool]:
 		is_new_param_added = False
 		is_old_param_udated = False
 		for device, channels in data.items():
 			for channel, values in channels.items():
 				for param, value in values.items():
-					ans, is_added, is_udated = self._add_new_data(device=device, channel=channel, param=param, value=value)
+					ans, is_added, is_udated = self._add_new_data(device=device, channel=channel, param=param, value=value, type_data=type_data)
 
 					if is_added and not is_new_param_added:
 						is_new_param_added = True
@@ -256,12 +256,12 @@ class graphDataManager( QObject ):
 					
 		return True, is_new_param_added, is_old_param_udated
 
-	def _handle_two_level_data(self, data: Dict[str, Dict[str, Any]])  -> bool:
+	def _handle_two_level_data(self, data: Dict[str, Dict[str, Any]], type_data: str = None)  -> bool:
 		is_new_param_added = False
 		is_old_param_udated = False
 		for channel, values in data.items():
 			for param, value in values.items():
-				ans, is_added, is_udated = self._add_new_data(device=None, channel=channel, param=param, value=value)
+				ans, is_added, is_udated = self._add_new_data(device=None, channel=channel, param=param, value=value, type_data=type_data)
 
 				if is_added and not is_new_param_added:
 					is_new_param_added = True
@@ -271,11 +271,11 @@ class graphDataManager( QObject ):
 					return False, is_new_param_added, is_old_param_udated
 		return True, is_new_param_added, is_old_param_udated
 
-	def _handle_one_level_data(self, data: Dict[str, any])  -> bool:
+	def _handle_one_level_data(self, data: Dict[str, any], type_data = None)  -> bool:
 		is_new_param_added = False
 		is_old_param_udated = False
 		for param, value in data.items():
-			ans, is_added, is_udated = self._add_new_data(device=None, channel=None, param=param, value=value)
+			ans, is_added, is_udated = self._add_new_data(device=None, channel=None, param=param, value=value, type_data=type_data)
 
 			if is_added and not is_new_param_added:
 				is_new_param_added = True
@@ -286,7 +286,7 @@ class graphDataManager( QObject ):
 			
 		return True, is_new_param_added, is_old_param_udated
 
-	def _add_new_data(self, device: Optional[str], channel: Optional[str], param: str, value: list) -> tuple[bool, bool, bool]:
+	def _add_new_data(self, device: Optional[str], channel: Optional[str], param: str, value: list, type_data: str = None) -> tuple[bool, bool, bool]:
 		is_new_param_added = False
 		is_old_param_udated = False
 
@@ -313,11 +313,13 @@ class graphDataManager( QObject ):
 			logger.warning(f"Длины списков параметра и времени не равны {device=} {channel=} {param=} {value=}")
 			return False, is_new_param_added, is_old_param_udated
 		
-		if "wavech" in param:
+		if "wavech" in param or type_data == "osc":
+			print("wavech add", key)
 			existing_data = self.__sessions_data['osc'].data.get(key)
 			focus = self.__sessions_data['osc'].data
 			key_type = "osc"
 		else:
+			print("main add", key)
 			existing_data = self.__sessions_data["main"].data.get(key)
 			focus = self.__sessions_data["main"].data
 			key_type = "main"

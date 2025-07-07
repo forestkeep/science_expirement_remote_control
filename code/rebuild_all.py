@@ -13,10 +13,24 @@ def build_python_app():
     'installation_controller.py',
     '--noconsole', 
     '--hidden-import=pyvisa_py', 
-    '--exclude-module=PyQt6, PySide6, PySide2',  
+    '--exclude-module=PyQt6, PySide6, PySide2, pytest, OpenGL',  
     '--icon=picture/picture/cat.ico',
     '--clean',
     '--noconfirm'
+    ])
+
+def build_python_app():
+    PyInstaller.__main__.run([
+        'installation_controller.py',
+        '--noconsole', 
+        '--hidden-import=pyvisa_py', 
+        '--hidden-import=multiprocessing',
+        '--exclude-module=PyQt6,PySide6,PySide2',  
+        '--icon=picture/picture/cat.ico',
+        '--clean',
+        '--noconfirm',
+        #'--add-data="service_scripts;service_scripts"',
+        #'--add-data="picture;picture"',
     ])
 
 def move_file_up_one_directory(filename):
@@ -33,7 +47,6 @@ def move_file_up_one_directory(filename):
 
         target_path_in_parent = os.path.join(parent_dir, new_filename)
 
-
         if os.path.exists(target_path_in_parent):
             os.remove(target_path_in_parent)
             print(f"Существующий файл {new_filename} в родительской директории {target_path_in_parent} был удалён.")
@@ -41,7 +54,6 @@ def move_file_up_one_directory(filename):
         shutil.move(target_file_path, target_path_in_parent)
         print(f"Файл {filename} успешно перемещён в {parent_dir}.")
         
-
         os.rename(target_path_in_parent, new_file_path)
         print(f"Файл был переименован в {new_filename}.")
     else:
@@ -91,7 +103,6 @@ if __name__ == "__main__":
             shutil.rmtree('dist')
         except Exception as e:
             print(f"Error deleting dist folder: {e}")
-    
     
     move_file_up_one_directory('installation_controller.exe')
 

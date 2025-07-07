@@ -25,7 +25,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class type_save_file(enum.Enum):
     txt = 1
     excel = 2

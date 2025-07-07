@@ -14,7 +14,6 @@ import copy
 from Devices.Classes import base_ch
 from Devices.oscilloscope import oscilloscopeClass
 
-
 class chMeasOscilloscope(base_ch):
     def __init__(self, number, device_class_name, message_broker, total_number_of_channels) -> None:
         super().__init__(number, ch_type="meas", device_class_name=device_class_name, message_broker=message_broker)
@@ -73,6 +72,8 @@ class chMeasOscilloscope(base_ch):
             self.dict_buf_parameters[f"Probech{num_ch}"] = "Hand control"
             self.dict_buf_parameters[f"Invertch{num_ch}"] = "Hand control"
             self.dict_buf_parameters[f"vscalech{num_ch}"] = "Hand control"
+
+            self.dict_buf_parameters[f"timeout_trigger"] = 1
 
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 

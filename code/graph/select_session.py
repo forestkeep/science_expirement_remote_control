@@ -19,7 +19,7 @@ except:
 logger = logging.getLogger(__name__)
 
 class SessionWidget(QWidget):
-    session_selected = pyqtSignal(str)  # session_id
+    session_selected = pyqtSignal(str)
     session_deleted = pyqtSignal(str)
     import_data_requested = pyqtSignal()
     import_oscillograms_requested = pyqtSignal()
@@ -98,7 +98,6 @@ class SessionWidget(QWidget):
         if selected_row == -1:
             return
         
-        # Подключаем действия с передачей номера строки
         rename_action.triggered.connect(lambda: self._start_rename_session(selected_row))
         delete_action.triggered.connect(lambda: self._delete_session(selected_row))
         desc_action.triggered.connect(lambda: self._add_description(selected_row))
@@ -266,8 +265,6 @@ class SessionSelectControl(QObject):
                 #self.add_session({'id': id, 'name': fileName, 'status': 'imported'})
 
     def handle_import_osc(self):
-
-        '''
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         fileName, ans = QFileDialog.getOpenFileName(
@@ -276,10 +273,9 @@ class SessionSelectControl(QObject):
             filter="Книга Excel (*.xlsx)",
             options=options,
         )
-        '''
-
-        fileName = r"C:\Users\zahidovds\Desktop\testimport.xlsx"
-        ans = "Книга Excel (*.xlsx)"
+        
+        #fileName = r"C:\Users\zahidovds\Desktop\testimport.xlsx"
+        #ans = "Книга Excel (*.xlsx)"
         
         if fileName:
             if ans == "Книга Excel (*.xlsx)":
@@ -369,7 +365,6 @@ class SessionSelectControl(QObject):
                 
                 #self.add_session({'id': id, 'name': fileName, 'status': 'imported'})
             
-# Пример использования
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     import sys
@@ -377,7 +372,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     controller = SessionSelectControl()
     
-    # Тестовые данные
     controller.sessions = [
         {'id': 1, 'name': 'Session 1', 'status': 'ok'},
         {'id': 2, 'name': 'Session 2', 'status': 'error'},

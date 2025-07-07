@@ -19,16 +19,13 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication
 
-
 class On_Off_state(Enum):
     On = True
     Off = False
 
-
 class state_device(Enum):
     Remote = True
     Hand = False
-
 
 class channel:
     def __init__(self, number) -> None:

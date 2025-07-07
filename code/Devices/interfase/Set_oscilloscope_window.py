@@ -42,7 +42,7 @@ class setWinOscilloscope(base_settings_window):
         self.vert_scale_boxes = []
         self.enter_scale = QtWidgets.QSlider()
         # self.enter_scale.setOrientation(Qt.Horizontal)
-        self.enter_scale.setRange(1, 100)  # Устанавливаем диапазон
+        self.enter_scale.setRange(1, 100)
 
         self.Layout_set_dev_meas.addLayout(
             self.create_channel_activation_section(num_channels=num_channels),
@@ -102,10 +102,8 @@ class setWinOscilloscope(base_settings_window):
         meas_main_layout = QtWidgets.QVBoxLayout()
         meas_main_layout.addWidget(self.title_auto_meas)
 
-        # Сетка для чекбоксов (4 в строку)
         grid_layout = QtWidgets.QGridLayout()
 
-        # Объявление чекбоксов
         self.check_VMAX = QtWidgets.QCheckBox("VMAX")
         self.check_VMIN = QtWidgets.QCheckBox("VMIN")
         self.check_VPP = QtWidgets.QCheckBox("VPP")
@@ -177,28 +175,22 @@ class setWinOscilloscope(base_settings_window):
             self.check_NEDGes,
         ]
 
-        # Добавляем чекбоксы в сетку
         for index, check_box in enumerate(checkboxes):
             grid_layout.addWidget(check_box, index // 4, index % 4)
             check_box.setMinimumSize(10, 15)
 
-        # Добавляем сетку чекбоксов в главный лэйаут
         meas_main_layout.addLayout(grid_layout)
         return meas_main_layout
 
     def create_channel_activation_section(self, num_channels):
-        # Создание вертикального слоя
         layout = QtWidgets.QVBoxLayout()
 
-        # Заголовок
         self.title_act_channels = QtWidgets.QLabel()
         self.title_act_channels.setAlignment(QtCore.Qt.AlignCenter)
         layout.addWidget(self.title_act_channels)
 
-        # Создание горизонтального слоя (для чекбоксов)
         horizontal_layout = QtWidgets.QHBoxLayout()
 
-        # Чекбоксы в зависимости от количества каналов
         self.checkboxes_ch = []
         for i in range(1, num_channels + 1):
             checkbox = QtWidgets.QCheckBox(f"Ch-{i}")
@@ -212,24 +204,19 @@ class setWinOscilloscope(base_settings_window):
             self.checkboxes_ch.append(checkbox)
             horizontal_layout.addWidget(checkbox)
 
-        # Добавление горизонтального слоя с чекбоксами в вертикальный слой
         layout.addLayout(horizontal_layout)
 
         return layout
 
     def create_trigger_menu(self):
-        # Создание вертикального слоя
         layout = QtWidgets.QVBoxLayout()
 
-        # Заголовок
         self.title_trig_menu = QtWidgets.QLabel()
         self.title_trig_menu.setAlignment(QtCore.Qt.AlignCenter)
         layout.addWidget(self.title_trig_menu)
 
-        # Список названий для QComboBox
-        labels = ["Sourse", "Type", "Slope", "Sweep", "Level"]
+        labels = ["Sourse", "Type", "Slope", "Sweep", "Level", "timeout_trigger"]
 
-        # Проход по названиям с добавлением QLabel и QComboBox
         self.trig_box = {}
         for label in labels:
             h_layout = QtWidgets.QHBoxLayout()
@@ -258,11 +245,11 @@ class setWinOscilloscope(base_settings_window):
         self.trig_box["Level"].addItems(["Hand control"])
         self.trig_box["Level"].setEditable(True)
         self.trig_box["Level_factor"].addItems(["mv", "v", "Hand control"])
+        self.trig_box["timeout_trigger"].addItems([str(i) for i in range(1, 20)])
 
         return layout
 
     def create_channel_settings(self, num_channels):
-        # Создание вертикального слоя
         layout = QtWidgets.QVBoxLayout()
 
         horizontal_layout = QtWidgets.QHBoxLayout()
@@ -274,21 +261,18 @@ class setWinOscilloscope(base_settings_window):
     
 
     def set_minimum_size_for_all_widgets(self, min_width=100, min_height=30):
-        widgets = self.findChildren(QtWidgets.QWidget)  # Получаем все дочерние виджеты
+        widgets = self.findChildren(QtWidgets.QWidget)
         for widget in widgets:
             print(widget)
-            widget.setMinimumSize(min_width, min_height)  # Устанавливаем минимальный размер
+            widget.setMinimumSize(min_width, min_height)
 
     def create_channel_layer(self, channel_number):
 
-        # Создание вертикального слоя
         layout = QtWidgets.QVBoxLayout()
 
-        # Имена для QLabel
         labels = ["Coupling", "BW_Limit", "Probe", "Invert"]
         combo_boxes = {}
 
-        # Создание строк с QLabel и QComboBox
         for label in labels:
             h_layout = QtWidgets.QHBoxLayout()
 
@@ -335,7 +319,6 @@ class setWinOscilloscope(base_settings_window):
         layer = QtWidgets.QVBoxLayout()
         H_layer = QtWidgets.QHBoxLayout()
 
-        # Чекбоксы в зависимости от количества каналов
         self.check_save_csv = []
         for i in range(1, num_channels + 1):
             checkbox = QtWidgets.QCheckBox()
@@ -360,7 +343,6 @@ class setWinOscilloscope(base_settings_window):
         enter_vscale_factor = QtWidgets.QComboBox()
         enter_vscale_factor.addItems(["mv", "v", "kv", "Hand control"])
 
-        # Добавляем все элементы в горизонтальный слой
         layout.addWidget(label1)
         layout.addWidget(enter_vscale_number)
         layout.addWidget(enter_vscale_factor)
@@ -380,7 +362,6 @@ class setWinOscilloscope(base_settings_window):
         self.enter_scale_factor = QtWidgets.QComboBox()
         self.enter_scale_factor.addItems(["ns", "us", "ms", "s", "Hand control"])
 
-        # Добавляем все элементы в горизонтальный слой
         layout.addWidget(self.label_time_scale)
         layout.addWidget(self.enter_scale_number)
         layout.addWidget(self.enter_scale_factor)

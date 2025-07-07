@@ -9,14 +9,12 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-import copy
 import logging
 import time
 
 import numpy as np
-import pandas as pd
 import pyqtgraph as pg
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                              QFileDialog, QFrame, QGridLayout, QHBoxLayout,
@@ -179,9 +177,9 @@ class graphOsc:
 
     def add_inf_line(self, angle):
         view_range = self.graphView.viewRange()
-        x_center = (view_range[0][0] + view_range[0][1]) / 2.0
-        y_center = (view_range[1][0] + view_range[1][1]) / 2.0
-        center_point = QtCore.QPointF(x_center, y_center)
+        x_center = int((view_range[0][0] + view_range[0][1]) / 2.0)
+        y_center = int((view_range[1][0] + view_range[1][1]) / 2.0)
+        center_point = QPoint(x_center, y_center)
 
         self.line_counter += 1
         line_number = self.line_counter
@@ -507,6 +505,14 @@ class graphOsc:
                     layout.removeItem(item)
                     item.layout().deleteLater()
 
+    def clear_data(self, device, ch_name):
+        for key in self.stack_osc.keys():
+                if str(device) in key and str(ch_name) in key:
+                    self.stack_osc[key].is_draw = False
+                    self.stack_osc[key].current_highlight = False
+
+        self.update_draw()
+
     def set_data(self, osc_data, step_data, index):
         device = osc_data.device
         ch_name = osc_data.ch
@@ -534,16 +540,15 @@ class graphOsc:
             
             relation_data = relationData(meas_x_data, meas_y_data)
 
-            logger.warning(f"{y=}")
-            logger.warning(f"{x=}")
-
             new_osc = oscData(  data = relation_data )
             
             self.stack_osc[key_stack] = new_osc
 
+        print(f"current key {key_stack}")
         for key in self.stack_osc.keys():
+            print(f"key {key}")
             if key != key_stack:
-                if str(device) + str(ch_name) in key:
+                if str(device) in key and str(ch_name) in key:
                     self.stack_osc[key].is_draw = False
                     self.stack_osc[key].current_highlight = False
 

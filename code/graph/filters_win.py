@@ -18,7 +18,6 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QApplication, QDoubleSpinBox, QHBoxLayout, QLabel,
                              QPushButton, QSpinBox, QVBoxLayout, QWidget)
 
-
 class filterWin(QWidget):
     def __init__(self):
         super().__init__()

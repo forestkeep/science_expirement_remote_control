@@ -1,7 +1,6 @@
 import logging
 import os
 import sys
-import time
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -10,7 +9,6 @@ from pymodbus.client import ModbusSerialClient
 from Devices.power_supply_class import power_supply
 from Devices.base_power_supply import chActPowerSupply, chMeasPowerSupply
 logger = logging.getLogger(__name__)
-
 
 class maishengPowerClass(power_supply):
     def __init__(self, name, installation_class) -> None:

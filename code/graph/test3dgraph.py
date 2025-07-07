@@ -12,11 +12,9 @@
 import sys
 
 import numpy as np
-import OpenGL.GL as ogl
+from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
-from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
-
 
 class CustomTextItem(gl.GLGraphicsItem.GLGraphicsItem):
     def __init__(self, X, Y, Z, text):
@@ -97,6 +95,7 @@ class Custom3DAxis(gl.GLAxisItem):
             self.parent.addItem(val)
 
     def paint(self):
+        import pyqtgraph.opengl as ogl
         self.setupGLState()
         if self.antialias:
             ogl.glEnable(ogl.GL_LINE_SMOOTH)

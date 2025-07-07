@@ -202,6 +202,7 @@ class oscilloscopeClass(base_device):
         )
         self.setting_window.trig_box["Level"].setCurrentText(number)
         self.setting_window.trig_box["Level_factor"].setCurrentText(factor)
+        self.setting_window.trig_box["timeout_trigger"].setCurrentText(str(self.active_channel_meas.dict_buf_parameters["timeout_trigger"]))
 
         number, factor = self.get_parts_scale(
             self.active_channel_meas.dict_buf_parameters["scale"]
@@ -732,6 +733,9 @@ class oscilloscopeClass(base_device):
             self.active_channel_meas.dict_buf_parameters["Sweep"] = (
                 self.setting_window.trig_box["Sweep"].currentText()
             )
+            self.active_channel_meas.dict_buf_parameters["timeout_trigger"] = (
+                self.setting_window.trig_box["timeout_trigger"].currentText()
+            )
 
             trig_level_num = self.setting_window.trig_box["Level"].currentText()
             trig_level_factor = self.setting_window.trig_box[
@@ -1021,9 +1025,10 @@ class oscilloscopeClass(base_device):
 
             # ===проведение измерений и действия с прибором===
             if not self.is_debug:
-                timeout = 10
-                #TODO: вынести таймаут в интерфейс пользователя
+                timeout = int(self.active_channel_meas.dict_buf_parameters["timeout_trigger"] )
+                #print(f"timeou = {timeout} sec")
                 self.command.single()
+                time.sleep(1)
                 time_stamp = time.perf_counter()
                 while self.command.get_status() != "STOP\n":
                     if time.perf_counter() - time_stamp > timeout:

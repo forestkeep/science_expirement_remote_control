@@ -9,12 +9,8 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-import sys
-
-import qdarktheme
-from PyQt5.QtWidgets import QApplication, QGridLayout, QWidget
-from PyQt5.QtWidgets import (QApplication, QFrame, QLabel, QSizePolicy,
-                             QVBoxLayout, QWidget)
+from PyQt5.QtWidgets import QGridLayout, QWidget
+from PyQt5.QtWidgets import QLabel, QWidget
 
 try:
 	from stack_experiment import deviceAction

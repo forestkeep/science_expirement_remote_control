@@ -119,7 +119,7 @@ if __name__ == "__main__":
     import sys
     app = QApplication(sys.argv)
     msg = messageBrokerFake()
-    data = json.load(open("Devices\JSONDevices\device_config_test.json", "r"))
+    data = json.load(open("Devices/JSONDevices/device_config_test.json", "r"))
     fake_inst = install_fake(msg)
     test_block = power_supply(fake_inst)
     test_block.load_json(data)

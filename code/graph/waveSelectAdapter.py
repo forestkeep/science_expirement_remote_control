@@ -15,6 +15,7 @@ except:
 	from graph.curve_data import linearData
 	from graph.dataManager import relationData
 from PyQt5.QtWidgets import QApplication
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -40,12 +41,15 @@ class waveSelectAdapter:
 		if device_name != self.current_device:
 			self.current_device = device_name
 		
-	def _handle_channel_selected(self, device_name: str, channel_name: str, checked: bool):
+	def _handle_channel_selected(self, device_name: str, channel_name: str, number_osc: str, checked: bool):
 		if self.current_device == device_name:
 			if checked:
 				self.active_channels.append(channel_name)
+				if number_osc:
+					self._handle_waveform_selected(device_name, channel_name, number_osc)
 			else:
 				self.active_channels.remove(channel_name)
+				self.graph.clear_data(device_name, channel_name)
 
 	def _handle_waveform_selected(self, device_name: str = None, channel_name: str = None, waveform_name: str = None):
 		if device_name == self.current_device:

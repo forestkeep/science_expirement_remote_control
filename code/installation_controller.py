@@ -13,6 +13,7 @@ import ctypes
 import logging
 import os
 import sys
+import multiprocessing
 from logging.handlers import RotatingFileHandler
 from dataclasses import dataclass
 
@@ -307,6 +308,9 @@ def get_installation_controller_path():
     return path
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    multiprocessing.set_start_method('spawn')  # Явно установите метод запуска
+
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
     logger = logging.getLogger(__name__)
@@ -357,7 +361,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         file_path = os.path.normpath(sys.argv[1].strip('"'))
 
-    file_path = r"C:\Users\User\Desktop\exp_controll_development\science_expirement_remote_control\code\test_subs.ns"
+    #file_path = r"C:\Users\User\Desktop\exp_controll_development\science_expirement_remote_control\code\test_subs.ns"
 
     settings_manager = SettingsManager(settings=settings, VERSION_APP=VERSION_APP, def_persistent_sett=persistent_settings)
 

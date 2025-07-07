@@ -16,8 +16,6 @@ import os
 from datetime import datetime
 
 import pandas
-import openpyxl
-from pathlib import Path
 from PyQt5.QtWidgets import QApplication
 from send2trash import send2trash
 from PyQt5 import QtWidgets

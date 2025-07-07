@@ -19,11 +19,9 @@ from PyQt5 import QtCore, QtWidgets
 
 logger = logging.getLogger(__name__)
 
-
 class SVPS32_class:
     def __init__(self) -> None:
         pass
-
 
 class Ui_SVPS34_control(object):
     def setupUi(self, SVPS34_control):

@@ -12,10 +12,8 @@
 import sys
 import time
 import random
-import pandas as pd
 
 import logging
-import json
 from PyQt5.QtCore import QPoint, QTimer, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,

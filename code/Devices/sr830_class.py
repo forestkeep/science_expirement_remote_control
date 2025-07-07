@@ -23,7 +23,6 @@ from Devices.interfase.set_sr830_window import Ui_Set_sr830
 
 logger = logging.getLogger(__name__)
 
-
 class sr830Class(base_device):
     def __init__(self, name, installation_class) -> None:
         super().__init__(name, "serial", installation_class)

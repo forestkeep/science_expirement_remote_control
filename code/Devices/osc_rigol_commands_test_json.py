@@ -13,7 +13,6 @@ import json
 import logging
 import random
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pyvisa
 
@@ -582,6 +581,7 @@ def find_sign_change(derivative):
 
 
 def test():
+    import matplotlib.pyplot as plt
     x = np.linspace(0, 6 * np.pi, 100)  # Создание массива x от 0 до 2π
     y = np.sin(x)  # Вычисление значений синуса в каждой точке
 

@@ -11,7 +11,6 @@
 
 import copy
 
-import matplotlib.pyplot as plt
 import numpy as np
 import logging
 logger = logging.getLogger(__name__)
@@ -229,6 +228,7 @@ def generate_data(func, num_points, variation, start, stop):
     return x, y
 
 def plot_loops(loops, new_loops=None):
+    import matplotlib.pyplot as plt
     plt.figure(figsize=(12, 8))
     
     for loop in loops:
@@ -320,4 +320,4 @@ if __name__ == '__main__':
     analyzer = LoopAnalyzer(loops)
     new_loop = analyzer.avg_loop()
 
-    plot_loops(build_loops, [new_loop])
+    #plot_loops(build_loops, [new_loop])

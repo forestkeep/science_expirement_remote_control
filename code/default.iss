@@ -6,7 +6,7 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{2C15D3A9-D9EA-4BF6-97E5-3CAF33D0C0CC}
 AppName=Installation Controller
-AppVersion=1.0.5
+AppVersion=1.1.0
 ;AppVerName=Installation Controller 1.0.0
 AppPublisher=Publisher
 DefaultDirName={autopf}\Installation Controller
