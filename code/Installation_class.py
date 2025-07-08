@@ -28,7 +28,6 @@ from measurement_running import experimentControl
 from Handler_manager import messageBroker
 from interface.installation_window import Ui_Installation
 from schematic_exp.construct_diagramexp import expDiagram
-from schematic_exp.exp_time_line import callStack
 from schematic_exp.actions_diagram import actDiagram
 from saving_data.Parse_data import type_save_file
 from available_devices import dict_device_class, JSON_dict_device_class
@@ -372,10 +371,15 @@ class installation_class( ExperimentBridge, analyse):
         self.graph_controller.graphics_win.close()
         self.stop_scan_thread = True
         self.thread_scan_resources.join()
+
         if self.is_experiment_running():
             self.pipe_exp.send(["close", 1])
-        if self.experiment_process:
-            self.experiment_process.join()
+
+            self.experiment_process.join(timeout=5)
+            if self.experiment_process.is_alive():
+                self.experiment_process.terminate()
+                self.experiment_process.join(timeout=1)
+                
         self.saving_controller.terminate_saving_processes()
 
     def delete_device(self, device):

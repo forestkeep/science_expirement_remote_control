@@ -314,12 +314,10 @@ class graphDataManager( QObject ):
 			return False, is_new_param_added, is_old_param_udated
 		
 		if "wavech" in param or type_data == "osc":
-			print("wavech add", key)
 			existing_data = self.__sessions_data['osc'].data.get(key)
 			focus = self.__sessions_data['osc'].data
 			key_type = "osc"
 		else:
-			print("main add", key)
 			existing_data = self.__sessions_data["main"].data.get(key)
 			focus = self.__sessions_data["main"].data
 			key_type = "main"
@@ -482,7 +480,6 @@ if __name__ == "__main__":
 			},
 			'ch2': {}}
 	}
-
 
 	my_class = graphDataManager()
 	my_class.start_new_session("1")

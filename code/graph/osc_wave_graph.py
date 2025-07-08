@@ -544,9 +544,7 @@ class graphOsc:
             
             self.stack_osc[key_stack] = new_osc
 
-        print(f"current key {key_stack}")
         for key in self.stack_osc.keys():
-            print(f"key {key}")
             if key != key_stack:
                 if str(device) in key and str(ch_name) in key:
                     self.stack_osc[key].is_draw = False

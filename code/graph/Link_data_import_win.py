@@ -50,7 +50,6 @@ class Check_data_import_win(QDialog):
         self.step_combo = QComboBox()
         self.step_combo.addItems( strings )
         if is_osc:
-            print(5454)
             lay_combo = QVBoxLayout() 
             step_label = QLabel( QApplication.translate("GraphWindow","Шаг времени"))
             lay_combo.addWidget(step_label)
