@@ -234,8 +234,11 @@ class installation_class( ExperimentBridge, analyse):
         self.installation_window.develop_mode.triggered.connect(self.change_check_debug)
 
         self.installation_window.clear_log_button.clicked.connect(self.clear_log)
+        
         self.installation_window.clear_log_button.setToolTip(QApplication.translate('main install',"Очистить лог"))
         self.set_state_text( text = QApplication.translate('main install',"Ожидание настройки приборов") )
+
+        self.installation_window.instruction.triggered.connect(self.show_instruction)
         
         self.timer_for_open_base_instruction.start()
 

@@ -12,6 +12,8 @@
 import logging
 import threading
 import time
+import webbrowser
+import os
 from datetime import datetime
 
 from pymodbus.client import ModbusSerialClient
@@ -268,7 +270,15 @@ class baseInstallation:
             return True
         else:
             return False
-
+        
+    def show_instruction(self): 
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        html_path = os.path.join(base_path, "instruction.html")
+        
+        if not os.path.exists(html_path):
+            logger.warning(f"Файл инструкции {html_path} не найден")    
+            return
+        webbrowser.open(f"file:///{html_path}")
 
     def show_about_autors(self):
         text = QApplication.translate('base_install',"""
