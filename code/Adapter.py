@@ -217,6 +217,14 @@ class instrument:
         except:
             res = pyvisa.ResourceManager('@py').list_resources()
         return res
+    
+    @staticmethod
+    def get_type_visa_backend():
+        try:
+            backend = pyvisa.ResourceManager('@ivi')
+        except:
+            backend = pyvisa.ResourceManager('@py')
+        return backend
 
     @staticmethod
     def get_resourses() -> list:

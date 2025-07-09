@@ -536,28 +536,33 @@ class base_device():
         '''проверяет наличие ком портов в системе'''
         self.timer_for_scan_com_port.stop()
 
-        local_list_com_ports = self.installation_class.get_list_resources()
+        list_all_resources = self.installation_class.get_list_resources()
         visa_resources = self.installation_class.get_list_visa_resources()
+        visa_backend = self.installation_class.get_visa_backend()
+
+        tooltip_text = f"используется backend VISA: {visa_backend}\n"
         stop = False
-        if local_list_com_ports == []:
+        if list_all_resources == []:
             try:
-                local_list_com_ports.append(QApplication.translate("Device","Нет подключенных портов"))
-                if len(local_list_com_ports) < len(visa_resources):
+                list_all_resources.append(QApplication.translate("Device","Нет подключенных портов"))
+                if len(list_all_resources) < len(visa_resources):
                     self.setting_window.comportslist.setStyleSheet(warning_style_border)
-                    self.setting_window.comportslist.setToolTip(QApplication.translate("Device","В системе обнаружены источники подключения  VISA"))
+                    tooltip_text += QApplication.translate("Device","В системе обнаружены источники подключения  VISA ")
                 else:
                     self.setting_window.comportslist.setStyleSheet(not_ready_style_border)
-                    self.setting_window.comportslist.setToolTip(QApplication.translate("Device","В системе не обнаружены доступные источники подключения"))
+                    tooltip_text += QApplication.translate("Device","В системе не обнаружены доступные источники подключения ")
             except:
                 pass
 
-        if local_list_com_ports == self.active_ports:
+        self.setting_window.comportslist.setToolTip(tooltip_text)
+
+        if list_all_resources == self.active_ports:
             pass
         else:
             try:
                 current_val = self.setting_window.comportslist.currentText()
                 self.setting_window.comportslist.clear()
-                self.setting_window.comportslist.addItems(local_list_com_ports)
+                self.setting_window.comportslist.addItems(list_all_resources)
                 self.setting_window.comportslist.setStyleSheet(ready_style_border)
                 self.setting_window.comportslist.setStyleSheet(ready_style_border)
                 self.setting_window.comportslist.setCurrentText(current_val)
@@ -578,7 +583,7 @@ class base_device():
         else:
                 self.setting_window.comportslist.setStyleSheet(ready_style_border)
         
-        self.active_ports = local_list_com_ports
+        self.active_ports = list_all_resources
 
         try:
             self.setting_window.isVisible()

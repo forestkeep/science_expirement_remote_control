@@ -20,8 +20,10 @@ if __name__ == "__main__":
     multiprocessing.freeze_support()
     multiprocessing.set_start_method('spawn')
 
+    # Настройка окружения
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
+    # Инициализация логгера
     logger = logging.getLogger(__name__)
     FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
 
@@ -29,33 +31,49 @@ if __name__ == "__main__":
     console.setLevel(logging.WARNING)
     console.setFormatter(logging.Formatter(FORMAT))
 
-    folder_path = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")
-    if not os.path.exists( folder_path ):
-        os.makedirs( folder_path )
+    # Создание папки для логов
+    folder_path = os.path.join(
+        os.getenv('USERPROFILE'),
+        "AppData",
+        "Local",
+        "Installation_Controller"
+    )
+    os.makedirs(folder_path, exist_ok=True)
 
-    log_file_path = os.path.join( folder_path, "loginstallation.log" )
-
-    file_handler = RotatingFileHandler( log_file_path, maxBytes=1000000, backupCount=5 )
+    # Настройка файлового обработчика логов
+    log_file_path = os.path.join(folder_path, "loginstallation.log")
+    file_handler = RotatingFileHandler(
+        log_file_path,
+        maxBytes=30 * 1000000,  # 30 МБ
+        backupCount=15,
+        encoding='utf-8'
+    )
     
-    file_handler.setLevel( logging.WARNING )
-    file_handler.setFormatter( logging.Formatter(FORMAT) )
+    file_handler.setLevel(logging.WARNING)
+    file_handler.setFormatter(logging.Formatter(FORMAT))
 
-    logging.basicConfig(handlers=[file_handler, console], level=logging.DEBUG)
+    # Инициализация системы логирования
+    logging.basicConfig(
+        handlers=[file_handler, console],
+        level=logging.DEBUG
+    )
 
+    # Создание приложения
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
     os.environ["APP_THEME"] = "dark"
 
+    # Настройка перевода
     translator = QTranslator()
-    
     QtWidgets.QApplication.instance().installTranslator(translator)
 
+    # Загрузка настроек
     settings = QtCore.QSettings(
-            QtCore.QSettings.IniFormat,
-            QtCore.QSettings.UserScope,
-            "misis_lab",
-            "exp_control" + VERSION_APP,
-        )
+        QtCore.QSettings.IniFormat,
+        QtCore.QSettings.UserScope,
+        "misis_lab",
+        "exp_control" + VERSION_APP,
+    )
     
     persistent_settings = {
         'language': 'ENG',
@@ -64,12 +82,12 @@ if __name__ == "__main__":
         "is_exp_run_anywhere": False,
         "is_delete_buf_file": False,
         "should_prompt_for_session_name": True
-        }
+    }
     
-    file_path = ""
-    if len(sys.argv) > 1:
-        file_path = os.path.normpath(sys.argv[1].strip('"'))
+    # Обработка аргументов командной строки
+    file_path = os.path.normpath(sys.argv[1].strip('"')) if len(sys.argv) > 1 else ""
 
+    # Инициализация VISA
     try:
         rm_ivi = pyvisa.ResourceManager('@ivi')
     except OSError:
@@ -82,9 +100,14 @@ if __name__ == "__main__":
         rm_py = None
         logger.warning(f"pyvisa-py бэкенд не работает: {str(e)}")
 
-    #file_path = r"C:\Users\User\Desktop\exp_controll_development\science_expirement_remote_control\code\test_subs.ns"
+    # Создание менеджера настроек
+    settings_manager = SettingsManager(
+        settings=settings,
+        VERSION_APP=VERSION_APP,
+        def_persistent_sett=persistent_settings
+    )
 
-    settings_manager = SettingsManager(settings=settings, VERSION_APP=VERSION_APP, def_persistent_sett=persistent_settings)
+    #file_path = r"C:\Users\User\Desktop\exp_controll_development\science_expirement_remote_control\code\test_subs.ns"
 
     start_window = instController( settings_manager, version=VERSION_APP )
     if not start_window.check_open_type(file_path):

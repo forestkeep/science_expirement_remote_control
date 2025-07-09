@@ -57,6 +57,10 @@ class baseInstallation:
 
         self.experiment_process = None
 
+        self.list_resources = []
+        self.list_visa_resources = []
+        self.visa_backend = ""
+
         self.saving_controller = savingController()
         self.saving_controller.set_info_callback( self.add_text_to_log )
 
@@ -157,13 +161,17 @@ class baseInstallation:
             if self.is_search_resources and not self.is_experiment_running():
                 self.list_resources = instrument.get_resourses()
                 self.list_visa_resources = instrument.get_visa_resourses()
-                time.sleep(0.3)
+                self.visa_backend = instrument.get_type_visa_backend()
+                time.sleep(1)
 
     def get_list_resources(self) -> list:
         return self.list_resources
     
     def get_list_visa_resources(self) -> list:
         return self.list_visa_resources
+    
+    def get_visa_backend(self):
+        return self.visa_backend
 
     def set_way_save(self):
         options = QtWidgets.QFileDialog.Options()
