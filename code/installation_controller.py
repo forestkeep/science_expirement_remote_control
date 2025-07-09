@@ -12,17 +12,12 @@
 import ctypes
 import logging
 import os
-import sys
-import multiprocessing
-from logging.handlers import RotatingFileHandler
 from dataclasses import dataclass
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import QTranslator
 from PyQt5.QtWidgets import QApplication
 from SettingsManager import SettingsManager
-
-import qdarktheme
 
 import interface.info_window_dialog
 from device_creator.dev_creator import deviceCreator
@@ -34,8 +29,8 @@ from interface.main_window import Ui_MainWindow
 from controlDevicesJSON import search_devices_json
 from localJSONControl import localDeviceControl
 from device_selector import deviceSelector
+from functions import open_log_file
 
-VERSION_APP = "1.1.0"
 logger = logging.getLogger(__name__)
 
 def is_admin():
@@ -52,9 +47,8 @@ class devFile:
     status: bool
     json_data: dict
 
-class MyWindow(QtWidgets.QMainWindow):
-    global VERSION_APP
-    def __init__(self, settings_manager: SettingsManager):
+class instController(QtWidgets.QMainWindow):
+    def __init__(self, settings_manager: SettingsManager, version):
         self.settings_manager = settings_manager
 
         self.graph_controller   = None
@@ -63,11 +57,11 @@ class MyWindow(QtWidgets.QMainWindow):
 
         self.select_local_device = None
 
-        logger.warning(f"Start Version {VERSION_APP}, Admin {is_admin()}")
+        logger.warning(f"Start Version {version}, Admin {is_admin()}")
 
         super().__init__()
 
-        self.ui = Ui_MainWindow(version = VERSION_APP, main_class=self)
+        self.ui = Ui_MainWindow(version = version, main_class=self)
         logger.debug("запуск программы")
         self.ui.setupUi(self)
         self.dict_active_local_devices = {}
@@ -75,9 +69,10 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.pushButton.clicked.connect(self.open_select_device_window)
         self.ui.pushButton_2.clicked.connect(self.open_installation_window)
         self.ui.actionCreateNew.triggered.connect(self.open_create_new_device)
+        self.ui.log_path_open.triggered.connect(open_log_file)
         self.cur_install = installation_class(
             settings_manager=self.settings_manager, 
-            version = VERSION_APP
+            version = version
         )
 
         #======================languages load==========================
@@ -97,32 +92,7 @@ class MyWindow(QtWidgets.QMainWindow):
         #self.message_from_new_installation( ['Maisheng'], [])
         #----------------------
 
-        if False:
-            if os.path.isfile("picture/tray.png"):
-                try:
-                    self.tray_icon = QtWidgets.QSystemTrayIcon(self)
-                    self.tray_icon.setIcon(QtGui.QIcon("picture/tray.png"))
-                    self.tray_icon.activated.connect(self.tray_icon_activated)
 
-                    self.tray_menu = QtWidgets.QMenu()
-
-                    self.show_action = self.tray_menu.addAction(QApplication.translate('main', "Развернуть"))
-                    self.quit_action = self.tray_menu.addAction(QApplication.translate('main', "Закрыть приложение"))
-
-                    self.show_action.triggered.connect(self.show)
-                    self.quit_action.triggered.connect(self.quit_application)
-
-                    self.tray_icon.setContextMenu(self.tray_menu)
-
-                    self.tray_icon.setToolTip(QApplication.translate('main',"Управление экспериментальной установкой"))
-                    self.tray_icon.show()
-
-                    self.close_event = QtWidgets.QShortcut(
-                        QtGui.QKeySequence("Ctrl+Q"), self
-                    )
-                    self.close_event.activated.connect(self.close)
-                except:
-                    logger.warning("Функционал сворачивания в трей не добавлен")
     def check_open_type(self, file_path):
         status = False
         if os.path.isfile(file_path):
@@ -307,66 +277,3 @@ def get_installation_controller_path():
     path = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")
     return path
 
-if __name__ == "__main__":
-    multiprocessing.freeze_support()
-    multiprocessing.set_start_method('spawn')  # Явно установите метод запуска
-
-    os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-
-    logger = logging.getLogger(__name__)
-    FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
-
-    console = logging.StreamHandler()
-    console.setLevel(logging.WARNING)
-    console.setFormatter(logging.Formatter(FORMAT))
-
-    folder_path = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")
-    if not os.path.exists( folder_path ):
-        os.makedirs( folder_path )
-
-    log_file_path = os.path.join( folder_path, "loginstallation.log" )
-
-    file_handler = RotatingFileHandler( log_file_path, maxBytes=1000000, backupCount=5 )
-    
-    file_handler.setLevel( logging.WARNING )
-    file_handler.setFormatter( logging.Formatter(FORMAT) )
-
-    logging.basicConfig(handlers=[file_handler, console], level=logging.DEBUG)
-
-    app = QtWidgets.QApplication(sys.argv)
-    qdarktheme.setup_theme(corner_shape="sharp")
-    os.environ["APP_THEME"] = "dark"
-
-    translator = QTranslator()
-    
-    QtWidgets.QApplication.instance().installTranslator(translator)
-
-    settings = QtCore.QSettings(
-            QtCore.QSettings.IniFormat,
-            QtCore.QSettings.UserScope,
-            "misis_lab",
-            "exp_control" + VERSION_APP,
-        )
-    
-    persistent_settings = {
-        'language': 'ENG',
-        'theme': 'dark',
-        "is_show_basic_instruction_again": True,
-        "is_exp_run_anywhere": False,
-        "is_delete_buf_file": False,
-        "should_prompt_for_session_name": True
-        }
-    
-    file_path = ""
-    if len(sys.argv) > 1:
-        file_path = os.path.normpath(sys.argv[1].strip('"'))
-
-    #file_path = r"C:\Users\User\Desktop\exp_controll_development\science_expirement_remote_control\code\test_subs.ns"
-
-    settings_manager = SettingsManager(settings=settings, VERSION_APP=VERSION_APP, def_persistent_sett=persistent_settings)
-
-    start_window = MyWindow( settings_manager)
-    if not start_window.check_open_type(file_path):
-        #TODO: добавить контроллер открывтия , открываться может установка, сессия обработки данных. Контроллер должен управлять открытием, выдавать сообщения в случае ошибок и т.д.
-        start_window.show()
-    sys.exit(app.exec_())

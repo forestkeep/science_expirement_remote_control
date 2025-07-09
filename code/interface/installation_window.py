@@ -499,6 +499,8 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.add_device_button = QtWidgets.QAction(base_window)
         self.add_device_button.setObjectName("add_device_button")
 
+        self.log_path_open = QtWidgets.QAction(base_window)
+
         self.convert_buf_button = QtWidgets.QAction(base_window)
 
         self.menu.addAction(self.save_installation_button)
@@ -508,6 +510,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
         self.menu.addAction(self.add_device_button)
         self.menu.addSeparator()
         self.menu.addAction(self.convert_buf_button)
+        self.menu.addAction(self.log_path_open)
         self.menubar.addAction(self.menu.menuAction())
 
         self.set = QtWidgets.QMenu(self.menubar)
@@ -613,3 +616,5 @@ class Ui_Installation(QtWidgets.QMainWindow):
         
         self.convert_buf_button.setText(_translate(
             "settings_save", "Сохранить результаты из buf файла"))
+        
+        self.log_path_open.setText(_translate("main","Открыть лог файл"))

@@ -33,7 +33,7 @@ from saving_data.Parse_data import type_save_file
 from available_devices import dict_device_class, JSON_dict_device_class
 from meas_session_data import measSession
 from experiment_control import ExperimentBridge
-from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, create_clients, ExperimentState
+from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, create_clients, ExperimentState, open_log_file
 from graph.online_graph import sessionController
 from multiprocessing import Process, Pipe, Queue
 
@@ -239,6 +239,8 @@ class installation_class( ExperimentBridge, analyse):
         self.set_state_text( text = QApplication.translate('main install',"Ожидание настройки приборов") )
 
         self.installation_window.instruction.triggered.connect(self.show_instruction)
+
+        self.installation_window.log_path_open.triggered.connect(open_log_file)
         
         self.timer_for_open_base_instruction.start()
 
@@ -285,7 +287,7 @@ class installation_class( ExperimentBridge, analyse):
             self.installation_window.start_button.update_buf_style()
 
     def add_new_channel(self, device, num_ch):
-        if self.is_experiment_running() == False:
+        if self.is_experiment_running() is False:
             for ch in self.dict_active_device_class[device].channels:
                 if ch.number == num_ch:
                     if ch.is_ch_seted():
@@ -315,7 +317,7 @@ class installation_class( ExperimentBridge, analyse):
                 status_color
             )
         else:
-            if num_ch == None:
+            if num_ch is None:
                 self.installation_window.devices_lay[
                     device_name
                 ].name_device.setStyleSheet(status_color)
@@ -386,7 +388,7 @@ class installation_class( ExperimentBridge, analyse):
         self.saving_controller.terminate_saving_processes()
 
     def delete_device(self, device):
-        if self.is_experiment_running() == False:
+        if self.is_experiment_running() is False:
             for ch in self.dict_active_device_class[device].channels:
                 self.message_broker.clear_my_topicks(publisher=ch)
 
@@ -666,7 +668,7 @@ class installation_class( ExperimentBridge, analyse):
 
     def push_button_save_installation(self):
             logger.debug("нажата кнопка сохранения установки")
-            if self.way_to_save_installation_file == None:
+            if self.way_to_save_installation_file is None:
                 self.push_button_save_installation_as()
             else:
                 status_save = self.write_data_to_save_installation_file(

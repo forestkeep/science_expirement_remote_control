@@ -212,7 +212,10 @@ class instrument:
 
     @staticmethod
     def get_visa_resourses() -> list:
-        res = pyvisa.ResourceManager().list_resources()
+        try:
+            res = pyvisa.ResourceManager('@ivi').list_resources()
+        except:
+            res = pyvisa.ResourceManager('@py').list_resources()
         return res
 
     @staticmethod

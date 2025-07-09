@@ -9,6 +9,7 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 import datetime
+import os
 from multiprocessing import Queue
 from queue import Empty
 from pymodbus.client import ModbusSerialClient
@@ -27,6 +28,10 @@ class ExperimentState(Enum):
     FINALIZING = auto()         # Подготовка к окончанию
     COMPLETED = auto()          # Эксперимент окончен
 
+def open_log_file(self):
+        folder_path = os.path.abspath(os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller"))
+        os.startfile(folder_path)
+        
 def get_active_ch_and_device(device_classes: dict):
 	for device in device_classes.values():
 		for channel in device.channels:

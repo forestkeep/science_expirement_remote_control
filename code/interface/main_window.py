@@ -89,6 +89,8 @@ class Ui_MainWindow(object):
         self.debug_mode.setObjectName("debug_mode")
         self.debug_mode.triggered.connect(self.set_design_mode)
 
+        self.log_path_open = QtWidgets.QAction(MainWindow)
+
         self.language_menu = QtWidgets.QMenu(self.menu)
         
         self.actionEnglish = QtWidgets.QAction(MainWindow)
@@ -116,6 +118,7 @@ class Ui_MainWindow(object):
 
         self.menu.addSeparator()
         self.menu.addAction(self.debug_mode)
+        self.menu.addAction(self.log_path_open)
 
         self.menubar.addAction(self.menu.menuAction())
         self.menubar.addAction(self.services.menuAction())
@@ -175,3 +178,5 @@ class Ui_MainWindow(object):
         self.style_menu.setTitle(_translate("main","Оформление"))
         self.action_style_light.setText(_translate("main","Светлая тема"))
         self.action_style_dark.setText(_translate("main","Темная тема"))
+
+        self.log_path_open.setText(_translate("main","Открыть лог файл"))
