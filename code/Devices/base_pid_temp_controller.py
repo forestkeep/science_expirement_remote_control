@@ -315,7 +315,7 @@ class basePidController(base_device):
         """метод подтверждения корректности параметров от контроллера установки. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств"""
         #выбрали параметры - нажали окей. класс установки принял настройки прибора, если нет конфликтов на его стороне он вызывает эту функцию, здесь приготовления к процедуре эксперимента, например, массив последовательных установок температуры
         for ch in self.channels:
-            if ch.is_ch_active():
+            if ch.is_ch_active() and ch.ch_type == "act":
                 ch.step_index = -1
                 self.switch_channel(ch.number)
             else:
@@ -355,15 +355,12 @@ class basePidController(base_device):
                 len(self.active_channel_act.steps_temp)
             )
 
-            print(self.active_channel_act.steps_temp)
-
     # действия перед стартом эксперимента, включить, настроить, подготовить и т.д.
     def action_before_experiment(self, number_of_channel) -> bool:
         """устанавливает значения тока и напряжения, включает выход прибора"""
 
         self.switch_channel(number_of_channel)
         is_correct = True
-
 
         #переопределить действия. необходимые перед экспериментом
         if ( self._set_voltage( self.active_channel_act.number, self.active_channel_act.min_step_t ) == False ):
@@ -407,46 +404,6 @@ class basePidController(base_device):
 
             self._output_switching_off(self.active_channel_act.number)
         return status
-
-    def soft_start( self, number_of_channel, repeat=3 ):
-        """плавное включение прибора"""
-
-        #скорее всего, для пид регулятора это не нужно. Мягкий старт - это постепенной подход к стартовому значению установки. В случае блока питания это может быть критично.
-        self.switch_channel(number_of_channel)
-        logger.debug("Плавное выключение источника питания")
-
-        if (
-            self.active_channel_act.dict_buf_parameters["type_of_work"]
-            == QApplication.translate("Device","Стабилизация напряжения")
-        ):
-            focus_funk = self._set_voltage
-            step = min(int(self.active_channel_act.steps_voltage[0] / 5), 1)
-        elif (
-            self.active_channel_act.dict_buf_parameters["type_of_work"]
-            == QApplication.translate("Device","Стабилизация тока")
-        ):
-            focus_funk = self._set_current
-            step = min(int(self.active_channel_act.steps_current[0] / 5), 1)
-            
-        else:
-            return False
-        param = 0
-        while param < step * 5:
-            param += step
-            count = repeat
-            time.sleep(1)
-            status = False
-            while count > 0:
-                buf_par = focus_funk(self.active_channel_act.number, param)
-                if buf_par == False:
-                    count -= 1
-                    time.sleep(0.2)
-                else:
-                    count = 0
-                    status = True
-            if status == False:
-                return False
-        return True
 
     def do_action( self, ch, repeat=3 ) -> bool:
         """активирует следующие значение тока, напряжения прибора, если текущие значения максимальны, то возвращает ложь"""
@@ -625,92 +582,6 @@ class basePidController(base_device):
     def reset_test_mode( self ):
         self.is_test = False
 
-    def _set_voltage(self, ch_num, voltage) -> bool:
-        """установить значение напряжения канала"""
-        logger.warning(f"устанавливаем напряжение {voltage} канала {ch_num}")
-        self.select_channel(ch_num)
-        self.client.write( self.set_volt_cmd.format(voltage = voltage) )
-        time.sleep(0.2)
-        response = self._get_setting_voltage(ch_num=ch_num)
-        return response == voltage
-
-    def _set_current(self, ch_num, current) -> bool:
-        """установить значение тока канала"""
-        logger.debug(f"устанавливаем ток {current} канала {ch_num}")
-        self.select_channel(ch_num)
-        self.client.write( self.set_cur_cmd.format(current = current))
-        time.sleep(0.2)
-        response = self._get_setting_current(ch_num=ch_num)
-        return response == current
-        
-    def _output_switching_on(self, ch_num) -> bool:
-        """включить канал"""
-        self.client.write( self.ON_CH_cmd.format(ch_num = ch_num) )
-        self.client.close()
-
-    def _output_switching_off(self, ch_num) -> bool:
-        """выключить канал"""
-        self.client.write( self.OFF_CH_cmd.format(ch_num = ch_num) )
-        self.client.close()
-
-    def _get_current_voltage(self, ch_num) -> float:
-        """возвращает значение установленного напряжения канала"""
-        self.select_channel(ch_num)
-        # self.client.write(f'MEAS:VOLT?\n'.encode())
-        self.client.write( self.meas_volt_cmd )
-        time.sleep(0.2)
-        try:
-            response = self.client.readline().decode().strip()
-            response = float(response)
-        except Exception as e:
-            logger.warning(f"ошибка запроса напряжения: {str(e)}")
-            response = False
-        self.client.close()
-        return response
-
-    def _get_current_current(self, ch_num) -> float:
-        """возвращает значение измеренного тока канала"""
-        self.select_channel(ch_num)
-        # self.client.write(f'MEAS:CURR?\n'.encode())
-        self.client.write( self.meas_cur_cmd )
-        time.sleep(0.2)
-        try:
-            response = self.client.readline().decode().strip()
-            response = float(response)
-        except Exception as e:
-            logger.warning(f"ошибка запроса тока {str(e)}")
-            response = False
-        self.client.close()
-        return response
-
-    def _get_setting_voltage(self, ch_num) -> float:
-        """возвращает значение установленного напряжения канала"""
-        self.select_channel(ch_num)
-        self.client.write( self.ask_volt_cmd )
-        time.sleep(0.2)
-        try:
-            response = self.client.readline().decode().strip()
-            response = float(response)
-        except Exception as e:
-            logger.warning(f"ошибка запроса напряжения {str(e)}")
-            response = False
-        self.client.close()
-        return response
-
-    def _get_setting_current(self, ch_num) -> float:
-        """возвращает значение установленного тока канала"""
-        self.select_channel(ch_num)
-        self.client.write( self.ask_volt_cmd )
-        time.sleep(0.2)
-        try:
-            response = self.client.readline().decode().strip()
-            response = float(response)
-        except Exception as e:
-            logger.warning(f"ошибка запроса тока {str(e)}")
-            response = False
-        self.client.close()
-        return response
-    
     def _get_setting_state(self, ch_num) -> bool:
         """возвращает состояние канала вкл(true) или выкл(false)"""
         pass

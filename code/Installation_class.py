@@ -273,6 +273,7 @@ class installation_class( ExperimentBridge, analyse):
             ans_com = self.analyse_com_ports()
             ans_corr_call = self.is_correct_call_stack(matrix)
             if (ans_com and ans_corr_call) or self.is_debug:
+                    self.confirm_devices_parameters()
                     self.current_state = ExperimentState.READY
             else:
                 self.current_state = ExperimentState.PREPARATION

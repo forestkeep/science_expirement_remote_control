@@ -28,50 +28,12 @@ class pidControllerTCN06(pidController):
 
     #ниже прописываем свои функции, которые понадобятся для управления контроллером
 
-    def _set_voltage(
+    def _set_temperature(
         self, ch_num, voltage
     ) -> bool:  # в сотых долях вольта 20000 - 200В
         voltage *= 100
         response = self._write_reg(
             address=int("0040", 16), count=2, slave=1, values=[0, int(voltage)]
-        )
-        return response
-
-    def _set_current(self, ch_num, current) -> bool:  # в сотых долях ампера
-        current *= 100
-        response = self._write_reg(
-            address=int("0041", 16), count=2, slave=1, values=[0, int(current)]
-        )
-        return response
-
-    def _output_switching_on(self, ch_num) -> bool:
-        response = self._write_reg(
-            address=int("0042", 16), count=2, slave=1, values=[0, 1]
-        )
-        return response
-
-    def _output_switching_off(self, ch_num) -> bool:
-        response = self._write_reg(
-            address=int("0042", 16), count=2, slave=1, values=[0, 0]
-        )
-        return response
-
-    def _set_frequency(self, ch_num, frequency) -> bool:
-        """удаленная настройка выходной частоты в Гц"""
-        high = 0
-        if frequency > 65535:
-            high = 1
-        frequency = frequency - 65535 - 1
-        response = self._write_reg(
-            address=int("0043", 16), count=2, slave=1, values=[high, frequency]
-        )
-        return response
-
-    def _set_duty_cycle(self, ch_num, duty_cycle) -> bool:
-        if duty_cycle > 100 or duty_cycle < 1:
-            return False
-        response = self._write_reg(
-            address=int("0044", 16), count=2, slave=1, values=[0, duty_cycle]
         )
         return response
 
@@ -113,7 +75,7 @@ class pidControllerTCN06(pidController):
                 logger.warning(f"ошибка чтения регистров {str(e)}")
                 return False
 
-    def _get_current_voltage(self, ch_num):
+    def _get_current_temperature(self, ch_num):
         response = self._read_current_parameters(
             address=int("0000", 16), count=1, slave=1
         )
@@ -124,7 +86,7 @@ class pidControllerTCN06(pidController):
             response = response[0] / 100
         return response
 
-    def _get_current_current(self, ch_num):
+    def _get_current_power_percent(self, ch_num):
         response = self._read_current_parameters(
             address=int("0001", 16), count=1, slave=1
         )
@@ -154,7 +116,7 @@ class pidControllerTCN06(pidController):
             logger.warning(f"ошибка чтения регистров {str(e)}")
             return False
 
-    def _get_setting_voltage(self, ch_num):
+    def _get_setting_temperature(self, ch_num):
         response = self._read_setting_parameters(
             address=int("0040", 16), count=2, slave=1
         )
@@ -164,42 +126,6 @@ class pidControllerTCN06(pidController):
         if response != False:
             response = response[1] / 100
         return response
-
-    def _get_setting_current(self, ch_num):
-        response = self._read_setting_parameters(
-            address=int("0041", 16), count=2, slave=1
-        )
-        if response != False:
-            response = response[1] / 100
-        return response
-
-    def _get_setting_frequency(self, ch_num):
-        response = self._read_setting_parameters(
-            address=int("0043", 16), count=2, slave=1
-        )
-        if response != False:
-            pass
-            # TODO читаем параметры и кладем их в респонсе
-        return response
-
-    def _get_setting_state(self, ch_num):
-        response = self._read_setting_parameters(
-            address=int("0042", 16), count=2, slave=1
-        )
-        if response != False:
-            pass
-            # TODO читаем параметры и кладем их в респонсе
-        return response
-
-    def _get_setting_duty_cycle(self, ch_num):
-        response = self._read_setting_parameters(
-            address=int("0044", 16), count=2, slave=1
-        )
-        if response != False:
-            pass
-            # TODO читаем параметры и кладем их в респонсе
-        return response
-
 
 if __name__ == "__main__":
     import pickle
