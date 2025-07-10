@@ -609,7 +609,6 @@ class experimentControl( ):
 						QApplication.translate('exp_flow',"Ответ") + " " + dev.get_name() + " " + str(is_connect)
 					self.third_queue.put(("add_text_to_log", {"text": text, "status": ""}))
 
-
 		if self.is_debug:
 			status = True
 
@@ -622,7 +621,6 @@ class experimentControl( ):
 
 		if not ch.am_i_active_in_experiment :
 			"""останавливаем подписчиков, которые срабатывали по завершению операции"""
-
 
 			for subscriber in subscribers_do_operation:     
 				if subscriber.am_i_active_in_experiment :            

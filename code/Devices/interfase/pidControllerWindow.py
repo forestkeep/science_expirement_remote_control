@@ -7,9 +7,9 @@ logger = logging.getLogger(__name__)
 try:
     from Devices.interfase.base_set_window import base_settings_window
 except:
-    from interfase.base_set_window import base_settings_window
+    from base_set_window import base_settings_window
 
-class Ui_Set_power_supply(base_settings_window):
+class UiSetPidController(base_settings_window):
     def __init__(self) -> None:
         super().__init__()
 
@@ -25,14 +25,6 @@ class Ui_Set_power_supply(base_settings_window):
         self.label_3 = QtWidgets.QLabel()
         self.label_3.setObjectName("label_3")
 
-        self.second_value_limit_label = QtWidgets.QLabel()
-        self.second_value_limit_label.setObjectName("second_value_limit_label")
-
-        self.second_limit_enter = QtWidgets.QComboBox()
-        self.second_limit_enter.setCurrentText("")
-        self.second_limit_enter.setObjectName("second_limit_enter")
-        self.second_limit_enter.setEditable(True)
-
         self.radioButton = QtWidgets.QCheckBox()
         self.radioButton.setObjectName("radioButton")
 
@@ -45,13 +37,6 @@ class Ui_Set_power_supply(base_settings_window):
         self.type_step_enter = QtWidgets.QComboBox()
         self.type_step_enter.setCurrentText("")
         self.type_step_enter.setObjectName("type_step_enter")
-
-        self.label_5 = QtWidgets.QLabel()
-        self.label_5.setObjectName("label_5")
-
-        self.type_work_enter = QtWidgets.QComboBox()
-        self.type_work_enter.setCurrentText("")
-        self.type_work_enter.setObjectName("type_work_enter")
 
         self.label_6 = QtWidgets.QLabel()
         self.label_6.setObjectName("label_6")
@@ -84,17 +69,14 @@ class Ui_Set_power_supply(base_settings_window):
         self.acts_label = QtWidgets.QLabel()
         self.acts_label.setFont(self.font)
 
-        self.current_meas = QtWidgets.QCheckBox()
-        self.set_current_meas = QtWidgets.QCheckBox()
-        self.voltage_meas = QtWidgets.QCheckBox()
-        self.set_voltage_meas = QtWidgets.QCheckBox()
+        self.temp_meas = QtWidgets.QCheckBox()
+        self.set_temp_meas = QtWidgets.QCheckBox()
+        self.power_percent = QtWidgets.QCheckBox()
 
         self.meas_label = QtWidgets.QLabel()
         self.meas_label.setFont(self.font)
 
         self.Layout_set_dev_act.addWidget(self.acts_label, 0, 0, 1, 1)
-        self.Layout_set_dev_act.addWidget(self.label_5, 1, 0, 1, 1)
-        self.Layout_set_dev_act.addWidget(self.type_work_enter, 1, 1, 1, 2)
 
         self.Layout_set_dev_act.addWidget(self.label_4, 2, 0, 1, 1)
         self.Layout_set_dev_act.addWidget(self.type_step_enter, 2, 1, 1, 2)
@@ -112,57 +94,41 @@ class Ui_Set_power_supply(base_settings_window):
         self.Layout_set_dev_act.addWidget(self.label_8, 4, 4, 1, 1)
         self.Layout_set_dev_act.addWidget(self.label_9, 5, 4, 1, 1)
 
-        self.Layout_set_dev_act.addWidget(self.second_value_limit_label, 6, 0, 1, 1)
-        self.Layout_set_dev_act.addWidget(self.second_limit_enter, 6, 1, 1, 2)
-
         self.Layout_set_dev_act.addWidget(self.radioButton, 7, 1, 1, 1)
-        self.Layout_set_dev_act.addWidget(self.is_soft_start, 8, 1, 1, 1)
-        self.Layout_set_dev_act.addWidget(self.is_soft_stop, 9, 1, 1, 1)
 
         self.Layout_set_dev_meas.addWidget(self.meas_label)
-        self.Layout_set_dev_meas.addWidget(self.current_meas, 1, 0, 1, 1)
-        self.Layout_set_dev_meas.addWidget(self.set_current_meas, 2, 0, 1, 1)
-        self.Layout_set_dev_meas.addWidget(self.voltage_meas, 3, 0, 1, 1)
-        self.Layout_set_dev_meas.addWidget(self.set_voltage_meas, 4, 0, 1, 1)
+        self.Layout_set_dev_meas.addWidget(self.temp_meas, 1, 0, 1, 1)
+        self.Layout_set_dev_meas.addWidget(self.set_temp_meas, 2, 0, 1, 1)
+        self.Layout_set_dev_meas.addWidget(self.power_percent, 3, 0, 1, 1)
 
         self.retranslateUi(self)
 
-    def closeEvent(self, event):  # эта функция вызывается при закрытии окна крестиком
-        pass
 
     def retranslateUi(self, Set_power_supply):
 
         #здесь прописываем установки наименований всем виджетам
         _translate = QtCore.QCoreApplication.translate
         Set_power_supply.setWindowTitle(
-            _translate("Set_power_supply", "настройка источника питания")
+            _translate("Set_pid_controller", "настройка пид регулятора")
         )
-        self.label_3.setText(_translate("Set_power_supply", "Триггер"))
-        self.second_value_limit_label.setText(
-            _translate("Set_power_supply", "V/A не больше")
-        )
-        self.radioButton.setText(_translate("Set_power_supply", "Пройти туда-обратно?"))
-        self.is_soft_start.setText(_translate("Set_power_supply", "Мягкий старт"))
-        self.is_soft_stop.setText(_translate("Set_power_supply", "Плавное выключение"))
-        # self.label_333.setText(_translate("Set_power_supply", "A"))
-        self.label_4.setText(_translate("Set_power_supply", "Тип шага"))
-        self.label_5.setText(_translate("Set_power_supply", "Режим работы"))
-        self.label_6.setText(_translate("Set_power_supply", "Шаг"))
-        self.label_2.setText(_translate("Set_power_supply", "Конечное значение"))
-        self.label.setText(_translate("Set_power_supply", "Начальное значение"))
-        self.label_7.setText("V")
-        self.label_8.setText("V")
-        self.label_9.setText("V")
+        self.label_3.setText(_translate("Set_pid_controller", "Триггер"))
 
-        self.meas_label.setText(_translate("Set_power_supply", "Измерения"))
-        self.current_meas.setText(_translate("Set_power_supply", "Ток"))
-        self.set_current_meas.setText(_translate("Set_power_supply", "Установка тока"))
-        self.voltage_meas.setText(_translate("Set_power_supply", "Напряжение"))
-        self.set_voltage_meas.setText(
-            _translate("Set_power_supply", "Установка напряжения")
-        )
+        self.radioButton.setText(_translate("Set_pid_controller", "Пройти туда-обратно?"))
 
-        self.acts_label.setText(_translate("Set_power_supply", "Действия"))
+        self.label_4.setText(_translate("Set_pid_controller", "Тип шага"))
+        self.label_6.setText(_translate("Set_pid_controller", "Шаг"))
+        self.label_2.setText(_translate("Set_pid_controller", "Конечное значение"))
+        self.label.setText(_translate("Set_pid_controller", "Начальное значение"))
+        self.label_7.setText("С")
+        self.label_8.setText("С")
+        self.label_9.setText("С")
+
+        self.meas_label.setText(_translate("Set_pid_controller", "Измерения"))
+        self.temp_meas.setText(_translate("Set_pid_controller", "Текущая температура"))
+        self.set_temp_meas.setText(_translate("Set_pid_controller", "Установка температуры"))
+        self.power_percent.setText(_translate("Set_pid_controller", "% мощности"))
+
+        self.acts_label.setText(_translate("Set_pid_controller", "Действия"))
 
 
 if __name__ == "__main__":
@@ -172,7 +138,7 @@ if __name__ == "__main__":
 
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
-    a = Ui_Set_power_supply()
+    a = UiSetPidController()
     a.setupUi()
     a.show()
     sys.exit(app.exec_())

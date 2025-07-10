@@ -21,6 +21,7 @@ from Devices.ATF20B import ATF20B
 from Devices.matrixWps300s import matrixWps300s
 from Devices.pig_in_a_poke_device import pigInAPoke
 from Devices.power_supply_class_test_json import power_supply
+from Devices.TCN06 import pidControllerTCN06
 
 dict_device_class = {
                     "Maisheng": maishengPowerClass, 
@@ -33,7 +34,8 @@ dict_device_class = {
                     "DS1052E" : DS1052E,
                     #"ATF20B" : ATF20B,
                     "WPS300s" : matrixWps300s,
-                    "pig_in_a_poke": pigInAPoke
+                    "pig_in_a_poke": pigInAPoke,
+                    "TCN06": pidControllerTCN06
                     }
 JSON_dict_device_class = {
 	                "power_supply": power_supply

@@ -378,6 +378,7 @@ class installation_class( ExperimentBridge, analyse):
         self.thread_scan_resources.join()
 
         if self.is_experiment_running():
+            print(3434343434343)
             self.pipe_exp.send(["close", 1])
 
             self.experiment_process.join(timeout=5)

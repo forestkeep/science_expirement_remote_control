@@ -9,12 +9,12 @@ try:
     from Devices.Classes import (base_ch, base_device, ch_response_to_step,
                              not_ready_style_border, ready_style_border,
                              which_part_in_ch)
-    from Devices.interfase.set_power_supply_window import Ui_Set_power_supply
+    from Devices.interfase.pidControllerWindow import UiSetPidController
 except:
     from Classes import (base_ch, base_device, ch_response_to_step,
                              not_ready_style_border, ready_style_border,
                              which_part_in_ch)
-    from interfase.set_power_supply_window import Ui_Set_power_supply
+    from interfase.pidControllerWindow import UiSetPidController
     
 logger = logging.getLogger(__name__)
 
@@ -25,33 +25,22 @@ class chActPidController(base_ch):
         number,
         device_class_name,
         message_broker,
-        max_current,
-        max_voltage,
-        max_power,
-        min_step_A=0.001,
-        min_step_V=0.001,
-        min_step_W=1,
+        max_temp,
+        min_temp,   
+        min_step_t=0.01,
     ) -> None:
         super().__init__(number, ch_type="act", device_class_name=device_class_name, message_broker=message_broker)
         #здесь определяются параметры активного канала, они складываются в self.dict_buf_parameters
         self.base_duration_step = 10  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
-        self.steps_current = []
-        self.steps_voltage = []
-        self.max_current = max_current
-        self.max_voltage = max_voltage
-        self.max_power = max_power
-        self.min_step_V = min_step_V
-        self.min_step_A = min_step_A
-        self.min_step_W = min_step_W
-        self.dict_buf_parameters["type_of_work"] = "Стабилизация напряжения"
+        self.steps_temp = []
+        self.max_temp = max_temp
+        self.min_temp = min_temp
+        self.min_step_t = min_step_t
         self.dict_buf_parameters["type_step"] = "Заданный шаг"
         self.dict_buf_parameters["high_limit"] = str(5)
-        self.dict_buf_parameters["low_limit"] = str(self.min_step_V)
+        self.dict_buf_parameters["low_limit"] = str(self.min_step_t)
         self.dict_buf_parameters["step"] = "1"
-        self.dict_buf_parameters["second_value"] = str(self.max_current)
         self.dict_buf_parameters["repeat_reverse"] = False
-        self.dict_buf_parameters["soft_start"] = False
-        self.dict_buf_parameters["soft_off"] = False
 
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
@@ -62,10 +51,9 @@ class chMeasPidController(base_ch):
         self.base_duration_step = 10  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
 
         #здесь определяются параметры  канала измерений, они складываются в self.dict_buf_parameters
-        self.dict_buf_parameters["meas_cur"] = False
-        self.dict_buf_parameters["meas_vol"] = False
-        self.dict_buf_parameters["meas_set_cur"] = False
-        self.dict_buf_parameters["meas_set_vol"] = False
+        self.dict_buf_parameters["meas_temp"] = False
+        self.dict_buf_parameters["meas_set_temp"] = False
+        self.dict_buf_parameters["meas_power"] = False
 
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
@@ -74,19 +62,14 @@ class basePidController(base_device):
     def __init__(self, name, type_connection, installation_class) -> None:
         super().__init__(name, type_connection, installation_class)
         self.part_ch = (which_part_in_ch.bouth)
-        self.setting_window = Ui_Set_power_supply()#заменить на свой класс фронта для пользователя, они лежат в interfase
+        self.setting_window = UiSetPidController()#заменить на свой класс фронта для пользователя, они лежат в interfase
         self.base_settings_window()
         
-        self.setting_window.type_work_enter.addItems(
-            [ QApplication.translate("Device","Стабилизация напряжения"), QApplication.translate("Device","Стабилизация тока") ]
-        )
         self.setting_window.type_step_enter.addItems([ QApplication.translate("Device","Заданный шаг") ])
 
         # =======================прием сигналов от окна==================
         #прописать свои приемы сигналов от окна
-        self.setting_window.type_work_enter.currentIndexChanged.connect(
-            lambda: self._change_units()
-        )
+
         self.setting_window.type_step_enter.currentIndexChanged.connect(
             lambda: self._action_when_select_step()
         )
@@ -121,9 +104,6 @@ class basePidController(base_device):
 
         # ============установка текущих параметров=======================
         #прописать процедуру установки параметров окна, они сохранены в self.dict_buf_parameters, там они лежат между вызовами окна
-        self.setting_window.type_work_enter.setCurrentText(
-            self.active_channel_act.dict_buf_parameters["type_of_work"]
-        )
         self.setting_window.type_step_enter.setCurrentText(
             self.active_channel_act.dict_buf_parameters["type_step"]
         )
@@ -136,54 +116,25 @@ class basePidController(base_device):
         self.setting_window.step_enter.setCurrentText(
             str(self.active_channel_act.dict_buf_parameters["step"])
         )
-        self.setting_window.second_limit_enter.setCurrentText(
-            str(self.active_channel_act.dict_buf_parameters["second_value"])
-        )
-        self.setting_window.second_limit_enter.setEnabled(True)
 
         self.setting_window.radioButton.setChecked(
             self.active_channel_act.dict_buf_parameters["repeat_reverse"] == True
         )
 
-        if (
-            self.active_channel_act.dict_buf_parameters["type_of_work"]
-            == QApplication.translate("Device","Стабилизация напряжения")
-        ):
-            self.setting_window.second_value_limit_label.setText( QApplication.translate("Device","Ток не выше (А)") )
-
-        elif (
-            self.active_channel_act.dict_buf_parameters["type_of_work"]
-            == QApplication.translate("Device","Стабилизация тока")
-        ):
-            self.setting_window.second_value_limit_label.setText(
-                QApplication.translate("Device","Напряжение не выше (V)")
-            )
-        else:
-            self.setting_window.second_value_limit_label.setText("---")
-            self.setting_window.second_limit_enter.setEnabled(False)
-            
         self.setting_window.radioButton.setChecked(self.active_channel_act.dict_buf_parameters["repeat_reverse"] == True) 
             
-        self.setting_window.is_soft_start.setChecked( self.active_channel_act.dict_buf_parameters["soft_start"]  == True)
-
-        self.setting_window.is_soft_stop.setChecked( self.active_channel_act.dict_buf_parameters["soft_off"] == True)
-
-        self.setting_window.voltage_meas.setChecked(
-            self.active_channel_meas.dict_buf_parameters["meas_vol"] == True
+        self.setting_window.temp_meas.setChecked(
+            self.active_channel_meas.dict_buf_parameters["meas_temp"] == True
         )
-        self.setting_window.current_meas.setChecked(
-            self.active_channel_meas.dict_buf_parameters["meas_cur"] == True
+        self.setting_window.set_temp_meas.setChecked(
+            self.active_channel_meas.dict_buf_parameters["meas_set_temp"] == True
         )
-        self.setting_window.set_voltage_meas.setChecked(
-            self.active_channel_meas.dict_buf_parameters["meas_set_vol"] == True
-        )
-        self.setting_window.set_current_meas.setChecked(
-            self.active_channel_meas.dict_buf_parameters["meas_set_cur"] == True
+        self.setting_window.power_percent.setChecked(
+            self.active_channel_meas.dict_buf_parameters["meas_power"] == True
         )
         self.key_to_signal_func = True
 
         self._action_when_select_trigger()
-        self._change_units()
         self._is_correct_parameters()
         self.setting_window.show()
 
@@ -191,32 +142,14 @@ class basePidController(base_device):
     def _is_correct_parameters(self):  # менять для каждого прибора
         if self.key_to_signal_func:
             #сюда подключены сигналы изменения параметров в окне пользователя. необходимо для сообщений пользователю о некорректных параметрах. Сообщается о некорректном параметре установкой красной рамки вокруг целевого параметра
-            if (
-                self.setting_window.type_work_enter.currentText()
-                == QApplication.translate("Device","Стабилизация напряжения")
-            ):
-                max = self.active_channel_act.max_voltage
-                min = self.active_channel_act.min_step_V
-                max_second_limit = self.active_channel_act.max_current
-            if self.setting_window.type_work_enter.currentText() == QApplication.translate("Device","Стабилизация тока"):
-                max = self.active_channel_act.max_current
-                min = self.active_channel_act.min_step_A
-                max_second_limit = self.active_channel_act.max_voltage
-            if (
-                self.setting_window.type_work_enter.currentText()
-                == QApplication.translate("Device","Стабилизация мощности")
-            ):
-                max = self.active_channel_act.max_power
-                min = self.active_channel_act.min_step_W
 
             low_value = 0
             high_value = 0
             enter_step = 0
-            second_limit = 0
+
             self.active_channel_act.is_stop_value_correct = True
             self.active_channel_act.is_start_value_correct = True
             self.active_channel_act.is_step_correct = True
-            self.active_channel_act.is_second_value_correct = True
             # проверка число или не число
 
             try:
@@ -231,14 +164,13 @@ class basePidController(base_device):
                 enter_step = float(self.setting_window.step_enter.currentText())
             except:
                 self.active_channel_act.is_step_correct = False
-            try:
-                second_limit = float(
-                    self.setting_window.second_limit_enter.currentText()
-                )
-            except:
-                self.active_channel_act.is_second_value_correct = False
+
             # ---------------------------
             # минимум и максимум не выходят за границы
+
+            max = self.active_channel_act.max_temp
+            min = self.active_channel_act.min_temp
+
             if self.active_channel_act.is_stop_value_correct:
                 if high_value < min or high_value > max:
                     self.active_channel_act.is_stop_value_correct = False
@@ -255,14 +187,6 @@ class basePidController(base_device):
                     if self.active_channel_act.is_step_correct:
                         if enter_step > abs(high_value - low_value) or enter_step < min:
                             self.active_channel_act.is_step_correct = False
-
-            if (
-                self.active_channel_act.is_second_value_correct
-                and self.setting_window.type_work_enter.currentText()
-                != "Стабилизация мощности"
-            ):
-                if second_limit > max_second_limit or second_limit < 0.01:
-                    self.active_channel_act.is_second_value_correct = False
 
             if self.active_channel_act.is_stop_value_correct:
                 self.setting_window.stop_enter.setStyleSheet(ready_style_border)
@@ -295,62 +219,14 @@ class basePidController(base_device):
                 else:
                     self.setting_window.step_enter.setStyleSheet(not_ready_style_border)
 
-            if self.active_channel_act.is_second_value_correct:
-                self.setting_window.second_limit_enter.setStyleSheet(ready_style_border)
-            else:
-                if (
-                    self.setting_window.type_work_enter.currentText()
-                    != QApplication.translate("Device","Стабилизация мощности")
-                ):
-                    self.setting_window.second_limit_enter.setStyleSheet(
-                        not_ready_style_border
-                    )
-                else:
-                    self.setting_window.second_limit_enter.setStyleSheet(
-                        ready_style_border
-                    )
-
+            #print(f"{self.active_channel_act.is_stop_value_correct} {self.active_channel_act.is_start_value_correct} {self.active_channel_act.is_step_correct}")
             return (
                 self.active_channel_act.is_stop_value_correct
                 and self.active_channel_act.is_start_value_correct
                 and self.active_channel_act.is_step_correct
-                and self.active_channel_act.is_second_value_correct
             )
 
         return False
-
-    def _change_units(self):
-        #эта функция для блока питания реализована. Для регулятора она с вероятность 95% не нужна
-        if self.key_to_signal_func:
-
-            self.setting_window.second_limit_enter.setEnabled(True)
-            if (
-                self.setting_window.type_work_enter.currentText()
-                == QApplication.translate("Device","Стабилизация напряжения")
-            ):
-                self.setting_window.label_7.setText("V")
-                self.setting_window.label_8.setText("V")
-                self.setting_window.label_9.setText("V")
-                self.setting_window.second_value_limit_label.setText( QApplication.translate("Device","Ток не выше (А)") )
-            if self.setting_window.type_work_enter.currentText() == QApplication.translate("Device","Стабилизация тока"):
-                self.setting_window.label_7.setText("A")
-                self.setting_window.label_8.setText("A")
-                self.setting_window.label_9.setText("A")
-                self.setting_window.second_value_limit_label.setText(
-                    QApplication.translate("Device","Напряжение не выше (V)")
-                )
-            if (
-                self.setting_window.type_work_enter.currentText()
-                == QApplication.translate("Device","Стабилизация мощности")
-            ):
-                self.setting_window.label_7.setText("W")
-                self.setting_window.label_8.setText("W")
-                self.setting_window.label_9.setText("W")
-                self.setting_window.second_value_limit_label.setText("---")
-                self.setting_window.second_limit_enter.setStyleSheet(
-                    "background-color: rgb(180, 180, 180)"
-                )
-                self.setting_window.second_limit_enter.setEnabled(False)
 
     def _action_when_select_step(self):
         #не нужно
@@ -370,9 +246,6 @@ class basePidController(base_device):
     def add_parameters_from_window(self):  # менять для каждого прибора
         #эта функция вызывается при нажатии пользователем кнопки окей, параметры сохраняются
         if self.key_to_signal_func:
-            self.active_channel_act.dict_buf_parameters["type_of_work"] = (
-                self.setting_window.type_work_enter.currentText()
-            )
             self.active_channel_act.dict_buf_parameters["type_step"] = (
                 self.setting_window.type_step_enter.currentText()
             )
@@ -386,32 +259,20 @@ class basePidController(base_device):
                 self.setting_window.step_enter.currentText()
             )
 
-            self.active_channel_act.dict_buf_parameters["second_value"] = (
-                self.setting_window.second_limit_enter.currentText()
-            )
-
             self.active_channel_act.dict_buf_parameters["repeat_reverse"] = (
                 self.setting_window.radioButton.isChecked()
             )
-            self.active_channel_act.dict_buf_parameters["soft_start"] = (
-                self.setting_window.is_soft_start.isChecked()
+
+            self.active_channel_meas.dict_buf_parameters["meas_temp"] = (
+                self.setting_window.temp_meas.isChecked()
             )
-            self.active_channel_act.dict_buf_parameters["soft_off"] = (
-                self.setting_window.is_soft_stop.isChecked()
+            self.active_channel_meas.dict_buf_parameters["meas_set_temp"] = (
+                self.setting_window.set_temp_meas.isChecked()
+            )
+            self.active_channel_meas.dict_buf_parameters["meas_power"] = (
+                self.setting_window.power_percent.isChecked()
             )
 
-            self.active_channel_meas.dict_buf_parameters["meas_cur"] = (
-                self.setting_window.current_meas.isChecked()
-            )
-            self.active_channel_meas.dict_buf_parameters["meas_vol"] = (
-                self.setting_window.voltage_meas.isChecked()
-            )
-            self.active_channel_meas.dict_buf_parameters["meas_set_cur"] = (
-                self.setting_window.set_current_meas.isChecked()
-            )
-            self.active_channel_meas.dict_buf_parameters["meas_set_vol"] = (
-                self.setting_window.set_voltage_meas.isChecked()
-            )
 
     def send_signal_ok(
         self,
@@ -438,7 +299,6 @@ class basePidController(base_device):
             float(self.setting_window.start_enter.currentText())
             float(self.setting_window.step_enter.currentText())
             float(self.setting_window.boudrate.currentText())
-            float(self.setting_window.second_limit_enter.currentText())
         except:
             is_parameters_correct = False
 
@@ -461,94 +321,41 @@ class basePidController(base_device):
             else:
                 continue
 
-            self.active_channel_act.steps_voltage.clear()
-            self.active_channel_act.steps_current.clear()
+            self.active_channel_act.steps_temp.clear()
+            
+
             if (
-                self.active_channel_act.dict_settable_parameters["type_of_work"]
-                == QApplication.translate("Device","Стабилизация напряжения")
+                self.active_channel_act.dict_settable_parameters["type_step"]
+                == QApplication.translate("Device","Заданный шаг")
             ):
-
-                if (
-                    self.active_channel_act.dict_settable_parameters["type_step"]
-                    == QApplication.translate("Device","Заданный шаг")
-                ):
-                    (
-                        self.active_channel_act.steps_current,
-                        self.active_channel_act.steps_voltage,
-                    ) = self.__fill_arrays(
-                        float(
-                            self.active_channel_act.dict_settable_parameters[
-                                "low_limit"
-                            ]
-                        ),
-                        float(
-                            self.active_channel_act.dict_settable_parameters[
-                                "high_limit"
-                            ]
-                        ),
-                        float(self.active_channel_act.dict_settable_parameters["step"]),
-                        float(
-                            self.active_channel_act.dict_settable_parameters[
-                                "second_value"
-                            ]
-                        ),
-                    )
-
-            elif (
-                self.active_channel_act.dict_settable_parameters["type_of_work"]
-                == QApplication.translate("Device","Стабилизация тока")
-            ):
-                if (
-                    self.active_channel_act.dict_settable_parameters["type_step"]
-                    == QApplication.translate("Device","Заданный шаг")
-                ):
-                    (
-                        self.active_channel_act.steps_voltage,
-                        self.active_channel_act.steps_current,
-                    ) = self.__fill_arrays(
-                        float(
-                            self.active_channel_act.dict_settable_parameters[
-                                "low_limit"
-                            ]
-                        ),
-                        float(
-                            self.active_channel_act.dict_settable_parameters[
-                                "high_limit"
-                            ]
-                        ),
-                        float(self.active_channel_act.dict_settable_parameters["step"]),
-                        float(
-                            self.active_channel_act.dict_settable_parameters[
-                                "second_value"
-                            ]
-                        ),
-                    )
-
-            elif (
-                self.active_channel_act.dict_settable_parameters["type_of_work"]
-                == QApplication.translate("Device","Стабилизация мощности")
-            ):
-                if (
-                    self.active_channel_act.dict_settable_parameters["type_step"]
-                    == QApplication.translate("Device","Заданный шаг")
-                ):
-                    pass
+                    self.active_channel_act.steps_temp = self.__fill_arrays(
+                    float(
+                        self.active_channel_act.dict_settable_parameters[
+                            "low_limit"
+                        ]
+                    ),
+                    float(
+                        self.active_channel_act.dict_settable_parameters[
+                            "high_limit"
+                        ]
+                    ),
+                    float(self.active_channel_act.dict_settable_parameters["step"]),
+                )
 
             if self.active_channel_act.dict_buf_parameters["repeat_reverse"] == True:
-                buf_current = copy.deepcopy(self.active_channel_act.steps_current)
-                buf_voltage = copy.deepcopy(self.active_channel_act.steps_voltage)
-                buf_current = buf_current[::-1]  # разворот списка
-                buf_voltage = buf_voltage[::-1]
-                buf_current = buf_current[1 : len(buf_current)]
-                buf_voltage = buf_voltage[1 : len(buf_voltage)]
+                buf_temp = copy.deepcopy(self.active_channel_act.steps_temp)
+                buf_temp = buf_temp[::-1]  # разворот списка
 
-                for cur, vol in zip(buf_current, buf_voltage):
-                    self.active_channel_act.steps_current.append(cur)
-                    self.active_channel_act.steps_voltage.append(vol)
+                buf_temp = buf_temp[1 : len(buf_temp)]
+
+                for cur in buf_temp:
+                    self.active_channel_act.steps_temp.append(cur)
 
             self.active_channel_act.dict_settable_parameters["num steps"] = int(
-                len(self.active_channel_act.steps_voltage)
+                len(self.active_channel_act.steps_temp)
             )
+
+            print(self.active_channel_act.steps_temp)
 
     # действия перед стартом эксперимента, включить, настроить, подготовить и т.д.
     def action_before_experiment(self, number_of_channel) -> bool:
@@ -559,11 +366,8 @@ class basePidController(base_device):
 
 
         #переопределить действия. необходимые перед экспериментом
-        if ( self._set_voltage( self.active_channel_act.number, self.active_channel_act.min_step_V ) == False ):
+        if ( self._set_voltage( self.active_channel_act.number, self.active_channel_act.min_step_t ) == False ):
             logger.warning("ошибка установки тока")
-            is_correct = False
-        if ( self._set_current( self.active_channel_act.number, self.active_channel_act.min_step_A ) == False ):
-            logger.warning("ошибка установки напряжения")
             is_correct = False
 
         if is_correct:
@@ -793,30 +597,26 @@ class basePidController(base_device):
 
         return ch_response_to_step.Incorrect_ch, parameters, time.perf_counter() - start_time
 
-    def __fill_arrays( self, start_value, stop_value, step, constant_value ):
+    def __fill_arrays( self, start_value, stop_value, step):
         steps_1 = []
-        steps_2 = []
         if start_value > stop_value:
             step = step * (-1)
 
         current_value = start_value
-        steps_1.append(constant_value)
-        steps_2.append(current_value)
+
+        steps_1.append(current_value)
         while abs(step) < abs(stop_value - current_value):
             current_value = current_value + step
             current_value *= 100000
             current_value = round(current_value, 2)
             current_value /= 100000
-            steps_1.append(constant_value)
-            steps_2.append(current_value)
+            steps_1.append(current_value)
             if current_value == stop_value:
-                steps_1.append(constant_value)
-                steps_2.append(current_value)
+                steps_1.append(current_value)
                 break
         else:
-            steps_1.append(constant_value)
-            steps_2.append(stop_value)
-        return steps_1, steps_2
+            steps_1.append(stop_value)
+        return steps_1
 
     def set_test_mode( self ):
         """переводит прибор в режим теста, выдаются сырые данные от функций передачи и приема"""

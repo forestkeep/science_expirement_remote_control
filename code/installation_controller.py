@@ -103,7 +103,7 @@ class instController(QtWidgets.QMainWindow):
                 self.unlock_to_create_new_installation
             )
                 if not self.device_selector:
-                    self.device_selector = deviceSelector()
+                    self.device_selector = deviceSelector( self.settings_manager)
                 self.cur_install.device_selector = self.device_selector
 
                 if self.ui.is_design_mode:
@@ -166,7 +166,7 @@ class instController(QtWidgets.QMainWindow):
 
     def open_select_device_window(self):
         if not self.device_selector:
-            self.device_selector = deviceSelector()
+            self.device_selector = deviceSelector( self.settings_manager)
         device = self.device_selector.get_single_device()
         self.message_from_new_device_local_control( device )
             
@@ -190,7 +190,7 @@ class instController(QtWidgets.QMainWindow):
             self.info_window(QApplication.translate( "MyWindow" , "установка уже собрана"))
         else:
             if not self.device_selector:
-                self.device_selector = deviceSelector()
+                self.device_selector = deviceSelector( self.settings_manager)
             device_list, json_device_dict = self.device_selector.get_multiple_devices()
 
             self.message_from_new_installation(device_list, json_device_dict)
@@ -202,7 +202,7 @@ class instController(QtWidgets.QMainWindow):
             self.cur_install.reconstruct_installation(device_list, json_device_dict)
             self.cur_install.show_window_installation()
             if not self.device_selector:
-                self.device_selector = deviceSelector()
+                self.device_selector = deviceSelector( self.settings_manager)
             self.cur_install.device_selector = self.device_selector
 
             if self.ui.is_design_mode:

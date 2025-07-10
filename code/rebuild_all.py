@@ -1,17 +1,17 @@
 import subprocess
 import os
 import shutil
+import time
 
 import PyInstaller.__main__
 
 from service_scripts.clear_dir import remove_pycaches
-from installation_controller import VERSION_APP
+from main import VERSION_APP
 from service_scripts.convert_instruction import convert_docx_to_html
-
 
 def build_python_app():
     PyInstaller.__main__.run([
-        'installation_controller.py',
+        'main.py',
         '--noconsole', 
         '--hidden-import=pyvisa_py', 
         '--hidden-import=multiprocessing',
@@ -96,12 +96,13 @@ if __name__ == "__main__":
             shutil.rmtree('dist')
 
         build_python_app()
-        
+        print("------------------------------------------------------------")
+        #time.sleep(1000)
         if os.path.exists('build'):
             shutil.rmtree('build')
 
-        if os.path.exists("installation_controller.spec"):
-            os.remove("installation_controller.spec")
+        if os.path.exists("main.spec"):
+            os.remove("main.spec")
 
         inno_script_path = 'default.iss'
         build_inno_setup(inno_script_path)

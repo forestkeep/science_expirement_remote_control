@@ -455,7 +455,7 @@ class basePowerSupply(base_device):
 
     def confirm_parameters(self):  # менять для каждого прибора
         """метод подтверждения корректности параметров от контроллера установки. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств"""
-
+        print("подтверждение настроек блока питания")
         for ch in self.channels:
             if ch.is_ch_active():
                 ch.step_index = -1
@@ -557,6 +557,7 @@ class basePowerSupply(base_device):
         """устанавливает значения тока и напряжения, включает выход прибора"""
 
         self.switch_channel(number_of_channel)
+        print(self.active_channel_act.steps_voltage)
         is_correct = True
         if ( self._set_voltage( self.active_channel_act.number, self.active_channel_act.min_step_V ) == False ):
             logger.warning("ошибка установки тока")

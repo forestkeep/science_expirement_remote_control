@@ -6,28 +6,24 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from pymodbus.client import ModbusSerialClient
 
-from Devices.power_supply_class import power_supply
-from Devices.base_power_supply import chActPowerSupply, chMeasPowerSupply
+from Devices.pid_temp_controller import pidController
+from Devices.base_pid_temp_controller import chActPidController, chMeasPidController
 logger = logging.getLogger(__name__)
 
-class maishengPowerClass(power_supply):
+class pidControllerTCN06(pidController):
     def __init__(self, name, installation_class) -> None:
 
         super().__init__(name, "modbus", installation_class)
 
         #определяем наши каналы и задаем им параметры
-        self.ch1_act = chActPowerSupply(
+        self.ch1_act = chActPidController(
             1,
             self.name,
             message_broker=self.message_broker,
-            max_current=15,
-            max_voltage=200,
-            max_power=600,
-            min_step_A=0.01,
-            min_step_V=0.01,
-            min_step_W=1,
+            max_temp=1000,
+            min_temp=0,
         )
-        self.ch1_meas = chMeasPowerSupply(1, self.name, self.message_broker)
+        self.ch1_meas = chMeasPidController(1, self.name, self.message_broker)
         self.channels = self.create_channel_array()
 
     #ниже прописываем свои функции, которые понадобятся для управления контроллером

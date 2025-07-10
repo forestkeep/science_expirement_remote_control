@@ -14,7 +14,7 @@ import qdarktheme
 
 from installation_controller import instController
 
-VERSION_APP = "1.1.0"
+VERSION_APP = "1.2.0"
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         backupCount=15,
         encoding='utf-8'
     )
-    
+
     file_handler.setLevel(logging.WARNING)
     file_handler.setFormatter(logging.Formatter(FORMAT))
 
@@ -74,6 +74,9 @@ if __name__ == "__main__":
         "misis_lab",
         "exp_control" + VERSION_APP,
     )
+
+    current_dir =os.path.dirname(os.path.realpath(__file__))
+    default_JSON_directory_devices = os.path.join(current_dir, "my_devices")
     
     persistent_settings = {
         'language': 'ENG',
@@ -81,7 +84,8 @@ if __name__ == "__main__":
         "is_show_basic_instruction_again": True,
         "is_exp_run_anywhere": False,
         "is_delete_buf_file": False,
-        "should_prompt_for_session_name": True
+        "should_prompt_for_session_name": True,
+        "JSON_default_path": default_JSON_directory_devices
     }
     
     # Обработка аргументов командной строки

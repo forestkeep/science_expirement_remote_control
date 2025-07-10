@@ -6,8 +6,8 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{2C15D3A9-D9EA-4BF6-97E5-3CAF33D0C0CC}
 AppName=Installation Controller
-AppVersion=1.1.0
-;AppVerName=Installation Controller 1.0.0
+AppVersion=1.2.0
+;AppVerName=Installation Controller 1.2.0
 AppPublisher=Publisher
 DefaultDirName={autopf}\Installation Controller
 ; "ArchitecturesAllowed=x64compatible" specifies that Setup cannot run
@@ -39,8 +39,8 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: ".\dist\installation_controller\installation_controller.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\dist\installation_controller\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ".\dist\main\main.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\dist\main\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ".\picture\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ".\translations\translations\translation_en.qm"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: ".\instruction.html"; DestDir: "{app}"; Flags: ignoreversion
@@ -49,15 +49,15 @@ Source: ".\instruction.html"; DestDir: "{app}"; Flags: ignoreversion
 [Registry]
 Root: HKA; Subkey: "Software\Classes\.ns\OpenWithProgids"; ValueType: string; ValueName: "InstallationControllerFile.ns"; ValueData: ""; Flags: uninsdeletevalue
 Root: HKA; Subkey: "Software\Classes\InstallationControllerFile.ns"; ValueType: string; ValueName: ""; ValueData: "Installation Controller File"; Flags: uninsdeletekey
-Root: HKA; Subkey: "Software\Classes\InstallationControllerFile.ns\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\installation_controller.exe,0"
-Root: HKA; Subkey: "Software\Classes\InstallationControllerFile.ns\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\installation_controller.exe"" ""%1"""
-Root: HKA; Subkey: "Software\Classes\Applications\installation_controller.exe\SupportedTypes"; ValueType: string; ValueName: ".myp"; ValueData: ""
+Root: HKA; Subkey: "Software\Classes\InstallationControllerFile.ns\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\main.exe,0"
+Root: HKA; Subkey: "Software\Classes\InstallationControllerFile.ns\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\main.exe"" ""%1"""
+Root: HKA; Subkey: "Software\Classes\Applications\main.exe\SupportedTypes"; ValueType: string; ValueName: ".myp"; ValueData: ""
 
 [Icons]
-Name: "{group}\Installation Controller"; Filename: "{app}\installation_controller.exe"
+Name: "{group}\Installation Controller"; Filename: "{app}\main.exe"
 Name: "{group}\{cm:UninstallProgram,Installation Controller}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\Installation Controller"; Filename: "{app}\installation_controller.exe"; Tasks: desktopicon
+Name: "{autodesktop}\Installation Controller"; Filename: "{app}\main.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\installation_controller.exe"; Description: "{cm:LaunchProgram,Installation Controller}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\main.exe"; Description: "{cm:LaunchProgram,Installation Controller}"; Flags: nowait postinstall skipifsilent
 

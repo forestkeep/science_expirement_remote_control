@@ -32,18 +32,19 @@ class devFile:
     json_data: dict
 
 class deviceSelector():
-    def __init__(self):
+    def __init__(self, settings_manager):
         self.selection_type = None
         self.single_select_win = None
         self.multiple_select_win = None
+        self.settings_manager = settings_manager
 
-        try:
-            current_dir =os.path.dirname(os.path.realpath(__file__))
-            self.directory_devices = os.path.join(current_dir, "my_devices")
-            self.JSON_devices = get_new_JSON_devs(self.directory_devices)
-        except FileNotFoundError:
-            logger.warning(f"Ошибка поиска установленных устройств")
+        ans, self.directory_devices = self.settings_manager.get_setting('JSON_default_path')
+        if not ans:
+            logger.warning(f"Не удалось получить путь к JSON приборам из настроек")
             self.JSON_devices = {}
+        else:
+            os.makedirs(self.directory_devices, exist_ok=True)
+            self.JSON_devices = get_new_JSON_devs(self.directory_devices)
 
     def get_single_device(self):
         if not self.single_select_win:
@@ -105,6 +106,7 @@ class deviceSelector():
     
     def set_json_device_directory(self, directory):
         self.directory_devices = directory
+        self.settings_manager.save_settings({'JSON_default_path': directory})
 
     def callback_select_device(self):
         directory = self.choice_json_devices_directory()
