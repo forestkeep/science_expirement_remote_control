@@ -8,6 +8,9 @@ from pymodbus.client import ModbusSerialClient
 
 from Devices.pid_temp_controller import pidController
 from Devices.base_pid_temp_controller import chActPidController, chMeasPidController
+from Devices.tcn06_local import REGISTERS as TCN06_REGISTERS
+from pymodbus.exceptions import ModbusException
+
 logger = logging.getLogger(__name__)
 
 class pidControllerTCN06(pidController):
@@ -28,16 +31,10 @@ class pidControllerTCN06(pidController):
 
     #ниже прописываем свои функции, которые понадобятся для управления контроллером
 
-    def _set_temperature(
-        self, ch_num, voltage
-    ) -> bool:  # в сотых долях вольта 20000 - 200В
-        voltage *= 100
-        response = self._write_reg(
-            address=int("0040", 16), count=2, slave=1, values=[0, int(voltage)]
-        )
-        return response
+    def _set_temperature(self, ch_num, temperature) -> bool:
+        return self._write_reg(address=TCN06_REGISTERS['Измеренная температура (PV)']['address'], slave=self.dict_settable_parameters["slave_id"], values=int(temperature),)
 
-    def _write_reg(self, address, count, slave, values) -> bool:
+    def _write_reg(self, address, slave, values) -> bool:
         if self.is_test == True:
             return self.client.write_registers(
                 address=address, slave=slave, values=values
@@ -56,76 +53,28 @@ class pidControllerTCN06(pidController):
                 return False
             return True
 
-    def _read_current_parameters(self, address, count, slave):
-        if self.is_test == True:
-            return self.client.read_input_registers(
-                address=address, count=count, slave=slave
-            )
-        else:
-            try:
-                ans = self.client.read_input_registers(
-                    address=address, count=count, slave=slave
-                )
-
-                if ans.isError():
-                    return False
-                else:
-                    return ans.registers
-            except Exception as e:
-                logger.warning(f"ошибка чтения регистров {str(e)}")
-                return False
-
     def _get_current_temperature(self, ch_num):
-        response = self._read_current_parameters(
-            address=int("0000", 16), count=1, slave=1
-        )
-        if self.is_test == True:
-            return response
-
-        if response != False:
-            response = response[0] / 100
-        return response
+        return self._read_reg(address=TCN06_REGISTERS['Измеренная температура (PV)']['address'], slave=self.dict_settable_parameters["slave_id"])
 
     def _get_current_power_percent(self, ch_num):
-        response = self._read_current_parameters(
-            address=int("0001", 16), count=1, slave=1
-        )
-        if self.is_test == True:
-            return response
-
-        if response != False:
-            pass
-            response = response[0] / 100
-        return response
-
-    def _read_setting_parameters(self, address, count, slave):
-        if self.is_test == True:
-            return self.client.read_holding_registers(
-                address=address, count=count, slave=slave
-            )
-        try:
-            ans = self.client.read_holding_registers(
-                address=address, count=count, slave=slave
-            )
-
-            if ans.isError():
-                return False
-            else:
-                return ans.registers
-        except Exception as e:
-            logger.warning(f"ошибка чтения регистров {str(e)}")
-            return False
+        return self._read_reg(address=TCN06_REGISTERS['Процент выхода (OUT)']['address'], slave=self.dict_settable_parameters["slave_id"])
 
     def _get_setting_temperature(self, ch_num):
-        response = self._read_setting_parameters(
-            address=int("0040", 16), count=2, slave=1
-        )
-        if self.is_test == True:
-            return response
+        return self._read_reg(address=TCN06_REGISTERS['Заданная температура (SV)']['address'], slave=self.dict_settable_parameters["slave_id"])
+      
+    def _read_reg(self, address, slave):
+        try:
+            result = self.client.read_holding_registers(address=address, count=1, slave=slave)
+            if not result.isError():
+                value = result.registers[0]
+                return value
 
-        if response != False:
-            response = response[1] / 100
-        return response
+            else:
+                logger.error(f"Ошибка чтения регистра {address} : {result}")
+                return None
+        except ModbusException as e:
+            logger.error(f"Modbus ошибка чтения регистра {address} : {e}")
+            return None
 
 if __name__ == "__main__":
     import pickle

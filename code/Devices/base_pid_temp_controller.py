@@ -62,7 +62,7 @@ class basePidController(base_device):
     def __init__(self, name, type_connection, installation_class) -> None:
         super().__init__(name, type_connection, installation_class)
         self.part_ch = (which_part_in_ch.bouth)
-        self.setting_window = UiSetPidController()#заменить на свой класс фронта для пользователя, они лежат в interfase
+        self.setting_window = UiSetPidController(add_id_select=True if type_connection == "modbus" else False)
         self.base_settings_window()
         
         self.setting_window.type_step_enter.addItems([ QApplication.translate("Device","Заданный шаг") ])

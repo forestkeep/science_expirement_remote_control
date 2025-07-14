@@ -55,15 +55,13 @@ class relayPr1Class(base_device):
         self.state_output = out_state.off
 
         self.command = None
-        self.setting_window = Ui_Set_relay()
+        self.setting_window = Ui_Set_relay(add_id_select = True)
         self.setting_window.setGeometry(300, 300, 650, 400)
         self.base_settings_window()
 
     @base_device.base_show_window
     def show_setting_window(self, number_of_channel):
         self.switch_channel(number_of_channel)
-
-        print("func")
 
         self.key_to_signal_func = False
         # ============установка текущих параметров=======================
@@ -357,12 +355,12 @@ class relayPr1Class(base_device):
         return ch_response_to_step.Incorrect_ch, parameters, time.perf_counter() - start_time
 
     def read_hall_sensors(self):
-        response = self._read_reg(adr=0x03F1, slave=0x0A, num_registers=0x0014)
+        response = self._read_reg(adr=0x03F1, slave=self.dict_settable_parameters["slave_id"], num_registers=0x0014)
 
         return response
     
     def read_temp_sensor(self):
-        response = self._read_reg(adr=0x0405, slave=0x0A, num_registers=0x0007)
+        response = self._read_reg(adr=0x0405, slave=self.dict_settable_parameters["slave_id"], num_registers=0x0007)
         if response:
             response = struct.pack('> ' + 'H' * len(response.registers), *response.registers)
             if len(response) >= 7:
@@ -384,18 +382,18 @@ class relayPr1Class(base_device):
 
     def _set_polarity_1(self, number_of_channel) -> bool:
         self.switch_channel(number_of_channel)
-        response = self._write_reg(address=0x03E8, value=0x0008, slave=0x0A)
+        response = self._write_reg(address=0x03E8, value=0x0008, slave=self.dict_settable_parameters["slave_id"])
 
         return response
 
     def _set_polarity_2(self, number_of_channel) -> bool:
         self.switch_channel(number_of_channel)
-        response = self._write_reg(address=0x03E8, value=0x0108, slave=0x0A)
+        response = self._write_reg(address=0x03E8, value=0x0108, slave=self.dict_settable_parameters["slave_id"])
         return response
 
     def _output_switching_on(self, number_of_channel) -> bool:
         self.switch_channel(number_of_channel)
-        response = self._write_reg(address=0x03E7, value=0x0108, slave=0x0A)
+        response = self._write_reg(address=0x03E7, value=0x0108, slave=self.dict_settable_parameters["slave_id"])
         return response
     
     def calibration(self):
@@ -425,12 +423,12 @@ class relayPr1Class(base_device):
 
     def _output_switching_off(self, number_of_channel) -> bool:
         self.switch_channel(number_of_channel)
-        response = self._write_reg(address=0x03E7, value=0x0008, slave=0x0A)
+        response = self._write_reg(address=0x03E7, value=0x0008, slave=self.dict_settable_parameters["slave_id"])
         return response
 
     def _change_polarity(self, number_of_channel) -> bool:
         self.switch_channel(number_of_channel)
-        response = self._write_reg(address=0x03E8, value=0x0308, slave=0x0A)
+        response = self._write_reg(address=0x03E8, value=0x0308, slave=self.dict_settable_parameters["slave_id"])
         return response
 
     def get_parameters(self, number_of_channel) -> list:

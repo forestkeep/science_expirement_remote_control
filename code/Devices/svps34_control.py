@@ -266,8 +266,11 @@ class device:
             else:
                 return False
 
-
 class Ui_SVPS34_control(QtWidgets.QMainWindow):
+    def __init__(self, parent=None):
+        super(Ui_SVPS34_control, self).__init__(parent)
+        self.setupUi()
+
     def setupUi(self):
         # super.__init__()
         self.is_device_connect = False

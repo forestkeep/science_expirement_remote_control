@@ -14,7 +14,7 @@ import logging
 import os
 from dataclasses import dataclass
 
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import QTranslator
 from PyQt5.QtWidgets import QApplication
 from SettingsManager import SettingsManager
@@ -22,7 +22,6 @@ from SettingsManager import SettingsManager
 import interface.info_window_dialog
 from device_creator.dev_creator import deviceCreator
 from device_creator.run_commands import TestCommands
-from Devices.svps34_control import Ui_SVPS34_control
 from graph.online_graph import sessionController
 from Installation_class import installation_class
 from interface.main_window import Ui_MainWindow
@@ -30,6 +29,7 @@ from controlDevicesJSON import search_devices_json
 from localJSONControl import localDeviceControl
 from device_selector import deviceSelector
 from functions import open_log_file
+from available_devices import local_device_class
 
 logger = logging.getLogger(__name__)
 
@@ -232,10 +232,8 @@ class instController(QtWidgets.QMainWindow):
         if device:
             if isinstance(device, str):
                 if device not in self.dict_active_local_devices.keys():
-                    if device == "SVPS34":
-                        self.dict_active_local_devices[device] = Ui_SVPS34_control()
-                        self.dict_active_local_devices[device].setupUi()
-                        self.dict_active_local_devices[device].show()
+                    self.dict_active_local_devices[device] = local_device_class[device]()
+                    self.dict_active_local_devices[device].show()
                 else:
                     self.dict_active_local_devices[device].show()
 

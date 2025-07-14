@@ -20,6 +20,7 @@ from controlDevicesJSON import search_devices_json, validate_json_schema, get_ne
 from PyQt5 import QtWidgets
 from dataclasses import dataclass
 from device_creator.dev_template import templates
+from available_devices import local_device_class
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ class deviceSelector():
 
     def get_single_device(self):
         if not self.single_select_win:
-            self.single_select_win = Ui_Selectdevice()
+            self.single_select_win = Ui_Selectdevice( devices = local_device_class.keys() )
             self.single_select_win.open_new_path.clicked.connect(self.callback_select_device)
 
         self.single_select_win.reload_json_dev(self.JSON_devices)

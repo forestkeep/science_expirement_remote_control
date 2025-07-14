@@ -21,8 +21,8 @@ except:
     from interfase.base_set_window import base_settings_window
 
 class Ui_Set_power_supply(base_settings_window):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, add_id_select = False) -> None:
+        super().__init__(add_id_select=add_id_select)
 
     def setupUi(self):
 

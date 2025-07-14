@@ -16,8 +16,10 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 logger = logging.getLogger(__name__)
 
 class base_settings_window(QtWidgets.QDialog):
-    def __init__(self) -> None:
+    def __init__(self, add_id_select = False) -> None:
         super().__init__()
+
+        self.add_id_select = add_id_select
         
         self.font = QtGui.QFont()
         self.font.setPointSize(11)
@@ -45,6 +47,11 @@ class base_settings_window(QtWidgets.QDialog):
         self.comportslist = QtWidgets.QComboBox()
         self.baud_label = QtWidgets.QLabel()
         self.boudrate = QtWidgets.QComboBox()
+
+        if add_id_select:
+            self.id_label = QtWidgets.QLabel()
+            self.id_enter = QtWidgets.QComboBox()
+            self.id_enter.addItems([str(i) for i in range(1, 256)])
 
         self.sourse_act_label = QtWidgets.QLabel()
         self.sourse_meas_label = QtWidgets.QLabel()
@@ -167,7 +174,11 @@ class base_settings_window(QtWidgets.QDialog):
         self.Layout_set_connection.addWidget(self.comportslist, 1, 1, 1, 2)
         self.Layout_set_connection.addWidget(self.baud_label, 2, 0, 1, 1)
         self.Layout_set_connection.addWidget(self.boudrate, 2, 1, 1, 2)
-        self.Layout_set_connection.addWidget(self.buttonBox, 3, 1, 2, 2)
+        if add_id_select:
+            self.Layout_set_connection.addWidget(self.id_label, 3, 0, 1, 1)
+            self.Layout_set_connection.addWidget(self.id_enter, 3, 1, 1, 2)
+
+        self.Layout_set_connection.addWidget(self.buttonBox, 4, 1, 2, 2)
 
         self.buttonBox.accepted.connect(self.accept)  # type: ignore
         self.buttonBox.rejected.connect(self.reject)  # type: ignore
@@ -245,6 +256,8 @@ class base_settings_window(QtWidgets.QDialog):
 
         self.settings_meas_in_exp.setText( _translate( "device window","Настройки измерений") )
 
+        if self.add_id_select:
+            self.id_label.setText( _translate( "device window","id") )
 
 if __name__ == "__main__":
     import sys

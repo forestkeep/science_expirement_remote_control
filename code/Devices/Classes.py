@@ -126,7 +126,9 @@ class base_device():
         self.dict_buf_parameters = {
                                     "baudrate": "9600",
                                     "COM": None
-                                    } 
+                                    }
+        if type_connection == "modbus":
+            self.dict_buf_parameters["slave_id"] = None
         self.dict_settable_parameters = {}
         self.active_ports = []
         self.channels = []
@@ -228,6 +230,8 @@ class base_device():
             # Установка текущих параметров
             self.setting_window.comportslist.setCurrentText(self.dict_buf_parameters["COM"])
             self.setting_window.boudrate.setCurrentText(self.dict_buf_parameters["baudrate"])
+            if self.type_connection == "modbus":
+                self.setting_window.id_enter.setCurrentText(str(self.dict_buf_parameters["slave_id"]))
 
             if self.active_channel_meas.dict_buf_parameters is self.active_channel_meas.dict_settable_parameters:
                 logger.warning("в активном измерительном канале буфферный накопитель парамметров и основной являются одним объектом")
@@ -279,6 +283,8 @@ class base_device():
 
                 self.dict_buf_parameters["baudrate"] = (self.setting_window.boudrate.currentText())
                 self.dict_buf_parameters["COM"] = (self.setting_window.comportslist.currentText())
+                if self.type_connection == "modbus":
+                    self.dict_buf_parameters["slave_id"] = int(self.setting_window.id_enter.currentText())
                 return func(self, *args, **kwargs)
         return wrapper
     

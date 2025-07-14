@@ -54,26 +54,26 @@ class maishengPowerClass(power_supply):
     ) -> bool:  # в сотых долях вольта 20000 - 200В
         voltage *= 100
         response = self._write_reg(
-            address=int("0040", 16), count=2, slave=1, values=[0, int(voltage)]
+            address=int("0040", 16), count=2, slave=self.dict_settable_parameters["slave_id"], values=[0, int(voltage)]
         )
         return response
 
     def _set_current(self, ch_num, current) -> bool:  # в сотых долях ампера
         current *= 100
         response = self._write_reg(
-            address=int("0041", 16), count=2, slave=1, values=[0, int(current)]
+            address=int("0041", 16), count=2, slave=self.dict_settable_parameters["slave_id"], values=[0, int(current)]
         )
         return response
 
     def _output_switching_on(self, ch_num) -> bool:
         response = self._write_reg(
-            address=int("0042", 16), count=2, slave=1, values=[0, 1]
+            address=int("0042", 16), count=2, slave=self.dict_settable_parameters["slave_id"], values=[0, 1]
         )
         return response
 
     def _output_switching_off(self, ch_num) -> bool:
         response = self._write_reg(
-            address=int("0042", 16), count=2, slave=1, values=[0, 0]
+            address=int("0042", 16), count=2, slave=self.dict_settable_parameters["slave_id"], values=[0, 0]
         )
         return response
 
@@ -84,7 +84,7 @@ class maishengPowerClass(power_supply):
             high = 1
         frequency = frequency - 65535 - 1
         response = self._write_reg(
-            address=int("0043", 16), count=2, slave=1, values=[high, frequency]
+            address=int("0043", 16), count=2, slave=self.dict_settable_parameters["slave_id"], values=[high, frequency]
         )
         return response
 
@@ -92,7 +92,7 @@ class maishengPowerClass(power_supply):
         if duty_cycle > 100 or duty_cycle < 1:
             return False
         response = self._write_reg(
-            address=int("0044", 16), count=2, slave=1, values=[0, duty_cycle]
+            address=int("0044", 16), count=2, slave=self.dict_settable_parameters["slave_id"], values=[0, duty_cycle]
         )
         return response
 

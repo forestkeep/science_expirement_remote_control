@@ -310,6 +310,7 @@ class analyse(baseInstallation):
 
         marked_com_incorrect = []
         marked_baud_incorrect = []
+        marked_slave_id_incorrect = []
         for i in range(len(list_COMs)):
             for j in range(len(list_COMs)):
                 if i == j:
@@ -317,12 +318,7 @@ class analyse(baseInstallation):
 
                 if list_COMs[i] == list_COMs[j]:
 
-                    if (
-                        self.dict_active_device_class[
-                            list_device_name[i]
-                        ].get_type_connection()
-                        == "serial"
-                    ):
+                    if (self.dict_active_device_class[list_device_name[i]].get_type_connection() == "serial"):
 
                         for device_name in [list_device_name[i], list_device_name[j]]:
                             self.set_border_color_device(
@@ -348,45 +344,57 @@ class analyse(baseInstallation):
                                 status="war",
                             )
                         status = False
-                    elif (
-                        self.dict_active_device_class[
-                            list_device_name[i]
-                        ].get_type_connection()
-                        == "modbus"
-                        and self.dict_active_device_class[
-                            list_device_name[j]
-                        ].get_type_connection()
-                        == "modbus"
-                        and self.dict_active_device_class[
-                            list_device_name[i]
-                        ].get_baud()
-                        != self.dict_active_device_class[list_device_name[j]].get_baud()
-                    ):
+                    elif (self.dict_active_device_class[list_device_name[i]].get_type_connection() == "modbus"
+                        and self.dict_active_device_class[list_device_name[j]].get_type_connection() == "modbus"):
+                        
+                        if self.dict_active_device_class[list_device_name[i]].get_baud() != self.dict_active_device_class[list_device_name[j]].get_baud():
 
-                        for device_name in [list_device_name[i], list_device_name[j]]:
-                            self.set_border_color_device(
-                                device_name=device_name,
-                                status_color=warning_style_border,
-                            )
+                            for device_name in [list_device_name[i], list_device_name[j]]:
+                                self.set_border_color_device(
+                                    device_name=device_name,
+                                    status_color=warning_style_border,
+                                )
 
-                        is_show = True
-                        for mark in marked_baud_incorrect:
-                            if (
-                                list_device_name[i] in mark
-                                and list_device_name[j] in mark
-                            ):
+                            is_show = True
+                            if (list_device_name[i] in marked_baud_incorrect and list_device_name[j] in marked_baud_incorrect):
                                 is_show = False
-                        if is_show:
-                            marked_baud_incorrect.append(list_device_name[i])
-                            marked_baud_incorrect.append(list_device_name[j])
-                            
-                            text = QApplication.translate('analyse',"{device1} и {device2} не могут иметь разную скорость подключения")
-                            text = text.format(device1 = list_device_name[i], device2 = list_device_name[j])
-                            self.add_text_to_log(
-                                text = text,
-                                status="war",
-                            )
-                        status = False
+                                
+                            if is_show:
+                                marked_baud_incorrect.append(list_device_name[i])
+                                marked_baud_incorrect.append(list_device_name[j])
+                                
+                                text = QApplication.translate('analyse',"{device1} и {device2} не могут иметь разную скорость подключения")
+                                text = text.format(device1 = list_device_name[i], device2 = list_device_name[j])
+                                self.add_text_to_log(
+                                    text = text,
+                                    status="war",
+                                )
+                            status = False
+
+                        first_slave_id = self.dict_active_device_class[list_device_name[i]].dict_buf_parameters["slave_id"]
+                        second_slave_id = self.dict_active_device_class[list_device_name[j]].dict_buf_parameters["slave_id"]
+                        if first_slave_id == second_slave_id:
+                            for device_name in [list_device_name[i], list_device_name[j]]:
+                                self.set_border_color_device(
+                                    device_name=device_name,
+                                    status_color=warning_style_border,
+                                )
+
+                            is_show = True
+                            if (list_device_name[i] in marked_slave_id_incorrect and list_device_name[j] in marked_slave_id_incorrect):
+                                is_show = False
+
+                            if is_show:
+                                marked_slave_id_incorrect.append(list_device_name[i])
+                                marked_slave_id_incorrect.append(list_device_name[j])
+                                
+                                text = QApplication.translate('analyse',"{device1} и {device2} не могут иметь одинаковый адрес устроиства")
+                                text = text.format(device1 = list_device_name[i], device2 = list_device_name[j])
+                                self.add_text_to_log(
+                                    text = text,
+                                    status="war",
+                                )
+                            status = False
 
         for client in self.clients:
             try:

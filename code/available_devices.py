@@ -22,6 +22,8 @@ from Devices.matrixWps300s import matrixWps300s
 from Devices.pig_in_a_poke_device import pigInAPoke
 from Devices.power_supply_class_test_json import power_supply
 from Devices.TCN06 import pidControllerTCN06
+from Devices.tcn06_local import PIDRegulatorGUI
+from Devices.svps34_control import Ui_SVPS34_control
 
 dict_device_class = {
                     "Maisheng": maishengPowerClass, 
@@ -40,5 +42,8 @@ dict_device_class = {
 JSON_dict_device_class = {
 	                "power_supply": power_supply
 }
+
+local_device_class = {'SVPS34': Ui_SVPS34_control,
+                       'TCN06': PIDRegulatorGUI}
 
 device_types = ["power_suply", "oscilloscope", "Voltemeter", "signal generator"]

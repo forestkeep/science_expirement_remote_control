@@ -82,7 +82,12 @@ class basePowerSupply(base_device):
     def __init__(self, name, type_connection, installation_class) -> None:
         super().__init__(name, type_connection, installation_class)
         self.part_ch = (which_part_in_ch.bouth)
-        self.setting_window = Ui_Set_power_supply()
+        if type_connection == "modbus":
+            add_id_select = True
+        else:
+            add_id_select = False
+
+        self.setting_window = Ui_Set_power_supply(add_id_select=add_id_select)
         self.base_settings_window()
         
         self.setting_window.type_work_enter.addItems(
@@ -455,7 +460,6 @@ class basePowerSupply(base_device):
 
     def confirm_parameters(self):  # менять для каждого прибора
         """метод подтверждения корректности параметров от контроллера установки. установка проверяет ком порты, распределяет их между устройствами и отдает каждому из устройств"""
-        print("подтверждение настроек блока питания")
         for ch in self.channels:
             if ch.is_ch_active():
                 ch.step_index = -1
@@ -557,7 +561,6 @@ class basePowerSupply(base_device):
         """устанавливает значения тока и напряжения, включает выход прибора"""
 
         self.switch_channel(number_of_channel)
-        print(self.active_channel_act.steps_voltage)
         is_correct = True
         if ( self._set_voltage( self.active_channel_act.number, self.active_channel_act.min_step_V ) == False ):
             logger.warning("ошибка установки тока")

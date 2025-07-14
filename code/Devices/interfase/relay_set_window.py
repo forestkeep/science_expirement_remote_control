@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 class Ui_Set_relay(base_settings_window):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, add_id_select=False) -> None:
+        super().__init__(add_id_select=add_id_select)
 
     def setupUi(self):
 

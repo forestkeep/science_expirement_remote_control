@@ -18,11 +18,11 @@ logger = logging.getLogger(__name__)
 
 class Ui_Selectdevice(QtWidgets.QDialog):
 
-    def __init__(self,JSON_devices = None):
+    def __init__(self,devices = None, JSON_devices = None):
         super().__init__()
-        self.setupUi(JSON_devices)
+        self.setupUi(devices, JSON_devices)
 
-    def setupUi(self, JSON_devices):
+    def setupUi(self,devices, JSON_devices):
 
         self.resize(234, 261)
         self.widget = QtWidgets.QWidget(self)
@@ -31,11 +31,20 @@ class Ui_Selectdevice(QtWidgets.QDialog):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.widget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.pushButton = QtWidgets.QPushButton(self.widget)
+        
         self.font = QtGui.QFont()
         self.font.setPointSize(12)
-        self.pushButton.setFont(self.font)
-        self.verticalLayout.addWidget(self.pushButton)
+        if devices is not None:
+            for dev in devices:
+                button = QtWidgets.QPushButton(dev)
+                button.setFont(self.font)
+                self.verticalLayout.addWidget(button)
+                button.clicked.connect(lambda checked, key=dev: self.send_signal(key))
+        #self.pushButton = QtWidgets.QPushButton(self.widget)
+        #self.pushButton.setFont(self.font)
+        #self.pushButton.setText("SVPS34")
+        #self.pushButton.clicked.connect(lambda: self.send_signal(self.pushButton.text()))
+        #self.verticalLayout.addWidget(self.pushButton)
 
         separator = QtWidgets.QFrame()
         separator.setFrameShape(QtWidgets.QFrame.HLine)
@@ -44,8 +53,6 @@ class Ui_Selectdevice(QtWidgets.QDialog):
 
         self.generic_buttons = []
         self.generic_label_dev = []
-
-        self.pushButton.clicked.connect(lambda: self.send_signal(self.pushButton.text()))
 
         self.uncorrect_label = QtWidgets.QLabel()
         self.uncorrect_label.setFont(self.font)
@@ -97,7 +104,6 @@ class Ui_Selectdevice(QtWidgets.QDialog):
     def retranslateUi(self, Selectdevice):
         _translate = QtCore.QCoreApplication.translate
         Selectdevice.setWindowTitle(_translate("Selectdevice", "Выбор прибора"))
-        self.pushButton.setText("SVPS34")
         self.open_new_path.setText(_translate("Dialog", "Укажите папку с приборами"))
         self.uncorrect_label.setText(_translate("Dialog", "Нераспознанные приборы:"))
      
