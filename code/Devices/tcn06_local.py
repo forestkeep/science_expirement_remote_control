@@ -8,14 +8,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
 from PyQt5.QtCore import Qt, QTimer, QTime, QDate
 from time import sleep
 import csv
-import os
 
-# Настройка логирования
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    filename='pid_regulator_log.txt'
-)
 logger = logging.getLogger(__name__)
 
 # Параметры подключения (изменяемый порт)
