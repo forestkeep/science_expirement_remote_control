@@ -1,0 +1,1026 @@
+2025-07-15 09:13:37,814 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:13:38,029 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:13:55,708 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:13:56,219 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:13:56,305 - INFO - client создан self.client=Serial<id=0x1a4f76da650, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:13:56,357 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:14:05,542 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:14:06,051 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:14:06,137 - INFO - client создан self.client=Serial<id=0x1a4f76f90c0, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:14:06,190 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:14:08,066 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:14:08,574 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:14:08,660 - INFO - client создан self.client=Serial<id=0x1a4f76a6fe0, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:14:08,712 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:14:08,713 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x1a4f76a3e90 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x000001A4F76A3910>, timeout=0.3>
+2025-07-15 09:14:08,817 - WARNING - []
+2025-07-15 09:14:08,817 - INFO - Session 1 created
+2025-07-15 09:14:08,830 - INFO - Adding session {'id': '1', 'name': '2025-07-15 09:14:08.713644', 'status': 'running'}
+2025-07-15 09:14:08,830 - INFO - session_name_changed emitted 1
+2025-07-15 09:14:08,840 - WARNING - в приборе <Devices.TCN06.pidControllerTCN06 object at 0x000001A4F66DD890> не сериализованы объекты  ['timer_for_scan_com_port', 'installation_class', 'setting_window', 'client']
+2025-07-15 09:14:09,695 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x20513b20bd0 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x0000020513375C10>, timeout=0.3>
+2025-07-15 09:14:09,695 - INFO - у прибора TCN06_1 не определена функция проверки подключения
+2025-07-15 09:14:11,597 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:14:11,597 - WARNING - ошибка записи регистров Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:14:12,201 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:14:12,201 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:14:12,808 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:14:12,808 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:14:13,411 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:14:13,411 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:14:13,411 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:14:13,415 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:14:13,415 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:14:13,418 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:14:13,418 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:14:13,613 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:14:14,219 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:14:14,219 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:14:14,824 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:15,429 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:15,429 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:14:15,635 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:14:15,636 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:14:15,636 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:14:15,636 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:14:15,636 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:14:16,241 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:16,848 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:17,450 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:17,450 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:14:17,651 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:14:18,261 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:18,867 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:19,469 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:19,469 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:14:19,481 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:14:19,482 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:14:19,482 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:14:19,483 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:14:19,488 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:14:19,488 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:14:19,488 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:14:19,489 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:14:19,670 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:14:20,271 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:20,878 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:21,486 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:21,486 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:14:21,687 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:14:21,694 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:14:21,694 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:14:21,695 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:14:21,695 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:14:22,291 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:22,894 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:23,495 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:23,495 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:14:23,697 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:14:24,299 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:24,903 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:25,509 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:25,509 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:14:25,511 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:14:25,511 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:14:25,512 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:14:25,512 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:14:25,523 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:14:25,523 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:14:25,523 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:14:25,524 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:14:25,710 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:14:26,316 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:26,920 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:27,522 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:27,522 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:14:27,723 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:14:27,728 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:14:27,728 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:14:27,732 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:14:27,732 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:14:28,330 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:28,938 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:29,539 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:29,539 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:14:29,740 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:14:30,345 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:30,951 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:31,554 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:14:31,554 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:14:31,555 - WARNING - Ошибка действия прибора <Devices.TCN06.pidControllerTCN06 object at 0x00000205027C14D0> при окончании эксперимента invalid literal for int() with base 10: '0.01'
+2025-07-15 09:14:31,555 - INFO - основной цикл эксперимента завершен, ждем доставки всех данных
+2025-07-15 09:14:31,560 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:14:31,560 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:14:31,560 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:14:31,560 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:14:31,570 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:14:31,571 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:14:31,571 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:14:31,571 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:14:31,574 - INFO - session_name_changed emitted 1
+2025-07-15 09:14:33,627 - INFO - запрашиваем имя сессии и описание
+2025-07-15 09:14:34,774 - INFO - session_name_changed emitted 1
+2025-07-15 09:14:35,742 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:14:36,249 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:14:36,336 - INFO - client создан self.client=Serial<id=0x1a4fa55ba30, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:14:36,387 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:16:34,629 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:16:34,835 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:16:39,265 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:16:39,772 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:16:39,860 - INFO - client создан self.client=Serial<id=0x1df483e8070, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:16:39,910 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:16:41,799 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:16:42,309 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:16:42,395 - INFO - client создан self.client=Serial<id=0x1df48424c40, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:16:42,447 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:16:43,704 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:16:44,215 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:16:44,301 - INFO - client создан self.client=Serial<id=0x1df483d7e50, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:16:44,352 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:16:44,353 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x1df48423c50 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x000001DF48423790>, timeout=0.3>
+2025-07-15 09:16:44,442 - WARNING - []
+2025-07-15 09:16:44,442 - INFO - Session 1 created
+2025-07-15 09:16:44,455 - INFO - Adding session {'id': '1', 'name': '2025-07-15 09:16:44.353679', 'status': 'running'}
+2025-07-15 09:16:44,456 - INFO - session_name_changed emitted 1
+2025-07-15 09:16:44,462 - WARNING - в приборе <Devices.TCN06.pidControllerTCN06 object at 0x000001DF483E3B50> не сериализованы объекты  ['timer_for_scan_com_port', 'installation_class', 'setting_window', 'client']
+2025-07-15 09:16:45,324 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x2ace7d31510 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x000002ACF8B1EC10>, timeout=0.3>
+2025-07-15 09:16:45,324 - INFO - у прибора TCN06_1 не определена функция проверки подключения
+2025-07-15 09:16:47,225 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:16:47,225 - WARNING - ошибка записи регистров Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:16:47,268 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas']
+2025-07-15 09:16:47,526 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:16:47,529 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas']
+2025-07-15 09:16:48,526 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:16:48,529 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas']
+2025-07-15 09:16:49,526 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:16:49,528 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas']
+2025-07-15 09:16:50,526 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:16:50,529 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas']
+2025-07-15 09:16:51,329 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas']
+2025-07-15 09:16:52,329 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas']
+2025-07-15 09:16:53,328 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas']
+2025-07-15 09:16:54,328 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas']
+2025-07-15 09:16:55,328 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas']
+2025-07-15 09:16:55,328 - WARNING - Ошибка действия прибора <Devices.TCN06.pidControllerTCN06 object at 0x000002ACE7D314D0> при окончании эксперимента invalid literal for int() with base 10: '0.01'
+2025-07-15 09:16:55,328 - INFO - основной цикл эксперимента завершен, ждем доставки всех данных
+2025-07-15 09:16:55,386 - INFO - session_name_changed emitted 1
+2025-07-15 09:16:56,733 - INFO - запрашиваем имя сессии и описание
+2025-07-15 09:16:57,680 - INFO - session_name_changed emitted 1
+2025-07-15 09:16:58,666 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:16:59,179 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:16:59,265 - INFO - client создан self.client=Serial<id=0x1df4be0a620, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:16:59,317 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:19:21,409 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:19:21,616 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:19:30,741 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:19:31,249 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:19:31,336 - INFO - client создан self.client=Serial<id=0x25ca4406dd0, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:19:31,387 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:19:32,313 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:19:32,819 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:19:32,906 - INFO - client создан self.client=Serial<id=0x25ca4446e30, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:19:32,957 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:19:33,576 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:19:34,089 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:19:34,175 - INFO - client создан self.client=Serial<id=0x25ca4458ca0, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:19:34,226 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:19:34,227 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x25ca4450bd0 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x0000025CA336D210>, timeout=0.3>
+2025-07-15 09:19:34,313 - WARNING - []
+2025-07-15 09:19:34,313 - INFO - Session 1 created
+2025-07-15 09:19:34,327 - INFO - Adding session {'id': '1', 'name': '2025-07-15 09:19:34.227811', 'status': 'running'}
+2025-07-15 09:19:34,327 - INFO - session_name_changed emitted 1
+2025-07-15 09:19:34,334 - WARNING - в приборе <Devices.TCN06.pidControllerTCN06 object at 0x0000025CA4429490> не сериализованы объекты  ['timer_for_scan_com_port', 'installation_class', 'setting_window', 'client']
+2025-07-15 09:19:35,194 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x1e577db1950 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x000001E577DB0E90>, timeout=0.3>
+2025-07-15 09:19:35,194 - INFO - у прибора TCN06_1 не определена функция проверки подключения
+2025-07-15 09:19:37,097 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:19:37,098 - WARNING - ошибка записи регистров Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:19:37,100 - INFO - meas_temp True
+2025-07-15 09:19:37,100 - INFO - meas_temp True
+2025-07-15 09:19:37,703 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:19:37,703 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:19:37,703 - INFO - meas_temp set True
+2025-07-15 09:19:38,305 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:19:38,305 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:19:38,305 - INFO - meas_power True
+2025-07-15 09:19:38,905 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:19:38,905 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:19:38,905 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:19:38,909 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:19:38,909 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:19:38,909 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:19:38,910 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:19:39,106 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:19:39,106 - INFO - meas_temp True
+2025-07-15 09:19:39,106 - INFO - meas_temp True
+2025-07-15 09:19:39,711 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:19:39,711 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:19:39,711 - INFO - meas_temp set True
+2025-07-15 09:19:40,319 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:19:40,319 - INFO - meas_power True
+2025-07-15 09:19:40,925 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:19:40,925 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:19:41,127 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:19:41,127 - INFO - meas_temp True
+2025-07-15 09:19:41,127 - INFO - meas_temp True
+2025-07-15 09:19:41,135 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:19:41,135 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:19:41,135 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:19:41,135 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:19:41,731 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:19:41,731 - INFO - meas_temp set True
+2025-07-15 09:19:42,333 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:19:42,333 - INFO - meas_power True
+2025-07-15 09:19:42,939 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:19:42,939 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:19:43,141 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:19:43,141 - INFO - meas_temp True
+2025-07-15 09:19:43,141 - INFO - meas_temp True
+2025-07-15 09:19:43,742 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:19:43,742 - INFO - meas_temp set True
+2025-07-15 09:19:44,344 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:19:44,344 - INFO - meas_power True
+2025-07-15 09:19:44,949 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:19:44,949 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:19:45,150 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:19:45,150 - WARNING - процесс эксперимента закрыт
+2025-07-15 09:20:38,349 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:20:38,557 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:20:46,888 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:20:47,399 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:20:47,486 - INFO - client создан self.client=Serial<id=0x1f69cf074f0, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:20:47,538 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:20:48,459 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:20:48,968 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:20:49,056 - INFO - client создан self.client=Serial<id=0x1f69cec6f20, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:20:49,107 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:20:50,636 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:20:51,146 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:20:51,233 - INFO - client создан self.client=Serial<id=0x1f69cf076a0, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:20:51,284 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:20:51,285 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x1f69be92710 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x000001F69BE998D0>, timeout=0.3>
+2025-07-15 09:20:51,379 - WARNING - []
+2025-07-15 09:20:51,379 - INFO - Session 1 created
+2025-07-15 09:20:51,392 - INFO - Adding session {'id': '1', 'name': '2025-07-15 09:20:51.285313', 'status': 'running'}
+2025-07-15 09:20:51,392 - INFO - session_name_changed emitted 1
+2025-07-15 09:20:51,398 - WARNING - в приборе <Devices.TCN06.pidControllerTCN06 object at 0x000001F69CEEC550> не сериализованы объекты  ['timer_for_scan_com_port', 'installation_class', 'setting_window', 'client']
+2025-07-15 09:20:52,261 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x19464161950 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x000001947679B290>, timeout=0.3>
+2025-07-15 09:20:52,261 - INFO - у прибора TCN06_1 не определена функция проверки подключения
+2025-07-15 09:20:54,165 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:20:54,165 - WARNING - ошибка записи регистров Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:20:54,169 - INFO - meas_temp True
+2025-07-15 09:20:54,169 - INFO - meas_temp True
+2025-07-15 09:20:54,771 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:20:54,771 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:20:54,771 - INFO - meas_temp set True
+2025-07-15 09:20:55,376 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:20:55,376 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:20:55,376 - INFO - meas_power True
+2025-07-15 09:20:55,979 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:20:55,979 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:20:55,979 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:20:56,181 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:20:56,181 - INFO - meas_temp True
+2025-07-15 09:20:56,181 - INFO - meas_temp True
+2025-07-15 09:20:56,788 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:20:56,788 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:20:56,788 - INFO - meas_temp set True
+2025-07-15 09:20:57,394 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:20:57,394 - INFO - meas_power True
+2025-07-15 09:20:58,001 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:20:58,001 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:20:58,012 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:20:58,012 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:20:58,012 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:20:58,014 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:20:58,017 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:20:58,018 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:20:58,018 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:20:58,018 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:20:58,207 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:20:58,208 - INFO - meas_temp True
+2025-07-15 09:20:58,208 - INFO - meas_temp True
+2025-07-15 09:20:58,814 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:20:58,814 - INFO - meas_temp set True
+2025-07-15 09:20:59,421 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:20:59,421 - INFO - meas_power True
+2025-07-15 09:21:00,022 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:00,022 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:21:00,224 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:21:00,225 - INFO - meas_temp True
+2025-07-15 09:21:00,225 - INFO - meas_temp True
+2025-07-15 09:21:00,225 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:21:00,225 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:21:00,225 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:21:00,225 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:21:00,831 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:00,831 - INFO - meas_temp set True
+2025-07-15 09:21:01,437 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:01,437 - INFO - meas_power True
+2025-07-15 09:21:02,043 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:02,043 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:21:02,245 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:21:02,245 - INFO - meas_temp True
+2025-07-15 09:21:02,245 - INFO - meas_temp True
+2025-07-15 09:21:02,850 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:02,850 - INFO - meas_temp set True
+2025-07-15 09:21:03,459 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:03,459 - INFO - meas_power True
+2025-07-15 09:21:04,063 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:04,063 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:21:04,069 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:21:04,069 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:21:04,069 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:21:04,069 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:21:04,075 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:21:04,076 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:21:04,076 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:21:04,076 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:21:04,265 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:21:04,265 - INFO - meas_temp True
+2025-07-15 09:21:04,265 - INFO - meas_temp True
+2025-07-15 09:21:04,871 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:04,871 - INFO - meas_temp set True
+2025-07-15 09:21:05,473 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:05,473 - INFO - meas_power True
+2025-07-15 09:21:06,076 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:06,076 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:21:06,277 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:21:06,277 - INFO - meas_temp True
+2025-07-15 09:21:06,277 - INFO - meas_temp True
+2025-07-15 09:21:06,284 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:21:06,285 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:21:06,285 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:21:06,285 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:21:06,881 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:06,881 - INFO - meas_temp set True
+2025-07-15 09:21:07,487 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:07,487 - INFO - meas_power True
+2025-07-15 09:21:08,095 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:08,095 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:21:08,296 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:21:08,296 - INFO - meas_temp True
+2025-07-15 09:21:08,296 - INFO - meas_temp True
+2025-07-15 09:21:08,902 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:08,902 - INFO - meas_temp set True
+2025-07-15 09:21:09,507 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:09,507 - INFO - meas_power True
+2025-07-15 09:21:10,110 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:10,110 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:21:10,115 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:21:10,115 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:21:10,116 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:21:10,116 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:21:10,122 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:21:10,123 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:21:10,124 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:21:10,124 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:21:10,312 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:21:10,312 - INFO - meas_temp True
+2025-07-15 09:21:10,312 - INFO - meas_temp True
+2025-07-15 09:21:10,919 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:10,919 - INFO - meas_temp set True
+2025-07-15 09:21:11,525 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:11,525 - INFO - meas_power True
+2025-07-15 09:21:12,128 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:12,128 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:21:12,329 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:21:12,329 - INFO - meas_temp True
+2025-07-15 09:21:12,329 - INFO - meas_temp True
+2025-07-15 09:21:12,334 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:21:12,334 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:21:12,334 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:21:12,334 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:21:12,933 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:12,933 - INFO - meas_temp set True
+2025-07-15 09:21:13,539 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:13,539 - INFO - meas_power True
+2025-07-15 09:21:14,144 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:14,144 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:21:14,145 - WARNING - Ошибка действия прибора <Devices.TCN06.pidControllerTCN06 object at 0x00000194641614D0> при окончании эксперимента invalid literal for int() with base 10: '0.01'
+2025-07-15 09:21:14,145 - INFO - основной цикл эксперимента завершен, ждем доставки всех данных
+2025-07-15 09:21:14,151 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:21:14,152 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:21:14,152 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:21:14,152 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:21:14,226 - INFO - session_name_changed emitted 1
+2025-07-15 09:21:23,501 - INFO - запрашиваем имя сессии и описание
+2025-07-15 09:21:24,618 - INFO - session_name_changed emitted 1
+2025-07-15 09:21:26,623 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:21:27,145 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:21:27,232 - INFO - client создан self.client=Serial<id=0x1f69f94d3f0, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:21:27,283 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:21:35,915 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:21:36,123 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:21:45,373 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:21:45,895 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:21:45,981 - INFO - client создан self.client=Serial<id=0x239b8056f20, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:21:46,033 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:21:47,989 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:21:48,499 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:21:48,586 - INFO - client создан self.client=Serial<id=0x239b8057e80, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:21:48,637 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:21:49,041 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:21:49,564 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:21:49,650 - INFO - client создан self.client=Serial<id=0x239b8057e50, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:21:49,701 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:21:49,702 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x239b80965d0 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x00000239B7038C90>, timeout=0.3>
+2025-07-15 09:21:49,786 - WARNING - []
+2025-07-15 09:21:49,787 - INFO - Session 1 created
+2025-07-15 09:21:49,799 - INFO - Adding session {'id': '1', 'name': '2025-07-15 09:21:49.702507', 'status': 'running'}
+2025-07-15 09:21:49,800 - INFO - session_name_changed emitted 1
+2025-07-15 09:21:49,806 - WARNING - в приборе <Devices.TCN06.pidControllerTCN06 object at 0x00000239B8063FD0> не сериализованы объекты  ['timer_for_scan_com_port', 'installation_class', 'setting_window', 'client']
+2025-07-15 09:21:50,686 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x1c613c21d90 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x000001C624C0FE90>, timeout=0.3>
+2025-07-15 09:21:50,686 - INFO - у прибора TCN06_1 не определена функция проверки подключения
+2025-07-15 09:21:52,586 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:21:52,586 - WARNING - ошибка записи регистров Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:21:52,586 - INFO - meas_temp True
+2025-07-15 09:21:52,587 - INFO - meas_temp True
+2025-07-15 09:21:53,195 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:21:53,195 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:21:53,195 - INFO - meas_temp set True
+2025-07-15 09:21:53,798 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:21:53,798 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:21:53,798 - INFO - meas_power True
+2025-07-15 09:21:54,399 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:21:54,399 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:21:54,399 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:21:54,601 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:21:54,601 - INFO - meas_temp True
+2025-07-15 09:21:54,601 - INFO - meas_temp True
+2025-07-15 09:21:54,607 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:21:54,607 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:21:54,607 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:21:54,607 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:21:55,208 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:21:55,208 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:21:55,208 - INFO - meas_temp set True
+2025-07-15 09:21:55,816 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:55,816 - INFO - meas_power True
+2025-07-15 09:21:56,420 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:56,420 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:21:56,622 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:21:56,622 - INFO - meas_temp True
+2025-07-15 09:21:56,622 - INFO - meas_temp True
+2025-07-15 09:21:57,224 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:57,224 - INFO - meas_temp set True
+2025-07-15 09:21:57,829 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:57,829 - INFO - meas_power True
+2025-07-15 09:21:58,433 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:58,433 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:21:58,440 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:21:58,440 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:21:58,440 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:21:58,441 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:21:58,441 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:21:58,442 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:21:58,442 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:21:58,442 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:21:58,635 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:21:58,635 - INFO - meas_temp True
+2025-07-15 09:21:58,635 - INFO - meas_temp True
+2025-07-15 09:21:59,241 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:59,241 - INFO - meas_temp set True
+2025-07-15 09:21:59,846 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:21:59,846 - INFO - meas_power True
+2025-07-15 09:22:00,449 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:00,449 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:22:00,651 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:22:00,651 - INFO - meas_temp True
+2025-07-15 09:22:00,651 - INFO - meas_temp True
+2025-07-15 09:22:00,659 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:22:00,659 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:22:00,659 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:22:00,659 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:22:01,255 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:01,255 - INFO - meas_temp set True
+2025-07-15 09:22:01,862 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:01,862 - INFO - meas_power True
+2025-07-15 09:22:02,467 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:02,467 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:22:02,468 - INFO - meas_temp True
+2025-07-15 09:22:02,468 - INFO - meas_temp True
+2025-07-15 09:22:03,072 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:03,072 - INFO - meas_temp set True
+2025-07-15 09:22:03,675 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:03,675 - INFO - meas_power True
+2025-07-15 09:22:04,280 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:04,280 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:22:04,281 - INFO - meas_temp True
+2025-07-15 09:22:04,281 - INFO - meas_temp True
+2025-07-15 09:22:04,281 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:22:04,281 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:22:04,282 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:22:04,282 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:22:04,286 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:22:04,286 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:22:04,286 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:22:04,286 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:22:04,883 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:04,883 - INFO - meas_temp set True
+2025-07-15 09:22:05,489 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:05,489 - INFO - meas_power True
+2025-07-15 09:22:06,096 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:06,096 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:22:06,097 - INFO - meas_temp True
+2025-07-15 09:22:06,097 - INFO - meas_temp True
+2025-07-15 09:22:06,699 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:06,699 - INFO - meas_temp set True
+2025-07-15 09:22:07,307 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:07,307 - INFO - meas_power True
+2025-07-15 09:22:07,908 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:07,908 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:22:07,908 - INFO - meas_temp True
+2025-07-15 09:22:07,909 - INFO - meas_temp True
+2025-07-15 09:22:08,517 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:08,517 - INFO - meas_temp set True
+2025-07-15 09:22:09,123 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:09,123 - INFO - meas_power True
+2025-07-15 09:22:09,732 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:09,732 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:22:09,733 - INFO - meas_temp True
+2025-07-15 09:22:09,733 - INFO - meas_temp True
+2025-07-15 09:22:09,737 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:22:09,737 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:22:09,737 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:22:09,737 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:22:09,741 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:22:09,741 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:22:09,741 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:22:09,741 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:22:09,747 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:22:09,747 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:22:09,747 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:22:09,747 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:22:10,336 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:10,336 - INFO - meas_temp set True
+2025-07-15 09:22:10,941 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:10,941 - INFO - meas_power True
+2025-07-15 09:22:11,549 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:22:11,549 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:22:11,549 - WARNING - Ошибка действия прибора <Devices.TCN06.pidControllerTCN06 object at 0x000001C613C214D0> при окончании эксперимента invalid literal for int() with base 10: '0.01'
+2025-07-15 09:22:11,550 - INFO - основной цикл эксперимента завершен, ждем доставки всех данных
+2025-07-15 09:22:11,555 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:22:11,557 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:22:11,557 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:22:11,557 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:22:11,601 - INFO - session_name_changed emitted 1
+2025-07-15 09:22:46,766 - INFO - запрашиваем имя сессии и описание
+2025-07-15 09:22:49,252 - INFO - session_name_changed emitted 1
+2025-07-15 09:22:51,187 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:22:51,692 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:22:51,780 - INFO - client создан self.client=Serial<id=0x239baaed6f0, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:22:51,831 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:22:56,931 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:22:57,140 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:23:05,900 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:23:06,407 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:23:06,494 - INFO - client создан self.client=Serial<id=0x19dfe02eb60, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:23:06,545 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:23:08,748 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:23:09,258 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:23:09,345 - INFO - client создан self.client=Serial<id=0x19dfe02e9e0, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:23:09,397 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:23:09,886 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:23:10,409 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:23:10,496 - INFO - client создан self.client=Serial<id=0x19dfe02ece0, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:23:10,548 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:23:10,549 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x19dfcfe4c10 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x0000019DFCFD2FD0>, timeout=0.3>
+2025-07-15 09:23:10,634 - WARNING - []
+2025-07-15 09:23:10,634 - INFO - Session 1 created
+2025-07-15 09:23:10,648 - INFO - Adding session {'id': '1', 'name': '2025-07-15 09:23:10.549395', 'status': 'running'}
+2025-07-15 09:23:10,648 - INFO - session_name_changed emitted 1
+2025-07-15 09:23:10,655 - WARNING - в приборе <Devices.TCN06.pidControllerTCN06 object at 0x0000019DFCF4A990> не сериализованы объекты  ['timer_for_scan_com_port', 'installation_class', 'setting_window', 'client']
+2025-07-15 09:23:11,520 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x2de7aeb0bd0 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x000002DE7A785C10>, timeout=0.3>
+2025-07-15 09:23:11,520 - INFO - у прибора TCN06_1 не определена функция проверки подключения
+2025-07-15 09:23:13,421 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:23:13,421 - WARNING - ошибка записи регистров Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:23:13,422 - INFO - meas_temp True
+2025-07-15 09:23:13,422 - INFO - meas_temp True
+2025-07-15 09:23:14,029 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:23:14,029 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:23:14,029 - INFO - meas_temp set True
+2025-07-15 09:23:14,635 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:23:14,635 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:23:14,635 - INFO - meas_power True
+2025-07-15 09:23:15,242 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:23:15,242 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:23:15,242 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:23:15,247 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:23:15,247 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:23:15,247 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:23:15,247 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:23:15,444 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:23:15,444 - INFO - meas_temp True
+2025-07-15 09:23:15,444 - INFO - meas_temp True
+2025-07-15 09:23:16,046 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:23:16,046 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:23:16,046 - INFO - meas_temp set True
+2025-07-15 09:23:16,651 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:16,651 - INFO - meas_power True
+2025-07-15 09:23:17,257 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:17,257 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:23:17,463 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:23:17,463 - INFO - meas_temp True
+2025-07-15 09:23:17,463 - INFO - meas_temp True
+2025-07-15 09:23:17,467 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:23:17,467 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:23:17,467 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:23:17,467 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:23:18,069 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:18,069 - INFO - meas_temp set True
+2025-07-15 09:23:18,671 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:18,671 - INFO - meas_power True
+2025-07-15 09:23:19,280 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:19,280 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:23:19,482 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:23:19,482 - INFO - meas_temp True
+2025-07-15 09:23:19,482 - INFO - meas_temp True
+2025-07-15 09:23:20,088 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:20,088 - INFO - meas_temp set True
+2025-07-15 09:23:20,694 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:20,694 - INFO - meas_power True
+2025-07-15 09:23:21,300 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:21,300 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:23:21,306 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:23:21,306 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:23:21,306 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:23:21,306 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:23:21,311 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:23:21,311 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:23:21,311 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:23:21,311 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:23:21,502 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:23:21,502 - INFO - meas_temp True
+2025-07-15 09:23:21,502 - INFO - meas_temp True
+2025-07-15 09:23:22,109 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:22,109 - INFO - meas_temp set True
+2025-07-15 09:23:22,714 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:22,714 - INFO - meas_power True
+2025-07-15 09:23:23,322 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:23,322 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:23:23,322 - INFO - meas_temp True
+2025-07-15 09:23:23,323 - INFO - meas_temp True
+2025-07-15 09:23:23,332 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:23:23,332 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:23:23,332 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:23:23,332 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:23:23,931 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:23,931 - INFO - meas_temp set True
+2025-07-15 09:23:24,536 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:24,536 - INFO - meas_power True
+2025-07-15 09:23:25,141 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:25,141 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:23:25,142 - INFO - meas_temp True
+2025-07-15 09:23:25,142 - INFO - meas_temp True
+2025-07-15 09:23:25,746 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:25,746 - INFO - meas_temp set True
+2025-07-15 09:23:26,351 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:26,351 - INFO - meas_power True
+2025-07-15 09:23:26,951 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:26,951 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:23:26,951 - INFO - meas_temp True
+2025-07-15 09:23:26,952 - INFO - meas_temp True
+2025-07-15 09:23:27,555 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:27,555 - INFO - meas_temp set True
+2025-07-15 09:23:28,158 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:28,158 - INFO - meas_power True
+2025-07-15 09:23:28,767 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:28,767 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:23:28,767 - INFO - meas_temp True
+2025-07-15 09:23:28,767 - INFO - meas_temp True
+2025-07-15 09:23:28,778 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:23:28,778 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:23:28,778 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:23:28,779 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:23:28,782 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:23:28,782 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:23:28,782 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:23:28,783 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:23:28,784 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:23:28,784 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:23:28,785 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:23:28,785 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:23:29,369 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:29,369 - INFO - meas_temp set True
+2025-07-15 09:23:29,972 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:29,972 - INFO - meas_power True
+2025-07-15 09:23:30,574 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:30,574 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:23:30,575 - INFO - meas_temp True
+2025-07-15 09:23:30,575 - INFO - meas_temp True
+2025-07-15 09:23:31,179 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:31,179 - INFO - meas_temp set True
+2025-07-15 09:23:31,784 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:31,784 - INFO - meas_power True
+2025-07-15 09:23:32,388 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:23:32,388 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:23:32,389 - WARNING - Ошибка действия прибора <Devices.TCN06.pidControllerTCN06 object at 0x000002DE69AB1490> при окончании эксперимента invalid literal for int() with base 10: '0.01'
+2025-07-15 09:23:32,389 - INFO - основной цикл эксперимента завершен, ждем доставки всех данных
+2025-07-15 09:23:32,392 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:23:32,392 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:23:32,393 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:23:32,393 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:23:32,400 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:23:32,400 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:23:32,403 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:23:32,403 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:23:32,460 - INFO - session_name_changed emitted 1
+2025-07-15 09:23:47,860 - INFO - запрашиваем имя сессии и описание
+2025-07-15 09:23:49,256 - INFO - session_name_changed emitted 1
+2025-07-15 09:23:50,447 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:23:50,958 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:23:51,044 - INFO - client создан self.client=Serial<id=0x19d82314670, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:23:51,096 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:24:39,324 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:24:39,530 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:24:46,202 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:24:46,712 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:24:46,799 - INFO - client создан self.client=Serial<id=0x2681eeae770, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:24:46,851 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:24:48,094 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:24:48,604 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:24:48,690 - INFO - client создан self.client=Serial<id=0x2681eeaead0, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:24:48,742 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:24:49,277 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:24:49,788 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:24:49,874 - INFO - client создан self.client=Serial<id=0x2681ee76f20, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:24:49,925 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:24:49,926 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x2681eec55d0 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x000002681EEB5ED0>, timeout=0.3>
+2025-07-15 09:24:50,011 - WARNING - []
+2025-07-15 09:24:50,011 - INFO - Session 1 created
+2025-07-15 09:24:50,024 - INFO - Adding session {'id': '1', 'name': '2025-07-15 09:24:49.926808', 'status': 'running'}
+2025-07-15 09:24:50,025 - INFO - session_name_changed emitted 1
+2025-07-15 09:24:50,032 - WARNING - в приборе <Devices.TCN06.pidControllerTCN06 object at 0x000002681DE54390> не сериализованы объекты  ['timer_for_scan_com_port', 'installation_class', 'setting_window', 'client']
+2025-07-15 09:24:50,881 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x233697315d0 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x000002337BCBB650>, timeout=0.3>
+2025-07-15 09:24:50,881 - INFO - у прибора TCN06_1 не определена функция проверки подключения
+2025-07-15 09:24:52,783 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:24:52,783 - WARNING - ошибка записи регистров Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:24:52,784 - INFO - meas_temp True
+2025-07-15 09:24:53,387 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:24:53,387 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:24:53,996 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:24:53,996 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:24:54,601 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:24:54,601 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:24:54,601 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:24:54,802 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:24:54,802 - INFO - meas_temp True
+2025-07-15 09:24:54,808 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:24:54,808 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:24:54,808 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:24:54,808 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:24:55,408 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:24:55,408 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:24:56,010 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:24:56,612 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:24:56,612 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:24:56,818 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:24:56,818 - INFO - meas_temp True
+2025-07-15 09:24:57,423 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:24:58,027 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:24:58,632 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:24:58,632 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:24:58,639 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:24:58,640 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:24:58,640 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:24:58,640 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:24:58,643 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:24:58,645 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:24:58,645 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:24:58,646 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:24:58,834 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:24:58,834 - INFO - meas_temp True
+2025-07-15 09:24:59,440 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:00,049 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:00,653 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:00,653 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:25:00,854 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:25:00,854 - INFO - meas_temp True
+2025-07-15 09:25:00,855 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:25:00,855 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:25:00,855 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:25:00,855 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:25:01,462 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:02,070 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:02,674 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:02,674 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:25:02,675 - INFO - meas_temp True
+2025-07-15 09:25:03,279 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:03,882 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:04,488 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:04,488 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:25:04,489 - INFO - meas_temp True
+2025-07-15 09:25:04,497 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:25:04,497 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:25:04,498 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:25:04,500 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:25:04,503 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:25:04,503 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:25:04,504 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:25:04,504 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:25:05,098 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:05,699 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:06,304 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:06,304 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:25:06,305 - INFO - meas_temp True
+2025-07-15 09:25:06,910 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:07,512 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:08,115 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:08,115 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:25:08,116 - INFO - meas_temp True
+2025-07-15 09:25:08,721 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:09,323 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:09,931 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:09,931 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:25:09,932 - INFO - meas_temp True
+2025-07-15 09:25:09,932 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:25:09,933 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:25:09,934 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:25:09,935 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:25:09,939 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:25:09,939 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:25:09,939 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:25:09,939 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:25:09,944 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:25:09,944 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:25:09,944 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:25:09,944 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:25:10,537 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:11,141 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:11,748 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:25:11,748 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:25:11,749 - WARNING - Ошибка действия прибора <Devices.TCN06.pidControllerTCN06 object at 0x0000023369730E90> при окончании эксперимента invalid literal for int() with base 10: '0.01'
+2025-07-15 09:25:11,749 - INFO - основной цикл эксперимента завершен, ждем доставки всех данных
+2025-07-15 09:25:11,753 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:25:11,753 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:25:11,753 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:25:11,753 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:25:11,822 - INFO - session_name_changed emitted 1
+2025-07-15 09:25:13,890 - INFO - запрашиваем имя сессии и описание
+2025-07-15 09:25:18,756 - INFO - session_name_changed emitted 1
+2025-07-15 09:25:19,586 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:25:20,096 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:25:20,183 - INFO - client создан self.client=Serial<id=0x268218f8c40, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:25:20,235 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:27:25,279 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:27:25,483 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:27:33,102 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:27:33,612 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:27:33,698 - INFO - client создан self.client=Serial<id=0x242e9f76f80, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:27:33,750 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:27:35,761 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:27:36,282 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:27:36,479 - INFO - client создан self.client=Serial<id=0x242e9f3af20, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:27:36,558 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:27:37,108 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:27:37,618 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:27:37,705 - INFO - client создан self.client=Serial<id=0x242e9f76f80, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:27:37,756 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:27:37,757 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x242e9f91910 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x00000242E8E8E850>, timeout=0.3>
+2025-07-15 09:27:37,842 - WARNING - []
+2025-07-15 09:27:37,842 - INFO - Session 1 created
+2025-07-15 09:27:37,855 - INFO - Adding session {'id': '1', 'name': '2025-07-15 09:27:37.757496', 'status': 'running'}
+2025-07-15 09:27:37,855 - INFO - session_name_changed emitted 1
+2025-07-15 09:27:37,862 - WARNING - в приборе <Devices.TCN06.pidControllerTCN06 object at 0x00000242E9F5C050> не сериализованы объекты  ['timer_for_scan_com_port', 'installation_class', 'setting_window', 'client']
+2025-07-15 09:27:38,688 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x22925431950 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x00000229366FB310>, timeout=0.3>
+2025-07-15 09:27:38,688 - INFO - у прибора TCN06_1 не определена функция проверки подключения
+2025-07-15 09:27:40,590 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:27:40,590 - WARNING - ошибка записи регистров Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:27:41,199 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:27:41,200 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:27:41,806 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:27:41,806 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:27:42,407 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:27:42,407 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:27:42,407 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:27:42,608 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:27:43,213 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:27:43,213 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:27:43,815 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:27:44,423 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:27:44,423 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:27:44,435 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:27:44,435 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:27:44,435 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:27:44,436 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:27:44,445 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:27:44,445 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:27:44,446 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:27:44,447 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:27:44,629 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:27:45,230 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:27:45,833 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:27:46,439 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:27:46,439 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:27:46,641 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:27:46,649 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_act' value='None'
+2025-07-15 09:27:46,649 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='temp_set' value='None'
+2025-07-15 09:27:46,649 - INFO - не удалось преобразовать в число: device='TCN06_1' channel='ch-1_meas' name='power_percent' value='None'
+2025-07-15 09:27:46,649 - WARNING - Error updating parameters: ['TCN06_1 ch-1_meas', ['temp_act=None', 'temp_set=None', 'power_percent=None']]
+2025-07-15 09:27:47,246 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:27:47,851 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:27:48,456 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:27:48,456 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:27:48,657 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:27:49,260 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:27:49,868 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:27:50,474 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:27:50,474 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=None'], ['temp_set=None'], ['power_percent=None']]
+2025-07-15 09:27:50,475 - WARNING - процесс эксперимента закрыт
+2025-07-15 09:28:32,632 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:28:32,837 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:30:33,579 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:30:33,787 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:30:41,316 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:30:41,826 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:30:41,913 - INFO - client создан self.client=Serial<id=0x28686ffeb60, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:30:41,965 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:30:42,824 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:30:43,347 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:30:43,434 - INFO - client создан self.client=Serial<id=0x28687014a00, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:30:43,485 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:30:43,962 - INFO - анализируем ком порты и их доступность
+2025-07-15 09:30:44,474 - INFO - создаем адаптер sourse='COM5'
+2025-07-15 09:30:44,624 - INFO - client создан self.client=Serial<id=0x28686fc6ef0, open=True>(port='COM5', baudrate=9600, bytesize=8, parity='N', stopbits=1, timeout=2.0, xonxoff=False, rtscts=False, dsrdtr=False)
+2025-07-15 09:30:44,698 - INFO - ВЫход из функции analyse_com_port status=True
+
+2025-07-15 09:30:44,698 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x28687013010 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x0000028685FA5B10>, timeout=0.3>
+2025-07-15 09:30:44,783 - WARNING - []
+2025-07-15 09:30:44,783 - INFO - Session 1 created
+2025-07-15 09:30:44,797 - INFO - Adding session {'id': '1', 'name': '2025-07-15 09:30:44.699021', 'status': 'running'}
+2025-07-15 09:30:44,797 - INFO - session_name_changed emitted 1
+2025-07-15 09:30:44,804 - WARNING - в приборе <Devices.TCN06.pidControllerTCN06 object at 0x0000028686FE84D0> не сериализованы объекты  ['timer_for_scan_com_port', 'installation_class', 'setting_window', 'client']
+2025-07-15 09:30:45,636 - INFO - установка клиента self.name='TCN06_1' client=<ModbusSerialClient at 0x12d435d1d90 socket=None, framer=<pymodbus.framer.rtu.FramerRTU object at 0x0000012D54296790>, timeout=0.3>
+2025-07-15 09:30:45,636 - INFO - у прибора TCN06_1 не определена функция проверки подключения
+2025-07-15 09:30:47,538 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:30:47,539 - WARNING - ошибка записи регистров Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:30:48,150 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:30:48,151 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:30:48,756 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:30:48,756 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:30:49,358 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:30:49,358 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:30:49,358 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=0.38821153403948827'], ['temp_set=19.10690678574516'], ['power_percent=0.10759425059500782']]
+2025-07-15 09:30:49,360 - WARNING - []
+2025-07-15 09:30:49,559 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:30:50,163 - ERROR - No response received after 1 retries, continue with next request
+2025-07-15 09:30:50,163 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] No response received after 1 retries, continue with next request
+2025-07-15 09:30:50,765 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:30:51,370 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:30:51,370 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=0.45743319477124955'], ['temp_set=9.247537006331124'], ['power_percent=0.9838703436866229']]
+2025-07-15 09:30:51,576 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:30:52,179 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:30:52,785 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:30:53,392 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:30:53,392 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=0.6908101749241143'], ['temp_set=19.599345544095645'], ['power_percent=0.7582858473331395']]
+2025-07-15 09:30:53,594 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:30:54,198 - ERROR - Modbus ошибка чтения регистра 0 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:30:54,805 - ERROR - Modbus ошибка чтения регистра 2 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:30:55,407 - ERROR - Modbus ошибка чтения регистра 3 : Modbus Error: [Input/Output] ERROR: No response received of the last requests (default: retries+3), CLOSING CONNECTION.
+2025-07-15 09:30:55,408 - INFO - расшифрованные параметры param=['TCN06_1 ch-1_meas', ['temp_act=0.930508515378051'], ['temp_set=12.394634424665739'], ['power_percent=0.545005688427187']]
+2025-07-15 09:30:55,612 - WARNING - ошибка записи регистров object of type 'int' has no len()
+2025-07-15 09:30:55,613 - WARNING - процесс эксперимента закрыт
+2025-07-15 09:32:36,082 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:32:36,293 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:33:08,964 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:33:09,168 - WARNING - erererererererere
+2025-07-15 09:33:09,169 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:33:19,916 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:33:20,135 - WARNING - erererererererere
+2025-07-15 09:33:20,136 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:34:24,291 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:34:24,500 - WARNING - erererererererere
+2025-07-15 09:34:24,501 - WARNING - Start Version 1.2.0, Admin 0

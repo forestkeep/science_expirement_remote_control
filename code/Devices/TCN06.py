@@ -32,7 +32,7 @@ class pidControllerTCN06(pidController):
     #ниже прописываем свои функции, которые понадобятся для управления контроллером
 
     def _set_temperature(self, ch_num, temperature) -> bool:
-        return self._write_reg(address=TCN06_REGISTERS['Измеренная температура (PV)']['address'], slave=self.dict_settable_parameters["slave_id"], values=int(temperature),)
+        return self._write_reg(address=TCN06_REGISTERS['Заданная температура (SV)']['address'], slave=self.dict_settable_parameters["slave_id"], values=int(temperature),)
 
     def _write_reg(self, address, slave, values) -> bool:
         if self.is_test == True:
@@ -54,7 +54,9 @@ class pidControllerTCN06(pidController):
             return True
 
     def _get_current_temperature(self, ch_num):
-        return self._read_reg(address=TCN06_REGISTERS['Измеренная температура (PV)']['address'], slave=self.dict_settable_parameters["slave_id"])
+        ans = self._read_reg(address=TCN06_REGISTERS['Измеренная температура (PV)']['address'], slave=self.dict_settable_parameters["slave_id"])
+        print(ans)
+        return ans
 
     def _get_current_power_percent(self, ch_num):
         return self._read_reg(address=TCN06_REGISTERS['Процент выхода (OUT)']['address'], slave=self.dict_settable_parameters["slave_id"])
@@ -70,11 +72,11 @@ class pidControllerTCN06(pidController):
                 return value
 
             else:
-                logger.error(f"Ошибка чтения регистра {address} : {result}")
-                return None
+                logger.warning(f"Ошибка чтения регистра {address} : {result}")
+                return False
         except ModbusException as e:
-            logger.error(f"Modbus ошибка чтения регистра {address} : {e}")
-            return None
+            logger.warning(f"Modbus ошибка чтения регистра {address} : {e}")
+            return False
 
 if __name__ == "__main__":
     import pickle

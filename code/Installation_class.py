@@ -425,11 +425,11 @@ class installation_class( ExperimentBridge, analyse):
         )
 
         if not self.is_experiment_running():
-            for client in self.clients:
-                try:
-                    client.close()
-                except:
-                    pass
+            #for client in self.clients:
+            #    try:
+            #        client.close()
+            #    except:
+            #        pass
             self.dict_active_device_class[device].show_setting_window(num_ch)
         else:
             self.add_text_to_log(

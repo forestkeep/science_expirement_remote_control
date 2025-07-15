@@ -14,6 +14,8 @@ import qdarktheme
 
 from installation_controller import instController
 
+logger = logging.getLogger(__name__)
+
 VERSION_APP = "1.2.0"
 
 if __name__ == "__main__":
@@ -23,40 +25,26 @@ if __name__ == "__main__":
     # Настройка окружения
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
-    # Инициализация логгера
-    logger = logging.getLogger(__name__)
     FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
+
+    logger.handlers.clear()
 
     console = logging.StreamHandler()
     console.setLevel(logging.WARNING)
     console.setFormatter(logging.Formatter(FORMAT))
 
-    # Создание папки для логов
-    folder_path = os.path.join(
-        os.getenv('USERPROFILE'),
-        "AppData",
-        "Local",
-        "Installation_Controller"
-    )
-    os.makedirs(folder_path, exist_ok=True)
+    folder_path = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")
+    if not os.path.exists( folder_path ):
+        os.makedirs( folder_path )
 
-    # Настройка файлового обработчика логов
-    log_file_path = os.path.join(folder_path, "loginstallation.log")
-    file_handler = RotatingFileHandler(
-        log_file_path,
-        maxBytes=30 * 1000000,  # 30 МБ
-        backupCount=15,
-        encoding='utf-8'
-    )
+    log_file_path = os.path.join( folder_path, "loginstallation.log" )
 
-    file_handler.setLevel(logging.WARNING)
-    file_handler.setFormatter(logging.Formatter(FORMAT))
+    file_handler = RotatingFileHandler( log_file_path, maxBytes=1000000, backupCount=5 )
+    
+    file_handler.setLevel( logging.WARNING )
+    file_handler.setFormatter( logging.Formatter(FORMAT) )
 
-    # Инициализация системы логирования
-    logging.basicConfig(
-        handlers=[file_handler, console],
-        level=logging.DEBUG
-    )
+    logging.basicConfig(handlers=[file_handler, console], level=logging.DEBUG)
 
     # Создание приложения
     app = QtWidgets.QApplication(sys.argv)

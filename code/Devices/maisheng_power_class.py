@@ -12,7 +12,6 @@
 import logging
 import os
 import sys
-import time
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -136,7 +135,7 @@ class maishengPowerClass(power_supply):
 
     def _get_current_voltage(self, ch_num):
         response = self._read_current_parameters(
-            address=int("0000", 16), count=1, slave=1
+            address=int("0000", 16), count=1, slave=self.dict_settable_parameters["slave_id"]
         )
         if self.is_test == True:
             return response
@@ -147,7 +146,7 @@ class maishengPowerClass(power_supply):
 
     def _get_current_current(self, ch_num):
         response = self._read_current_parameters(
-            address=int("0001", 16), count=1, slave=1
+            address=int("0001", 16), count=1, slave=self.dict_settable_parameters["slave_id"]
         )
         if self.is_test == True:
             return response
@@ -177,8 +176,7 @@ class maishengPowerClass(power_supply):
 
     def _get_setting_voltage(self, ch_num):
         response = self._read_setting_parameters(
-            address=int("0040", 16), count=2, slave=1
-        )
+            address=int("0040", 16), count=2, slave=self.dict_settable_parameters["slave_id"])
         if self.is_test == True:
             return response
 
@@ -188,16 +186,14 @@ class maishengPowerClass(power_supply):
 
     def _get_setting_current(self, ch_num):
         response = self._read_setting_parameters(
-            address=int("0041", 16), count=2, slave=1
-        )
+            address=int("0041", 16), count=2, slave=self.dict_settable_parameters["slave_id"])
         if response != False:
             response = response[1] / 100
         return response
 
     def _get_setting_frequency(self, ch_num):
         response = self._read_setting_parameters(
-            address=int("0043", 16), count=2, slave=1
-        )
+            address=int("0043", 16), count=2, slave=self.dict_settable_parameters["slave_id"])
         if response != False:
             pass
             # TODO читаем параметры и кладем их в респонсе
@@ -205,22 +201,11 @@ class maishengPowerClass(power_supply):
 
     def _get_setting_state(self, ch_num):
         response = self._read_setting_parameters(
-            address=int("0042", 16), count=2, slave=1
-        )
+            address=int("0042", 16), count=2, slave=self.dict_settable_parameters["slave_id"])
         if response != False:
             pass
             # TODO читаем параметры и кладем их в респонсе
         return response
-
-    def _get_setting_duty_cycle(self, ch_num):
-        response = self._read_setting_parameters(
-            address=int("0044", 16), count=2, slave=1
-        )
-        if response != False:
-            pass
-            # TODO читаем параметры и кладем их в респонсе
-        return response
-
 
 if __name__ == "__main__":
     import pickle

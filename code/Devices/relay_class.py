@@ -525,11 +525,8 @@ def decode_raw_data(raw_data):
 
 if __name__ == "__main__":
     from pymodbus.client import ModbusSerialClient
-    from pymodbus.exceptions import (MessageRegisterException, ModbusException,
-                                     ModbusIOException, NoSuchSlaveException,
-                                     NotImplementedException,
-                                     ParameterException)
-    from pymodbus.pdu import ExceptionResponse, ModbusRequest, ModbusResponse
+    from pymodbus.exceptions import ModbusIOException
+    from pymodbus.pdu import ExceptionResponse
 
     port = "COM4"
     client = ModbusSerialClient(

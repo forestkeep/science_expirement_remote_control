@@ -1,0 +1,17 @@
+2025-07-15 09:37:02,022 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:37:02,227 - WARNING - erererererererere
+2025-07-15 09:37:02,228 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:37:34,332 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:37:34,542 - WARNING - erererererererere
+2025-07-15 09:37:34,543 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:38:12,655 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:38:12,864 - WARNING - erererererererere
+2025-07-15 09:38:12,865 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:39:03,662 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:39:03,870 - WARNING - erererererererere
+2025-07-15 09:39:03,870 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:46:52,036 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:46:52,251 - WARNING - erererererererere
+2025-07-15 09:46:52,252 - WARNING - Start Version 1.2.0, Admin 0
+2025-07-15 09:49:23,175 - WARNING - IVI бэкенд НЕ доступен (не установлены драйверы VISA)
+2025-07-15 09:49:23,404 - WARNING - Start Version 1.2.0, Admin 0

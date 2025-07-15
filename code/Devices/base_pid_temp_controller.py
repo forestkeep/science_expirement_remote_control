@@ -228,55 +228,29 @@ class basePidController(base_device):
 
         return False
 
-    def _action_when_select_step(self):
-        #не нужно
-        if self.key_to_signal_func:
-            if self.setting_window.type_step_enter.currentText() == QApplication.translate("Device","Адаптивный шаг"):
-                self.setting_window.step_enter.setEnabled(False)
-                self.setting_window.step_enter.setStyleSheet(
-                    "background-color: rgb(180, 180, 180)"
-                )
-                self.setting_window.triger_meas_enter.clear()
-                self.setting_window.triger_meas_enter.addItems([ QApplication.translate("Device","Внешний сигнал") ])
-            else:
-                self.setting_window.step_enter.setEnabled(True)
-                self.setting_window.triger_meas_enter.addItems([ QApplication.translate("Device","Таймер") ])
-
     @base_device.base_add_parameters_from_window
     def add_parameters_from_window(self):  # менять для каждого прибора
         #эта функция вызывается при нажатии пользователем кнопки окей, параметры сохраняются
         if self.key_to_signal_func:
             self.active_channel_act.dict_buf_parameters["type_step"] = (
-                self.setting_window.type_step_enter.currentText()
-            )
+                self.setting_window.type_step_enter.currentText())
             self.active_channel_act.dict_buf_parameters["high_limit"] = (
-                self.setting_window.stop_enter.currentText()
-            )
+                self.setting_window.stop_enter.currentText())
             self.active_channel_act.dict_buf_parameters["low_limit"] = (
-                self.setting_window.start_enter.currentText()
-            )
+                self.setting_window.start_enter.currentText())
             self.active_channel_act.dict_buf_parameters["step"] = (
-                self.setting_window.step_enter.currentText()
-            )
-
+                self.setting_window.step_enter.currentText())
             self.active_channel_act.dict_buf_parameters["repeat_reverse"] = (
-                self.setting_window.radioButton.isChecked()
-            )
-
+                self.setting_window.radioButton.isChecked())
             self.active_channel_meas.dict_buf_parameters["meas_temp"] = (
-                self.setting_window.temp_meas.isChecked()
-            )
+                self.setting_window.temp_meas.isChecked())
             self.active_channel_meas.dict_buf_parameters["meas_set_temp"] = (
-                self.setting_window.set_temp_meas.isChecked()
-            )
+                self.setting_window.set_temp_meas.isChecked())
             self.active_channel_meas.dict_buf_parameters["meas_power"] = (
-                self.setting_window.power_percent.isChecked()
-            )
+                self.setting_window.power_percent.isChecked())
 
 
-    def send_signal_ok(
-        self,
-    ):
+    def send_signal_ok(self,):
         "вызывается только после закрытия окна настроек"
         self.add_parameters_from_window()
         # те же самые настройки, ничего не делаем
@@ -357,22 +331,9 @@ class basePidController(base_device):
 
     # действия перед стартом эксперимента, включить, настроить, подготовить и т.д.
     def action_before_experiment(self, number_of_channel) -> bool:
-        """устанавливает значения тока и напряжения, включает выход прибора"""
-
         self.switch_channel(number_of_channel)
         is_correct = True
-
-        #переопределить действия. необходимые перед экспериментом
-        if ( self._set_voltage( self.active_channel_act.number, self.active_channel_act.min_step_t ) == False ):
-            logger.warning("ошибка установки тока")
-            is_correct = False
-
-        if is_correct:
-            #в случае некорректной установки нужно выключить прибор
-            self._output_switching_on( self.active_channel_act.number )
-            return True
-        else:
-            return False
+        return is_correct
 
     def action_end_experiment( self, ch ) -> bool:
         """выключение прибора"""
@@ -380,80 +341,25 @@ class basePidController(base_device):
         status = True
         if ch.get_type() == "act":
 
-            #реализовать свою процедуру действий по окончании эксперимента
-            if self.active_channel_act.dict_buf_parameters["soft_off"] == True:
-                count = 3
-                is_voltage_read = False
-
-                while count > 0:
-                    voltage = self._get_current_voltage(self.active_channel_act.number)
-                    if voltage == False:
-                        count -= 1
-                    else:
-                        is_voltage_read = True
-                        count = 0
-                if is_voltage_read:
-                    step = min(int(voltage / 5), 1)
-
-                    while voltage > step:
-                        voltage -= step
-                        self._set_voltage(self.active_channel_act.number, voltage)
-                        time.sleep(3)
-                else:
-                    status = False
-
-            self._output_switching_off(self.active_channel_act.number)
+            self._set_temperature(ch_num=ch.get_number(), temperature=self.active_channel_act.dict_settable_parameters["low_limit"])
+            
         return status
 
     def do_action( self, ch, repeat=3 ) -> bool:
-        """активирует следующие значение тока, напряжения прибора, если текущие значения максимальны, то возвращает ложь"""
 
-        #эта функция отвечает за выполнения действия активным каналом, переключить  значение температуры
         parameters = [self.name + " " + str(ch.get_name())]
         start_time = time.perf_counter()
         if ch.get_type() == "act":
-            if ch.step_index < len(ch.steps_voltage) - 1:
-                if (
-                    ch.step_index == 0
-                    and ch.dict_settable_parameters["soft_start"] == True
-                ):
-                    if (
-                        self.soft_start(number_of_channel=ch.get_number(), repeat=3)
-                        == False
-                    ):
-                        """ошибка плавного старта"""
-                        return (
-                            ch_response_to_step.Step_fail,
-                            parameters,
-                            time.perf_counter() - start_time,
-                        )
+            if ch.step_index < len(ch.steps_temp) - 1:
 
                 i = 0
                 answer = ch_response_to_step.Step_fail
                 while i - 1 < repeat and answer == ch_response_to_step.Step_fail:
                     time.sleep(0.2)
                     i += 1
-                    if (
-                        self._set_voltage(
-                            ch.get_number(), ch.steps_voltage[ch.step_index]
-                        )
-                        == True
-                    ):
+                    if self._set_temperature(ch.get_number(), ch.steps_temp[ch.step_index]):
                         answer = ch_response_to_step.Step_done
 
-                    else:
-                        answer = ch_response_to_step.Step_fail
-                        if self.is_debug:
-                            answer = ch_response_to_step.Step_done
-                        continue
-
-                    if (
-                        self._set_current(
-                            ch.get_number(), ch.steps_current[ch.step_index]
-                        )
-                        == True
-                    ):
-                        answer = ch_response_to_step.Step_done
                     else:
                         answer = ch_response_to_step.Step_fail
                         if self.is_debug:
@@ -476,74 +382,49 @@ class basePidController(base_device):
         parameters = [self.name + " " + str(ch.get_name())]
         if ch.get_type() == "meas":
 
-            #реализовать процедуру считывания фокусных параметров с измерительного канала устройства. Это могут быть статусы, температура, значение пид регулятора и т.п. Здесь важно их записывать в таком же формате, как ниже. Это потом пишется в файл. после эксперимента парсится и сохраняется в выбранном пользователем виде
             is_correct = True
-            current_actual = None
-            voltage_actual = None
 
-            if ch.dict_settable_parameters["meas_set_vol"] == True:
-                voltage = self._get_setting_voltage(ch.get_number())
-                if voltage is not False:
-                    val = ["voltage_set=" + str(voltage)]
+            if ch.dict_settable_parameters["meas_temp"] is True:
+                temperature = self._get_current_temperature(ch.get_number())
+                if temperature is not False:
+                    val = ["temp_act=" + str(temperature)]
                     parameters.append(val)
                 else:
                     is_correct = False
                     if self.is_debug:
                         is_correct = True
-                        parameters.append(["voltage_set=" + str(random.random())])
+                        parameters.append(["temp_act=" + str(random.random())])
                     else:
-                        val = ["voltage_set=" + "fail"]
+                        val = ["temp_act=" + "fail"]
                         parameters.append(val)
 
-            if ch.dict_settable_parameters["meas_vol"] == True:
-                voltage = self._get_current_voltage(ch.number)
-                if voltage is not False:
-                    val = ["voltage_rel=" + str(voltage)]
-                    voltage_actual = voltage
+            if ch.dict_settable_parameters["meas_set_temp"] is True:
+                temperature = self._get_setting_temperature(ch.number)
+                if temperature is not False:
+                    val = ["temp_set=" + str(temperature)]
                     parameters.append(val)
                 else:
                     is_correct = False
                     if self.is_debug:
                         is_correct = True
-                        parameters.append(["voltage_rel=" + str(random.random() * 30)])
+                        parameters.append(["temp_set=" + str(random.random() * 30)])
                     else:
-                        val = ["voltage_rel=" + "fail"]
+                        val = ["temp_set=" + "fail"]
                         parameters.append(val)
 
-            if ch.dict_settable_parameters["meas_set_cur"] == True:
-                current = self._get_setting_current(ch.get_number())
+            if ch.dict_settable_parameters["meas_power"] == True:
+                current = self._get_current_power_percent(ch.get_number())
                 if current is not False:
-                    val = ["current_set=" + str(current)]
+                    val = ["power_percent=" + str(current)]
                     parameters.append(val)
                 else:
                     is_correct = False
                     if self.is_debug:
                         is_correct = True
-                        parameters.append(["current_set=" + str(random.random())])
+                        parameters.append(["power_percent=" + str(random.random())])
                     else:
-                        val = ["current_set=" + "fail"]
+                        val = ["power_percent=" + "fail"]
                         parameters.append(val)
-
-            if ch.dict_settable_parameters["meas_cur"] == True:
-                current = self._get_current_current(ch.get_number())
-                if current is not False:
-                    val = ["current_rel=" + str(current)]
-                    current_actual = current
-                    parameters.append(val)
-                else:
-                    is_correct = False
-                    if self.is_debug:
-                        is_correct = True
-                        parameters.append(["current_rel=" + str(random.random() * 30)])
-                    else:
-                        val = ["current_rel=" + "fail"]
-                        parameters.append(val)
-
-            if voltage_actual != None and current_actual != None and current_actual > 0:
-                val = ["R_rel=" + str(voltage_actual / current_actual)]
-                parameters.append(val)
-                val = ["W_rel=" + str(voltage_actual * current_actual)]
-                parameters.append(val)
 
             if is_correct:
                 ans = ch_response_to_step.Step_done
@@ -588,6 +469,3 @@ class basePidController(base_device):
 
     def select_channel(self, channel):
         self.client.write(self.select_CH_cmd.format(ch_num = channel))
-
-if __name__ == "__main__":
-    pass
