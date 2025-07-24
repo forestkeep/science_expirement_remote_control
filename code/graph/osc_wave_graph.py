@@ -16,29 +16,16 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
-                             QFileDialog, QFrame, QGridLayout, QHBoxLayout,
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QFrame, QHBoxLayout,
                              QLabel, QLineEdit, QPushButton, QSizePolicy,
                              QSplitter, QVBoxLayout, QWidget)
 
-try:
-    from colors import GColors
-    from curve_data import hystLoop, oscData
-    from Link_data_import_win import Check_data_import_win
-    from Message_graph import messageDialog
-    from dataManager import measTimeData
-    from dataManager import relationData
-    from toolBarWidget import tool_bar_widget
-    from custom_inf_line import RemovableInfiniteLine
-except:
-    from graph.colors import GColors
-    from graph.curve_data import hystLoop, oscData
-    from graph.Link_data_import_win import Check_data_import_win
-    from graph.Message_graph import messageDialog
-    from graph.dataManager import measTimeData
-    from graph.dataManager import relationData
-    from graph.toolBarWidget import tool_bar_widget
-    from graph.custom_inf_line import RemovableInfiniteLine
+from graph.colors import GColors
+from graph.curve_data import hystLoop, oscData
+from graph.dataManager import measTimeData
+from graph.dataManager import relationData
+from graph.toolBarWidget import tool_bar_widget
+from graph.custom_inf_line import RemovableInfiniteLine
 
 logger = logging.getLogger(__name__)
 

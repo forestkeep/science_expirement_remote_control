@@ -8,13 +8,8 @@ import logging
 import pandas as pd
 import numpy as np
 
-try:
-    from Link_data_import_win import Check_data_import_win
-    from Message_graph import messageDialog
-except:
-    from graph.Link_data_import_win import Check_data_import_win
-    from graph.Message_graph import messageDialog
-
+from graph.Link_data_import_win import Check_data_import_win
+from graph.Message_graph import messageDialog
 
 logger = logging.getLogger(__name__)
 

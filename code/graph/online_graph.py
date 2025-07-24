@@ -19,32 +19,18 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
                              QSizePolicy, QSplitter, QTabWidget, QWidget, QMenu, QAction, QVBoxLayout, QStackedWidget)
 
-try:
-    from filters_win import filtersClass
-    from graph_main import graphMain
-    from notification import NotificationWidget
-    from osc_wave_graph import graphOsc
-    from tabPage_win import tabPage
-    from tree_curves import treeWin
-    from dataManager import graphDataManager
-    from paramSelectors import paramSelector, paramController
-    from graphSelectAdapter import graphSelectAdapter
-    from select_session import SessionSelectControl
-    from osc_selector import OscilloscopeSelector
-    from waveSelectAdapter import waveSelectAdapter
-except:
-    from graph.filters_win import filtersClass
-    from graph.graph_main import graphMain
-    from graph.notification import NotificationWidget
-    from graph.osc_wave_graph import graphOsc
-    from graph.tabPage_win import tabPage
-    from graph.tree_curves import treeWin
-    from graph.dataManager import graphDataManager
-    from graph.paramSelectors import paramSelector, paramController
-    from graph.graphSelectAdapter import graphSelectAdapter
-    from graph.select_session import SessionSelectControl
-    from graph.osc_selector import OscilloscopeSelector
-    from graph.waveSelectAdapter import waveSelectAdapter
+from graph.filters_win import filtersClass
+from graph.graph_main import graphMain
+from graph.notification import NotificationWidget
+from graph.osc_wave_graph import graphOsc
+from graph.tabPage_win import tabPage
+from graph.tree_curves import treeWin
+from graph.dataManager import graphDataManager
+from graph.paramSelectors import paramSelector, paramController
+from graph.graphSelectAdapter import graphSelectAdapter
+from graph.select_session import SessionSelectControl
+from graph.osc_selector import OscilloscopeSelector
+from graph.waveSelectAdapter import waveSelectAdapter
 
 logger = logging.getLogger(__name__)
 

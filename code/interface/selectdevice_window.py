@@ -15,7 +15,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 logger = logging.getLogger(__name__)
 
-
 class Ui_Selectdevice(QtWidgets.QDialog):
 
     def __init__(self,devices = None, JSON_devices = None):

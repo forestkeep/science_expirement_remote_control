@@ -15,9 +15,7 @@ from PyQt5 import QtCore, QtWidgets
 
 logger = logging.getLogger(__name__)
 
-
 from Devices.interfase.base_set_window import base_settings_window
-
 
 class Ui_Set_wave_generator(base_settings_window):
     def __init__(self) -> None:

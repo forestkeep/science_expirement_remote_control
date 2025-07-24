@@ -13,10 +13,8 @@ import logging
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-
 from Devices.interfase.base_set_window import base_settings_window
 logger = logging.getLogger(__name__)
-
 
 class Ui_Set_sr830(base_settings_window):
     def __init__(self) -> None:

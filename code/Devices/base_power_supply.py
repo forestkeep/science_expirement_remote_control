@@ -16,16 +16,12 @@ import time
 
 from PyQt5.QtWidgets import QApplication
 
-try:
-    from Devices.Classes import (base_ch, base_device, ch_response_to_step,
+
+from Devices.Classes import (base_ch, base_device, ch_response_to_step,
                              not_ready_style_border, ready_style_border,
                              which_part_in_ch)
-    from Devices.interfase.set_power_supply_window import Ui_Set_power_supply
-except:
-    from Classes import (base_ch, base_device, ch_response_to_step,
-                             not_ready_style_border, ready_style_border,
-                             which_part_in_ch)
-    from interfase.set_power_supply_window import Ui_Set_power_supply
+from Devices.interfase.set_power_supply_window import Ui_Set_power_supply
+
     
 logger = logging.getLogger(__name__)
 

@@ -16,12 +16,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-try:
-    from tree_curves import CurveTreeItem
-    from dataManager import relationData
-except:
-    from graph.tree_curves import CurveTreeItem
-    from graph.dataManager import relationData
+from graph.tree_curves import CurveTreeItem
+from graph.dataManager import relationData
 
 class legendName():
     def __init__(self, name) -> None:

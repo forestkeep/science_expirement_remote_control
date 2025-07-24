@@ -15,14 +15,10 @@ import time
 
 from PyQt5.QtWidgets import QApplication
 
-try:
-    from Devices.Classes import (base_ch, base_device, ch_response_to_step,
-                             which_part_in_ch)
-    from Devices.interfase.set_voltmeter_window import Ui_Set_voltmeter
-except:
-    from Classes import (base_ch, base_device, ch_response_to_step,
-                             which_part_in_ch)
-    from interfase.set_voltmeter_window import Ui_Set_voltmeter
+
+from Devices.Classes import (base_ch, base_device, ch_response_to_step, which_part_in_ch)
+from Devices.interfase.set_voltmeter_window import Ui_Set_voltmeter
+
 
 logger = logging.getLogger(__name__)
 

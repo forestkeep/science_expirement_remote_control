@@ -15,10 +15,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 logger = logging.getLogger(__name__)
 
-try:
-    from Devices.interfase.base_set_window import base_settings_window
-except:
-    from interfase.base_set_window import base_settings_window
+from Devices.interfase.base_set_window import base_settings_window
+
 
 class Ui_Set_power_supply(base_settings_window):
     def __init__(self, add_id_select = False) -> None:

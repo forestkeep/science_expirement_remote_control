@@ -39,7 +39,7 @@ class measSession():
         self.meas_session_data = measSessionData()
         self._buf_file = ''
 
-    def ask_session_name_description(self, text = None) -> bool:
+    def ask_session_name_description(self, text = None, def_name = None) -> bool:
         text_def = QApplication.translate('askInfoWindow','''
 Хотите добавить название и описание к результатам? Это поможет вам легко ориентироваться в данных.
 
@@ -51,7 +51,7 @@ class measSession():
             text = text_def
         askwin = askInfoWindow()
         askwin.signal_to_main_window.connect(self.receive_info_from_win)
-        askwin.setupUi(text," ")
+        askwin.setupUi(text," ", def_name )
         askwin.setModal(True)
         askwin.exec_()
         return True
@@ -79,7 +79,7 @@ class measSession():
 class askInfoWindow(QDialog):
     signal_to_main_window = QtCore.pyqtSignal(str, str)
 
-    def setupUi(self, message, window_name):
+    def setupUi(self, message, window_name, def_value = None):
 
         self.main_lay = QtWidgets.QVBoxLayout(self)
 
@@ -97,6 +97,9 @@ class askInfoWindow(QDialog):
 
         self.name_field = QtWidgets.QLineEdit(self)
         self.description_field = QtWidgets.QTextEdit(self)
+
+        if def_value is not None:
+            self.name_field.setText(def_value)
 
         self.name_field.setPlaceholderText( QApplication.translate('askInfoWindow',"Название") )
         self.description_field.setPlaceholderText( QApplication.translate('askInfoWindow',"Описание") )

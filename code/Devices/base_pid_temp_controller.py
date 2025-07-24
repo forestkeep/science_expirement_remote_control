@@ -5,17 +5,12 @@ import time
 
 from PyQt5.QtWidgets import QApplication
 
-try:
-    from Devices.Classes import (base_ch, base_device, ch_response_to_step,
+
+from Devices.Classes import (base_ch, base_device, ch_response_to_step,
                              not_ready_style_border, ready_style_border,
                              which_part_in_ch)
-    from Devices.interfase.pidControllerWindow import UiSetPidController
-except:
-    from Classes import (base_ch, base_device, ch_response_to_step,
-                             not_ready_style_border, ready_style_border,
-                             which_part_in_ch)
-    from interfase.pidControllerWindow import UiSetPidController
-    
+from Devices.interfase.pidControllerWindow import UiSetPidController
+
 logger = logging.getLogger(__name__)
 
 

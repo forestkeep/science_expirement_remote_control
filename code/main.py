@@ -76,10 +76,8 @@ if __name__ == "__main__":
         "JSON_default_path": default_JSON_directory_devices
     }
     
-    # Обработка аргументов командной строки
     file_path = os.path.normpath(sys.argv[1].strip('"')) if len(sys.argv) > 1 else ""
 
-    # Инициализация VISA
     try:
         rm_ivi = pyvisa.ResourceManager('@ivi')
     except OSError:
@@ -98,8 +96,6 @@ if __name__ == "__main__":
         VERSION_APP=VERSION_APP,
         def_persistent_sett=persistent_settings
     )
-
-    #file_path = r"C:\Users\User\Desktop\exp_controll_development\science_expirement_remote_control\code\test_subs.ns"
 
     start_window = instController( settings_manager, version=VERSION_APP )
     if not start_window.check_open_type(file_path):

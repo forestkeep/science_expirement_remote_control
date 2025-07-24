@@ -21,10 +21,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QDialog,
 
 import copy
 
-try:
-    from calc_values_for_graph import ArrayProcessor
-except:
-    from graph.calc_values_for_graph import ArrayProcessor
+from graph.calc_values_for_graph import ArrayProcessor
 
 import numexpr as ne
 import numpy as np

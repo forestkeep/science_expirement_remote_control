@@ -19,14 +19,9 @@ from PyQt5.QtGui import QFont, QFontMetrics
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout,
                              QSizePolicy, QSpacerItem, QVBoxLayout, QComboBox, QLineEdit)
 
-try:
-    from colors import GColors
-    from curve_data import linearData
-    from dataManager import relationData
-except:
-    from graph.colors import GColors
-    from graph.curve_data import linearData
-    from graph.dataManager import relationData
+from graph.colors import GColors
+from graph.curve_data import linearData
+from graph.dataManager import relationData
 
 logger = logging.getLogger(__name__)
 

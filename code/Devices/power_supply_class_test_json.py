@@ -14,11 +14,8 @@ import json
 
 from PyQt5.QtWidgets import QApplication
 
-try:
-    from Devices.base_power_supply import basePowerSupply, chActPowerSupply, chMeasPowerSupply
-except:
-    from base_power_supply import basePowerSupply, chActPowerSupply, chMeasPowerSupply
-    
+from Devices.base_power_supply import basePowerSupply, chActPowerSupply, chMeasPowerSupply
+
 logger = logging.getLogger(__name__)
 
 class power_supply(basePowerSupply):

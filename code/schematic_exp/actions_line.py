@@ -12,10 +12,7 @@
 from PyQt5.QtWidgets import QGridLayout, QWidget
 from PyQt5.QtWidgets import QLabel, QWidget
 
-try:
-	from stack_experiment import deviceAction
-except:
-    from schematic_exp.stack_experiment import deviceAction
+from schematic_exp.stack_experiment import deviceAction
     
 class deviceAction(QLabel):
     def __init__(self, name, info, color):

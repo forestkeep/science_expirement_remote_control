@@ -20,8 +20,7 @@ from pymodbus.exceptions import ModbusIOException
 from pymodbus.pdu import ExceptionResponse
 from PyQt5.QtWidgets import QApplication
 
-from Devices.Classes import (base_ch, base_device, ch_response_to_step,
-                             which_part_in_ch)
+from Devices.Classes import (base_ch, base_device, ch_response_to_step,which_part_in_ch)
 from Devices.interfase.relay_set_window import Ui_Set_relay
 
 logger = logging.getLogger(__name__)
