@@ -214,7 +214,7 @@ class installation_class( ExperimentBridge, analyse):
         self.installation_window.about_autors.triggered.connect(self.show_about_autors)
         self.installation_window.version.triggered.connect(self.show_version)
         self.installation_window.open_graph_button.clicked.connect(self.open_graph_in_exp)
-        self.installation_window.installation_close_signal.connect(self.close_other_windows)
+        self.installation_window.installation_close_signal.connect(self.close_app)
         self.installation_window.general_settings.triggered.connect(self.open_general_settings)
 
         self.installation_window.convert_buf_button.triggered.connect(self.convert_buf_file)
@@ -372,17 +372,19 @@ class installation_class( ExperimentBridge, analyse):
         """функция записывает параметры во временный текстовый файл в ходе эксперимента, если что-то прервется, то данные не будут потеряны, после окончания эксперимента файл вычитывается и перегоняется в нужные форматы"""
         with open(self.buf_file, "a") as file:
             file.write(str(name_device) + str(text) + "\n\r")
+    
+    def close_app(self, event):
+        event.accept()
+        self.close_other_windows()
 
     def close_other_windows(self):
-        self.graph_controller.graphics_win.close()
         self.stop_scan_thread = True
         self.thread_scan_resources.join()
 
         if self.is_experiment_running():
-            print(3434343434343)
             self.pipe_exp.send(["close", 1])
 
-            self.experiment_process.join(timeout=5)
+            self.experiment_process.join(timeout=3)
             if self.experiment_process.is_alive():
                 self.experiment_process.terminate()
                 self.experiment_process.join(timeout=1)
@@ -541,7 +543,10 @@ class installation_class( ExperimentBridge, analyse):
 
                     serialize_divices_classes = {}
                     for dev in self.dict_active_device_class.values():
-                        dev.client.close()
+                        try:
+                            dev.client.close()
+                        except Exception as e:
+                            logger.warning(f"в приборе {dev} не закрыт клиент. Причина {e}")
                         serialize_divices_classes[dev.get_name()], unserial  = get_serializable_copy(dev)
                         logger.warning(f"в приборе {dev} не сериализованы объекты  {unserial}")
 

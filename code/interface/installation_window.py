@@ -277,7 +277,7 @@ class channel_page(QtWidgets.QWidget):
 
 
 class Ui_Installation(QtWidgets.QMainWindow):
-    installation_close_signal = QtCore.pyqtSignal(int)
+    installation_close_signal = QtCore.pyqtSignal(object)
 
     def setupUi(self, base_window, installation_class, class_of_devices, exp_diagram, exp_call_stack):
         base_window.setObjectName("Installation")
@@ -538,7 +538,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         for dev_win in self.devices_lay.values():
             dev_win.setParent(None)
-        self.installation_close_signal.emit(1)
+        self.installation_close_signal.emit(event)
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasText():

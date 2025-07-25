@@ -239,25 +239,35 @@ class base_device():
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
                 self.setting_window.triger_act_enter.setCurrentText(self.active_channel_act.dict_buf_parameters["trigger"])
                 self.setting_window.sourse_act_enter.setCurrentText(str(self.active_channel_act.dict_buf_parameters["sourse/time"]))
+                
+                num_act_list = ["5","10","20","50"]
+                if self.installation_class.get_signal_list(self.name, self.active_channel_act) != []:
+                    num_act_list.append( QApplication.translate("Device","Пока активны другие приборы") )
+                self.setting_window.num_act_enter.clear()
+                self.setting_window.num_act_enter.addItems(num_act_list)
                 try:
-                    num_act_list = ["5","10","20","50"]
-                    if self.installation_class.get_signal_list(self.name, self.active_channel_act) != []:
-                        num_act_list.append( QApplication.translate("Device","Пока активны другие приборы") )
-                    self.setting_window.num_act_enter.clear()
-                    self.setting_window.num_act_enter.addItems(num_act_list)
-                    self.setting_window.num_act_enter.setCurrentText(str(int(self.active_channel_act.dict_buf_parameters["num steps"])))
+                    num_steps = int(self.active_channel_act.dict_buf_parameters["num steps"])
                 except:
-                    pass
+                    num_steps = self.active_channel_act.dict_buf_parameters["num steps"]
+                self.setting_window.num_act_enter.setCurrentText(str(num_steps))
+                
+                
 
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
                 self.setting_window.triger_meas_enter.setCurrentText(self.active_channel_meas.dict_buf_parameters["trigger"])
                 self.setting_window.sourse_meas_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["sourse/time"]))
+                
                 num_meas_list = ["5","10","20","50"]
                 if self.installation_class.get_signal_list(self.name, self.active_channel_meas) != []:
                     num_meas_list.append( QApplication.translate("Device","Пока активны другие приборы") )
                 self.setting_window.num_meas_enter.clear()
                 self.setting_window.num_meas_enter.addItems(num_meas_list)
-                self.setting_window.num_meas_enter.setCurrentText(str(int(self.active_channel_meas.dict_buf_parameters["num steps"])))
+                try:
+                    num_steps = int(self.active_channel_meas.dict_buf_parameters["num steps"])
+                except:
+                    num_steps = self.active_channel_meas.dict_buf_parameters["num steps"]
+                self.setting_window.num_meas_enter.setCurrentText(str(num_steps))
+                
 
             self.key_to_signal_func = True
             return func(self, *args, **kwargs)
