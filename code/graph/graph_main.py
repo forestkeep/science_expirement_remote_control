@@ -34,6 +34,14 @@ def time_decorator(func):
         return result
     return wrapper
 
+
+class PatchedPlotWidget(pg.PlotWidget):
+
+    # Patch the pyqtgraph PlotWidget to resolve an internal exception
+    # https://github.com/pyqtgraph/pyqtgraph/issues/1854
+    def autoRangeEnabled(self):
+        return self.plotItem.getViewBox().autoRangeEnabled()
+
 class CustomComboBox(QComboBox):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -188,7 +196,7 @@ class graphMain(QObject):
             self.plots_lay.getAxis("right").show()
 
     def setupGraphView(self):
-        graphView = pg.PlotWidget(title="")
+        graphView = PatchedPlotWidget(title="")
 
         self.color_line_main = "#55aa00"
         self.color_line_second = "#ff0000"
@@ -510,7 +518,7 @@ class graphMain(QObject):
             
             return new_data
     @time_decorator
-    def create_and_place_curve(self, data,
+    def create_and_place_curve(self, data: relationData,
                                     graph_field = None,
                                     legend_field = None,
                                     number_axis = None):
@@ -535,6 +543,20 @@ class graphMain(QObject):
         
     def add_curve_to_stack(self, curve_data_obj):   
         self.stack_curve[curve_data_obj.y_name + curve_data_obj.x_name] = curve_data_obj
+
+    def add_curve(self, curve_data_obj: linearData, type_axis: str = "left"):
+        self.stack_curve[curve_data_obj.curve_name] = curve_data_obj
+        if type_axis == "left":
+            curve_data_obj.place_curve_on_graph(graph_field  = self.graphView,
+                                                legend_field  = self.legend,
+                                                number_axis = 1
+                                                )
+        else:
+            curve_data_obj.place_curve_on_graph(graph_field  = self.second_graphView,
+                                                legend_field  = self.legend2,
+                                                number_axis = 2
+                                                )
+        self.main_class.tree_class.add_curve(curve_data_obj.tree_item)
 
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна
         self.graph_win_close_signal.emit(1)

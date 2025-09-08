@@ -38,7 +38,7 @@ class oscData:
 
 @dataclass
 class sessionMeasData:
-	data : dict
+	data : dict[measTimeData]
 	spicified_data : str
 	is_running : bool
 
@@ -59,6 +59,7 @@ class relationData:
 			self.y_result = data_x_axis.num_or_time
 
 		else:
+			#print(f"{data_x_axis.num_or_time=}, {data_y_axis.num_or_time=}")
 			self.__base_x = np.unique(np.concatenate((data_x_axis.num_or_time, data_y_axis.num_or_time)))
 			self.x_result = np.interp(self.__base_x, data_x_axis.num_or_time, data_x_axis.par_val)
 			self.y_result = np.interp(self.__base_x, data_y_axis.num_or_time, data_y_axis.par_val)
@@ -308,7 +309,7 @@ class graphDataManager( QObject ):
 		else:
 			val_list = value[0] #[ [[osc1], [osc2]], [time1, time2] ]
 
-		time_list = ( [ i for i in range(len(val_list)) ] if len(value) == 1 else value[1] )
+		time_list = ( [ float(i) for i in range(len(val_list)) ] if len(value) == 1 else value[1] )
 		if len(val_list) != len(time_list):
 			logger.warning(f"Длины списков параметра и времени не равны {device=} {channel=} {param=} {value=}")
 			return False, is_new_param_added, is_old_param_udated

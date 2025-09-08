@@ -71,8 +71,6 @@ class graphData:
 
         self.number_axis = None
 
-        self.mother_data = None
-
         self.saved_pen = None
 
         self.is_draw = False
