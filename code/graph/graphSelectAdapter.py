@@ -144,7 +144,15 @@ class graphSelectAdapter:
 
 	def parameters_choised(self, param_x, param_y1, param_y2):
 		'''метод вызывается селектором в моменты, когда пользователь выбрал новые параметры'''
+		if param_x == "numbers":
+			for key in param_y1:
+				if key == "numbers":
+					param_y1.remove(key)
+			for key in param_y2:
+				if key == "numbers":
+					param_y2.remove(key)
+					
+		if param_x and (param_y1 or param_y2):
+			data_first_axis, data_second_axis = self.data_manager.get_relation_data(param_x, param_y1, param_y2, self.type_data)
 
-		data_first_axis, data_second_axis = self.data_manager.get_relation_data(param_x, param_y1, param_y2, self.type_data)
-
-		self.graph.update_data(data_first_axis, data_second_axis)
+			self.graph.update_data(data_first_axis, data_second_axis)
