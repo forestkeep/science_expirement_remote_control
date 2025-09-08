@@ -31,6 +31,8 @@ from graph.graphSelectAdapter import graphSelectAdapter
 from graph.select_session import SessionSelectControl
 from graph.osc_selector import OscilloscopeSelector
 from graph.waveSelectAdapter import waveSelectAdapter
+from graph.hdf5_io.facade import HDF5Facade
+#from graph.saving_controller import savingController
 
 logger = logging.getLogger(__name__)
 
@@ -73,51 +75,22 @@ class GraphWindow(QMainWindow):
         self.main_lay.addWidget(splitter)
 
     def __add_menu(self):
-        self.menubar = self.menuBar()
-        self.menu = QMenu(self.menubar)
-        self.menu.setObjectName("menu")
-
-        self.save_installation_button_as = QAction(self)
-        self.save_installation_button = QAction(self)
-        self.open_installation_button = QAction(self)
-        self.add_device_button = QAction(self)
-
-        self.convert_buf_button = QAction(self)
-
-        self.menu.addAction(self.save_installation_button)
-        self.menu.addAction(self.save_installation_button_as)
-        self.menu.addAction(self.open_installation_button)
-        self.menu.addSeparator()
-        self.menu.addAction(self.add_device_button)
-        self.menu.addSeparator()
-        self.menu.addAction(self.convert_buf_button)
-        self.menubar.addAction(self.menu.menuAction())
-
-        self.set = QMenu(self.menubar)
-        self.menubar.addAction(self.set.menuAction())
-        self.develop_mode = QAction(self)
-        self.general_settings = QAction(self)
-
-        self.info = QMenu(self.menubar)
-        self.menubar.addAction(self.info.menuAction())
-        self.instruction = QAction(self)
-        self.about_autors = QAction(self)
-        self.version = QAction(self)
-        self.setAcceptDrops(True)
-
-        file_menu = self.menubar.addMenu(QApplication.translate("filters","Файл") )
-        file_menu.addAction(self.save_installation_button)
-        file_menu.addAction(self.save_installation_button_as)
-        file_menu.addAction(self.open_installation_button)
-        file_menu.addSeparator()
-        file_menu.addAction(self.add_device_button)
-        file_menu.addSeparator()
-        file_menu.addAction(self.convert_buf_button)
-
-        settings_menu = self.menubar.addMenu(QApplication.translate("filters","Сессия"))
-        settings_menu.addAction(self.develop_mode)
-        settings_menu.addAction(self.general_settings)
-
+        # Создаем менюбар
+        menubar = self.menuBar()
+        
+        # Создаем меню "Файл"
+        file_menu = menubar.addMenu("Файл")
+        
+        # Инициализируем действие "Сохранить" перед добавлением
+        self.save_action = QAction("Сохранить", self)
+        self.save_action.setShortcut("Ctrl+S")  # Добавляем горячую клавишу
+        self.load_action = QAction("Загрузить", self)
+        self.load_action.setShortcut("Ctrl+P")  # Добавляем горячую клавишу
+        
+        # Добавляем действие в меню
+        file_menu.addAction(self.save_action)
+        file_menu.addAction(self.load_action)
+        
 class GraphSession(QWidget):
     graph_win_close_signal = pyqtSignal(int)
 
@@ -126,6 +99,7 @@ class GraphSession(QWidget):
         self.notification = None
         self.session_id = id
         self.session_name = name
+        self.description = None
         self.initUI()
 
     def initUI(self):
@@ -284,8 +258,16 @@ class sessionController():
         self.session_selector.session_name_changed.connect(self._session_renamed)
 
         self.graphics_win = GraphWindow(self.controll_sessions_win)
+        self.graphics_win.save_action.triggered.connect(self.save_curent_seans)
+        self.graphics_win.load_action.triggered.connect(self.load_seans)
 
         self.graph_sessions = {}
+
+    def save_curent_seans(self):
+        HDF5Facade().save_project(self, "test.hdf5")
+
+    def load_seans(self):
+        HDF5Facade().load_project("test.hdf5", self)
 
     def show(self):
         self.graphics_win.show()
@@ -294,6 +276,9 @@ class sessionController():
         if self.graph_sessions.get(session_id):
             self.graph_sessions[session_id].data_manager.stop_session_running()
             self.session_selector.set_session_status(session_id=session_id, status = "Exp completed")
+
+            #saving = savingController()
+            #saving.save_curent_seans(self)
 
             #self.graph_sessions[session_id].get_all_session_data()
 
@@ -304,6 +289,8 @@ class sessionController():
         if is_session_created:
             if is_experiment_running:
                 status = "running"
+            else:
+                status = "downloaded"
             self.session_selector.add_session({'id': session_id, 'name': session_name, 'status': status})
 
             self.change_session(session_id)
@@ -350,6 +337,12 @@ class sessionController():
     def _session_renamed(self, session_id: str, new_session_name: str):
         if self.graph_sessions.get(session_id) is not None:
             self.graph_sessions[session_id].session_name = new_session_name
+        else:
+            logger.warning(f"Session {session_id} not found")
+
+    def _session_description_changed(self, session_id: str, new_description: str):
+        if self.graph_sessions.get(session_id) is not None:
+            self.graph_sessions[session_id].description = new_description
         else:
             logger.warning(f"Session {session_id} not found")
 
