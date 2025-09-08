@@ -14,10 +14,11 @@ import time
 import random
 
 import logging
+from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QPoint, QTimer, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
-                             QSizePolicy, QSplitter, QTabWidget, QWidget, QMenu, QAction, QVBoxLayout, QStackedWidget)
+                             QSizePolicy, QSplitter, QTabWidget, QWidget, QMenu, QAction, QVBoxLayout, QStackedWidget, QFileDialog)
 
 from graph.filters_win import filtersClass
 from graph.graph_main import graphMain
@@ -75,20 +76,19 @@ class GraphWindow(QMainWindow):
         self.main_lay.addWidget(splitter)
 
     def __add_menu(self):
-        # Создаем менюбар
         menubar = self.menuBar()
         
-        # Создаем меню "Файл"
         file_menu = menubar.addMenu("Файл")
         
-        # Инициализируем действие "Сохранить" перед добавлением
         self.save_action = QAction("Сохранить", self)
-        self.save_action.setShortcut("Ctrl+S")  # Добавляем горячую клавишу
+        self.save_action.setShortcut("Ctrl + S")
+        self.save_action_as = QAction("Сохранить как...", self)
+        self.save_action_as.setShortcut("Ctrl + Shift + S")
         self.load_action = QAction("Загрузить", self)
-        self.load_action.setShortcut("Ctrl+P")  # Добавляем горячую клавишу
+        self.load_action.setShortcut("Ctrl + O")
         
-        # Добавляем действие в меню
         file_menu.addAction(self.save_action)
+        file_menu.addAction(self.save_action_as)
         file_menu.addAction(self.load_action)
         
 class GraphSession(QWidget):
@@ -258,16 +258,50 @@ class sessionController():
         self.session_selector.session_name_changed.connect(self._session_renamed)
 
         self.graphics_win = GraphWindow(self.controll_sessions_win)
-        self.graphics_win.save_action.triggered.connect(self.save_curent_seans)
-        self.graphics_win.load_action.triggered.connect(self.load_seans)
+        self.graphics_win.save_action.triggered.connect(self.push_button_save_graph)
+        self.graphics_win.load_action.triggered.connect(self.push_button_open_graph)
+        self.graphics_win.save_action_as.triggered.connect(self.push_button_save_graph_as)
+        self.way_to_save_file = None
 
         self.graph_sessions = {}
 
-    def save_curent_seans(self):
-        HDF5Facade().save_project(self, "test.hdf5")
+    def push_button_save_graph(self):
+        if self.way_to_save_file is not None:
+            HDF5Facade().save_project(self, self.way_to_save_file)
+        else:
+            self.push_button_save_graph_as()
+    
+    def push_button_save_graph_as(self):
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        fileName, ans = QtWidgets.QFileDialog.getSaveFileName(
+            self.graphics_win,
+            "Save File",
+            "",
+            "Installation(*.hdf5)",
+            options=options,
+        )
+        if ans == "Installation(*.hdf5)":
+            if ".hdf5" in fileName:
+                self.way_to_save_file = fileName
+            else:
+                self.way_to_save_file = fileName + ".hdf5"
+            HDF5Facade().save_project(self, self.way_to_save_file)
 
-    def load_seans(self):
-        HDF5Facade().load_project("test.hdf5", self)
+    def push_button_open_graph(self):
+        logger.debug("нажата кнопка открыть график")
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        fileName, ans = QtWidgets.QFileDialog.getOpenFileName(
+            self.graphics_win,
+            "Open File",
+            "",
+            "Installation(*.hdf5)",
+            options=options,
+        )
+        if ans == "Installation(*.hdf5)":
+            HDF5Facade().load_project(fileName, self)
+            self.way_to_save_file = fileName
 
     def show(self):
         self.graphics_win.show()

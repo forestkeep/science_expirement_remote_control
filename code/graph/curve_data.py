@@ -160,9 +160,7 @@ class graphData:
         self.legend_field = legend_field
         self.number_axis = number_axis
 
-        #___________________исключение здесь__________________
         self.parent_graph_field.addItem(self.plot_obj)
-        #====================================================
 
         if self.legend_field.getLabel( self.plot_obj ) is None:
             self.legend_field.addItem(self.plot_obj, self.legend.current_name)
@@ -249,8 +247,8 @@ class linearData(graphData):
                 "max_y": np.nanmax(self.filtered_y_data),
                 "name": self.curve_name,
                 "tip": "linear",
-                "mean": round(np.nanmean(self.filtered_y_data), 3),
-                "std": round(np.nanstd(self.filtered_y_data), 3),
+                "mean": np.nanmean(self.filtered_y_data),
+                "std": np.nanstd(self.filtered_y_data),
                 "median": np.nanmedian(self.filtered_y_data),
                 "count": np.count_nonzero(~np.isnan(self.filtered_y_data)),
                 "mode": mode_value
