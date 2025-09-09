@@ -148,6 +148,9 @@ class experimentControl( ):
 
 		#----------------------------------------------------------------------------------------------
 		if not error_start_exp:
+			for device in self.device_classes.values():
+				device.confirm_parameters()
+				
 			for i in range(self.repeat_experiment):
 				if error :
 					break

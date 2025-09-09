@@ -588,7 +588,7 @@ class basePowerSupply(base_device):
                         is_voltage_read = True
                         count = 0
                 if is_voltage_read:
-                    step = min(int(voltage / 5), 1)
+                    step = max(int(voltage / 5), 1)
 
                     while voltage > step:
                         voltage -= step
