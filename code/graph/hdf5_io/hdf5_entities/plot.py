@@ -2,7 +2,7 @@ import h5py
 import numpy as np
 from datetime import datetime
 from .base import BaseHDF5Entity
-from ..models import Plot, StyleSettings, Statistics, HistoryEntry, LinearData, CurveTreeItemData
+from ..models import Plot, GraphStyle, Statistics, HistoryEntry, LinearData, CurveTreeItemData
 
 class HDF5Plot(BaseHDF5Entity):
     """Представление графика в HDF5."""
@@ -17,7 +17,7 @@ class HDF5Plot(BaseHDF5Entity):
             'is_draw': plot.is_draw,
             'x_name': plot.x_name,
             'y_name': plot.y_name,
-            'current_highlight': plot.current_highlight,
+            'is_curve_selected': plot.is_curve_selected,
             'plot_obj_info': plot.plot_obj_info,
             'parent_graph_field_info': plot.parent_graph_field_info,
             'legend_field_info': plot.legend_field_info,
@@ -34,8 +34,12 @@ class HDF5Plot(BaseHDF5Entity):
             'name': plot.style.name,
             'description': plot.style.description if plot.style.description else "",
             'color': plot.style.color,
+            'line_style': plot.style.line_style,
             'line_width': plot.style.line_width,
-            'line_style': plot.style.line_style
+            'symbol': plot.style.symbol,
+            'symbol_size': plot.style.symbol_size,
+            'symbol_color': plot.style.symbol_color,
+            'fill_color': plot.style.fill_color
         }
         for key, value in style_attrs.items():
             style_group.attrs[key] = value
@@ -97,10 +101,8 @@ class HDF5Plot(BaseHDF5Entity):
             'number': plot.linear_data.number if plot.linear_data.number is not None else -1,
             'number_axis': plot.linear_data.number_axis if plot.linear_data.number_axis is not None else -1,
             
-            # Несериализуемые объекты заменены на текстовые представления
-            'saved_pen_info': plot.linear_data.saved_pen_info,
             'is_draw': 1 if plot.linear_data.is_draw else 0, 
-            'current_highlight': 1 if plot.linear_data.current_highlight else 0,
+            'is_curve_selected': 1 if plot.linear_data.is_curve_selected else 0,
 
             'name': plot.linear_data.name,
             'description': plot.linear_data.description if plot.linear_data.description else "",
@@ -146,7 +148,7 @@ class HDF5Plot(BaseHDF5Entity):
         description = self._hdf5_object.attrs.get('description', '')
         status = self._hdf5_object.attrs.get('status', 'active')
         is_draw = bool(self._hdf5_object.attrs.get('is_draw', False))
-        current_highlight = bool(self._hdf5_object.attrs.get('current_highlight', False))
+        is_curve_selected = bool(self._hdf5_object.attrs.get('is_curve_selected', False))
         plot_obj_info = self._hdf5_object.attrs.get('plot_obj_info', 'PlotObject')
         parent_graph_field_info = self._hdf5_object.attrs.get('parent_graph_field_info', 'ViewBox')
         legend_field_info = self._hdf5_object.attrs.get('legend_field_info', 'LegendItem')
@@ -155,7 +157,7 @@ class HDF5Plot(BaseHDF5Entity):
         axis = self._hdf5_object.attrs.get('axis', 1)
         
         # Читаем стиль
-        style = StyleSettings()
+        style = GraphStyle()
         if 'style' in self._hdf5_object:
             style_group = self._hdf5_object['style']
             style.name = style_group.attrs.get('name', '')
@@ -163,6 +165,10 @@ class HDF5Plot(BaseHDF5Entity):
             style.color = style_group.attrs.get('color', '#FF0000')
             style.line_width = float(style_group.attrs.get('line_width', 1.0))
             style.line_style = style_group.attrs.get('line_style', 'solid')
+            style.symbol = style_group.attrs.get('symbol', 'None')
+            style.symbol_size = float(style_group.attrs.get('symbol_size', 1.0))
+            style.symbol_color = style_group.attrs.get('symbol_color', '#FF0000')
+            style.fill_color = style_group.attrs.get('fill_color', '#FF0000')
         
         # Читаем статистику
         statistics = Statistics()
@@ -214,9 +220,8 @@ class HDF5Plot(BaseHDF5Entity):
             linear_data.number = number if number != -1 else None
             number_axis = linear_data_group.attrs.get('number_axis', -1)
             linear_data.number_axis = number_axis if number_axis != -1 else None
-            linear_data.saved_pen_info = linear_data_group.attrs.get('saved_pen_info', 'color:#FF0000,width:1.0')
             linear_data.is_draw = bool(linear_data_group.attrs.get('is_draw', False))
-            linear_data.current_highlight = bool(linear_data_group.attrs.get('current_highlight', False))
+            linear_data.is_curve_selected = bool(linear_data_group.attrs.get('is_curve_selected', False))
             linear_data.name = linear_data_group.attrs.get('name', '')
             linear_data.description = linear_data_group.attrs.get('description', '')
             linear_data.tip = linear_data_group.attrs.get('tip', 'linear')
@@ -265,7 +270,7 @@ class HDF5Plot(BaseHDF5Entity):
             parent_graph_field_info=parent_graph_field_info,
             legend_field_info=legend_field_info,
             is_draw=is_draw,
-            current_highlight=current_highlight,
+            is_curve_selected=is_curve_selected,
             axis=axis
         )
         

@@ -297,11 +297,13 @@ class graphDataManager( QObject ):
 		if device is None:
 			device = ""
 		else:
-			device+="-"
+			if device[-1] != "-":
+				device+="-"
 		if channel is None:
 			channel = ""
 		else:
-			channel+="-"
+			if channel[-1] != "-":
+				channel+="-"
 		key = f"{device}{channel}{param}"
 
 		if "wavech" not in param:

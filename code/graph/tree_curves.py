@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QDialog,
 import copy
 
 from graph.calc_values_for_graph import ArrayProcessor
-
+from graph.customize_style_curve import GraphCustomizer
 import numexpr as ne
 import numpy as np
 import logging
@@ -192,10 +192,6 @@ class CurveTreeItem(QTreeWidgetItem):
 
     def deselection(self):
         self.curve_data_obj.unhiglight_curve()
-
-    def change_color(self, color):
-        self.setForeground(1, QBrush(QColor(color)))
-        self.curve_data_obj.change_color(color)
 
     def is_draw(self):
         return self.curve_data_obj.is_draw
@@ -546,7 +542,7 @@ class treeWin(QWidget):
                 context_menu.addAction(show_action)
                 show_action.triggered.connect(lambda: self.show_curve(root_item))
 
-            color_action = QAction( QApplication.translate("GraphWindow","Изменить цвет"), self)
+            style_action = QAction( QApplication.translate("GraphWindow","Изменить стиль"), self)
             name_action = QAction( QApplication.translate("GraphWindow","Изменить название"), self)
             delete_action = QAction( QApplication.translate("GraphWindow","Удалить график"), self)
             reset_data_action = QAction( QApplication.translate("GraphWindow","Сбросить фильтры"), self)
@@ -554,14 +550,14 @@ class treeWin(QWidget):
             create_autocorrelation = QAction( QApplication.translate("GraphWindow","Построить автокорреляционную функцию"), self)
 
             context_menu.addAction(name_action)
-            context_menu.addAction(color_action)
+            context_menu.addAction(style_action)
             context_menu.addAction(delete_action)
             context_menu.addAction(reset_data_action)
             context_menu.addAction(add_note_action)
             context_menu.addAction(create_autocorrelation)
 
             name_action.triggered.connect(lambda: self.change_name_curve(root_item))
-            color_action.triggered.connect(lambda: self.change_color_curve(root_item))
+            style_action.triggered.connect(lambda: self.change_curve_style(root_item))
             delete_action.triggered.connect(lambda: self.delete_curve(root_item))
             reset_data_action.triggered.connect(lambda: self.reset_filters(root_item))
             add_note_action.triggered.connect(lambda: self.add_note(root_item))
@@ -578,7 +574,7 @@ class treeWin(QWidget):
         if ok and text:
             item.change_name(text)
 
-    def add_note(self, item):
+    def add_note(self, item: CurveTreeItem):
         description = item.get_description()
         text, ok = QInputDialog().getText(self, QApplication.translate("GraphWindow","Описание"),
                                      QApplication.translate("GraphWindow","Описание"), QLineEdit.Normal, description)
@@ -588,7 +584,7 @@ class treeWin(QWidget):
                 item.add_new_block( QApplication.translate("GraphWindow","Разное"),
                                 {QApplication.translate("GraphWindow","Описание"): text} )
 
-    def delete_curve(self, item=None):
+    def delete_curve(self, item: CurveTreeItem = None):
         if item is None:
             selected_items = self.tree_widget.selectedItems()
             if selected_items:
@@ -610,7 +606,7 @@ class treeWin(QWidget):
             if index != -1:
                 self.tree_widget.takeTopLevelItem(index)
 
-    def show_curve(self, item=None):
+    def show_curve(self, item: CurveTreeItem =None):
         if item is None:
             selected_items = self.tree_widget.selectedItems()
             if selected_items:
@@ -623,7 +619,7 @@ class treeWin(QWidget):
         if item in self.curves:
             self.curve_shown.emit(item.curve_data_obj)
 
-    def hide_curve(self, item=None):
+    def hide_curve(self, item: CurveTreeItem=None):
         if item is None:
             selected_items = self.tree_widget.selectedItems()
             if selected_items:
@@ -636,12 +632,9 @@ class treeWin(QWidget):
             item.curve_data_obj.delete_curve_from_graph()
             self.curve_hide.emit(item.curve_data_obj)
 
-    def change_color_curve(self, item):
-        color = choose_color()
-        if color:
-            item.change_color(color)
-        else:
-            pass
+    def change_curve_style(self, item:CurveTreeItem):
+        customizer =  GraphCustomizer(item.curve_data_obj)
+        customizer.exec_()
 
     def clear_all(self):
         for curve in self.curves:

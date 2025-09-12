@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple
 import numpy as np
+from PyQt5 import QtWidgets, QtCore, QtGui
 from datetime import datetime
 
 # Базовый класс для всех моделей с общими полями
@@ -12,12 +13,16 @@ class BaseModel:
 
 #--------------------------модели кривых и их представлений-------------------------------
 # Модели для графиков
+
 @dataclass
-class StyleSettings(BaseModel):
-	color: str = "#FF0000"
-	line_width: float = 1.0
-	line_style: str = "solid"
-	# Другие атрибуты стиля...
+class GraphStyle(BaseModel):
+    color: str = "#ffffff"
+    line_style: QtCore.Qt.PenStyle = QtCore.Qt.SolidLine
+    line_width: int = 1
+    symbol: Optional[str] = None
+    symbol_size: int = 1
+    symbol_color: str = "#ffffff"
+    fill_color: str = "#ffffff"
 
 @dataclass
 class Statistics(BaseModel):
@@ -71,10 +76,8 @@ class GraphData(BaseModel):
 	number: Optional[int] = None
 	number_axis: Optional[int] = None
 	
-	# Несериализуемые объекты заменены на текстовые представления
-	saved_pen_info: str = "color:#FF0000,width:1.0"
 	is_draw: bool = False
-	current_highlight: bool = False
+	is_curve_selected: bool = False
 	
 	# Ссылка на tree_item как на данные
 	tree_item_data: CurveTreeItemData = field(default_factory=CurveTreeItemData)
@@ -91,7 +94,7 @@ class Plot(BaseModel):
 
 	# Статус и стиль
 	status: str = "active"
-	style: StyleSettings = field(default_factory=StyleSettings)
+	style: GraphStyle = field(default_factory=GraphStyle)
 	statistics: Statistics = field(default_factory=Statistics)
 	history: List[HistoryEntry] = field(default_factory=list)
 	
@@ -107,7 +110,7 @@ class Plot(BaseModel):
 	
 	# Параметры отображения
 	is_draw: bool = False
-	current_highlight: bool = False
+	is_curve_selected: bool = False
 
 	# Оси
 

@@ -36,12 +36,12 @@ class HDF5File(BaseHDF5Entity):
         """Читает атрибуты файла и возвращает словарь."""
         return self._read_attributes()
     
-    def write_session(self, session: Session):
+    def write_session(self, session: Session, session_id: Optional[str] = None):
         """Записывает сессию в файл."""
-        ses_name = session.name.replace('\\', '_').replace('/', '_')
-        if ses_name in self._h5file:
-            del self._h5file[ses_name]
-        session_group = self._h5file.create_group(ses_name)
+        #ses_name = session.name.replace('\\', '_').replace('/', '_')
+        if session_id in self._h5file:
+            del self._h5file[session_id]
+        session_group = self._h5file.create_group(session_id)
         session_entity = HDF5Session(session_group)
         session_entity.write(session)
     
@@ -54,8 +54,8 @@ class HDF5File(BaseHDF5Entity):
         session_entity = HDF5Session(session_group, self.load_strategy)
         return session_entity.read()
     
-    def get_session_names(self) -> list:
-        """Возвращает список имен сессий в файле."""
+    def get_session_ids(self) -> list:
+        """Возвращает список id сессий в файле."""
         return list(self._h5file.keys())
     
     def __enter__(self):

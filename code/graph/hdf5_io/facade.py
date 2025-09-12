@@ -45,8 +45,8 @@ class HDF5Facade:
             h5_file.write_file_attributes(project_file)
             
             # Сохраняем все сессии
-            for session_name, session in project_file.sessions.items():
-                h5_file.write_session(session)
+            for session_id, session in project_file.sessions.items():
+                h5_file.write_session(session, session_id=session_id)
     
     def load_project(self, file_path: str, core_project_class, 
                     load_strategy: Optional[BaseLoadStrategy] = None):
@@ -76,10 +76,10 @@ class HDF5Facade:
             )
             
             # Загружаем все сессии
-            session_names = h5_file.get_session_names()
-            for session_name in session_names:
-                session = h5_file.read_session(session_name)
-                project_file.sessions[session_name] = session
+            session_ids = h5_file.get_session_ids()
+            for session_id in session_ids:
+                session = h5_file.read_session(session_id)
+                project_file.sessions[session_id] = session
             
             # Преобразуем модель HDF5 в объект ядра
             return self.hdf5_to_core.convert(project_file, core_project_class)

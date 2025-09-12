@@ -4,10 +4,11 @@ from datetime import datetime
 import numpy as np
 
 from .models import ProjectFile, Session, SessionParameters, FieldSettings, DataManager, GraphFieldSettings, OscilloscopeFieldSettings
-from .models import Plot, OscillogramData, ParameterData, StyleSettings, Statistics, HistoryEntry, CurveTreeItemData, LegendNameData, GraphData, LinearData
+from .models import Plot, OscillogramData, ParameterData, GraphStyle, Statistics, HistoryEntry, CurveTreeItemData, LegendNameData, GraphData, LinearData
 from .utils import extract_plot_widget_settings
 import pyqtgraph as pg
 import logging
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 # adapters.py
 import numpy as np
@@ -16,11 +17,11 @@ from typing import Dict, Any, List
 from .models import (
 	ProjectFile, Session, SessionParameters, FieldSettings,
 	GraphFieldSettings, OscilloscopeFieldSettings, DataManager,
-	OscillogramData, ParameterData, Plot, StyleSettings,
+	OscillogramData, ParameterData, Plot, GraphStyle,
 	Statistics, HistoryEntry
 )
 from ..dataManager import graphDataManager, relationData, measTimeData
-from ..curve_data import linearData	
+from ..curve_data import linearData, LineStyle
 
 logger = logging.getLogger(__name__)
 
@@ -147,11 +148,7 @@ class ProjectToHDF5Adapter:
 		Преобразует объект графика ядра в Plot.
 		"""
 		# Создаем объекты для вложенных данных
-		style_settings = StyleSettings(
-			color=core_plot.saved_pen.get('color', '#FF0000') if core_plot.saved_pen else '#FF0000',
-			line_width=core_plot.saved_pen.get('width', 1.0) if core_plot.saved_pen else 1.0,
-			line_style="solid"  # Значение по умолчанию, так как в исходном коде не указано
-		)
+		style_settings = self.from_graph_item( graph_item = core_plot)
 		
 		# Создаем статистику на основе параметров tree_item
 		stats = Statistics(
@@ -181,9 +178,8 @@ class ProjectToHDF5Adapter:
 			curve_name=core_plot.curve_name,
 			number=core_plot.number,
 			number_axis=core_plot.number_axis,
-			saved_pen_info=f"color:{core_plot.saved_pen['color']},width:{core_plot.saved_pen['width']}" if core_plot.saved_pen else "color:#FF0000,width:1.0",
 			is_draw=core_plot.is_draw,
-			current_highlight=core_plot.current_highlight,
+			is_curve_selected=core_plot.is_curve_selected,
 			tree_item_data=tree_item_data,
 		)
 		
@@ -204,38 +200,50 @@ class ProjectToHDF5Adapter:
 			parent_graph_field_info="ViewBox",  # Заглушка для несериализуемого объекта
 			legend_field_info="LegendItem",  # Заглушка для несериализуемого объекта
 			is_draw=core_plot.is_draw,
-			current_highlight=core_plot.current_highlight,
+			is_curve_selected=core_plot.is_curve_selected,
 			name=core_plot.curve_name if hasattr(core_plot, 'curve_name') else "",
 			x_name= core_plot.rel_data.x_name,
 			y_name= core_plot.rel_data.y_name,
 			axis = core_plot.number_axis
 		)
 	
+	def from_graph_item(self,graph_item) -> GraphStyle:
+		"""Создает GraphStyle из графического элемента"""
+		style_graph = graph_item.saved_style
+		
+		styles = {
+			"Solid": 1, #QtCore.Qt.SolidLine,
+			"Dash": 2, #QtCore.Qt.DashLine,
+			"Dot": 3, #QtCore.Qt.DotLine,
+			"DashDot": 4, #QtCore.Qt.DashDotLine
+		}
+
+		# Обратный словарь для преобразования QtStyle в строку
+		rev_styles = {v: k for k, v in styles.items()}
+
+		return GraphStyle(
+			color=style_graph.color,
+			line_style=rev_styles[style_graph.line_style],
+			line_width=style_graph.line_width,
+			symbol=style_graph.symbol,
+			symbol_size=style_graph.symbol_size,
+			symbol_color=style_graph.symbol_color,
+			fill_color=style_graph.fill_color
+		)
+	
 class HDF5ToProjectAdapter:
 	"""Адаптер для преобразования HDF5-моделей в данные ядра"""
 	
 	def convert(self, project: ProjectFile, core_session):
+		project.sessions = {k: project.sessions[k] for k in sorted(project.sessions.keys(), key=lambda x: int(x))}
 		for session_name, session_model in project.sessions.items():
 			self._convert_session(session_model, core_session)
 
-		# Применяем настройки полей, если виджеты предоставлены
-		'''
-		for session_name, session_model in project.sessions.items():
-			if self.graph_widget:
-				graph_settings = session_model.field_settings.graph_field.__dict__
-				#apply_plot_widget_settings(self.graph_widget, graph_settings)
-			
-			if self.oscilloscope_widget:
-				oscilloscope_settings = session_model.field_settings.oscilloscope_field.__dict__
-				#apply_plot_widget_settings(self.oscilloscope_widget, oscilloscope_settings)
-		'''
 
 	def _convert_session(self, session: Session, core_session):
-		#self.print_information(session)
 
 		session_id = core_session.start_new_session(session_name = session.name)
 		if not session_id:
-			print(f"Сессия не создана{session.name=}")
 			return
 		core_manager = core_session.graph_sessions[session_id].data_manager
 		self._convert_data_manager(core_manager, session.data_manager)
@@ -343,7 +351,7 @@ class HDF5ToProjectAdapter:
 			print(f"  График '{name}':")
 			print(f"    Статус: {plot.status}")
 			print(f"    Отображается: {'да' if plot.is_draw else 'нет'}")
-			print(f"    Подсвечен: {'да' if plot.current_highlight else 'нет'}")
+			print(f"    Подсвечен: {'да' if plot.is_curve_selected else 'нет'}")
 			
 			# Информация о стиле
 			print(f"    Стиль: цвет={plot.style.color}, ширина={plot.style.line_width}, "
@@ -463,37 +471,48 @@ class HDF5ToProjectAdapter:
 		new_data.filtered_x_data = plot_model.linear_data.filtered_x_data
 		new_data.filtered_y_data = plot_model.linear_data.filtered_y_data
 		
-		# Создаем перо из StyleSettings
-		pen_info = self._create_pen_from_style(plot_model.style)
-		new_data.saved_pen = pen_info
 		
 		# Создаем графический объект
 		graph = pg.PlotDataItem(
 			new_data.filtered_x_data,
 			new_data.filtered_y_data,
-			pen=pen_info,
 			name=plot_model.linear_data.curve_name or f"Restored {plot_model.name}",
-			symbolPen=pen_info,
 			symbolBrush=plot_model.style.color,
 			symbol='o'
 		)
 		graph.setClipToView(True)
 		graph.setDownsampling(auto=True, method='peak')
+
+		line_style = self.transform_line_style(plot_model.style)
 		
 		# Устанавливаем графический объект
-		new_data.set_plot_obj(plot_obj=graph, pen=pen_info)
+		new_data.set_plot_obj(plot_obj=graph, style=line_style)
 		
 		# Восстанавливаем состояние
 		new_data.is_draw = plot_model.linear_data.is_draw
-		new_data.current_highlight = plot_model.linear_data.current_highlight
+		new_data.is_curve_selected = plot_model.linear_data.is_curve_selected
 		
 		return new_data
 	
-	def _create_pen_from_style(self, style: StyleSettings) -> Dict[str, Any]:
-		"""Создает параметры пера из StyleSettings"""
-		return {
-			"color": style.color,
-			"width": style.line_width,
-		}
+	def transform_line_style(self, style: GraphStyle) -> LineStyle:
+		# Создаем перо
+		styles = {
+            "Solid": QtCore.Qt.SolidLine,
+            "Dash": QtCore.Qt.DashLine,
+            "Dot": QtCore.Qt.DotLine,
+            "DashDot": QtCore.Qt.DashDotLine
+        }
+
+		return LineStyle(
+			color=style.color,
+			line_style=styles[style.line_style],
+			line_width=style.line_width,
+			symbol=style.symbol,
+			symbol_size=style.symbol_size,
+			symbol_color=style.symbol_color,
+			fill_color=style.fill_color
+		)
+	
+
 
 

@@ -20,7 +20,7 @@ from PyQt5.QtWidgets import (QApplication, QHBoxLayout,
                              QSizePolicy, QSpacerItem, QVBoxLayout, QComboBox, QLineEdit)
 
 from graph.colors import GColors
-from graph.curve_data import linearData
+from graph.curve_data import linearData, LineStyle
 from graph.dataManager import relationData
 
 logger = logging.getLogger(__name__)
@@ -264,7 +264,7 @@ class graphMain(QObject):
 
     def set_filters(self, filter_func):
         for curve in self.stack_curve.values():
-            if curve.current_highlight:
+            if curve.is_curve_selected:
                 curve.filtered_y_data, message = filter_func(curve.filtered_y_data)
                 curve.filtered_x_data = curve.filtered_x_data[-len(curve.filtered_y_data):]
                 curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
@@ -300,7 +300,7 @@ class graphMain(QObject):
                 curve.tree_item.delete_block(name_block)
         else:
             for curve in self.stack_curve.values():
-                if curve.current_highlight:
+                if curve.is_curve_selected:
                     curve.data_reset()
                     curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
                     curve.recalc_stats_param()
@@ -371,15 +371,16 @@ class graphMain(QObject):
 
         if is_click_plot:
             for graph in focus_objects:
-                if graph.current_highlight:
-                        graph.current_highlight = False
-                        graph.plot_obj.setPen(graph.saved_pen)
-                        graph.plot_obj.setSymbolBrush(color = graph.saved_pen['color'])
+                if graph.is_curve_selected:
+                        graph.is_curve_selected = False
+                        graph.saved_style.apply_to_curve(graph.plot_obj)
+                        #graph.plot_obj.setPen(graph.saved_pen)
+                        #graph.plot_obj.setSymbolBrush(color = graph.saved_pen['color'])
 
     def delete_key_press(self):
         curv_for_del = []
         for curve in self.stack_curve.values():
-            if curve.current_highlight:
+            if curve.is_curve_selected:
                 if curve.is_draw:
                     curv_for_del.append(curve)
 
@@ -492,7 +493,7 @@ class graphMain(QObject):
             new_data = linearData(data=data)
             buf_color = next(self.color_warm_gen)
 
-            if new_data.saved_pen == None:
+            if new_data.saved_style == None:
                 buf_pen = {
                             "color": buf_color,
                             "width": 1,
@@ -500,7 +501,7 @@ class graphMain(QObject):
                             "symbol": "o",
                 }
             else:
-                buf_pen = new_data.saved_pen
+                buf_pen = new_data.saved_style
 
             graph = pg.PlotDataItem(new_data.filtered_x_data, 
                                             new_data.filtered_y_data, 
@@ -513,8 +514,11 @@ class graphMain(QObject):
             graph.setClipToView(True)
             graph.setDownsampling(auto=True, method='peak')
 
+            style = LineStyle(color=buf_color, line_style=Qt.SolidLine, line_width=1, 
+                 symbol="o", symbol_size=3, symbol_color=buf_color, fill_color=buf_color)
+
             new_data.set_plot_obj(plot_obj = graph,
-                                  pen      = buf_pen)
+                                  style      = style)
             
             return new_data
     @time_decorator

@@ -13,6 +13,7 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtGui import QBrush, QColor
 import logging
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,61 @@ class legendName():
     def set_custom(self, name: str):
         self.__name = name
         self.current_name = self.__name
+
+class LineStyle:
+    def __init__(self, color='w', line_style=QtCore.Qt.SolidLine, line_width=1, 
+                 symbol=None, symbol_size=5, symbol_color='w', fill_color='w'):
+        self.color = color
+        self.line_style = line_style
+        self.line_width = line_width
+        self.symbol = symbol
+        self.symbol_size = symbol_size
+        self.symbol_color = symbol_color
+        self.fill_color = fill_color
+    
+    def to_pen(self):
+        """Создать QPen из стиля"""
+        return pg.mkPen(
+            color=self.color,
+            width=self.line_width,
+            style=self.line_style
+        )
+    
+    def to_symbol_pen(self):
+        """Создать QPen для символа"""
+        return pg.mkPen(color=self.symbol_color)
+    
+    
+    def to_brush(self):
+        """Создать QBrush для заливки"""
+        return pg.mkBrush(color=self.fill_color)
+    
+    def copy(self):
+        """Создать копию стиля"""
+        return LineStyle(
+            color=self.color,
+            line_style=self.line_style,
+            line_width=self.line_width,
+            symbol=self.symbol,
+            symbol_size=self.symbol_size,
+            symbol_color=self.symbol_color,
+            fill_color=self.fill_color
+        )
+    
+    def apply_to_curve(self, plot_data_item):
+        """Применить стиль к кривой (PlotDataItem)"""
+        # Установка пера для линии
+        plot_data_item.setPen(self.to_pen())
+        
+        # Настройка символов, если они заданы
+        if self.symbol is not None:
+            plot_data_item.setSymbol(self.symbol)
+            plot_data_item.setSymbolSize(self.symbol_size)
+            plot_data_item.setSymbolPen(self.to_symbol_pen())
+            plot_data_item.setSymbolBrush(self.to_brush())
+        else:
+            plot_data_item.setSymbol(None)  # Убрать символы
+
 
     
 class graphData:
@@ -71,7 +127,7 @@ class graphData:
 
         self.number_axis = None
 
-        self.saved_pen = None
+        self.saved_style = None
 
         self.is_draw = False
 
@@ -80,59 +136,66 @@ class graphData:
 
         self.tree_item = CurveTreeItem(curve_data_obj=self)
 
-    def set_plot_obj(self, plot_obj, pen, highlight = False):
+        self.is_curve_selected = False
+        self.preselection_style = None
+        self.higlighted_flag = False
+
+        self.clicked_style = LineStyle(color=(255, 255, 255), line_style=QtCore.Qt.DashLine, line_width=3, symbol="o", symbol_size=5, symbol_color='w', fill_color='w')
+
+
+    def set_plot_obj(self, plot_obj, style: LineStyle, highlight = False):
         self.plot_obj = plot_obj
         self.plot_obj.setFocus()
         self.plot_obj.setZValue(100)
         self.plot_obj.setCurveClickable( state = True, width = 10)#установить кривую кликабельной с шириной 10 пикселей
         self.plot_obj.sigClicked.connect(self.on_plot_clicked)
 
-        self.current_highlight = False
+        self.is_curve_selected = False
 
         self.i_am_click_now = False #флаг поднимается в момент, когда по графику кликают мышкой. Сбрасывается в методе, вызванном по сигналу от клика по всей сцене, 
         #в этом методе проверяется. был-ли только то кликнут график, и если да, то выделенные графики не сбрасываются
-        self.preselection_pen = pen #эта пеерменная необходимо для запоминания стиля перед выделением графика через меню дерева
-        self.saved_pen = pen
+        self.preselection_style = style #эта пеерменная необходимо для запоминания стиля перед выделением графика через меню дерева
+        self.saved_style = style
 
-        self.tree_item.setForeground(1, QBrush(QColor(self.saved_pen['color'])))
+        self.tree_item.setForeground(1, QBrush(QColor(self.saved_style.color)))
 
         if highlight:
-            self.current_highlight = True
-            self.plot_obj.setPen(pg.mkPen('w', width=2))
-            self.plot_obj.setSymbolBrush(color = 'w')
+            self.is_curve_selected = True
+            self.clicked_style.apply_to_curve(self.plot_obj)
+        else:
+            self.saved_style.apply_to_curve(self.plot_obj)
 
-    def change_color(self, color):
-        self.saved_pen['color'] = color
-        self.plot_obj.setPen(self.saved_pen)
-        self.plot_obj.setSymbolBrush(self.saved_pen['color'])
+    def change_style(self, new_style: LineStyle):
+        self.saved_style = new_style
+        self.saved_style.apply_to_curve(self.plot_obj)
 
     def higlight_curve(self):
-        if self.current_highlight:
-            self.preselection_pen = pg.mkPen('w', width=2)
+        if self.higlighted_flag:
+            return
+        self.higlighted_flag = True
+        if self.is_curve_selected:
+            self.preselection_style = self.clicked_style
         else:
-            self.preselection_pen = self.saved_pen
+            self.preselection_style = self.saved_style
         self.plot_obj.setPen(pg.mkPen(color=(150, 150, 150, 90), width=5))
         self.plot_obj.setSymbolBrush(color=(150, 150, 150, 90))
+        self.plot_obj.setSymbolPen(pg.mkPen(color=(150, 150, 150, 90)))
 
     def unhiglight_curve(self):
-        self.plot_obj.setPen(self.preselection_pen)
-        if self.preselection_pen is not self.saved_pen:
-            self.plot_obj.setSymbolBrush(color = 'w')
-        else:
-            self.plot_obj.setSymbolBrush(color = self.saved_pen['color'])
+        if not self.higlighted_flag:
+            return
+        self.higlighted_flag = False
+        self.preselection_style.apply_to_curve(self.plot_obj)
 
     def on_plot_clicked(self, obj):
-
         self.i_am_click_now = True
 
-        if self.current_highlight:
-            self.current_highlight = False
-            self.plot_obj.setPen(self.saved_pen)
-            self.plot_obj.setSymbolBrush(self.saved_pen['color'])
+        if self.is_curve_selected:
+            self.is_curve_selected = False
+            self.saved_style.apply_to_curve(self.plot_obj)
         else:
-            self.current_highlight = True
-            self.plot_obj.setPen(pg.mkPen('w', width=2))
-            self.plot_obj.setSymbolBrush(color = 'w')
+            self.is_curve_selected = True
+            self.clicked_style.apply_to_curve(self.plot_obj)
     
     def place_curve_on_graph(self, graph_field: pg.ViewBox, legend_field, number_axis):
         """
