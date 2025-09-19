@@ -641,23 +641,6 @@ class treeWin(QWidget):
             self.delete_curve(curve)
 
 def compute_autocorrelation(data, max_lag=None, normalized=True, method='direct'):
-    """
-    Вычисляет значения автокорреляционной функции для заданного массива данных.
-
-    Параметры:
-    data : numpy.ndarray
-        Одномерный массив входных данных
-    max_lag : int, optional
-        Максимальный лаг для вычисления (по умолчанию len(data)-1)
-    normalized : bool, optional
-        Нормализовать ли результат к [-1, 1] (по умолчанию True)
-    method : str, optional
-        Метод вычисления: 'direct' (прямой расчет) или 'fft' (через преобразование Фурье)
-
-    Возвращает:
-    numpy.ndarray
-        Массив значений АКФ для лагов от 0 до max_lag
-    """
     data = np.asarray(data)
     if data.ndim != 1:
         raise ValueError("Входные данные должны быть одномерным массивом")
@@ -668,20 +651,51 @@ def compute_autocorrelation(data, max_lag=None, normalized=True, method='direct'
     else:
         max_lag = min(int(max_lag), n - 1)
     
-    data_centered = data - np.mean(data)
+    # Проверяем наличие NaN
+    has_nan = np.any(np.isnan(data))
     
-    if method == 'fft':
-        padding = 2 ** int(np.ceil(np.log2(2 * n - 1)))
-        fft = np.fft.fft(data_centered, padding)
-        autocorr = np.fft.ifft(fft * np.conj(fft))[:n].real
-        autocorr = autocorr[:max_lag+1]
+    if has_nan and method == 'fft':
+        method = 'direct'
+    
+    if has_nan:
+        # Вычисляем среднее только по валидным точкам
+        mean_val = np.nanmean(data)
+        data_centered = data - mean_val
+        # Заменяем NaN на 0 для корректных вычислений в dot продуктах
+        data_valid = np.where(np.isnan(data_centered), 0, data_centered)
+        
+        if method == 'fft':
+            padding = 2 ** int(np.ceil(np.log2(2 * n - 1)))
+            fft = np.fft.fft(data_valid, padding)
+            autocorr = np.fft.ifft(fft * np.conj(fft))[:n].real
+            autocorr = autocorr[:max_lag+1]
+        else:
+            autocorr = np.zeros(max_lag + 1)
+            for k in range(max_lag + 1):
+                # Маска валидных точек для лага k
+                valid_mask = ~(np.isnan(data[:n-k]) | np.isnan(data[k:]))
+                if np.any(valid_mask):
+                    autocorr[k] = np.dot(data_centered[:n-k][valid_mask], data_centered[k:][valid_mask])
+                else:
+                    autocorr[k] = np.nan
     else:
-        autocorr = np.zeros(max_lag + 1)
-        for k in range(max_lag + 1):
-            autocorr[k] = np.dot(data_centered[:n-k], data_centered[k:])
+        data_centered = data - np.mean(data)
+        if method == 'fft':
+            padding = 2 ** int(np.ceil(np.log2(2 * n - 1)))
+            fft = np.fft.fft(data_centered, padding)
+            autocorr = np.fft.ifft(fft * np.conj(fft))[:n].real
+            autocorr = autocorr[:max_lag+1]
+        else:
+            autocorr = np.zeros(max_lag + 1)
+            for k in range(max_lag + 1):
+                autocorr[k] = np.dot(data_centered[:n-k], data_centered[k:])
 
     if normalized:
-        norm = np.dot(data_centered, data_centered)
+        if has_nan:
+            # Нормализация по валидным точкам
+            norm = np.nansum(data_centered**2)
+        else:
+            norm = np.dot(data_centered, data_centered)
         autocorr = autocorr / norm if norm != 0 else autocorr * 0
     
     return autocorr

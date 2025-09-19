@@ -14,14 +14,14 @@ from datetime import datetime
 
 import pyqtgraph as pg
 import logging
-from PyQt5.QtCore import QObject, Qt, pyqtSignal, QPoint
-from PyQt5.QtGui import QFont, QFontMetrics
-from PyQt5.QtWidgets import (QApplication, QHBoxLayout,
-                             QSizePolicy, QSpacerItem, QVBoxLayout, QComboBox, QLineEdit)
-
+from PyQt5.QtCore import QObject, Qt, pyqtSignal, QCoreApplication
+from PyQt5.QtGui import QFont, QFontMetrics, QIcon, QColor
+from PyQt5.QtWidgets import QApplication, QHBoxLayout, QSizePolicy, QSpacerItem, QVBoxLayout, QComboBox, QLineEdit, QMenu, QAction, QColorDialog
+from PyQt5 import QtWidgets, QtGui, QtCore
 from graph.colors import GColors
 from graph.curve_data import linearData, LineStyle
 from graph.dataManager import relationData
+from graph.customPlotWidget import PatchedPlotWidget
 
 logger = logging.getLogger(__name__)
 
@@ -33,14 +33,6 @@ def time_decorator(func):
         logger.info(f"Метод  {func.__name__} выполнялся {end_time - start_time} с")
         return result
     return wrapper
-
-
-class PatchedPlotWidget(pg.PlotWidget):
-
-    # Patch the pyqtgraph PlotWidget to resolve an internal exception
-    # https://github.com/pyqtgraph/pyqtgraph/issues/1854
-    def autoRangeEnabled(self):
-        return self.plotItem.getViewBox().autoRangeEnabled()
 
 class CustomComboBox(QComboBox):
     def __init__(self, parent=None):
@@ -57,28 +49,18 @@ class CustomComboBox(QComboBox):
         if self.minimum_w:
             self.view().setMinimumWidth(self.minimum_w)
             
-class graphMain(QObject):
+class manageGraph(QObject):
     new_curve_selected = pyqtSignal()
 
     def __init__(self, tablet_page, main_class, select_data_wid):
         super().__init__()
         self.page = tablet_page
-        #++++++++++++++++++++++++++++++++++++++++
-        #self.import_data_widget = import_data_widget
+
         self.select_win = select_data_wid
 
-        #++++++++++++++++++++++++++++++++++++++++++
-        self.is_show_warning = True
-
-        self.is_second_axis = False
-        self.is_multiple = False
+        self.__is_multiple = False
     
         self.main_class = main_class
-
-        self.legend = pg.LegendItem(size=(80, 60), offset=(10, 10))
-        self.legend2 = pg.LegendItem(size=(80, 60), offset=(50, 10))
-
-        self.tooltip = pg.TextItem("X:0,Y:0", color=(255, 255, 255), anchor=(0, 0))
 
         self.axislabel_line_edit = QLineEdit()
         self.axislabel_line_edit.setVisible( False )
@@ -87,11 +69,6 @@ class graphMain(QObject):
 
         self.legends_main = []
         self.legends_second = []
-
-        self.y_main_axis_label = ""
-        self.x_axis_label = ""
-        self.y_second_axis_label = ""
-
 
         self.num_showing_points = 10
         self.is_all_points_showing = True
@@ -115,7 +92,7 @@ class graphMain(QObject):
         # Add all data source selectors and graph area to tab1Layout
         
         self.graphView = self.setupGraphView()
-        self.graphView.setAntialiasing(False)
+        #self.graphView.setAntialiasing(False)
         self.graphView.scene().sigMouseClicked.connect(self.click_scene_main_graph)
 
         #--------------------------------------------------------TESTS
@@ -172,11 +149,7 @@ class graphMain(QObject):
         self.tab1Layout.addLayout(data_name_layout)
         self.tab1Layout.addWidget( self.select_win )
         self.tab1Layout.addWidget(self.graphView)
-        #self.tab1Layout.addWidget(self.import_data_widget)
         self.page.setLayout(self.tab1Layout)
-
-        self.set_second_axis(state = False)
-        
 
         self.page.subscribe_to_key_press(key = Qt.Key_Delete, callback = self.delete_key_press)
         self.page.subscribe_to_key_press(key = Qt.Key_Escape, callback = self.reset_filters)
@@ -185,68 +158,11 @@ class graphMain(QObject):
 
         self.retranslateUi(self.page)
     def set_second_axis(self, state: bool):
-        self.is_second_axis = state
-
-        if not state:
-            self.plots_lay.getAxis("right").hide()
-            for curve in self.stack_curve.values():
-                if curve.parent_graph_field is self.second_graphView and curve.is_draw:
-                    curve.delete_curve_from_graph()
-        else:
-            self.plots_lay.getAxis("right").show()
+        self.graphView.set_second_axis(state)
 
     def setupGraphView(self):
-        graphView = PatchedPlotWidget(title="")
-
-        self.color_line_main = "#55aa00"
-        self.color_line_second = "#ff0000"
-
-        graphView.scene().sigMouseMoved.connect(self.showToolTip)
-        graphView.plotItem.getAxis("left").linkToView(graphView.plotItem.getViewBox())
-        graphView.plotItem.getAxis("bottom").linkToView(graphView.plotItem.getViewBox())
-
-        self.plots_lay = graphView.plotItem
-        
-        self.second_graphView = pg.ViewBox(parent=None,
-                border=None,
-                lockAspect=False,
-                enableMouse=False,
-                invertY=False,
-                enableMenu=False,
-                name=None,
-                invertX=False,
-                defaultPadding=0.02
-                )
-        
-        self.plots_lay.showAxis("right")
-        self.plots_lay.scene().addItem(self.second_graphView)
-        self.plots_lay.getAxis("right").linkToView(self.second_graphView)
-        self.second_graphView.setXLink(self.plots_lay)
-        self.plots_lay.getAxis("right").setLabel("axis2", color="#000fff")
-
-        self.plots_lay.vb.sigResized.connect(self.updateViews)
-        
-        self.legend.setParentItem(self.plots_lay)
-        self.legend2.setParentItem(self.second_graphView)
-        self.tooltip.setParentItem(self.plots_lay)
-
-        my_font = QFont("Times", 13)
-        self.plots_lay.getAxis("right").label.setFont(my_font)
-        graphView.getAxis("bottom").label.setFont(my_font)
-        graphView.getAxis("left").label.setFont(my_font)
-
+        graphView = PatchedPlotWidget(title="test graph")
         return graphView
-
-    def showToolTip(self, event):
-        pos = event 
-        x_val = round(
-            self.graphView.plotItem.vb.mapSceneToView(pos).x(), 1
-        ) 
-        y_val = round(
-            self.graphView.plotItem.vb.mapSceneToView(pos).y(), 1
-        ) 
-        text = f'X:{x_val} Y:{y_val}'
-        self.tooltip.setPlainText(text)
 
     def set_default(self):
         self.x = []
@@ -256,11 +172,7 @@ class graphMain(QObject):
         for item in self.graphView.items():
             if isinstance(item, pg.PlotDataItem):
                 self.graphView.removeItem(item)
-        self.second_graphView.clear()
-
-    def updateViews(self):
-        self.second_graphView.setGeometry(self.plots_lay.vb.sceneBoundingRect())
-        self.second_graphView.linkedViewChanged(self.plots_lay.vb, self.second_graphView.XAxis)
+        self.graphView.second_graphView.clear()
 
     def set_filters(self, filter_func):
         for curve in self.stack_curve.values():
@@ -311,7 +223,7 @@ class graphMain(QObject):
     def click_enter_key(self):
 
         if self.axislabel_line_edit.isVisible() and self.focus_axis:
-            self.focus_axis.setLabel(self.axislabel_line_edit.text(), color=self.focus_axis.pen().color())
+            self.focus_axis.setLabel(self.axislabel_line_edit.text())
             self.axislabel_line_edit.setVisible(False)
             self.focus_axis = None
 
@@ -374,8 +286,6 @@ class graphMain(QObject):
                 if graph.is_curve_selected:
                         graph.is_curve_selected = False
                         graph.saved_style.apply_to_curve(graph.plot_obj)
-                        #graph.plot_obj.setPen(graph.saved_pen)
-                        #graph.plot_obj.setSymbolBrush(color = graph.saved_pen['color'])
 
     def delete_key_press(self):
         curv_for_del = []
@@ -405,7 +315,7 @@ class graphMain(QObject):
         return False
     
     def hide_second_line_grid(self):
-        self.plots_lay.getAxis("right").setGrid(0)#костыль, который необходим для того, чтобы сетка по вспомогательной оси не отображалась. При вызове меню сетки отрисоываются на всех осях
+        self.graphView.hide_second_line_grid()
 
     #@time_decorator
     def update_data(self, data_first_axis, data_second_axis, is_updated = False):
@@ -423,13 +333,13 @@ class graphMain(QObject):
                 self.create_and_place_curve(
                                             data = data,
                                             graph_field = self.graphView,
-                                            legend_field = self.legend,
+                                            legend_field = self.graphView.legend,
                                             number_axis=1
                                             )
             else:
                 if not self.stack_curve[data.name].is_draw:
                     self.stack_curve[data.name].place_curve_on_graph(graph_field  = self.graphView,
-                                                                    legend_field  = self.legend,
+                                                                    legend_field  = self.graphView.legend,
                                                                     number_axis=1
                                                                     )
                 else:
@@ -447,14 +357,14 @@ class graphMain(QObject):
             if self.stack_curve.get(data.name) is None:
                 self.create_and_place_curve(
                                             data = data,
-                                            graph_field = self.second_graphView,
-                                            legend_field = self.legend2,
+                                            graph_field = self.graphView.second_graphView,
+                                            legend_field = self.graphView.legend2,
                                             number_axis=2
                                             )
             else:
                 if not self.stack_curve[data.name].is_draw:
-                    self.stack_curve[data.name].place_curve_on_graph(graph_field  = self.second_graphView,
-                                                                    legend_field  = self.legend2,
+                    self.stack_curve[data.name].place_curve_on_graph(graph_field  = self.graphView.second_graphView,
+                                                                    legend_field  = self.graphView.legend2,
                                                                     number_axis=2)
                 else:
                     if is_updated:
@@ -484,7 +394,7 @@ class graphMain(QObject):
         curve_data_obj.delete_curve_from_graph()
         
     def set_multiple_mode(self, is_multiple):
-        self.is_multiple = is_multiple
+        self.__is_multiple = is_multiple
 
     def get_curve(self, name):
         return self.stack_curve.get(name)
@@ -532,7 +442,7 @@ class graphMain(QObject):
         if not graph_field:
             graph_field = self.graphView
         if not legend_field:
-            legend_field = self.legend
+            legend_field = self.graphView.legend
         if not number_axis:
             number_axis=1
         new_data = self.create_curve(data = data)
@@ -552,12 +462,12 @@ class graphMain(QObject):
         self.stack_curve[curve_data_obj.curve_name] = curve_data_obj
         if type_axis == "left":
             curve_data_obj.place_curve_on_graph(graph_field  = self.graphView,
-                                                legend_field  = self.legend,
+                                                legend_field  = self.graphView.legend,
                                                 number_axis = 1
                                                 )
         else:
-            curve_data_obj.place_curve_on_graph(graph_field  = self.second_graphView,
-                                                legend_field  = self.legend2,
+            curve_data_obj.place_curve_on_graph(graph_field  = self.graphView.second_graphView,
+                                                legend_field  = self.graphView.legend2,
                                                 number_axis = 2
                                                 )
         self.main_class.tree_class.add_curve(curve_data_obj.tree_item)

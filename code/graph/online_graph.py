@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
                              QSizePolicy, QSplitter, QTabWidget, QWidget, QMenu, QAction, QVBoxLayout, QStackedWidget, QFileDialog)
 
 from graph.filters_win import filtersClass
-from graph.graph_main import graphMain
+from graph.graph_main import manageGraph
 from graph.notification import NotificationWidget
 from graph.osc_wave_graph import graphOsc
 from graph.tabPage_win import tabPage
@@ -146,7 +146,7 @@ class GraphSession(QWidget):
 
         self.selector_osc = OscilloscopeSelector()
 
-        self.graph_main = graphMain(tablet_page=self.tab1, main_class=self, select_data_wid = self.select_win)
+        self.graph_main = manageGraph(tablet_page=self.tab1, main_class=self, select_data_wid = self.select_win)
         self.graph_wave = graphOsc(self.tab2, self.selector_osc, self)
 
         self.adapter_main_graph = graphSelectAdapter(self.graph_main, self.select_controller, self.data_manager, self.tree_class, 'main', self)

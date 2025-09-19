@@ -47,9 +47,11 @@ class LineStyle:
         self.symbol_size = symbol_size
         self.symbol_color = symbol_color
         self.fill_color = fill_color
+        self.px_mode = True
     
     def to_pen(self):
         """Создать QPen из стиля"""
+        #print(f"color: {self.color}, line_style: {self.line_style}, line_width: {self.line_width}")
         return pg.mkPen(
             color=self.color,
             width=self.line_width,
@@ -89,7 +91,12 @@ class LineStyle:
             plot_data_item.setSymbolPen(self.to_symbol_pen())
             plot_data_item.setSymbolBrush(self.to_brush())
         else:
-            plot_data_item.setSymbol(None)  # Убрать символы
+            plot_data_item.setSymbol(None)
+
+        plot_data_item.opts['pxMode'] = self.px_mode
+        plot_data_item.updateItems()
+
+        #plot_data_item.setData(pxMode=self.px_mode)
 
 
     
@@ -301,7 +308,6 @@ class linearData(graphData):
             modes = unique_values[counts == max_count]
             mode_value = modes.min()
         #------
-
         self.tree_item.update_parameters(
             {
                 "min_x": np.nanmin(self.filtered_x_data),
