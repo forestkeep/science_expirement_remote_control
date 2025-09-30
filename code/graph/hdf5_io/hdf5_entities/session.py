@@ -5,7 +5,19 @@ import datetime
 from .base import BaseHDF5Entity
 from ..models import Session, SessionParameters, FieldSettings, DataManager, Plot, GraphFieldSettings, OscilloscopeFieldSettings, OscillogramData, ParameterData
 from .plot import HDF5Plot
+from ..utils import settings_to_dict, save_dict_to_hdf5_with_subgroups, load_dict_from_hdf5_group, dict_to_graph_field_settings
 from ..load_strategies.base import BaseLoadStrategy
+
+
+
+def print_nested(data, indent=0):
+    for key, value in data.items():
+        if isinstance(value, dict):
+            print(' ' * indent + f'{key}:')
+            print_nested(value, indent + 2)
+        else:
+            print(' ' * indent + f'{key}: {value}')
+
 
 class HDF5Session(BaseHDF5Entity):
     """Представление сессии в HDF5."""
@@ -49,72 +61,17 @@ class HDF5Session(BaseHDF5Entity):
             field_settings_group.create_group('graph_field')
         graph_field_group = field_settings_group['graph_field']
         
-        graph_field_attrs = {
-            'name': session.field_settings.graph_field.name,  # Наследуется от родителя
-            'description': session.field_settings.graph_field.description,  # Наследуется от родителя
-            'title': session.field_settings.graph_field.title,
-            'background_color': session.field_settings.graph_field.background_color,
-            'foreground_color': session.field_settings.graph_field.foreground_color,
-            'grid_enabled': session.field_settings.graph_field.grid_enabled,
-            'grid_color': session.field_settings.graph_field.grid_color,
-            'grid_alpha': session.field_settings.graph_field.grid_alpha,
-            'x_label': session.field_settings.graph_field.x_label,
-            'y_label': session.field_settings.graph_field.y_label,
-            'x_log_mode': session.field_settings.graph_field.x_log_mode,
-            'y_log_mode': session.field_settings.graph_field.y_log_mode,
-            'x_auto_range': session.field_settings.graph_field.x_auto_range,
-            'y_auto_range': session.field_settings.graph_field.y_auto_range,
-            'x_range': session.field_settings.graph_field.x_range,
-            'y_range': session.field_settings.graph_field.y_range,
-            'legend_enabled': session.field_settings.graph_field.legend_enabled,
-            'legend_position': session.field_settings.graph_field.legend_position,
-            'antialiasing': session.field_settings.graph_field.antialiasing,
-            'mouse_enabled': session.field_settings.graph_field.mouse_enabled,
-            'menu_enabled': session.field_settings.graph_field.menu_enabled
-        }
-        for key, value in graph_field_attrs.items():
-            if value is None:#Костыыыыыыыль поправить потом
-                value = ''
-            try:
-                graph_field_group.attrs[key] = value
-            except Exception as e:
-                pass
+        graph_field_attrs = settings_to_dict(session.field_settings.graph_field)
+        save_dict_to_hdf5_with_subgroups(graph_field_group, graph_field_attrs)
         
         # Настройки поля осциллограмм (аналогично)
         if 'oscilloscope_field' not in field_settings_group:
             field_settings_group.create_group('oscilloscope_field')
         oscilloscope_field_group = field_settings_group['oscilloscope_field']
         
-        oscilloscope_field_attrs = {
-            'name': session.field_settings.graph_field.name,  # Наследуется от родителя
-            'description': session.field_settings.graph_field.description,  # Наследуется от родителя
-            'title': session.field_settings.graph_field.title,
-            'background_color': session.field_settings.graph_field.background_color,
-            'foreground_color': session.field_settings.graph_field.foreground_color,
-            'grid_enabled': session.field_settings.graph_field.grid_enabled,
-            'grid_color': session.field_settings.graph_field.grid_color,
-            'grid_alpha': session.field_settings.graph_field.grid_alpha,
-            'x_label': session.field_settings.graph_field.x_label,
-            'y_label': session.field_settings.graph_field.y_label,
-            'x_log_mode': session.field_settings.graph_field.x_log_mode,
-            'y_log_mode': session.field_settings.graph_field.y_log_mode,
-            'x_auto_range': session.field_settings.graph_field.x_auto_range,
-            'y_auto_range': session.field_settings.graph_field.y_auto_range,
-            'x_range': session.field_settings.graph_field.x_range,
-            'y_range': session.field_settings.graph_field.y_range,
-            'legend_enabled': session.field_settings.graph_field.legend_enabled,
-            'legend_position': session.field_settings.graph_field.legend_position,
-            'antialiasing': session.field_settings.graph_field.antialiasing,
-            'mouse_enabled': session.field_settings.graph_field.mouse_enabled,
-            'menu_enabled': session.field_settings.graph_field.menu_enabled
-        }
-        for key, value in oscilloscope_field_attrs.items():
-            if value is None:#Костыыыыыыыль поправить потом
-                value = ''
-            try:
-                oscilloscope_field_group.attrs[key] = value
-            except Exception as e:
-                pass
+        oscilloscope_field_attrs = settings_to_dict(session.field_settings.oscilloscope_field)
+
+        save_dict_to_hdf5_with_subgroups(oscilloscope_field_group, oscilloscope_field_attrs)
         
         # Записываем менеджер данных
         if 'data_manager' not in self._hdf5_object:
@@ -183,63 +140,7 @@ class HDF5Session(BaseHDF5Entity):
             parameters.comment = params_group.attrs.get('comment', '')
         
         # Читаем настройки полей
-        field_settings = FieldSettings()
-        if 'field_settings' in self._hdf5_object:
-            field_settings_group = self._hdf5_object['field_settings']
-            
-            # Читаем настройки поля графиков
-            if 'graph_field' in field_settings_group:
-                graph_field_group = field_settings_group['graph_field']
-                graph_field = GraphFieldSettings()
-                graph_field.name = graph_field_group.attrs.get('name', '')
-                graph_field.description = graph_field_group.attrs.get('description', '')
-                graph_field.title = graph_field_group.attrs.get('title', '')
-                graph_field.background_color = graph_field_group.attrs.get('background_color', '#FFFFFF')
-                graph_field.foreground_color = graph_field_group.attrs.get('foreground_color', '#000000')
-                graph_field.grid_enabled = bool(graph_field_group.attrs.get('grid_enabled', True))
-                graph_field.grid_color = graph_field_group.attrs.get('grid_color', '#CCCCCC')
-                graph_field.grid_alpha = float(graph_field_group.attrs.get('grid_alpha', 0.5))
-                graph_field.x_label = graph_field_group.attrs.get('x_label', 'X Axis')
-                graph_field.y_label = graph_field_group.attrs.get('y_label', 'Y Axis')
-                graph_field.x_log_mode = bool(graph_field_group.attrs.get('x_log_mode', False))
-                graph_field.y_log_mode = bool(graph_field_group.attrs.get('y_log_mode', False))
-                graph_field.x_auto_range = bool(graph_field_group.attrs.get('x_auto_range', True))
-                graph_field.y_auto_range = bool(graph_field_group.attrs.get('y_auto_range', True))
-                graph_field.x_range = graph_field_group.attrs.get('x_range', None)
-                graph_field.y_range = graph_field_group.attrs.get('y_range', None)
-                graph_field.legend_enabled = bool(graph_field_group.attrs.get('legend_enabled', True))
-                graph_field.legend_position = graph_field_group.attrs.get('legend_position', 'top right')
-                graph_field.antialiasing = bool(graph_field_group.attrs.get('antialiasing', True))
-                graph_field.mouse_enabled = bool(graph_field_group.attrs.get('mouse_enabled', True))
-                graph_field.menu_enabled = bool(graph_field_group.attrs.get('menu_enabled', True))
-                field_settings.graph_field = graph_field
-            
-            # Читаем настройки поля осциллограмм
-            if 'oscilloscope_field' in field_settings_group:
-                oscilloscope_field_group = field_settings_group['oscilloscope_field']
-                oscilloscope_field = OscilloscopeFieldSettings()
-                oscilloscope_field.name = oscilloscope_field_group.attrs.get('name', '')
-                oscilloscope_field.description = oscilloscope_field_group.attrs.get('description', '')
-                oscilloscope_field.title = oscilloscope_field_group.attrs.get('title', '')
-                oscilloscope_field.background_color = oscilloscope_field_group.attrs.get('background_color', '#FFFFFF')
-                oscilloscope_field.foreground_color = oscilloscope_field_group.attrs.get('foreground_color', '#000000')
-                oscilloscope_field.grid_enabled = bool(oscilloscope_field_group.attrs.get('grid_enabled', True))
-                oscilloscope_field.grid_color = oscilloscope_field_group.attrs.get('grid_color', '#CCCCCC')
-                oscilloscope_field.grid_alpha = float(oscilloscope_field_group.attrs.get('grid_alpha', 0.5))
-                oscilloscope_field.x_label = oscilloscope_field_group.attrs.get('x_label', 'X Axis')
-                oscilloscope_field.y_label = oscilloscope_field_group.attrs.get('y_label', 'Y Axis')
-                oscilloscope_field.x_log_mode = bool(oscilloscope_field_group.attrs.get('x_log_mode', False))
-                oscilloscope_field.y_log_mode = bool(oscilloscope_field_group.attrs.get('y_log_mode', False))
-                oscilloscope_field.x_auto_range = bool(oscilloscope_field_group.attrs.get('x_auto_range', True))
-                oscilloscope_field.y_auto_range = bool(oscilloscope_field_group.attrs.get('y_auto_range', True))
-                oscilloscope_field.x_range = oscilloscope_field_group.attrs.get('x_range', None)
-                oscilloscope_field.y_range = oscilloscope_field_group.attrs.get('y_range', None)
-                oscilloscope_field.legend_enabled = bool(oscilloscope_field_group.attrs.get('legend_enabled', True))
-                oscilloscope_field.legend_position = oscilloscope_field_group.attrs.get('legend_position', 'top right')
-                oscilloscope_field.antialiasing = bool(oscilloscope_field_group.attrs.get('antialiasing', True))
-                oscilloscope_field.mouse_enabled = bool(oscilloscope_field_group.attrs.get('mouse_enabled', True))
-                oscilloscope_field.menu_enabled = bool(oscilloscope_field_group.attrs.get('menu_enabled', True))
-                field_settings.oscilloscope_field = oscilloscope_field
+        field_settings = self.read_field_settings()
         
         # Читаем менеджер данных
         data_manager = DataManager()
@@ -298,3 +199,49 @@ class HDF5Session(BaseHDF5Entity):
         )
         
         return session
+    
+    def read_field_settings(self) -> FieldSettings:
+        field_settings = FieldSettings()
+        if 'field_settings' in self._hdf5_object:
+            field_settings_group = self._hdf5_object['field_settings']
+            
+            # Читаем настройки поля графиков (новая версия)
+            if 'graph_field' in field_settings_group:
+                graph_field_group = field_settings_group['graph_field']
+                
+                # Загружаем данные из HDF5 группы в словарь
+                graph_field_data = load_dict_from_hdf5_group(graph_field_group)
+                print_nested(graph_field_data)
+                # Преобразуем словарь в объект GraphFieldSettings
+                graph_field_settings = dict_to_graph_field_settings(graph_field_data)
+                field_settings.graph_field = graph_field_settings
+            
+            # Читаем настройки поля осциллограмм (старая версия - оставляем как есть)
+            if 'oscilloscope_field' in field_settings_group:
+                oscilloscope_field_group = field_settings_group['oscilloscope_field']
+                oscilloscope_field = OscilloscopeFieldSettings()
+                oscilloscope_field.name = oscilloscope_field_group.attrs.get('name', '')
+                oscilloscope_field.description = oscilloscope_field_group.attrs.get('description', '')
+                oscilloscope_field.title = oscilloscope_field_group.attrs.get('title', '')
+                oscilloscope_field.background_color = oscilloscope_field_group.attrs.get('background_color', '#FFFFFF')
+                oscilloscope_field.foreground_color = oscilloscope_field_group.attrs.get('foreground_color', '#000000')
+                oscilloscope_field.grid_enabled = bool(oscilloscope_field_group.attrs.get('grid_enabled', True))
+                oscilloscope_field.grid_color = oscilloscope_field_group.attrs.get('grid_color', '#CCCCCC')
+                oscilloscope_field.grid_alpha = float(oscilloscope_field_group.attrs.get('grid_alpha', 0.5))
+                oscilloscope_field.x_label = oscilloscope_field_group.attrs.get('x_label', 'X Axis')
+                oscilloscope_field.y_label = oscilloscope_field_group.attrs.get('y_label', 'Y Axis')
+                oscilloscope_field.x_log_mode = bool(oscilloscope_field_group.attrs.get('x_log_mode', False))
+                oscilloscope_field.y_log_mode = bool(oscilloscope_field_group.attrs.get('y_log_mode', False))
+                oscilloscope_field.x_auto_range = bool(oscilloscope_field_group.attrs.get('x_auto_range', True))
+                oscilloscope_field.y_auto_range = bool(oscilloscope_field_group.attrs.get('y_auto_range', True))
+                
+                x_range = oscilloscope_field_group.attrs.get('x_range', None)
+                y_range = oscilloscope_field_group.attrs.get('y_range', None)
+                oscilloscope_field.x_range = tuple(x_range) if x_range is not None else None
+                oscilloscope_field.y_range = tuple(y_range) if y_range is not None else None
+                
+                oscilloscope_field.legend_enabled = bool(oscilloscope_field_group.attrs.get('legend_enabled', True))
+                oscilloscope_field.antialiasing = bool(oscilloscope_field_group.attrs.get('antialiasing', True))
+                field_settings.oscilloscope_field = oscilloscope_field
+        
+        return field_settings

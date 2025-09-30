@@ -16,13 +16,13 @@ class BaseModel:
 
 @dataclass
 class GraphStyle(BaseModel):
-    color: str = "#ffffff"
-    line_style: QtCore.Qt.PenStyle = QtCore.Qt.SolidLine
-    line_width: int = 1
-    symbol: Optional[str] = None
-    symbol_size: int = 1
-    symbol_color: str = "#ffffff"
-    fill_color: str = "#ffffff"
+	color: str = "#ffffff"
+	line_style: QtCore.Qt.PenStyle = QtCore.Qt.SolidLine
+	line_width: int = 1
+	symbol: Optional[str] = None
+	symbol_size: int = 1
+	symbol_color: str = "#ffffff"
+	fill_color: str = "#ffffff"
 
 @dataclass
 class Statistics(BaseModel):
@@ -121,73 +121,123 @@ class Plot(BaseModel):
 
 #------------------------------------------------------------------------------------------
 
-
-
 # Модели для настроек полей
+
 @dataclass
-class GraphFieldSettings(BaseModel):
+class AxisStyle:
+	"""Стиль оси (сериализуемый в HDF5)"""
+	text_font: str = "Arial,13,-1,5,50,0,0,0,0,0"  # сериализованный QFont
+	tick_font: str = "Arial,10,-1,5,50,0,0,0,0,0"  # сериализованный QFont
+	color: str = "#000000"
+	
+	@classmethod
+	def from_qfont_color(cls, text_font: Any, tick_font: Any, color: Any) -> 'AxisStyle':
+		"""Создание из QFont и QColor объектов"""
+		def font_to_string(font: Any) -> str:
+			return font.toString() if hasattr(font, 'toString') else str(font)
+		
+		def color_to_string(color: Any) -> str:
+			if hasattr(color, 'name'):
+				return color.name()
+			elif isinstance(color, tuple):
+				return f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
+			return str(color)
+		
+		return cls(
+			text_font=font_to_string(text_font),
+			tick_font=font_to_string(tick_font),
+			color=color_to_string(color)
+		)
+
+@dataclass
+class AxisSettings:
+	"""Настройки отдельной оси"""
+	label: str = ""
+	is_style_customized: bool = False  # True - кастомный стиль, False - общий стиль
+	is_inverted: bool = False
+	is_visible: bool = True
+	log_mode: bool = False
+	auto_range: bool = True
+	range: Optional[Tuple[float, float]] = None
+	custom_style: AxisStyle = field(default_factory=AxisStyle)
+	# Флаг для отслеживания, какой стиль сейчас применен (только для runtime, не сериализуется)
+	current_style_type: str = field(default="common", init=False)  # "common" или "custom"
+
+@dataclass
+class GraphFieldSettings:
+	"""Комплексные настройки графика (сериализуемые в HDF5)"""
+	
 	# Основные настройки графика
 	title: str = ""
 	background_color: str = "#FFFFFF"
-	foreground_color: str = "#000000"
 	grid_enabled: bool = True
 	grid_color: str = "#CCCCCC"
 	grid_alpha: float = 0.5
 	
-	# Настройки осей
-	x_label: str = "X Axis"
-	y_label: str = "Y Axis"
-	x_log_mode: bool = False
-	y_log_mode: bool = False
-	x_auto_range: bool = True
-	y_auto_range: bool = True
-	x_range: Optional[Tuple[float, float]] = None
-	y_range: Optional[Tuple[float, float]] = None
+	# Общий стиль осей (применяется если не переопределен для конкретной оси)
+	common_axis_style: AxisStyle = field(default_factory=AxisStyle)
+	
+	# Настройки отдельных осей
+	axes: Dict[str, AxisSettings] = field(default_factory=dict)
 	
 	# Настройки легенды
 	legend_enabled: bool = True
-	legend_position: str = "top right"  # или "top left", "bottom right", "bottom left"
+	legend_text_color: str = "#000000"
+	legend_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
 	
 	# Дополнительные настройки
 	antialiasing: bool = True
-	mouse_enabled: bool = True
-	menu_enabled: bool = True
+	is_second_axis_enabled: bool = False
+	is_multiple_selection_enabled: bool = False
+	
+	def __post_init__(self):
+		"""Инициализация осей по умолчанию"""
+		if not self.axes:
+			self.axes = {
+				"left": AxisSettings(label="Y"),
+				"bottom": AxisSettings(label="X"), 
+				"right": AxisSettings(label="Y2", is_visible=False)
+			}
 
 @dataclass
 class OscilloscopeFieldSettings(BaseModel):
+	"""Комплексные настройки графика (сериализуемые в HDF5)"""
+	
 	# Основные настройки графика
 	title: str = ""
 	background_color: str = "#FFFFFF"
-	foreground_color: str = "#000000"
 	grid_enabled: bool = True
 	grid_color: str = "#CCCCCC"
 	grid_alpha: float = 0.5
 	
-	# Настройки осей
-	x_label: str = "X Axis"
-	y_label: str = "Y Axis"
-	x_log_mode: bool = False
-	y_log_mode: bool = False
-	x_auto_range: bool = True
-	y_auto_range: bool = True
-	x_range: Optional[Tuple[float, float]] = None
-	y_range: Optional[Tuple[float, float]] = None
+	# Общий стиль осей (применяется если не переопределен для конкретной оси)
+	common_axis_style: AxisStyle = field(default_factory=AxisStyle)
+	
+	# Настройки отдельных осей
+	axes: Dict[str, AxisSettings] = field(default_factory=dict)
 	
 	# Настройки легенды
 	legend_enabled: bool = True
-	legend_position: str = "top right"  # или "top left", "bottom right", "bottom left"
+	#legend_position: str = "top right"
+	legend_text_color: str = "#000000"
+	legend_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
 	
 	# Дополнительные настройки
 	antialiasing: bool = True
-	mouse_enabled: bool = True
-	menu_enabled: bool = True
+	
+	def __post_init__(self):
+		"""Инициализация осей по умолчанию"""
+		if not self.axes:
+			self.axes = {
+				"left": AxisSettings(label="Y"),
+				"bottom": AxisSettings(label="X"), 
+				"right": AxisSettings(label="Y2", is_visible=False)
+			}
 
 @dataclass
 class FieldSettings(BaseModel):
 	graph_field: GraphFieldSettings = field(default_factory=GraphFieldSettings)
 	oscilloscope_field: OscilloscopeFieldSettings = field(default_factory=OscilloscopeFieldSettings)
-	is_second_axis_enabled: bool = False
-	is_multiple_selection_enabled: bool = False
 
 # Модели для данных
 @dataclass
@@ -219,7 +269,6 @@ class SessionParameters(BaseModel):
 	experiment_date: Optional[datetime] = None
 	operator: str = ""
 	comment: str = ""
-	# Добавьте другие необходимые параметры
 
 @dataclass
 class Session(BaseModel):

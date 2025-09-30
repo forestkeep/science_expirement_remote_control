@@ -5,7 +5,7 @@ import numpy as np
 
 from .models import ProjectFile, Session, SessionParameters, FieldSettings, DataManager, GraphFieldSettings, OscilloscopeFieldSettings
 from .models import Plot, OscillogramData, ParameterData, GraphStyle, Statistics, HistoryEntry, CurveTreeItemData, LegendNameData, GraphData, LinearData
-from .utils import extract_plot_widget_settings
+from .utils import extract_plot_widget_settings, string_to_qfont, string_to_color
 import pyqtgraph as pg
 import logging
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -22,6 +22,8 @@ from .models import (
 )
 from ..dataManager import graphDataManager, relationData, measTimeData
 from ..curve_data import linearData, LineStyle
+from ..customPlotWidget import PatchedPlotWidget, axisController, axisSettings, axisStyle
+
 
 logger = logging.getLogger(__name__)
 
@@ -81,10 +83,10 @@ class ProjectToHDF5Adapter:
 		is_multiple_selection_enabled = core_session.select_win.check_miltiple.isChecked()
 		
 		field_settings = FieldSettings(name="test")
-		field_settings.graph_field = GraphFieldSettings(**graph_settings)
-		field_settings.oscilloscope_field = OscilloscopeFieldSettings(**oscilloscope_settings)
-		field_settings.is_second_axis_enabled = is_second_axis_enabled
-		field_settings.is_multiple_selection_enabled = is_multiple_selection_enabled
+		field_settings.graph_field = graph_settings
+		field_settings.oscilloscope_field =oscilloscope_settings
+		field_settings.graph_field.is_second_axis_enabled = is_second_axis_enabled
+		field_settings.graph_field.is_multiple_selection_enabled = is_multiple_selection_enabled
 		
 		#=============================================
 		# Преобразуем графики
@@ -249,6 +251,9 @@ class HDF5ToProjectAdapter:
 		self._convert_data_manager(core_manager, session.data_manager)
 		core_manager.stop_session_running()
 
+		core_session.graph_sessions[session_id].select_win.set_second_check_box(state = session.field_settings.graph_field.is_second_axis_enabled)
+		core_session.graph_sessions[session_id].select_win.set_multiple_mode(state = session.field_settings.graph_field.is_multiple_selection_enabled)
+
 		selection_x_param = None
 		selection_y_first_params = []
 		selection_y_second_params = []
@@ -276,112 +281,95 @@ class HDF5ToProjectAdapter:
 			else:
 				curve_obj.delete_curve_from_graph()
 
-			core_session.graph_sessions[session_id].select_controller.set_selections(x_param = selection_x_param, y_first_params = selection_y_first_params, y_second_params = selection_y_second_params)
+		core_session.graph_sessions[session_id].select_controller.set_selections(x_param = selection_x_param, y_first_params = selection_y_first_params, y_second_params = selection_y_second_params)
+		
+		graphView = core_session.graph_sessions[session_id].graph_main.graphView
 
+		self.apply_graph_settings(graphView, session.field_settings)
+
+	def apply_graph_settings(self, graph_widget: PatchedPlotWidget, settings: FieldSettings) -> None:
+		"""
+		Применяет настройки к графику.
+		
+		Args:
+			graph_widget: Объект графика PatchedPlotWidget
+			settings: Настройки графика FieldSettings
+		"""
+		graph_settings = settings.graph_field
+		
+		# Основные настройки графика
+		graph_widget.setTitle(graph_settings.title)
+		graph_widget.setCustomBackgroundColor(color = QtGui.QColor(graph_settings.background_color))
+		
+		# Сетка
+		graph_widget.toggleGrid(graph_settings.grid_enabled)
+		if hasattr(graph_widget, 'set_grid_color'):
+			graph_widget.set_grid_color(graph_settings.grid_color)
+		
+		# Общий стиль осей
+		common_style = axisStyle(
+			text_font=string_to_qfont(graph_settings.common_axis_style.text_font),
 			
-	def print_information(self, session: Session):
-		print("=" * 80)
-		print("ИНФОРМАЦИЯ О СЕССИИ")
-		print("=" * 80)
+			tick_font=string_to_qfont(graph_settings.common_axis_style.tick_font),
+			color=string_to_color(graph_settings.common_axis_style.color)
+		)
+		graph_widget.common_style = common_style
 		
-		# Основная информация о сессии
-		print(f"Название: {session.name}")
-		print(f"Описание: {session.description}")
-		print()
+		# Настройки отдельных осей
+		for axis_name, axis_settings in graph_settings.axes.items():
+			if axis_name in graph_widget.axises:
+				axis_controller = graph_widget.axises[axis_name]
+				
+				# Базовые настройки
+				axis_controller.settings.label = axis_settings.label
+				axis_controller.settings.is_visible = axis_settings.is_visible
+				axis_controller.settings.is_inverted = axis_settings.is_inverted
+				
+				# Видимость оси
+				if axis_settings.is_visible:
+					axis_controller.show()
+				else:
+					axis_controller.hide()
+				
+				# Инвертирование
+				if axis_name == 'bottom':
+					graph_widget.invert_x_axis(axis_settings.is_inverted)
+				elif axis_name in ['left', 'right']:
+					if axis_name == 'left':
+						graph_widget.invert_y_axis(axis_settings.is_inverted)
+					else:
+						graph_widget.invert_y2_axis(axis_settings.is_inverted)
+				
+				# Стиль оси
+				custom_style = axisStyle(
+						text_font=string_to_qfont(axis_settings.custom_style.text_font),
+						tick_font=string_to_qfont(axis_settings.custom_style.tick_font),
+						color=string_to_color(axis_settings.custom_style.color)
+					)
+				if axis_settings.is_style_customized:
+					axis_controller.set_custom_style(custom_style)
+				else:
+					axis_controller.set_common_style(common_style)
+				
+				# Логарифмический режим и диапазон
+				if hasattr(axis_controller, 'setLogMode'):
+					axis_controller.setLogMode(axis_settings.log_mode)
+				
+				if not axis_settings.auto_range and axis_settings.range:
+					axis_controller.setRange(*axis_settings.range)
 		
-		# Параметры сессии
-		print("ПАРАМЕТРЫ СЕССИИ:")
-		print(f"  Название: {session.parameters.name}")
-		print(f"  Описание: {session.parameters.description}")
-		if session.parameters.experiment_date:
-			print(f"  Дата эксперимента: {session.parameters.experiment_date}")
-		print(f"  Оператор: {session.parameters.operator}")
-		print(f"  Комментарий: {session.parameters.comment}")
-		print()
-		
-		# Настройки полей
-		print("НАСТРОЙКИ ПОЛЕЙ:")
-		
-		# Настройки поля графиков
-		print("  Графическое поле:")
-		gf = session.field_settings.graph_field
-		print(f"    Заголовок: {gf.title}")
-		print(f"    Фон: {gf.background_color}, Передний план: {gf.foreground_color}")
-		print(f"    Сетка: {'вкл' if gf.grid_enabled else 'выкл'} ({gf.grid_color}, alpha: {gf.grid_alpha})")
-		print(f"    Оси: X={gf.x_label}, Y={gf.y_label}")
-		print(f"    Логарифмические оси: X={gf.x_log_mode}, Y={gf.y_log_mode}")
-		print(f"    Автодиапазон: X={gf.x_auto_range}, Y={gf.y_auto_range}")
-		print(f"    Диапазон: X={gf.x_range}, Y={gf.y_range}")
-		print(f"    Легенда: {'вкл' if gf.legend_enabled else 'выкл'}, позиция: {gf.legend_position}")
-		print(f"    Сглаживание: {gf.antialiasing}, Мышь: {gf.mouse_enabled}, Меню: {gf.menu_enabled}")
-		
-		# Настройки поля осциллограмм
-		print("  Поле осциллограмм:")
-		of = session.field_settings.oscilloscope_field
-		print(f"    Заголовок: {of.title}")
-		print(f"    Фон: {of.background_color}, Передний план: {of.foreground_color}")
-		print(f"    Сетка: {'вкл' if of.grid_enabled else 'выкл'} ({of.grid_color}, alpha: {of.grid_alpha})")
-		print(f"    Оси: X={of.x_label}, Y={of.y_label}")
-		print(f"    Логарифмические оси: X={of.x_log_mode}, Y={of.y_log_mode}")
-		print(f"    Автодиапазон: X={of.x_auto_range}, Y={of.y_auto_range}")
-		print(f"    Диапазон: X={of.x_range}, Y={of.y_range}")
-		print(f"    Легенда: {'вкл' if of.legend_enabled else 'выкл'}, позиция: {of.legend_position}")
-		print(f"    Сглаживание: {of.antialiasing}, Мышь: {of.mouse_enabled}, Меню: {of.menu_enabled}")
-		print()
-		
-		# Менеджер данных
-		print("ДАННЫЕ:")
-		dm = session.data_manager
-		print(f"  Осциллограммы: {len(dm.oscillogram_data)} записей")
-		for name, data in dm.oscillogram_data.items():
-			print(f"    {name}: устройство={data.device}, канал={data.channel}, "
-				f"параметр={data.parameter}, точек={len(data.time_values)}")
-		
-		print(f"  Параметры: {len(dm.parameter_data)} записей")
-		for name, data in dm.parameter_data.items():
-			print(f"    {name}: устройство={data.device}, канал={data.channel}, "
-				f"параметр={data.parameter}, точек={len(data.time_values)}")
-		print()
-		
-		# Графики
-		print("ГРАФИКИ:")
-		print(f"  Всего графиков: {len(session.plots)}")
-		
-		for name, plot in session.plots.items():
-			print(f"  График '{name}':")
-			print(f"    Статус: {plot.status}")
-			print(f"    Отображается: {'да' if plot.is_draw else 'нет'}")
-			print(f"    Подсвечен: {'да' if plot.is_curve_selected else 'нет'}")
+		# Легенда
+		if hasattr(graph_widget, 'legend'):
+			graph_widget.legend.setVisible(graph_settings.legend_enabled)
+			graph_widget.legend2.setVisible(graph_settings.legend_enabled)
 			
-			# Информация о стиле
-			print(f"    Стиль: цвет={plot.style.color}, ширина={plot.style.line_width}, "
-				f"тип линии={plot.style.line_style}")
-			
-			# Информация о данных
-			ld = plot.linear_data
-			print(f"    Данные: устройство={ld.device}, канал={ld.channel}, "
-				f"кривая={ld.curve_name}, точек={len(ld.raw_data_x)}")
-			print(f"    Фильтрованные данные: точек={len(ld.filtered_x_data)}")
-			
-			# Информация о статистике
-			stats = plot.statistics
-			print(f"    Статистика: среднее={stats.mean:.4f}, медиана={stats.median:.4f}, "
-				f"стандартное отклонение={stats.std_dev:.4f}")
-			print(f"               минимум X={stats.min_x:.4f}, максимум X={stats.max_x:.4f}")
-			print(f"               минимум Y={stats.min_y:.4f}, максимум Y={stats.max_y:.4f}")
-			
-			# История изменений
-			print(f"    История: {len(plot.history)} записей")
-			for i, entry in enumerate(plot.history[:3]):  # Показываем только первые 3 записи
-				print(f"      {i+1}. {entry.timestamp}: {entry.action}")
-			if len(plot.history) > 3:
-				print(f"      ... и еще {len(plot.history) - 3} записей")
-			
-			print()
+			# Цвет текста легенды
+			if hasattr(graph_widget, 'set_legend_color'):
+				graph_widget.set_legend_color(graph_settings.legend_text_color)
 		
-		print("=" * 80)
-		print("КОНЕЦ ИНФОРМАЦИИ О СЕССИИ")
-		print("=" * 80)
+		# Антиалиасинг
+		graph_widget.setAntialiasing(graph_settings.antialiasing)
+
 
 	def prepare_data_dict(self, data_items):
 			# Создаем словари для каждого уровня вложенности
@@ -497,11 +485,11 @@ class HDF5ToProjectAdapter:
 	def transform_line_style(self, style: GraphStyle) -> LineStyle:
 		# Создаем перо
 		styles = {
-            "Solid": QtCore.Qt.SolidLine,
-            "Dash": QtCore.Qt.DashLine,
-            "Dot": QtCore.Qt.DotLine,
-            "DashDot": QtCore.Qt.DashDotLine
-        }
+			"Solid": QtCore.Qt.SolidLine,
+			"Dash": QtCore.Qt.DashLine,
+			"Dot": QtCore.Qt.DotLine,
+			"DashDot": QtCore.Qt.DashDotLine
+		}
 
 		return LineStyle(
 			color=style.color,

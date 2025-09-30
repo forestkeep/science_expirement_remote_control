@@ -26,6 +26,7 @@ from graph.dataManager import measTimeData
 from graph.dataManager import relationData
 from graph.toolBarWidget import tool_bar_widget
 from graph.custom_inf_line import RemovableInfiniteLine
+from graph.customPlotWidget import PatchedPlotWidget
 
 logger = logging.getLogger(__name__)
 
@@ -233,7 +234,7 @@ class graphOsc:
         self.clear_highlight_loop()
 
     def setupGraphView(self):
-        graphView = pg.PlotWidget(title="")
+        graphView = PatchedPlotWidget(title="")
 
         graphView.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 

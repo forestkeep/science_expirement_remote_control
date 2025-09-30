@@ -45,7 +45,7 @@ class customQListWidget(QListWidget):
         for index in range(self.count()):
             if self.item(index):
                 if self.item(index).text() == text:
-                    logger.debug(f"manage_selection {text} {checked}")
+                    logger.info(f"manage_selection {text} {checked}")
                     self.setCurrentItem(self.item(index))
                     self.item(index).setSelected(checked)
                     self.itemClicked.emit(self.item(index))#программно вызываем соответсвующую логику событий, будто кликнули на элемент
@@ -146,10 +146,18 @@ class paramSelector(QWidget):
             self.y_first_param_selector.clearSelection()
     
     def second_check_box_changed(self):
+        logger.info(f"second_check_box_changed {self.second_check_box.isChecked()}")
         if self.second_check_box.isChecked():
             self.y_second_param_hover.setVisible(True)
         else:
             self.y_second_param_hover.setVisible(False)
+
+    def set_second_check_box(self, state: bool):
+        logger.info(f"set_second_check_box {state}")
+        self.second_check_box.setChecked(state)
+
+    def set_multiple_mode(self, state: bool):
+        self.check_miltiple.setChecked(state)
 
 class paramController( QObject):
     parameters_updated = pyqtSignal(str, list, list)
@@ -189,14 +197,14 @@ class paramController( QObject):
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
     def y_first_param_changed(self):
-        logger.debug(f"y_first_param_changed {self.curent_y_first_parameters=} {self.previous_y_first_parameter=}")
+        logger.info(f"y_first_param_changed {self.curent_y_first_parameters=} {self.previous_y_first_parameter=}")
 
         self.manage_y_selectors(selector = self.paramSelector.y_first_param_selector,
                                 current_parameters = self.curent_y_first_parameters,
                                 opposite_selector = self.paramSelector.y_second_param_selector,
                                 previous_parameter = self.previous_y_first_parameter)
         
-        logger.debug(f"y_first_param_changed update current parameters {self.curent_y_first_parameters=}")
+        logger.info(f"y_first_param_changed update current parameters {self.curent_y_first_parameters=}")
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
 

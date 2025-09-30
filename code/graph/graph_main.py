@@ -14,9 +14,10 @@ from datetime import datetime
 
 import pyqtgraph as pg
 import logging
+import numpy as np
 from PyQt5.QtCore import QObject, Qt, pyqtSignal, QCoreApplication
 from PyQt5.QtGui import QFont, QFontMetrics, QIcon, QColor
-from PyQt5.QtWidgets import QApplication, QHBoxLayout, QSizePolicy, QSpacerItem, QVBoxLayout, QComboBox, QLineEdit, QMenu, QAction, QColorDialog
+from PyQt5.QtWidgets import QApplication, QHBoxLayout, QSizePolicy, QSpacerItem, QVBoxLayout, QComboBox, QLineEdit, QMenu, QAction, QColorDialog, QPushButton, QWidget
 from PyQt5 import QtWidgets, QtGui, QtCore
 from graph.colors import GColors
 from graph.curve_data import linearData, LineStyle
@@ -75,6 +76,8 @@ class manageGraph(QObject):
 
         self.stack_curve = {}
 
+        self.inf_lines = []
+
         self.colors_class = GColors()
         self.color_warm_gen = self.colors_class.get_random_warm_color()
         self.color_cold_gen = self.colors_class.get_random_cold_color()
@@ -91,7 +94,7 @@ class manageGraph(QObject):
         self.tab1Layout = QVBoxLayout()
         # Add all data source selectors and graph area to tab1Layout
         
-        self.graphView = self.setupGraphView()
+        self.graphView = PatchedPlotWidget()
         #self.graphView.setAntialiasing(False)
         self.graphView.scene().sigMouseClicked.connect(self.click_scene_main_graph)
 
@@ -105,10 +108,7 @@ class manageGraph(QObject):
             size=20,
             symbol="star",
             pen="#F4511E",
-            label="vert={1:0.2f}",
-            labelOpts={
-                "offset": QPoint(15, 15)
-            }
+            label="vert={1:0.2f}"
         )
         self.targetItem2.label().setAngle(45)
         
@@ -140,15 +140,27 @@ class manageGraph(QObject):
         )
 
         self.axislabel_line_edit.setParent(self.graphView)
-        
-        self.selector = QSpacerItem(15, 15, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
-        data_name_layout = QHBoxLayout()
-        data_name_layout.addItem(self.selector)
-        # Add the layouts to the first tab
-        self.tab1Layout.addLayout(data_name_layout)
+            # Создаем слой с кнопками
+        self.buttons_layout = QHBoxLayout()
+        
+        # Кнопка для добавления вертикальной линии
+        self.add_vertical_line_btn = QPushButton("Добавить вертикальную линию")
+        self.add_vertical_line_btn.clicked.connect(self.graphView.add_vertical_line)
+        self.buttons_layout.addWidget(self.add_vertical_line_btn)
+        
+        # Кнопка для добавления горизонтальной линии
+        self.add_horizontal_line_btn = QPushButton("Добавить горизонтальную линию")
+        self.add_horizontal_line_btn.clicked.connect(self.graphView.add_horizontal_line)
+        self.buttons_layout.addWidget(self.add_horizontal_line_btn)
+        
+        # Создаем виджет для кнопок
+        self.buttons_widget = QWidget()
+        self.buttons_widget.setLayout(self.buttons_layout)
+        
         self.tab1Layout.addWidget( self.select_win )
         self.tab1Layout.addWidget(self.graphView)
+        self.tab1Layout.addWidget(self.buttons_widget)
         self.page.setLayout(self.tab1Layout)
 
         self.page.subscribe_to_key_press(key = Qt.Key_Delete, callback = self.delete_key_press)
@@ -159,10 +171,6 @@ class manageGraph(QObject):
         self.retranslateUi(self.page)
     def set_second_axis(self, state: bool):
         self.graphView.set_second_axis(state)
-
-    def setupGraphView(self):
-        graphView = PatchedPlotWidget(title="test graph")
-        return graphView
 
     def set_default(self):
         self.x = []

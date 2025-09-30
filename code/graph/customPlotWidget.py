@@ -4,6 +4,7 @@ from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSignal
 from dataclasses import dataclass
 from pyqtgraph import AxisItem
+from graph.custom_inf_line import RemovableInfiniteLine
 
 @dataclass
 class axisStyle:
@@ -29,19 +30,16 @@ class axisController():
         self.__apply_style()
 
     def __getattr__(self, name):
-        # Перенаправляем запросы к self.axis, если атрибут не найден в axisController
         return getattr(self.axis, name)
 
     def set_custom_style(self, style: axisStyle ):
         self.custom_style = style
         self.settings.is_style_customized = True
-        print(f"кастом {self.custom_style}")
         self.__apply_style()
 
     def set_common_style(self, style: axisStyle ):
         self.common_style = style
         self.settings.is_style_customized = False
-        print(f"общ {self.common_style}")
         self.__apply_style()
 
     def __apply_style(self):
@@ -65,17 +63,22 @@ class PatchedPlotWidget(pg.PlotWidget):
         super().__init__(*args, **kwargs)
         self.setupCustomMenu()
         
-        # Инициализация атрибутов для второй оси и легенды
         self.is_second_axis = False
+
+        self.inf_lines = []
+
         self.legend = pg.LegendItem(size=(80, 60), offset=(10, 10))
         self.legend2 = pg.LegendItem(size=(80, 60), offset=(50, 10))
         self.tooltip = pg.TextItem("X:0,Y:0", color=(255, 255, 255), anchor=(0, 0))
         
-        # Настройка графика
         self.setAntialiasing(False)
         self.scene().sigMouseMoved.connect(self.showToolTip)
+
+        self.is_grid_shown = False
+        self.legend_color = QtGui.QColor(255, 255, 255)
+
+        self.background_color = QtGui.QColor(255, 255, 255)
         
-        # Настройка второй оси
         self.plots_lay = self.plotItem
         self.second_graphView = pg.ViewBox(
             border=None,
@@ -107,12 +110,19 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.second_graphView.setXLink(self.plots_lay)
         self.plots_lay.vb.sigResized.connect(self.updateViews)
         
-        # Добавление легенд и подсказки
         self.legend.setParentItem(self.plots_lay)
         self.legend2.setParentItem(self.second_graphView)
         self.tooltip.setParentItem(self.plots_lay)
         
         self.set_second_axis(False)
+
+    def add_inf_line(self, line):
+        self.inf_lines.append(line)
+        self.addItem(line)
+
+    def remove_inf_line(self, line):
+        self.removeItem(line)
+        self.inf_lines.remove(line)
 
     def updateViews(self):
         """Обновление вьюшек при изменении размера"""
@@ -123,8 +133,8 @@ class PatchedPlotWidget(pg.PlotWidget):
         """Показ всплывающей подсказки с координатами"""
         pos = event 
         if self.plotItem.vb.mapSceneToView(pos):
-            x_val = round(self.plotItem.vb.mapSceneToView(pos).x(), 1)
-            y_val = round(self.plotItem.vb.mapSceneToView(pos).y(), 1)
+            x_val = round(self.plotItem.vb.mapSceneToView(pos).x(), 3)
+            y_val = round(self.plotItem.vb.mapSceneToView(pos).y(), 3)
             text = f'X:{x_val} Y:{y_val}'
             self.tooltip.setPlainText(text)
 
@@ -199,7 +209,6 @@ class PatchedPlotWidget(pg.PlotWidget):
             if action.menu():
                 action.setParent(None)
 
-        # Создаем меню для каждой оси
         self.x_axis_menu = self.create_axis_menu(
             "X-axis", "x", self.invert_x_axis, self.reset_x_axis_style)
         self.y1_axis_menu = self.create_axis_menu(
@@ -210,8 +219,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         viewbox_menu.addMenu(self.x_axis_menu)
         viewbox_menu.addMenu(self.y1_axis_menu)
         viewbox_menu.addMenu(self.y2_axis_menu)
-        
-        # Убираем стандартное меню сетки
+
         self.grid_action = None
         for action in self.plotItem.ctrlMenu.actions():
             if action.text() == "Grid":
@@ -284,6 +292,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         appearance_menu.addMenu(text_color_menu)
         
         # Заголовок
+        '''
         title_color_menu = QtWidgets.QMenu("Заголовок", text_color_menu)
         text_color_menu.addMenu(title_color_menu)
         
@@ -296,6 +305,7 @@ class PatchedPlotWidget(pg.PlotWidget):
                 action.triggered.connect(
                     lambda checked, c=color: self.set_axes_color(c))
             title_color_menu.addAction(action)
+        '''
         
         # Подписи осей
         axis_label_color_menu = QtWidgets.QMenu("Подписи осей", text_color_menu)
@@ -312,6 +322,7 @@ class PatchedPlotWidget(pg.PlotWidget):
             axis_label_color_menu.addAction(action)
         
         # Названия кривых
+        '''
         curve_name_color_menu = QtWidgets.QMenu("Названия кривых", text_color_menu)
         text_color_menu.addMenu(curve_name_color_menu)
         
@@ -324,7 +335,8 @@ class PatchedPlotWidget(pg.PlotWidget):
                 action.triggered.connect(
                     lambda checked, c=color: self.set_axes_color(c))
             curve_name_color_menu.addAction(action)
-        
+        '''
+
         # Легенда
         legend_color_menu = QtWidgets.QMenu("Легенда", text_color_menu)
         text_color_menu.addMenu(legend_color_menu)
@@ -333,18 +345,36 @@ class PatchedPlotWidget(pg.PlotWidget):
             action = QtWidgets.QAction(name, legend_color_menu)
             if name == "Выбрать свой...":
                 action.triggered.connect(
-                    lambda: self.chooseCustomTextColor())
+                    lambda: self.chooseCustomLegendColor())
             else:
                 action.triggered.connect(
-                    lambda checked, c=color: self.set_axes_color(c))
+                    lambda checked, c=color: self.set_legend_color(c))
             legend_color_menu.addAction(action)
         
-        # Антиалиасинг
         antialias_action = QtWidgets.QAction("Включить антиалиасинг", appearance_menu)
         antialias_action.setCheckable(True)
         antialias_action.setChecked(False)
         antialias_action.triggered.connect(self.toggleAntialias)
         appearance_menu.addAction(antialias_action)
+
+    def chooseCustomLegendColor(self):
+        color = QtWidgets.QColorDialog.getColor()
+        if color.isValid():
+            self.set_legend_color(color)
+
+    def set_legend_color(self, color):
+        if isinstance(color, tuple):
+            color = QtGui.QColor(*color)
+            
+        self.legend_color = color
+
+        for legend in (self.legend, self.legend2):
+            for item in legend.items:
+                text = item[1].text
+                item[1].setText(text = text, color = color)
+        
+        self.legend.setLabelTextColor(color)
+        self.legend2.setLabelTextColor(color)
 
     def set_axis_color(self, color, axis_key):
         if isinstance(color, tuple):
@@ -454,6 +484,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.axises["right"].setGrid(0)
     
     def toggleGrid(self, checked):
+        self.is_grid_shown = checked
         self.plotItem.showGrid(x=checked, y=checked)
         self.hide_second_line_grid()
     
@@ -461,6 +492,14 @@ class PatchedPlotWidget(pg.PlotWidget):
         if isinstance(color, tuple):
             color = QtGui.QColor(*color)
         self.setBackground(color)
+        tooltip_color = self.get_max_contrast_color(color)
+        self.tooltip.setColor(tooltip_color)
+
+        self.background_color = color
+
+        for line in self.inf_lines:
+            line.setPen(tooltip_color)
+            line.label.setColor(tooltip_color)
     
     def chooseCustomBackgroundColor(self):
         color = QtWidgets.QColorDialog.getColor()
@@ -494,7 +533,6 @@ class PatchedPlotWidget(pg.PlotWidget):
                 if hasattr(axis, 'style') and 'tickText' in axis.style:
                     axis.style['tickText'] = (color, axis.style['tickText'][1])
         
-
     def chooseCustomTextColor(self):
         color = QtWidgets.QColorDialog.getColor()
         if color.isValid():
@@ -508,3 +546,57 @@ class PatchedPlotWidget(pg.PlotWidget):
     
     def autoRangeEnabled(self):
         return self.plotItem.getViewBox().autoRangeEnabled()
+    
+    def get_max_contrast_color(self, color: QtGui.QColor) -> QtGui.QColor:
+        r = color.red() / 255.0
+        g = color.green() / 255.0
+        b = color.blue() / 255.0
+        
+        r = r / 12.92 if r <= 0.03928 else ((r + 0.055) / 1.055) ** 2.4
+        g = g / 12.92 if g <= 0.03928 else ((g + 0.055) / 1.055) ** 2.4
+        b = b / 12.92 if b <= 0.03928 else ((b + 0.055) / 1.055) ** 2.4
+        
+        luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+        return QtGui.QColor(0, 0, 0) if luminance > 0.179 else QtGui.QColor(255, 255, 255)
+    
+    def add_vertical_line(self):
+        """Добавляет вертикальную линию в центр видимой области"""
+        view_range = self.plotItem.viewRange()
+        x_center = (view_range[0][0] + view_range[0][1]) / 2
+        self._add_line(angle=90, pos=x_center)
+
+    def add_horizontal_line(self):
+        """Добавляет горизонтальную линию в центр видимой области"""
+        view_range = self.plotItem.viewRange()
+        y_center = (view_range[1][0] + view_range[1][1]) / 2
+        self._add_line(angle=0, pos=y_center)
+
+    def _add_line(self, angle, pos):
+        """Создает линию с указанным углом и позицией"""
+        contrast_color = self.get_max_contrast_color(self.background_color)
+
+        if not hasattr(self, '_line_counter'):
+            self._line_counter = 0
+        self._line_counter += 1
+        
+        inf_line = RemovableInfiniteLine(
+            movable=True,
+            angle=angle,
+            pen=(contrast_color.red(), contrast_color.green(), contrast_color.blue()),
+            hoverPen=(0, 200, 0),
+            label=f'#{self._line_counter}: {{value:0.6f}}',
+            labelOpts={
+                'color': (contrast_color.red(), contrast_color.green(), contrast_color.blue()),
+                'movable': True, 
+                'fill': (0, 0, 200, 100)
+            },
+            pos=pos
+        )
+        
+        inf_line.removeRequested.connect(self.remove_inf_line)
+        self.add_inf_line(inf_line)
+
+        print(f"{self.background_color=} {contrast_color=}")
+
+        

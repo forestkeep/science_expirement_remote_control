@@ -64,17 +64,21 @@ class graphSelectAdapter:
 
 	def show_curve(self, curve_data_obj: linearData):
 		#возможны два случая, когда кривая сгенерирована из сырых данных и когда кривая посчитана по формуле. Когда кривая посчитана по формуле, мы просто проверяем пространства и напрямую отображаем ее
-		logger.debug(f"show_curve {curve_data_obj.rel_data.y_name=}")
+		logger.info(f"show_curve {curve_data_obj.rel_data.y_name=}")
 		paramx, paramy1, paramy2 = self.selector.get_parameters()
-		if paramx == curve_data_obj.rel_data.x_name:	
+		if paramx == curve_data_obj.rel_data.x_name:#пространство нужное	
 			y_name = curve_data_obj.rel_data.y_name
 			if y_name == "gen":
 				curve_data_obj.place_curve_on_graph(graph_field  = curve_data_obj.parent_graph_field,
                                                     legend_field  = curve_data_obj.legend_field,
                                                     number_axis = curve_data_obj.number_axis
                                                     )
-			else:
-				self.selector.set_selections("", [y_name], [y_name])
+			else:#кривая из сырых данных
+				#необходимо определить, на какой оси кривая
+				if curve_data_obj.number_axis == 1:
+					self.selector.set_selections("", [y_name], [])
+				else:
+					self.selector.set_selections("", [], [y_name])
 		else:
 			self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Кривая принадлежит другому пространству") )
 
@@ -105,6 +109,7 @@ class graphSelectAdapter:
 
 	def state_second_axis_changed(self, state):
 		self.graph.set_second_axis( state )
+		
 	def multiple_changed(self, state):
 		self.graph.set_multiple_mode( state )
 
@@ -144,6 +149,7 @@ class graphSelectAdapter:
 
 	def parameters_choised(self, param_x, param_y1, param_y2):
 		'''метод вызывается селектором в моменты, когда пользователь выбрал новые параметры'''
+		logger.info(f"parameters_choised {param_x} {param_y1} {param_y2}")
 		if param_x == "numbers":
 			for key in param_y1:
 				if key == "numbers":
