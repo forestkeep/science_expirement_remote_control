@@ -147,7 +147,7 @@ class graphData:
         self.preselection_style = None
         self.higlighted_flag = False
 
-        self.clicked_style = LineStyle(color=(255, 255, 255), line_style=QtCore.Qt.DashLine, line_width=3, symbol="o", symbol_size=5, symbol_color='w', fill_color='w')
+        self.clicked_style = LineStyle(color=(180, 150, 150), line_style=QtCore.Qt.DashLine, line_width=4, symbol="+", symbol_size=10, symbol_color=(150, 150, 150), fill_color='w')
 
 
     def set_plot_obj(self, plot_obj, style: LineStyle, highlight = False):

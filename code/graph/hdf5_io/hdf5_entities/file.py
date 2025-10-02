@@ -26,9 +26,9 @@ class HDF5File(BaseHDF5Entity):
         attributes = {
             'version app': project_file.version,
             'creation_date': project_file.creation_date.isoformat(),
-            'name': "rtr",
-            'description': "qqqq",
-            'type' : "graphics"
+            #'name': "rtr",
+            #'description': "qqqq",
+            #'type' : "graphics"
         }
         self._write_attributes(attributes)
     
@@ -39,9 +39,10 @@ class HDF5File(BaseHDF5Entity):
     def write_session(self, session: Session, session_id: Optional[str] = None):
         """Записывает сессию в файл."""
         #ses_name = session.name.replace('\\', '_').replace('/', '_')
-        if session_id in self._h5file:
-            del self._h5file[session_id]
-        session_group = self._h5file.create_group(session_id)
+        uuid = session.parameters.uuid
+        if uuid in self._h5file:
+            del self._h5file[uuid]
+        session_group = self._h5file.create_group(uuid)
         session_entity = HDF5Session(session_group)
         session_entity.write(session)
     
@@ -54,8 +55,8 @@ class HDF5File(BaseHDF5Entity):
         session_entity = HDF5Session(session_group, self.load_strategy)
         return session_entity.read()
     
-    def get_session_ids(self) -> list:
-        """Возвращает список id сессий в файле."""
+    def get_session_uuids(self) -> list:
+        """Возвращает список uuid сессий в файле."""
         return list(self._h5file.keys())
     
     def __enter__(self):

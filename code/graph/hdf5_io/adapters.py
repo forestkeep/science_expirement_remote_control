@@ -72,6 +72,7 @@ class ProjectToHDF5Adapter:
 		parameters = SessionParameters(
 			name=core_session.session_name,
 			description=core_session.description,
+			uuid = core_session.uuid,
 			experiment_date=None,
 			operator=None,
 			comment=None
@@ -102,7 +103,7 @@ class ProjectToHDF5Adapter:
 		# Создаем модель сессии
 		return Session(
 			name=core_session.session_name,
-			description="testing",
+			description=core_session.description,
 			parameters=parameters,
 			field_settings=field_settings,
 			data_manager=data_manager,
@@ -237,16 +238,22 @@ class HDF5ToProjectAdapter:
 	"""Адаптер для преобразования HDF5-моделей в данные ядра"""
 	
 	def convert(self, project: ProjectFile, core_session):
-		project.sessions = {k: project.sessions[k] for k in sorted(project.sessions.keys(), key=lambda x: int(x))}
+		#project.sessions = {k: project.sessions[k] for k in sorted(project.sessions.keys(), key=lambda x: int(x))}
 		for session_name, session_model in project.sessions.items():
 			self._convert_session(session_model, core_session)
 
 
 	def _convert_session(self, session: Session, core_session):
 
-		session_id = core_session.start_new_session(session_name = session.name)
+		uuid = session.parameters.uuid
+		print(f"{uuid=}")
+		session_id = core_session.start_new_session(session_name = session.name, uuid = uuid)
+
 		if not session_id:
+			logger.warning(f"Failed to start session {session.name=} {uuid=}")
 			return
+		
+		core_session.update_session_description(session_id, session.description)
 		core_manager = core_session.graph_sessions[session_id].data_manager
 		self._convert_data_manager(core_manager, session.data_manager)
 		core_manager.stop_session_running()

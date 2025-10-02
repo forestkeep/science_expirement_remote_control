@@ -31,7 +31,7 @@ class HDF5Session(BaseHDF5Entity):
         # Записываем основные атрибуты сессии
         attributes = {
             'name': session.name,
-            'description': "описание тестовой сессиии"
+            'description': session.description
         }
         self._write_attributes(attributes)
         
@@ -43,6 +43,7 @@ class HDF5Session(BaseHDF5Entity):
         params_attrs = {
             'name': session.parameters.name,
             'description': session.parameters.description,
+            'uuid': session.parameters.uuid,
             'experiment_date': session.parameters.experiment_date.isoformat() if session.parameters.experiment_date else None,
             'operator': session.parameters.operator,
             'comment': session.parameters.comment
@@ -126,19 +127,26 @@ class HDF5Session(BaseHDF5Entity):
         # Читаем основные атрибуты сессии
         name = self._hdf5_object.attrs.get('name', '')
         description = self._hdf5_object.attrs.get('description', '')
+
+        print("----------------------Чтение--------------------------")
+        print(f"{name=} {description=}")
         
         # Читаем параметры сессии
         parameters = SessionParameters()
         if 'parameters' in self._hdf5_object:
             params_group = self._hdf5_object['parameters']
-            parameters.name = params_group.attrs.get('name', '')
+            print(f"{params_group=}")
+            for param in params_group.attrs:
+                print(param, params_group.attrs[param])
+            parameters.name = params_group.attrs['name']
             parameters.description = params_group.attrs.get('description', '')
+            parameters.uuid = params_group.attrs['uuid']
             exp_date_str = params_group.attrs.get('experiment_date', '')
             if exp_date_str:
                 parameters.experiment_date = datetime.fromisoformat(exp_date_str)
             parameters.operator = params_group.attrs.get('operator', '')
             parameters.comment = params_group.attrs.get('comment', '')
-        
+        print("-----------------------Конец чтения--------------------------")
         # Читаем настройки полей
         field_settings = self.read_field_settings()
         
@@ -211,7 +219,7 @@ class HDF5Session(BaseHDF5Entity):
                 
                 # Загружаем данные из HDF5 группы в словарь
                 graph_field_data = load_dict_from_hdf5_group(graph_field_group)
-                print_nested(graph_field_data)
+                #print_nested(graph_field_data)
                 # Преобразуем словарь в объект GraphFieldSettings
                 graph_field_settings = dict_to_graph_field_settings(graph_field_data)
                 field_settings.graph_field = graph_field_settings

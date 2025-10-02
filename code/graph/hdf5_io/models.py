@@ -266,6 +266,7 @@ class DataManager(BaseModel):
 @dataclass
 class SessionParameters(BaseModel):
 	# Пример:
+	uuid: str = ""
 	experiment_date: Optional[datetime] = None
 	operator: str = ""
 	comment: str = ""

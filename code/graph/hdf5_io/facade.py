@@ -76,8 +76,8 @@ class HDF5Facade:
             )
             
             # Загружаем все сессии
-            session_ids = h5_file.get_session_ids()
-            for session_id in session_ids:
+            session_uuids = h5_file.get_session_uuids()
+            for session_id in session_uuids:
                 session = h5_file.read_session(session_id)
                 project_file.sessions[session_id] = session
             

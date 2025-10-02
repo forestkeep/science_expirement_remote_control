@@ -42,6 +42,9 @@ class axisController():
         self.settings.is_style_customized = False
         self.__apply_style()
 
+    def update_common_style(self, style: axisStyle ):
+        self.common_style = style
+
     def __apply_style(self):
         if self.settings.is_style_customized:
             style = self.custom_style
@@ -69,7 +72,7 @@ class PatchedPlotWidget(pg.PlotWidget):
 
         self.legend = pg.LegendItem(size=(80, 60), offset=(10, 10))
         self.legend2 = pg.LegendItem(size=(80, 60), offset=(50, 10))
-        self.tooltip = pg.TextItem("X:0,Y:0", color=(255, 255, 255), anchor=(0, 0))
+        self.tooltip = pg.TextItem("X:0,Y:0", color=(255, 255, 255), anchor=(0,0))
         
         self.setAntialiasing(False)
         self.scene().sigMouseMoved.connect(self.showToolTip)
@@ -116,6 +119,18 @@ class PatchedPlotWidget(pg.PlotWidget):
         
         self.set_second_axis(False)
 
+
+        view_rect = self.plots_lay.vb.viewRect()
+            
+        # Устанавливаем позицию тултипа в правый верхний угол
+        # с небольшим отступом от краев
+        tooltip_x = view_rect.right()# - (view_rect.width() * 0.02)  # 2% отступа от правого края
+        tooltip_y = view_rect.top()# + (view_rect.height() * 0.02)   # 2% отступа от верхнего края
+
+        print(f"{tooltip_x}, {tooltip_x}")
+        
+        #self.tooltip.setPos(50, 50)
+
     def add_inf_line(self, line):
         self.inf_lines.append(line)
         self.addItem(line)
@@ -129,14 +144,26 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.second_graphView.setGeometry(self.plots_lay.vb.sceneBoundingRect())
         self.second_graphView.linkedViewChanged(self.plots_lay.vb, self.second_graphView.XAxis)
 
-    def showToolTip(self, event):
-        """Показ всплывающей подсказки с координатами"""
-        pos = event 
-        if self.plotItem.vb.mapSceneToView(pos):
-            x_val = round(self.plotItem.vb.mapSceneToView(pos).x(), 3)
-            y_val = round(self.plotItem.vb.mapSceneToView(pos).y(), 3)
-            text = f'X:{x_val} Y:{y_val}'
-            self.tooltip.setPlainText(text)
+    def showToolTip(self, pos):
+        """Обновленный метод для отображения тултипа в правом верхнем углу"""
+        if self.plots_lay.vb.sceneBoundingRect().contains(pos):
+            mouse_point = self.plots_lay.vb.mapSceneToView(pos)
+            x, y = mouse_point.x(), mouse_point.y()
+            
+            # Обновляем текст тултипа
+            self.tooltip.setText(f"X: {x:.2f}, Y: {y:.2f}")
+            
+            '''
+            # Получаем границы ViewBox
+            view_rect = self.plots_lay.vb.viewRect()
+            
+            # Устанавливаем позицию тултипа в правый верхний угол
+            # с небольшим отступом от краев
+            tooltip_x = view_rect.right() - (view_rect.width() * 0.02)  # 2% отступа от правого края
+            tooltip_y = view_rect.top() + (view_rect.height() * 0.02)   # 2% отступа от верхнего края
+            
+            self.tooltip.setPos(tooltip_x, tooltip_y)
+            '''
 
     def set_second_axis(self, state: bool):
         """Включение/выключение второй оси"""
@@ -437,6 +464,8 @@ class PatchedPlotWidget(pg.PlotWidget):
             for axis in self.axises.values():
                 if not axis.settings.is_style_customized:#если ось не была кастомизирована инживидуально. то применяем общие настройки
                     axis.set_common_style( self.common_style )
+                else:
+                    axis.update_common_style(self.common_style)
 
     def customize_axes_tick_font(self):
 
@@ -446,6 +475,8 @@ class PatchedPlotWidget(pg.PlotWidget):
             for axis in self.axises.values():
                 if not axis.settings.is_style_customized:#если ось не была кастомизирована инживидуально. то применяем общие настройки
                     axis.set_common_style( self.common_style )
+                else:
+                    axis.update_common_style(self.common_style)
 
     def reset_x_axis_style(self):
         self.axises["bottom"].reset_style()
@@ -528,6 +559,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         
         for axis_name in ['bottom', 'left', 'right', 'top']:
             axis = plot_item.getAxis(axis_name)
+            axis.update_common_style(self.common_style)
             if axis:
                 axis.setTextPen(color)
                 if hasattr(axis, 'style') and 'tickText' in axis.style:
@@ -596,7 +628,5 @@ class PatchedPlotWidget(pg.PlotWidget):
         
         inf_line.removeRequested.connect(self.remove_inf_line)
         self.add_inf_line(inf_line)
-
-        print(f"{self.background_color=} {contrast_color=}")
 
         

@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QWidget, QTableWidget, QTableWidgetItem, QHeaderView,
                              QHBoxLayout, QVBoxLayout, QPushButton, QMenu, QAbstractItemView,
-                             QAction, QFileDialog, QApplication, QDialog)
+                             QAction, QFileDialog, QApplication, QDialog, QTextEdit, QDialogButtonBox)
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QPoint
 
 import logging
@@ -19,6 +19,7 @@ class SessionWidget(QWidget):
     import_data_requested = pyqtSignal()
     import_oscillograms_requested = pyqtSignal()
     session_renamed = pyqtSignal(str, str)  # session_id, new_name
+    session_description_updated = pyqtSignal(str, str)  # session_id, new_description
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -110,8 +111,43 @@ class SessionWidget(QWidget):
             self.session_deleted.emit(session_id)
 
     def _add_description(self, row):
-        # Реализация через диалог или inline редактирование
-        pass
+        """Открывает модальное окно для редактирования описания сессии"""
+        if 0 <= row < len(self.sessions_data):
+            session = self.sessions_data[row]
+            session_id = session['id']
+            
+            # Получаем текущее описание, если оно есть
+            current_description = session.get('description', '')
+            
+            # Создаем диалоговое окно
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Редактирование описания")
+            dialog.setModal(True)
+            dialog.resize(400, 300)
+            
+            layout = QVBoxLayout(dialog)
+            
+            # Текстовое поле для описания
+            text_edit = QTextEdit()
+            text_edit.setPlainText(current_description)
+            text_edit.setPlaceholderText("Введите описание сессии...")
+            layout.addWidget(text_edit)
+            
+            # Кнопки OK и Cancel
+            button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+            button_box.accepted.connect(dialog.accept)
+            button_box.rejected.connect(dialog.reject)
+            layout.addWidget(button_box)
+            
+            # Показываем диалог и обрабатываем результат
+            if dialog.exec_() == QDialog.Accepted:
+                new_description = text_edit.toPlainText()
+                
+                # Обновляем данные сессии
+                session['description'] = new_description
+                
+                # Испускаем сигнал об обновлении описания
+                self.session_description_updated.emit(session_id, new_description)
 
     def _on_cell_double_click(self, row, col):
         if col == 1:
@@ -126,6 +162,7 @@ class SessionSelectControl(QObject):
     session_name_changed = pyqtSignal(str, str)
     session_deleted = pyqtSignal(str)
     new_data_imported = pyqtSignal(str, str, dict)
+    session_description_changed = pyqtSignal(str, str)
 
     def __init__(self):
         super().__init__()
@@ -137,6 +174,22 @@ class SessionSelectControl(QObject):
         self.widget.import_data_requested.connect(self.handle_import_data)
         self.widget.import_oscillograms_requested.connect(self.handle_import_osc)
         self.widget.session_renamed.connect(self._session_renamed)
+        self.widget.session_description_updated.connect(self._session_description_updated)
+
+    def _session_description_updated(self, session_id, new_description):
+        for session in self.sessions:
+            if session['id'] == session_id:
+                session['description'] = new_description
+                logger.info(f"session_description_changed emitted {session_id}")
+                self.session_description_changed.emit(session_id, str(new_description))
+                break
+    
+    def update_session_description(self, session_id, new_description):
+        for session in self.sessions:
+            if session['id'] == session_id:
+                session['description'] = new_description
+                self.widget.update_sessions(self.sessions)
+                break
 
     def _session_renamed(self, session_id, new_name):
         for session in self.sessions:

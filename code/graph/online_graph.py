@@ -33,6 +33,7 @@ from graph.select_session import SessionSelectControl
 from graph.osc_selector import OscilloscopeSelector
 from graph.waveSelectAdapter import waveSelectAdapter
 from graph.hdf5_io.facade import HDF5Facade
+import uuid
 #from graph.saving_controller import savingController
 
 logger = logging.getLogger(__name__)
@@ -94,12 +95,14 @@ class GraphWindow(QMainWindow):
 class GraphSession(QWidget):
     graph_win_close_signal = pyqtSignal(int)
 
-    def __init__(self, id, name):
+    def __init__(self, id, name, ses_uuid=None):
         super().__init__()
         self.notification = None
         self.session_id = id
         self.session_name = name
         self.description = None
+        self.uuid = uuid.uuid4().hex if ses_uuid is None else ses_uuid
+        logger.info(f"Session {self.uuid=} created")
         self.initUI()
 
     def initUI(self):
@@ -256,6 +259,7 @@ class sessionController():
         self.session_selector.session_deleted.connect(self.delete_session)
         self.session_selector.new_data_imported.connect(self.data_imported)
         self.session_selector.session_name_changed.connect(self._session_renamed)
+        self.session_selector.session_description_changed.connect(self._session_description_changed)
 
         self.graphics_win = GraphWindow(self.controll_sessions_win)
         self.graphics_win.save_action.triggered.connect(self.push_button_save_graph)
@@ -264,6 +268,7 @@ class sessionController():
         self.way_to_save_file = None
 
         self.graph_sessions = {}
+
 
     def push_button_save_graph(self):
         if self.way_to_save_file is not None:
@@ -316,9 +321,9 @@ class sessionController():
 
             #self.graph_sessions[session_id].get_all_session_data()
 
-    def start_new_session(self, session_name: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None) -> str | bool:
+    def start_new_session(self, session_name: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None, uuid = None) -> str | bool:
         session_id = self.session_selector.get_free_id()
-        is_session_created = self.__create_session(session_name, session_id, use_timestamps, is_experiment_running, new_data)
+        is_session_created = self.__create_session(session_name, session_id, use_timestamps, is_experiment_running, new_data, uuid)
 
         if is_session_created:
             if is_experiment_running:
@@ -331,8 +336,8 @@ class sessionController():
 
         return session_id if is_session_created else False
 
-    def __create_session(self, session_name: str, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None) -> bool:
-        new_session_graph = GraphSession(session_id, session_name)
+    def __create_session(self, session_name: str, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None, uuid = None) -> bool:
+        new_session_graph = GraphSession(session_id, session_name, ses_uuid=uuid)
         try:
             new_session_graph.data_manager.start_new_session(session_id, use_timestamps, is_experiment_running, new_data)
             logger.info(f"Session {session_id} created")
@@ -379,6 +384,13 @@ class sessionController():
             self.graph_sessions[session_id].description = new_description
         else:
             logger.warning(f"Session {session_id} not found")
+
+    def update_session_description(self, session_id: str, new_description: str):
+        if self.graph_sessions.get(session_id) is None:
+            return
+        else:
+            self.graph_sessions[session_id].description = new_description
+            self.session_selector.update_session_description(session_id, new_description)
 
     def change_session_name(self, session_id: str, new_session_name: str) -> bool:
         if self.graph_sessions.get(session_id) is None:
