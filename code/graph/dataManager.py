@@ -14,478 +14,439 @@ from typing import Dict, Any, Optional
 from PyQt5.QtCore import pyqtSignal, QObject
 import logging
 import numpy as np
-import pandas as pd
-from collections import defaultdict
+import copy
+
+try:
+    from parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
+except:
+    from .parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
 
 logger = logging.getLogger(__name__)
 
 @dataclass
 class measTimeData:
-	device : str = ''
-	ch : str = ''
-	param: str = ''
-	par_val: np.array = None
-	num_or_time: np.array = None
+    device: str = ''
+    ch: str = ''
+    param: str = ''
+    par_val: np.array = None
+    num_or_time: np.array = None
 
 @dataclass
 class oscData:
-	device : str = ''
-	ch : str = ''
-	param: str = ''
-	time_stamp = float
-	par_val: np.array = None
-	steps_time: np.array = None
+    device: str = ''
+    ch: str = ''
+    param: str = ''
+    time_stamp = float
+    par_val: np.array = None
+    steps_time: np.array = None
 
 @dataclass
 class sessionMeasData:
-	data : dict[measTimeData]
-	spicified_data : str
-	is_running : bool
+    data: dict[measTimeData]
+    spicified_data: str
+    is_running: bool
 
 class relationData:
-	def __init__(self, data_x_axis: measTimeData, data_y_axis: measTimeData):
-		self.x_name, self.y_name, self.name = self.create_names(data_x_axis.device, data_x_axis.ch, data_x_axis.param, data_y_axis.device, data_y_axis.ch, data_y_axis.param)
-		self.data_x_axis = data_x_axis
-		self.data_y_axis = data_y_axis
+    def __init__(self, data_x_axis: measTimeData, data_y_axis: measTimeData):
+        self.x_name, self.y_name, self.name = self.create_base_names(
+            data_x_axis.device, data_x_axis.ch, data_x_axis.param,
+            data_y_axis.device, data_y_axis.ch, data_y_axis.param
+        )
 
-		if data_x_axis.param == "time" or data_x_axis.param == "numbers":
-			self.__base_x = data_y_axis.num_or_time
-			self.x_result = data_y_axis.num_or_time
-			self.y_result = data_y_axis.par_val
+        self._y_current_name = copy.copy(self.y_name)  # Приватная переменная
+        self.x_current_name = copy.copy(self.x_name)
+        self.current_name = copy.copy(self.name)
+        self.data_x_axis = data_x_axis
+        self.data_y_axis = data_y_axis
 
-		elif data_y_axis.param == "time" or data_y_axis.param == "numbers":
-			self.__base_x = data_x_axis.par_val
-			self.x_result = data_x_axis.par_val
-			self.y_result = data_x_axis.num_or_time
+        if data_x_axis.param == "time" or data_x_axis.param == "numbers":
+            self.__base_x = data_y_axis.num_or_time
+            self.x_result = data_y_axis.num_or_time
+            self.y_result = data_y_axis.par_val
 
-		else:
-			#print(f"{data_x_axis.num_or_time=}, {data_y_axis.num_or_time=}")
-			self.__base_x = np.unique(np.concatenate((data_x_axis.num_or_time, data_y_axis.num_or_time)))
-			self.x_result = np.interp(self.__base_x, data_x_axis.num_or_time, data_x_axis.par_val)
-			self.y_result = np.interp(self.__base_x, data_y_axis.num_or_time, data_y_axis.par_val)
+        elif data_y_axis.param == "time" or data_y_axis.param == "numbers":
+            self.__base_x = data_x_axis.par_val
+            self.x_result = data_x_axis.par_val
+            self.y_result = data_x_axis.num_or_time
 
-	def create_names(self, x_device, x_ch, x_param, y_device, y_ch, y_param):
-		x_name = f"{x_device}{x_ch}{x_param}"
-		y_name = f"{y_device}{y_ch}{y_param}"
-		return x_name, y_name, f"{y_name}/{x_name}"
-	
-class graphDataManager( QObject ):
-	list_parameters_updated = pyqtSignal(dict)
-	val_parameters_added = pyqtSignal(dict)
-	stop_current_session = pyqtSignal()
+        else:
+            self.__base_x = np.unique(np.concatenate((data_x_axis.num_or_time, data_y_axis.num_or_time)))
+            self.x_result = np.interp(self.__base_x, data_x_axis.num_or_time, data_x_axis.par_val)
+            self.y_result = np.interp(self.__base_x, data_y_axis.num_or_time, data_y_axis.par_val)
 
-	def __init__(self):
-		super().__init__()
-		self.__sessions_data = {}
-		self.name = None
-		self.current_spicified_data = None#это поле показывает, по какому критерию наборы данных зависят друг от друга, либо временные метки, либо порядковый номер, в случае импорта из таблиц
-		self.all_parameters = {
-			"main": [],
-			"osc": []
-		}
+    def create_base_names(self, x_device, x_ch, x_param, y_device, y_ch, y_param):
+        x_original = f"{x_device}{x_ch}{x_param}"
+        y_original = f"{y_device}{y_ch}{y_param}"
+        
+        return x_original, y_original, f"{y_original}/{x_original}"
+    
+    @property
+    def y_current_name(self):
+        return self._y_current_name
 
-		self.updated_params = {
-			"main": [],
-			"osc": []
-		}
+    @y_current_name.setter
+    def y_current_name(self, value):
+        old_value = self._y_current_name
+        self._y_current_name = value
+        if old_value != value:
+            self.on_y_current_name_changed(old_value, value)
 
-	def get_relation_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> list[relationData]:
-		relations_first_axis = []
-		relations_second_axis = []
-		if data_type not in self.__sessions_data.keys():
-			logger.warning(f"Invalid data type {data_type} available types {list(self.__sessions_data[self.name].keys())}")
-			return [], []
-		
-		if keysx and keysy1 or keysx and keysy2:
-			for key in keysy1:
-				buf = relationData(
-					self.__sessions_data[data_type].data[keysx],
-					self.__sessions_data[data_type].data[key]
-				)
-				relations_first_axis.append(buf)
-			for key in keysy2:
-				buf = relationData(
-					self.__sessions_data[data_type].data[keysx],
-					self.__sessions_data[data_type].data[key]
-				)
-				relations_second_axis.append(buf)
+    def on_y_current_name_changed(self, old_value, new_value):
+        pass
+        #print(f"y_current_name changed from {old_value} to {new_value}")
 
-		return relations_first_axis, relations_second_axis
-	
-	def get_session_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> tuple[ measTimeData, dict, dict ]:
-		returned_x = None
-		returned_y1 = {}
-		returned_y2 = {}
+    def update_names(self, x_name, y_name):
+        self.x_current_name = x_name
+        self.y_current_name = y_name  # Использует сеттер property
+        self.current_name = f"{y_name}/{x_name}"
 
-		returned_x = self.__sessions_data[data_type].data.get(keysx)
-		for key in keysy1:
-				returned_y1[key] = self.__sessions_data[data_type].data[key]
-		for key in keysy2:
-				returned_y2[key] = self.__sessions_data[data_type].data[key]
+class graphDataManager(QObject):
+    list_parameters_updated = pyqtSignal(dict)
+    val_parameters_added = pyqtSignal(dict)
+    stop_current_session = pyqtSignal()
 
-		return returned_x, returned_y1, returned_y2
-	
-	def get_all_data(self):
-		return self.__sessions_data
-	
-	def get_name(self):
-		return self.name
-	
-	def get_name_params(self):
-		return list(self.__sessions_data['osc'].data.keys()) + list( self.__sessions_data['main'].data.keys())
+    def __init__(self, alias_manager: ParameterAliasManager):
+        super().__init__()
+        self.alias_manager = alias_manager
+        
+        self.__sessions_data = {}
+        self.name = None
+        self.current_spicified_data = None
+        self.all_parameters = {
+            "main": [],
+            "osc": []
+        }
 
-	def start_new_session(self, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None, type_data: str = None):
-		if not session_id or not isinstance(session_id, str):
-			raise ValueError("Invalid session_id")
+        self.updated_params = {
+            "main": [],
+            "osc": []
+        }
 
-		if use_timestamps:
-			specified_data = "time"
-		else:
-			specified_data = "numbers"
+    def get_relation_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> list[relationData]:
+        # Конвертируем псевдонимы обратно в оригинальные имена
+        original_keysx = self.alias_manager.get_original_name(keysx)
+        original_keysy1 = [self.alias_manager.get_original_name(key) for key in keysy1]
+        original_keysy2 = [self.alias_manager.get_original_name(key) for key in keysy2]
+        
+        relations_first_axis = []
+        relations_second_axis = []
+        if data_type not in self.__sessions_data.keys():
+            logger.warning(f"Invalid data type {data_type} available types {list(self.__sessions_data[self.name].keys())}")
+            return [], []
+        
+        if original_keysx and original_keysy1 or original_keysx and original_keysy2:
+            for key in original_keysy1:
+                buf = relationData(
+                    self.__sessions_data[data_type].data[original_keysx],
+                    self.__sessions_data[data_type].data[key]
+                )
+                relations_first_axis.append(buf)
+            for key in original_keysy2:
+                buf = relationData(
+                    self.__sessions_data[data_type].data[original_keysx],
+                    self.__sessions_data[data_type].data[key]
+                )
+                relations_second_axis.append(buf)
 
-		try:
-			self.__sessions_data = {
-				"osc": sessionMeasData(data={}, spicified_data=specified_data, is_running=is_experiment_running), 
-				"main": sessionMeasData(data={}, spicified_data=specified_data, is_running=is_experiment_running)
-			}
-			self.name = session_id
+        return relations_first_axis, relations_second_axis
+    
+    def get_session_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> tuple[measTimeData, dict, dict]:
+        # Конвертируем псевдонимы обратно в оригинальные имена
+        original_keysx = self.alias_manager.get_original_name(keysx)
+        original_keysy1 = [self.alias_manager.get_original_name(key) for key in keysy1]
+        original_keysy2 = [self.alias_manager.get_original_name(key) for key in keysy2]
+        
+        returned_x = None
+        returned_y1 = {}
+        returned_y2 = {}
 
-			if new_data is not None:
-				status = self.add_measurement_data(new_data, type_data)
-				if not status:
-					raise ValueError("Failed to add measurement data")
+        returned_x = self.__sessions_data[data_type].data.get(original_keysx)
+        for key in original_keysy1:
+            returned_y1[self.alias_manager.get_original_name(key)] = self.__sessions_data[data_type].data[key]
+        for key in original_keysy2:
+            returned_y2[self.alias_manager.get_original_name(key)] = self.__sessions_data[data_type].data[key]
 
-		except Exception as e:
-			self.current_spicified_data = self.__sessions_data['osc'].spicified_data
-			raise
+        return returned_x, returned_y1, returned_y2
+    
+    def get_all_data(self):
+        return self.__sessions_data
+    
+    def get_name(self):
+        return self.name
+    
+    def get_name_params(self) -> list[str]:
+        """Возвращает список параметров с применением псевдонимов"""
+        original_names = list(self.__sessions_data['osc'].data.keys()) + list(self.__sessions_data['main'].data.keys())
+        return [self.alias_manager.get_alias(name) for name in original_names]
+    
+    def get_original_name_params(self) -> list[str]:
+        """Возвращает список оригинальных имен параметров"""
+        return list(self.__sessions_data['osc'].data.keys()) + list(self.__sessions_data['main'].data.keys())
 
-		self.current_spicified_data = self.__sessions_data['osc'].spicified_data
+    def get_all_parameters_with_aliases(self) -> Dict[str, list[str]]:
+        """Возвращает все параметры с применением псевдонимов"""
+        osc_params = [self.alias_manager.get_alias(name) for name in self.__sessions_data['osc'].data.keys()]
+        main_params = [self.alias_manager.get_alias(name) for name in self.__sessions_data['main'].data.keys()]
+        
+        return {
+            "main": main_params,
+            "osc": osc_params
+        }
 
-		if use_timestamps:
-			spicified_data = {	
-							"time":[[],[]]	
-					 		}
-		else:
-			spicified_data = {	
-							"numbers":[[],[]]	
-					 		}
+    def start_new_session(self, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data=None, type_data: str = None):
+        if not session_id or not isinstance(session_id, str):
+            raise ValueError("Invalid session_id")
 
-		self.add_measurement_data(spicified_data)
+        if use_timestamps:
+            specified_data = "time"
+        else:
+            specified_data = "numbers"
 
-	def is_session_running(self, session_id: str = None):
-		if not session_id:
-			session_id = self.name
-		return self.__sessions_data['osc'].is_running
-	
-	def stop_session_running(self, session_id: str = None):
-		if not session_id:
-			session_id = self.name
-		self.__sessions_data['osc'].is_running = False
-		self.stop_current_session.emit()
+        try:
+            self.__sessions_data = {
+                "osc": sessionMeasData(data={}, spicified_data=specified_data, is_running=is_experiment_running), 
+                "main": sessionMeasData(data={}, spicified_data=specified_data, is_running=is_experiment_running)
+            }
+            self.name = session_id
 
-	def get_filtered_data(self,data_type: str, device: str = None, channel: str = None, param: str = None) -> list[measTimeData]:
-		returned_data = []
-		for data in self.__sessions_data[data_type].data.values():
-			if device:
-				if data.device != device:
-					continue
-			if channel:
-				if data.ch != channel:
-					continue
-			if param:
-				if data.param != param:
-					continue
-			returned_data.append(data)
+            if new_data is not None:
+                status = self.add_measurement_data(new_data, type_data)
+                if not status:
+                    raise ValueError("Failed to add measurement data")
 
-		return returned_data
+        except Exception as e:
+            self.current_spicified_data = self.__sessions_data['osc'].spicified_data
+            raise
 
-	def add_measurement_data(self, new_param: Dict[str, Any], type_data: str = None) -> bool:
-		"""
-		Добавление измерительных данных с учетом различной глубины вложенности.
-		
-		:param new_param: Словарь с измерительными данными
-		"""
+        self.current_spicified_data = self.__sessions_data['osc'].spicified_data
 
-		key = self.current_spicified_data
-		self.updated_params = {
-			"main": {key: measTimeData(param=key)},
-			"osc": {key: measTimeData(param=key)}
-		}
+        if use_timestamps:
+            spicified_data = {	
+                            "time":[[],[]]	
+                            }
+        else:
+            spicified_data = {	
+                            "numbers":[[],[]]	
+                            }
 
-		status = True
-		depth = get_dict_depth(new_param)
+        self.add_measurement_data(spicified_data)
 
-		depth_handlers = {
-			3: self._handle_three_level_data,
-			2: self._handle_two_level_data,
-			1: self._handle_one_level_data
-		}
-		
-		handler = depth_handlers.get(depth)
+    def is_session_running(self, session_id: str = None):
+        if not session_id:
+            session_id = self.name
+        return self.__sessions_data['osc'].is_running
+    
+    def stop_session_running(self, session_id: str = None):
+        if not session_id:
+            session_id = self.name
+        self.__sessions_data['osc'].is_running = False
+        self.stop_current_session.emit()
 
-		is_new_param_added = False
-		is_old_param_udated = False
+    def get_filtered_data(self, data_type: str, device: str = None, channel: str = None, param: str = None) -> list[measTimeData]:
+        returned_data = []
+        for data in self.__sessions_data[data_type].data.values():
+            if device:
+                if data.device != device:
+                    continue
+            if channel:
+                if data.ch != channel:
+                    continue
+            if param:
+                if data.param != param:
+                    continue
+            returned_data.append(data)
 
-		if handler:
-			status, is_new_param_added, is_old_param_udated = handler(new_param, type_data)
-		else:
-			logger.warning(f"Слишком глубокая структура данных {new_param=} не знаем, как с ней работать")
-			status = False
+        return returned_data
 
-		if is_new_param_added:
-			self.list_parameters_updated.emit(self.all_parameters)
+    def add_measurement_data(self, new_param: Dict[str, Any], type_data: str = None) -> bool:
+        key = self.current_spicified_data
+        self.updated_params = {
+            "main": {key: measTimeData(param=key)},
+            "osc": {key: measTimeData(param=key)}
+        }
 
-		if is_old_param_udated:
-			self.val_parameters_added.emit(self.updated_params)
+        status = True
+        depth = get_dict_depth(new_param)
 
-		return status
-	
-	def _handle_three_level_data(self, data: Dict[str, Dict[str, dict[str, Any]]], type_data: str = None) -> tuple[bool, bool, bool]:
-		is_new_param_added = False
-		is_old_param_udated = False
-		for device, channels in data.items():
-			for channel, values in channels.items():
-				for param, value in values.items():
-					ans, is_added, is_udated = self._add_new_data(device=device, channel=channel, param=param, value=value, type_data=type_data)
+        depth_handlers = {
+            3: self._handle_three_level_data,
+            2: self._handle_two_level_data,
+            1: self._handle_one_level_data
+        }
+        
+        handler = depth_handlers.get(depth)
 
-					if is_added and not is_new_param_added:
-						is_new_param_added = True
-					if is_udated and not is_old_param_udated:
-						is_old_param_udated = True
-					if not ans:
-						return False, is_new_param_added, is_old_param_udated
-					
-		return True, is_new_param_added, is_old_param_udated
+        is_new_param_added = False
+        is_old_param_udated = False
 
-	def _handle_two_level_data(self, data: Dict[str, Dict[str, Any]], type_data: str = None)  -> bool:
-		is_new_param_added = False
-		is_old_param_udated = False
-		for channel, values in data.items():
-			for param, value in values.items():
-				ans, is_added, is_udated = self._add_new_data(device=None, channel=channel, param=param, value=value, type_data=type_data)
+        if handler:
+            status, is_new_param_added, is_old_param_udated = handler(new_param, type_data)
+        else:
+            logger.warning(f"Слишком глубокая структура данных {new_param=} не знаем, как с ней работать")
+            status = False
 
-				if is_added and not is_new_param_added:
-					is_new_param_added = True
-				if is_udated and not is_old_param_udated:
-					is_old_param_udated = True
-				if not ans:
-					return False, is_new_param_added, is_old_param_udated
-		return True, is_new_param_added, is_old_param_udated
+        if is_new_param_added:
+            self.list_parameters_updated.emit(self.all_parameters)
 
-	def _handle_one_level_data(self, data: Dict[str, any], type_data = None)  -> bool:
-		is_new_param_added = False
-		is_old_param_udated = False
-		for param, value in data.items():
-			ans, is_added, is_udated = self._add_new_data(device=None, channel=None, param=param, value=value, type_data=type_data)
+        if is_old_param_udated:
+            self.val_parameters_added.emit(self.updated_params)
 
-			if is_added and not is_new_param_added:
-				is_new_param_added = True
-			if is_udated and not is_old_param_udated:
-				is_old_param_udated = True
-			if not ans:
-				return False, is_new_param_added, is_old_param_udated
-			
-		return True, is_new_param_added, is_old_param_udated
+        return status
+    
+    def _handle_three_level_data(self, data: Dict[str, Dict[str, dict[str, Any]]], type_data: str = None) -> tuple[bool, bool, bool]:
+        is_new_param_added = False
+        is_old_param_udated = False
+        for device, channels in data.items():
+            for channel, values in channels.items():
+                for param, value in values.items():
+                    ans, is_added, is_udated = self._add_new_data(device=device, channel=channel, param=param, value=value, type_data=type_data)
 
-	def _add_new_data(self, device: Optional[str], channel: Optional[str], param: str, value: list, type_data: str = None) -> tuple[bool, bool, bool]:
-		is_new_param_added = False
-		is_old_param_udated = False
+                    if is_added and not is_new_param_added:
+                        is_new_param_added = True
+                    if is_udated and not is_old_param_udated:
+                        is_old_param_udated = True
+                    if not ans:
+                        return False, is_new_param_added, is_old_param_udated
+                    
+        return True, is_new_param_added, is_old_param_udated
 
-		if not param or not value:
-			return False, is_new_param_added, is_old_param_udated
+    def _handle_two_level_data(self, data: Dict[str, Dict[str, Any]], type_data: str = None)  -> bool:
+        is_new_param_added = False
+        is_old_param_udated = False
+        for channel, values in data.items():
+            for param, value in values.items():
+                ans, is_added, is_udated = self._add_new_data(device=None, channel=channel, param=param, value=value, type_data=type_data)
 
-		if device is None:
-			device = ""
-		else:
-			if device[-1] != "-":
-				device+="-"
-		if channel is None:
-			channel = ""
-		else:
-			if channel[-1] != "-":
-				channel+="-"
-		key = f"{device}{channel}{param}"
+                if is_added and not is_new_param_added:
+                    is_new_param_added = True
+                if is_udated and not is_old_param_udated:
+                    is_old_param_udated = True
+                if not ans:
+                    return False, is_new_param_added, is_old_param_udated
+        return True, is_new_param_added, is_old_param_udated
 
-		if "wavech" not in param:
-			val_list = value[0] #[ [val1, val2], [time1, time2] ]
-		else:
-			val_list = value[0] #[ [[osc1], [osc2]], [time1, time2] ]
+    def _handle_one_level_data(self, data: Dict[str, any], type_data = None)  -> bool:
+        is_new_param_added = False
+        is_old_param_udated = False
+        for param, value in data.items():
+            ans, is_added, is_udated = self._add_new_data(device=None, channel=None, param=param, value=value, type_data=type_data)
 
-		time_list = ( [ float(i) for i in range(len(val_list)) ] if len(value) == 1 else value[1] )
-		if len(val_list) != len(time_list):
-			logger.warning(f"Длины списков параметра и времени не равны {device=} {channel=} {param=} {value=}")
-			return False, is_new_param_added, is_old_param_udated
-		
-		if "wavech" in param or type_data == "osc":
-			existing_data = self.__sessions_data['osc'].data.get(key)
-			focus = self.__sessions_data['osc'].data
-			key_type = "osc"
-		else:
-			existing_data = self.__sessions_data["main"].data.get(key)
-			focus = self.__sessions_data["main"].data
-			key_type = "main"
+            if is_added and not is_new_param_added:
+                is_new_param_added = True
+            if is_udated and not is_old_param_udated:
+                is_old_param_udated = True
+            if not ans:
+                return False, is_new_param_added, is_old_param_udated
+            
+        return True, is_new_param_added, is_old_param_udated
 
-		if existing_data is None:
-			new_data = measTimeData(device=device, ch=channel, param=param, 
-								par_val=val_list, num_or_time=time_list)
-			focus[key] = new_data
-			self.all_parameters[key_type].append(key)
-			is_new_param_added = True
-		else:
-			existing_data.par_val.extend(val_list)
-			existing_data.num_or_time.extend(time_list)
-			self.updated_params[key_type][key] = existing_data
-			is_old_param_udated = True
+    def _add_new_data(self, device: Optional[str], channel: Optional[str], param: str, value: list, type_data: str = None) -> tuple[bool, bool, bool]:
+        is_new_param_added = False
+        is_old_param_udated = False
 
-		return True, is_new_param_added, is_old_param_udated
-	
-	def decode_add_exp_parameters(self, entry, time):
-			data = {}
-			try:
-				device, channel = entry[0].split()
-			except:
-				device, channel = "unknown_dev_1", "unknown_ch-1"
-			parameter_pairs = entry[1]
-			status = True
+        if not param or not value:
+            return False, is_new_param_added, is_old_param_udated
 
-			if not parameter_pairs:
-				return False
+        if device is None:
+            device = ""
+        else:
+            if device[-1] != "-":
+                device += "-"
+        if channel is None:
+            channel = ""
+        else:
+            if channel[-1] != "-":
+                channel += "-"
+        key = f"{device}{channel}{param}"
 
-			if "pig_in_a_poke" in device:
-				new_pairs = []
-				for index, pair in enumerate(parameter_pairs):
-					new_pairs.append(pair)
-				parameter_pairs = new_pairs
+        if "wavech" not in param:
+            val_list = value[0]  # [ [val1, val2], [time1, time2] ]
+        else:
+            val_list = value[0]  # [ [[osc1], [osc2]], [time1, time2] ]
 
-			data[device] = {}
-			data[device][channel] = {}
+        time_list = ([float(i) for i in range(len(val_list))] if len(value) == 1 else value[1])
+        if len(val_list) != len(time_list):
+            logger.warning(f"Длины списков параметра и времени не равны {device=} {channel=} {param=} {value=}")
+            return False, is_new_param_added, is_old_param_udated
+        
+        if "wavech" in param or type_data == "osc":
+            existing_data = self.__sessions_data['osc'].data.get(key)
+            focus = self.__sessions_data['osc'].data
+            key_type = "osc"
+        else:
+            existing_data = self.__sessions_data["main"].data.get(key)
+            focus = self.__sessions_data["main"].data
+            key_type = "main"
 
-			for parameter_pair in parameter_pairs:
-				try:
-					name, value = parameter_pair.split("=")
-				except Exception as e:
-					logger.warning(f"ошибка при декодировании параметра {parameter_pair} {e}")
-					continue
+        if existing_data is None:
+            new_data = measTimeData(device=device, ch=channel, param=param, 
+                                par_val=val_list, num_or_time=time_list)
+            focus[key] = new_data
+            self.all_parameters[key_type].append(key)
+            self.alias_manager.add_param(key)
 
-				if "wavech" in name:  # oscilloscope wave
-					value = value.split("|")
-					buf = []
-					for val in value:
-						try:
-							buf.append(float(val))
-						except ValueError:
-							logger.warning(f"не удалось преобразовать в число: {device=} {channel=} {name=} {val=}")
-							continue
-					value = list(buf)
+            is_new_param_added = True
+        else:
+            existing_data.par_val.extend(val_list)
+            existing_data.num_or_time.extend(time_list)
+            self.updated_params[key_type][key] = existing_data
+            is_old_param_udated = True
 
-				else:
-					try:
-						value = float(value)
-					except ValueError:
-						logger.info(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
-						continue
+        return True, is_new_param_added, is_old_param_udated
+    
+    def decode_add_exp_parameters(self, entry, time):
+        data = {}
+        try:
+            device, channel = entry[0].split()
+        except:
+            device, channel = "unknown_dev_1", "unknown_ch-1"
+        parameter_pairs = entry[1]
+        status = True
 
-				if name not in data[device][channel]:
-					data[device][channel][name] = [[], []]
-				data[device][channel][name][0].append(value)
-				data[device][channel][name][1].append(time)
-			return self.add_measurement_data(data)
-	
-	def create_dataframe(self) -> pd.DataFrame:
-		"""
-		Формирует DataFrame с мультииндексом и уникальными столбцами.
-		Дубликаты данных устраняются за счет проверки уникальности параметров.
-		"""
+        if not parameter_pairs:
+            return False
 
-		groups = defaultdict(list)
-		unique_params = defaultdict(set)
+        if "pig_in_a_poke" in device:
+            new_pairs = []
+            for index, pair in enumerate(parameter_pairs):
+                new_pairs.append(pair)
+            parameter_pairs = new_pairs
 
-		for data_type in ['osc', 'main']:
-			session = self.__sessions_data.get(data_type)
-			if session and session.data:
-				for mtd in session.data.values():
-					device = mtd.device.strip() if mtd.device else ""
-					ch = mtd.ch.strip() if mtd.ch else ""
-					group_key = (device, ch)
-					
-					if mtd.param not in unique_params[group_key]:
-						groups[group_key].append(mtd)
-						unique_params[group_key].add(mtd.param)
+        data[device] = {}
+        data[device][channel] = {}
 
-		max_length = 0
-		for group_key, mtd_list in groups.items():
-			if mtd_list:
-				base_time = mtd_list[0].num_or_time
-				if all(np.array_equal(mtd.num_or_time, base_time) for mtd in mtd_list):
-					max_length = max(max_length, len(base_time))
+        for parameter_pair in parameter_pairs:
+            try:
+                name, value = parameter_pair.split("=")
+            except Exception as e:
+                logger.warning(f"ошибка при декодировании параметра {parameter_pair} {e}")
+                continue
 
-		columns = []
-		data = {}
-		specified_data = self.current_spicified_data
-		added_columns = set()
+            if "wavech" in name:  # oscilloscope wave
+                value = value.split("|")
+                buf = []
+                for val in value:
+                    try:
+                        buf.append(float(val))
+                    except ValueError:
+                        logger.warning(f"не удалось преобразовать в число: {device=} {channel=} {name=} {val=}")
+                        continue
+                value = list(buf)
 
-		for (device, ch), mtd_list in sorted(groups.items(), key=lambda x: (x[0][0], x[0][1])):
-			if not mtd_list:
-				continue
+            else:
+                try:
+                    value = float(value)
+                except ValueError:
+                    logger.info(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
+                    continue
 
-			base_time = mtd_list[0].num_or_time
-			if not all(np.array_equal(mtd.num_or_time, base_time) for mtd in mtd_list):
-				continue
-
-			time_key = (device, ch, specified_data)
-			if time_key not in added_columns:
-				padded_time = np.pad(base_time, (0, max_length - len(base_time)), 
-								mode='constant', constant_values=np.nan)
-				columns.append(time_key)
-				data[time_key] = padded_time
-				added_columns.add(time_key)
-
-			for mtd in mtd_list:
-				param_key = (device, ch, mtd.param)
-				if param_key not in added_columns:
-					padded_vals = np.pad(mtd.par_val, (0, max_length - len(mtd.par_val)),
-									mode='constant', constant_values=np.nan)
-					columns.append(param_key)
-					data[param_key] = padded_vals
-					added_columns.add(param_key)
-
-		df = pd.DataFrame(data).fillna('-')
-		df = df.reindex(columns=columns)
-		df.columns = pd.MultiIndex.from_tuples(
-			columns,
-			names=["Прибор", "Канал", "Параметр"]
-		)
-		
-		return df
-
+            if name not in data[device][channel]:
+                data[device][channel][name] = [[], []]
+            data[device][channel][name][0].append(value)
+            data[device][channel][name][1].append(time)
+        return self.add_measurement_data(data)
+    
 def get_dict_depth(d):
-	if not isinstance(d, dict)  or not d:
-		return 0
-	return 1 + max(get_dict_depth(value) for value in d.values())
-
-if __name__ == "__main__":
-
-	nested_dict = {
-		'dev1': {
-			'ch1': {
-				'c': [[],[]]
-			},
-			'ch2': {}
-		},
-		'dev3': {
-			'ch1': {
-				'wavech': [[],[]]
-			},
-			'ch2': {}
-		},
-		'dev2': {'ch1': {
-				'c': [[],[]]
-			},
-			'ch2': {}}
-	}
-
-	my_class = graphDataManager()
-	my_class.start_new_session("1")
-	my_class.list_parameters_updated.connect(print)
-	my_class.add_measurement_data(nested_dict)
-	#print(my_class.get_session_name_params())
+    if not isinstance(d, dict) or not d:
+        return 0
+    return 1 + max(get_dict_depth(value) for value in d.values())

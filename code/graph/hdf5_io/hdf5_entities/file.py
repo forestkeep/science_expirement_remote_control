@@ -45,7 +45,25 @@ class HDF5File(BaseHDF5Entity):
         session_group = self._h5file.create_group(uuid)
         session_entity = HDF5Session(session_group)
         session_entity.write(session)
+
+    def write_aliases(self, aliases: Dict[str, str]):
+        if 'aliases' in self._h5file:
+            del self._h5file['aliases']
+
+        alias_group = self._h5file.create_group('aliases')
+        for original_name, alias in aliases.items():
+            alias_group.attrs[original_name] = alias
+
+    def read_aliases(self) -> Dict[str, str]:
+        """Читает псевднимы из файла и возвращает словарь."""
+        if 'aliases' not in self._h5file:
+            return {}
+        
+        alias_group = self._h5file['aliases']
+        return dict(alias_group.attrs)
+
     
+        
     def read_session(self, session_name: str) -> Session:
         """Читает сессию из файла."""
         if session_name not in self._h5file:

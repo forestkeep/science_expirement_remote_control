@@ -28,6 +28,7 @@ class graphSelectAdapter:
 		self.selector.state_second_axis_changed.connect(self.state_second_axis_changed)
 		self.selector.numPointsChanged.connect(self.numPointsChanged)
 		self.selector.showingAllPoints.connect(self.showingAllPoints)
+
 		self.data_manager.list_parameters_updated.connect(self.update_params)
 		self.data_manager.val_parameters_added.connect(self.data_updated)
 		self.data_manager.stop_current_session.connect(self.stop_session)

@@ -103,7 +103,6 @@ class GraphCustomizer(QtWidgets.QDialog):
         
         # Получаем значение pxMode
         px_mode = opts.get('pxMode', True)
-        print(f"{px_mode=}")
         
         return {
             'color': color.name(),

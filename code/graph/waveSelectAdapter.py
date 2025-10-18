@@ -65,7 +65,6 @@ class waveSelectAdapter:
 			этот метод вызывается менеджером данных в момент, когда набор данных изменился. Были импортированы новые.
 		'''
 		list_parameters = parameters[self.type_data]
-		logger.warning(list_parameters)
 		#обновились какие-то параметры, нам нуэно запросить эти данные, выудить оттуда список каналов и количество осциллограмм
 		for param in list_parameters:
 			meastimedata, _, _ = self.data_manager.get_session_data( param, [], [], self.type_data)

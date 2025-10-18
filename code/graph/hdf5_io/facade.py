@@ -43,6 +43,7 @@ class HDF5Facade:
         # Сохраняем через HDF5File
         with HDF5File(file_path, 'a') as h5_file:
             h5_file.write_file_attributes(project_file)
+            h5_file.write_aliases(project_file.aliases)
             
             # Сохраняем все сессии
             for session_id, session in project_file.sessions.items():
@@ -66,7 +67,7 @@ class HDF5Facade:
         with HDF5File(file_path, 'r', strategy) as h5_file:
             # Читаем атрибуты файла
             file_attrs = h5_file.read_file_attributes()
-            
+
             # Создаем объект проекта
             project_file = ProjectFile(
                 name=file_attrs.get('name', ''),
@@ -74,10 +75,15 @@ class HDF5Facade:
                 version=file_attrs.get('version', '1.0'),
                 creation_date=datetime.fromisoformat(file_attrs.get('creation_date', datetime.now().isoformat()))
             )
+
+            project_file.aliases = h5_file.read_aliases()
             
             # Загружаем все сессии
             session_uuids = h5_file.get_session_uuids()
+
             for session_id in session_uuids:
+                if session_id == "aliases":
+                    continue
                 session = h5_file.read_session(session_id)
                 project_file.sessions[session_id] = session
             

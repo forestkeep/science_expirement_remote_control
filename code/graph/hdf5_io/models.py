@@ -284,3 +284,4 @@ class ProjectFile(BaseModel):
 	version: str = "1.0"
 	creation_date: datetime = field(default_factory=datetime.now)
 	sessions: Dict[str, Session] = field(default_factory=dict)
+	aliases: Dict[str, str] = field(default_factory=dict)

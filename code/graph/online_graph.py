@@ -33,7 +33,14 @@ from graph.select_session import SessionSelectControl
 from graph.osc_selector import OscilloscopeSelector
 from graph.waveSelectAdapter import waveSelectAdapter
 from graph.hdf5_io.facade import HDF5Facade
+from graph.parameter_alias_manager import ParameterAliasManager
 import uuid
+import numpy as np
+
+try:
+    from parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
+except:
+    from .parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
 #from graph.saving_controller import savingController
 
 logger = logging.getLogger(__name__)
@@ -80,6 +87,10 @@ class GraphWindow(QMainWindow):
         menubar = self.menuBar()
         
         file_menu = menubar.addMenu("Файл")
+
+        data_menu = menubar.addMenu("Данные")
+        self.rename_param_action = QAction("Изменить имена параметров", self)
+        self.read_all_statistics_action = QAction("Показать статистику", self)
         
         self.save_action = QAction("Сохранить", self)
         self.save_action.setShortcut("Ctrl + S")
@@ -91,12 +102,16 @@ class GraphWindow(QMainWindow):
         file_menu.addAction(self.save_action)
         file_menu.addAction(self.save_action_as)
         file_menu.addAction(self.load_action)
+
+        data_menu.addAction(self.rename_param_action)
+        data_menu.addAction(self.read_all_statistics_action)
         
 class GraphSession(QWidget):
     graph_win_close_signal = pyqtSignal(int)
 
-    def __init__(self, id, name, ses_uuid=None):
+    def __init__(self, id, name, alias_manager, ses_uuid=None):
         super().__init__()
+        self.alias_manager = alias_manager
         self.notification = None
         self.session_id = id
         self.session_name = name
@@ -133,9 +148,9 @@ class GraphSession(QWidget):
         one_deca_part = int(self.width()/10)
         splitter.setSizes([one_deca_part, one_deca_part*9, 0])
 
-        self.data_manager = graphDataManager()
-        self.select_win = paramSelector()
-        self.select_controller = paramController( self.select_win )
+        self.data_manager = graphDataManager(alias_manager=self.alias_manager)
+        self.select_win = paramSelector(alias_manager=self.alias_manager)
+        self.select_controller = paramController( self.select_win, alias_manager=self.alias_manager )
 
         self.filter_class.set_filter_slot(self.filters_callback)#при нажатии кнопок в фильтре будет вызываться эта функция
 
@@ -149,8 +164,8 @@ class GraphSession(QWidget):
 
         self.selector_osc = OscilloscopeSelector()
 
-        self.graph_main = manageGraph(tablet_page=self.tab1, main_class=self, select_data_wid = self.select_win)
-        self.graph_wave = graphOsc(self.tab2, self.selector_osc, self)
+        self.graph_main = manageGraph(tablet_page=self.tab1, main_class=self, select_data_wid = self.select_win, alias_manager=self.alias_manager)
+        self.graph_wave = graphOsc(self.tab2, self.selector_osc, self, alias_manager=self.alias_manager)
 
         self.adapter_main_graph = graphSelectAdapter(self.graph_main, self.select_controller, self.data_manager, self.tree_class, 'main', self)
 
@@ -201,20 +216,6 @@ class GraphSession(QWidget):
         self.graph_main.set_default()
         self.graph_wave.set_default()
 
-    def get_all_session_data(self):
-
-        result = self.data_manager.create_dataframe()
-        #with pd.ExcelWriter("1254.xlsx", engine='openpyxl', mode='w') as excel_writer:
-        #    result.to_excel(excel_writer, sheet_name="3434", index=True)
-
-        '''
-        returned_data = { "name": self.session_name, "id": self.session_id, "notification": self.notification, "data": self.data_manager.get_all_data() }
-        test_name = "test"
-        with open(f"{test_name}.json", 'w') as outfile:
-            json.dump(returned_data, outfile, indent=4)
-        return returned_data
-        '''
-
     def closeEvent(self, event):
         self.graph_win_close_signal.emit(1)
 
@@ -252,6 +253,7 @@ class running_exp_test(QWidget):
 
 class sessionController():
     def __init__(self):
+        self.alias_manager = ParameterAliasManager()
         self.session_selector = SessionSelectControl()
         self.controll_sessions_win = self.session_selector.widget
 
@@ -265,10 +267,60 @@ class sessionController():
         self.graphics_win.save_action.triggered.connect(self.push_button_save_graph)
         self.graphics_win.load_action.triggered.connect(self.push_button_open_graph)
         self.graphics_win.save_action_as.triggered.connect(self.push_button_save_graph_as)
+        self.graphics_win.rename_param_action.triggered.connect(self.show_alias_dialog)
+        self.graphics_win.read_all_statistics_action.triggered.connect(self.read_statistics)
         self.way_to_save_file = None
 
         self.graph_sessions = {}
 
+    def show_alias_dialog(self):
+        """Показывает диалог управления псевдонимами"""
+        #available_params = self.get_name_params()
+        dialog = ParameterAliasDialog(self.alias_manager,  self.graphics_win)
+        dialog.exec_()
+
+    def read_statistics(self, group_by_param=True):
+        if False:
+            # Исходная логика (группировка по сессиям)
+            for session in self.graph_sessions.values():
+                session_data = session.data_manager.get_all_data()
+                main_data = session_data['main'].data
+                print(session.session_name)
+                print("mean, std, median, max, min")
+                for name, value_data in main_data.items():
+                    values = value_data.par_val
+                    if values is not None:
+                        print(self.alias_manager.get_alias(name), np.mean(values), np.std(values), np.median(values))
+        else:
+            # Новая логика (группировка по параметрам)
+            param_data = {}
+            
+            # Собираем данные по всем сессиям
+            for session in self.graph_sessions.values():
+                session_data = session.data_manager.get_all_data()
+                main_data = session_data['main'].data
+                
+                for name, value_data in main_data.items():
+                    values = value_data.par_val
+                    if values is not None:
+                        alias = self.alias_manager.get_alias(name)
+                        if alias not in param_data:
+                            param_data[alias] = []
+                        
+                        param_data[alias].append({
+                            'session_name': session.session_name,
+                            'mean': np.mean(values),
+                            'std': np.std(values),
+                            'median': np.median(values)
+                        })
+            
+            # Выводим сгруппированные данные
+            for param_name, sessions_data in param_data.items():
+                print(f"Parameter: {param_name}")
+                print("Session, mean, std, median")
+                for data in sessions_data:
+                    print(f"{data['session_name']}, {data['mean']}, {data['std']}, {data['median']}")
+                print()  # Пустая строка между параметрами
 
     def push_button_save_graph(self):
         if self.way_to_save_file is not None:
@@ -316,11 +368,6 @@ class sessionController():
             self.graph_sessions[session_id].data_manager.stop_session_running()
             self.session_selector.set_session_status(session_id=session_id, status = "Exp completed")
 
-            #saving = savingController()
-            #saving.save_curent_seans(self)
-
-            #self.graph_sessions[session_id].get_all_session_data()
-
     def start_new_session(self, session_name: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None, uuid = None) -> str | bool:
         session_id = self.session_selector.get_free_id()
         is_session_created = self.__create_session(session_name, session_id, use_timestamps, is_experiment_running, new_data, uuid)
@@ -337,7 +384,7 @@ class sessionController():
         return session_id if is_session_created else False
 
     def __create_session(self, session_name: str, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None, uuid = None) -> bool:
-        new_session_graph = GraphSession(session_id, session_name, ses_uuid=uuid)
+        new_session_graph = GraphSession(session_id, session_name, alias_manager=self.alias_manager, ses_uuid=uuid)
         try:
             new_session_graph.data_manager.start_new_session(session_id, use_timestamps, is_experiment_running, new_data)
             logger.info(f"Session {session_id} created")

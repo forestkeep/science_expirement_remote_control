@@ -22,16 +22,8 @@ from graph.dataManager import relationData
 
 class legendName():
     def __init__(self, name) -> None:
-        self.__full_name = name
-        self.__short_name = name
-        self.__name = ""
-        self.current_name = self.__full_name
-
-    def set_short(self):
-        self.current_name = self.__short_name
-
-    def set_full(self):
-        self.current_name = self.__full_name
+        self.__name = name
+        self.current_name = self.__name
 
     def set_custom(self, name: str):
         self.__name = name
@@ -251,7 +243,10 @@ class graphData:
         return True
     
     def setData(self, data):
+        old_x = self.rel_data.x_current_name
+        old_y = self.rel_data.y_current_name
         self.rel_data = data
+        self.rel_data.update_names(old_x, old_y)
         self.raw_data_x = np.array(data.x_result)
         self.raw_data_y = np.array(data.y_result)
 
@@ -261,39 +256,46 @@ class graphData:
             self.data_reset()
 
 class linearData(graphData):
-    def __init__(self, data: relationData) -> None:
+    def __init__(self, data: relationData, alias_manager) -> None:
         super().__init__(data)
+        self.alias_manager = alias_manager
         self.rel_data = data
-        self.curve_name = self.rel_data.name
+
+        self.rel_data.update_names(self.alias_manager.get_alias(self.rel_data.x_name),
+                                   self.alias_manager.get_alias(self.rel_data.y_name))
+
+        self.curve_name = self.rel_data.current_name
         self.legend = legendName(self.curve_name)
+        self.alias_manager.aliases_updated.connect(self.alias_changed)
+        self.is_name_curve_customized = False#флаг, указывающий на то, что название кривой было изменено пользователем
 
         self.recalc_stats_param()
+
+    def alias_changed(self, original_name, old_alias, alias):
+        new_x_name = self.rel_data.x_current_name
+        new_y_name = self.rel_data.y_current_name
+        if old_alias == self.rel_data.x_current_name:
+            new_x_name = alias
+        if old_alias == self.rel_data.y_current_name:
+            new_y_name = alias
+        self.rel_data.update_names(new_x_name, new_y_name)
+
+        self.curve_name = self.rel_data.current_name
+        if not self.is_name_curve_customized:
+            self.tree_item.change_name(self.rel_data.current_name, reset=True)
 
     def stop_session(self):
         super().stop_session()
         self.recalc_stats_param()
 
-    def set_full_legend_name(self):
-        if self.legend_field:
-            self.legend_field.removeItem(self.legend.current_name)
-            self.legend.set_full()
-            self.legend_field.addItem(self.plot_obj, self.legend.current_name)
-        else:
-            self.legend.set_full()
-
-    def set_short_legend_name(self):
-        if self.legend_field:
-            self.legend_field.removeItem(self.legend.current_name)
-            self.legend.set_short()
-            self.legend_field.addItem(self.plot_obj, self.legend.current_name)
-        else:
-            self.legend.set_short()
-
     def set_legend_name(self, name):
         if self.legend_field:
-            self.legend_field.removeItem(self.legend.current_name)
-            self.legend.set_custom(name)
-            self.legend_field.addItem(self.plot_obj, self.legend.current_name)
+            if self.is_draw:
+                self.legend_field.removeItem(self.legend.current_name)
+                self.legend.set_custom(name)
+                self.legend_field.addItem(self.plot_obj, self.legend.current_name)
+            else:
+                self.legend.set_custom(name)
         else:
             self.legend.set_custom(name)
 

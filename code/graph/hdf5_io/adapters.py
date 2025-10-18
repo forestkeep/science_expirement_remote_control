@@ -47,6 +47,9 @@ class ProjectToHDF5Adapter:
 			version="1.0",
 			creation_date=datetime.now()
 		)
+
+		# Преобразуем менеджер псевдонимов
+		self.convert_alias_manager(project_file, core_project.alias_manager)
 		
 		# Преобразуем сессии
 		for session_id, core_session in core_project.graph_sessions.items():
@@ -54,6 +57,9 @@ class ProjectToHDF5Adapter:
 			project_file.sessions[session_id] = session
 			
 		return project_file
+	
+	def convert_alias_manager(self, project_file, alias_manager):
+		project_file.aliases = alias_manager.get_all_aliases()
 	
 	def convert_session(self, core_session) -> Session: #core_session: GraphSession
 		"""
@@ -238,16 +244,17 @@ class HDF5ToProjectAdapter:
 	"""Адаптер для преобразования HDF5-моделей в данные ядра"""
 	
 	def convert(self, project: ProjectFile, core_session):
-		#project.sessions = {k: project.sessions[k] for k in sorted(project.sessions.keys(), key=lambda x: int(x))}
+		for original_name, alias in project.aliases.items():
+			core_session.alias_manager.set_alias(original_name, alias)
+
 		for session_name, session_model in project.sessions.items():
 			self._convert_session(session_model, core_session)
-
 
 	def _convert_session(self, session: Session, core_session):
 
 		uuid = session.parameters.uuid
-		print(f"{uuid=}")
-		session_id = core_session.start_new_session(session_name = session.name, uuid = uuid)
+		use_timestamp = True if 'time' in session.data_manager.parameter_data.keys() else False
+		session_id = core_session.start_new_session(session_name = session.name, use_timestamps = use_timestamp, uuid = uuid)
 
 		if not session_id:
 			logger.warning(f"Failed to start session {session.name=} {uuid=}")
@@ -270,7 +277,7 @@ class HDF5ToProjectAdapter:
 			if axis not in [1, 2]:
 				logger.warning(f"Unknown axis {axis} plot{plot.name}")
 				continue
-			curve_obj = self.restore_curve_from_model(plot_model=plot)
+			curve_obj = self.restore_curve_from_model(plot_model=plot, alias_manager = core_session.alias_manager)
 			core_session.graph_sessions[session_id].graph_main.add_curve(curve_obj, type_axis="left" if axis == 1 else "right")
 
 			if plot.is_draw:
@@ -425,7 +432,7 @@ class HDF5ToProjectAdapter:
 				if data_dict:
 					core_manager.add_measurement_data(data_dict)
 
-	def restore_curve_from_model(self, plot_model: Plot) -> linearData:
+	def restore_curve_from_model(self, plot_model: Plot, alias_manager) -> linearData:
 		"""Восстанавливает кривую из модели Plot"""
 		# Создаем корректные measTimeData для relationData
 		# Для оси X
@@ -450,7 +457,7 @@ class HDF5ToProjectAdapter:
 		rel_data = relationData(x_meas, y_meas)
 		
 		# Создаем базовый объект linearData
-		new_data = linearData(data=rel_data)
+		new_data = linearData(data=rel_data, alias_manager=alias_manager)
 		new_data.tree_item.change_name(plot_model.linear_data.curve_name)
 		
 		# Восстанавливаем основные атрибуты

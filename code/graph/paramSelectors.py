@@ -31,6 +31,12 @@ class customQListWidget(QListWidget):
             if not any(self.item(i).text() == parameter for i in range(self.count())):
                 self.addItem(parameter)
 
+    def rename_parameter(self, parameter, new_parameter):
+        for index in range(self.count()):
+            if self.item(index):
+                if self.item(index).text() == parameter:
+                    self.item(index).setText(new_parameter)
+
     def remove_parameters(self, parameters: str|list):
 
         if isinstance(parameters, str):
@@ -58,8 +64,9 @@ class customQListWidget(QListWidget):
 
 class paramSelector(QWidget):
 
-    def __init__(self):
+    def __init__(self, alias_manager):
         super().__init__()
+        self.alias_manager = alias_manager
         self.setLayout(self.setupDataSourceSelectors())
 
     def createHoverSelector(self, label_text) -> list:
@@ -167,8 +174,9 @@ class paramController( QObject):
     numPointsChanged = pyqtSignal(int)
     showingAllPoints = pyqtSignal(bool)
 
-    def __init__(self, paramSelector: paramSelector) -> None:
+    def __init__(self, paramSelector: paramSelector, alias_manager) -> None:
         super().__init__()
+        self.alias_manager = alias_manager
         self.paramSelector = paramSelector
         self.paramSelector.x_param_selector.itemClicked.connect(self.x_param_changed)
         self.paramSelector.y_first_param_selector.itemClicked.connect(self.y_first_param_changed)
@@ -178,6 +186,9 @@ class paramController( QObject):
 
         self.paramSelector.numPointsselector.numPointsChanged.connect(self.numPointsChanged)
         self.paramSelector.numPointsselector.showingAllPoints.connect(self.showingAllPoints)
+
+        self.alias_manager.aliases_updated.connect(self.alias_changed)
+
 
         self.curent_x_parameter = None
         self.curent_y_first_parameters = []
@@ -190,6 +201,36 @@ class paramController( QObject):
         self.__x_parameters = set()
         self.__y_first_parameters = set()
         self.__y_second_parameters = set()
+
+    def alias_changed(self, original_name, old_alias, alias):
+        #++++++++++++++previous+++++++++++++++++
+        for index, name in enumerate(self.previous_x_parameter):
+            if name == old_alias:
+                self.previous_x_parameter[index] = alias
+
+        for index, name in enumerate(self.previous_y_first_parameter):
+            if name == old_alias:
+                self.previous_y_first_parameter[index] = alias
+
+        for index, name in enumerate(self.previous_y_second_parameter):
+            if name == old_alias:
+                self.previous_y_second_parameter[index] = alias
+
+        #++++++++++++++curent+++++++++++++++++
+        if self.curent_x_parameter == old_alias:
+            self.curent_x_parameter = alias
+
+        for index, name in enumerate(self.curent_y_first_parameters):
+            if name == old_alias:
+                self.curent_y_first_parameters[index] = alias
+
+        for index, name in enumerate(self.curent_y_second_parameters):
+            if name == old_alias:
+                self.curent_y_second_parameters[index] = alias
+
+        self.paramSelector.x_param_selector.rename_parameter(old_alias, alias)
+        self.paramSelector.y_first_param_selector.rename_parameter(old_alias, alias)
+        self.paramSelector.y_second_param_selector.rename_parameter(old_alias, alias)
 
     def x_param_changed(self):
         logger.debug(f"x_param_changed {self.curent_x_parameter=}")
@@ -254,7 +295,8 @@ class paramController( QObject):
         self.paramSelector.y_second_param_selector.clearSelection()
         self.state_second_axis_changed.emit( state )
             
-    def add_parameters(self, new_parameters):
+    def add_parameters(self, new_parameters: list):
+        new_parameters = [self.alias_manager.get_alias(name) for name in new_parameters]
         self.__x_parameters.update(new_parameters)
         self.__y_first_parameters.update(new_parameters)
         self.__y_second_parameters.update(new_parameters)
@@ -309,7 +351,10 @@ class paramController( QObject):
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
     def get_parameters(self):
-        return self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters
+        returned_x = self.alias_manager.get_original_name(self.curent_x_parameter)
+        returned_y1 = [self.alias_manager.get_original_name(param) for param in self.curent_y_first_parameters]
+        returned_y2 = [self.alias_manager.get_original_name(param) for param in self.curent_y_second_parameters]
+        return returned_x, returned_y1, returned_y2
     
     def stop_session(self):
         self.paramSelector.numPointsselector.hide()

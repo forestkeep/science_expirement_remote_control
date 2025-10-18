@@ -53,8 +53,9 @@ class CustomComboBox(QComboBox):
 class manageGraph(QObject):
     new_curve_selected = pyqtSignal()
 
-    def __init__(self, tablet_page, main_class, select_data_wid):
+    def __init__(self, tablet_page, main_class, select_data_wid, alias_manager):
         super().__init__()
+        self.alias_manager = alias_manager
         self.page = tablet_page
 
         self.select_win = select_data_wid
@@ -82,7 +83,12 @@ class manageGraph(QObject):
         self.color_warm_gen = self.colors_class.get_random_warm_color()
         self.color_cold_gen = self.colors_class.get_random_cold_color()
 
+        self.alias_manager.aliases_updated.connect(self.alias_changed)
+
         self.initUI()
+
+    def alias_changed(self, original_name, old_alias, alias):
+        pass
 
     def set_num_points(self, value):
         self.num_showing_points = value
@@ -408,7 +414,7 @@ class manageGraph(QObject):
         return self.stack_curve.get(name)
 
     def create_curve(self, data: relationData) -> linearData:
-            new_data = linearData(data=data)
+            new_data = linearData(data=data, alias_manager = self.alias_manager)
             buf_color = next(self.color_warm_gen)
 
             if new_data.saved_style == None:

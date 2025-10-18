@@ -80,7 +80,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.is_grid_shown = False
         self.legend_color = QtGui.QColor(255, 255, 255)
 
-        self.background_color = QtGui.QColor(255, 255, 255)
+        self.background_color = QtGui.QColor(0, 0, 0)
         
         self.plots_lay = self.plotItem
         self.second_graphView = pg.ViewBox(
@@ -119,7 +119,6 @@ class PatchedPlotWidget(pg.PlotWidget):
         
         self.set_second_axis(False)
 
-
         view_rect = self.plots_lay.vb.viewRect()
             
         # Устанавливаем позицию тултипа в правый верхний угол
@@ -127,8 +126,6 @@ class PatchedPlotWidget(pg.PlotWidget):
         tooltip_x = view_rect.right()# - (view_rect.width() * 0.02)  # 2% отступа от правого края
         tooltip_y = view_rect.top()# + (view_rect.height() * 0.02)   # 2% отступа от верхнего края
 
-        print(f"{tooltip_x}, {tooltip_x}")
-        
         #self.tooltip.setPos(50, 50)
 
     def add_inf_line(self, line):
@@ -558,7 +555,9 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.common_style.color = color
         
         for axis_name in ['bottom', 'left', 'right', 'top']:
-            axis = plot_item.getAxis(axis_name)
+            if self.axises.get(axis_name) is None:
+                continue
+            axis = self.axises[axis_name]
             axis.update_common_style(self.common_style)
             if axis:
                 axis.setTextPen(color)

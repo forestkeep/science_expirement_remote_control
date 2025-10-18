@@ -39,7 +39,8 @@ def time_decorator(func):
     return wrapper
 
 class graphOsc:
-    def __init__(self, tablet_page, selector_wave, main_class):
+    def __init__(self, tablet_page, selector_wave, main_class, alias_manager):
+        self.alias_manager = alias_manager
         self.page = tablet_page
         self.legend = pg.LegendItem(size=(80, 60), offset=(10, 10))
         self.is_show_warning = True

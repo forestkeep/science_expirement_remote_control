@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QDialog,
                              QHBoxLayout, QHeaderView, QLineEdit, QMainWindow,
                              QMenu, QMessageBox, QPushButton, QTextEdit,
                              QTreeWidget, QTreeWidgetItem, QVBoxLayout,
-                             QWidget, QInputDialog)
+                             QWidget, QInputDialog, QDialogButtonBox)
 
 import copy
 
@@ -27,6 +27,47 @@ import numexpr as ne
 import numpy as np
 import logging
 logger = logging.getLogger(__name__)
+
+class NameChangeDialog(QDialog):
+    def __init__(self, parent, current_name):
+        super().__init__(parent)
+        self.original_name = current_name
+        self.reset_clicked = False
+        
+        self.setWindowTitle(QApplication.translate("GraphWindow", "Новое название"))
+        layout = QVBoxLayout(self)
+        
+        # Поле ввода
+        self.line_edit = QLineEdit(current_name)
+        layout.addWidget(self.line_edit)
+        
+        # Кнопка сброса
+        self.reset_button = QPushButton(QApplication.translate("GraphWindow", "Сбросить название"))
+        self.reset_button.clicked.connect(self.on_reset_clicked)
+        layout.addWidget(self.reset_button)
+        
+        # Стандартные кнопки OK/Cancel
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            Qt.Horizontal, self
+        )
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        layout.addWidget(self.buttons)
+
+    def on_reset_clicked(self):
+        self.reset_clicked = True
+        self.accept()  # Закрываем диалог с статусом OK
+
+    def get_results(self):
+        # Если была нажата кнопка сброса, возвращаем исходное имя
+        if self.reset_clicked:
+            text = self.original_name
+        else:
+            text = self.line_edit.text()
+        
+        ok = self.result() == QDialog.Accepted
+        return text, ok, self.reset_clicked
 
 
 class CurveTreeItem(QTreeWidgetItem):
@@ -67,7 +108,15 @@ class CurveTreeItem(QTreeWidgetItem):
 
         self.add_basic_characteristics()
 
-    def change_name(self, name):
+    def change_name(self, name, reset=False):
+        
+        if not reset:
+            self.curve_data_obj.is_name_curve_customized = True
+
+        else:
+            self.curve_data_obj.is_name_curve_customized = False
+            name = self.curve_data_obj.rel_data.current_name
+
         self.setText(0, QApplication.translate("filters",f"Кривая {name}"))
         self.parameters["name"] = name
         self.curve_data_obj.set_legend_name(name)
@@ -454,16 +503,8 @@ class treeWin(QWidget):
 
             buf_rel_data.y_name = "gen"
 
-            #curve_data = self.main_class.graph_main.create_curve( buf_rel_data )
-
-            #self.curve_shown.emit(curve_data)
             self.curve_created.emit(buf_rel_data, self.buf_formula, self.buf_description)
-            #self.add_curve(curve_data.tree_item)
-            #curve_data.set_full_legend_name()
-            #curve_data.tree_item.add_new_block( QApplication.translate("GraphWindow","Разное"),
-            #                                        {QApplication.translate("GraphWindow","Формула"): self.buf_formula,
-            #                                        QApplication.translate("GraphWindow","Описание"): self.buf_description})
-            
+
             #если построение успешно, то очищаем буфер
             self.buf_formula = None
             self.buf_description = None
@@ -569,10 +610,14 @@ class treeWin(QWidget):
             self.curve_reset.emit(item.curve_data_obj)
 
     def change_name_curve(self, item):
-        text, ok = QInputDialog().getText(self, QApplication.translate("GraphWindow","Новое название"),
-                                     QApplication.translate("GraphWindow","Новое название"), QLineEdit.Normal, item.curve_data_obj.name)
-        if ok and text:
-            item.change_name(text)
+        dialog = NameChangeDialog(
+            self,
+            item.curve_data_obj.name
+        )
+        if dialog.exec_() == QDialog.Accepted:
+            text, ok, reset = dialog.get_results()
+            if ok:
+                item.change_name(text, reset)
 
     def add_note(self, item: CurveTreeItem):
         description = item.get_description()
