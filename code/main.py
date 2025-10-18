@@ -30,7 +30,7 @@ if __name__ == "__main__":
     logger.handlers.clear()
 
     console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
+    console.setLevel(logging.WARNING)
     console.setFormatter(logging.Formatter(FORMAT))
 
     folder_path = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")

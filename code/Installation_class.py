@@ -482,9 +482,6 @@ class installation_class( ExperimentBridge, analyse):
                 self.is_search_resources = True
                 self.set_clients_for_device()
                 self.set_state_text(text = QApplication.translate('main install',"Старт эксперимента"))
-                self.installation_window.pause_button.setStyleSheet(ready_style_background)
-                self.installation_window.start_button.setStyleSheet(ready_style_background)
-                self.installation_window.start_button.setText(QApplication.translate('main install',"Стоп"))
                 
                 self.message_broker.clear_all_subscribers()
                 status = self.set_depending()#setting subscribers
@@ -494,11 +491,16 @@ class installation_class( ExperimentBridge, analyse):
                                                                                             use_timestamps=True,
                                                                                             is_experiment_running=True
                                                                                             )
-                    
+                      
                     if isinstance(self.current_session_graph_id, bool) and self.current_session_graph_id is False:
                         self.add_text_to_log(text =QApplication.translate('main install',"Не удалось создать новую сессию измерений"), status = "war")
                         logger.warning("Не удалось создать новую сессию измерений")
+                        self.current_state = ExperimentState.PREPARATION
                         return
+                    
+                    self.installation_window.pause_button.setStyleSheet(ready_style_background)
+                    self.installation_window.start_button.setStyleSheet(ready_style_background)
+                    self.installation_window.start_button.setText(QApplication.translate('main install',"Стоп"))
                     
                     self.has_unsaved_data = False
                     
@@ -585,7 +587,7 @@ class installation_class( ExperimentBridge, analyse):
     @current_state.setter
     def current_state(self, state):
         self._current_state = state
-        print(f"установлено состояние  {state} {time.perf_counter()}")
+        logger.debug(f"установлено состояние  {state} {time.perf_counter()}")
 
     def second_thread_tasks(self):
         if self.current_state != ExperimentState.IN_PROGRESS and not self.exp_third_queue.empty():
