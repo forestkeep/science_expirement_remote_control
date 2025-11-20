@@ -1,11 +1,8 @@
-from pyqtgraph import PlotWidget
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any
 import json
 import h5py
-from .models import GraphFieldSettings, OscilloscopeFieldSettings, AxisSettings, AxisStyle
-from graph.customPlotWidget import axisStyle
+from .models import GraphFieldSettings, AxisSettings, AxisStyle
 from PyQt5 import QtGui
-
 
 def extract_plot_widget_settings(plot_widget) -> GraphFieldSettings:
     """Извлекает настройки из PatchedPlotWidget для сохранения"""

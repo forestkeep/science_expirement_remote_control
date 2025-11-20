@@ -11,7 +11,6 @@ class BaseHDF5Entity:
         """Записывает атрибуты в HDF5-объект."""
         for key, value in attributes.items():
             if value is not None:
-                # Преобразуем сложные типы в строки для HDF5
                 if isinstance(value, (list, dict)):
                     self._hdf5_object.attrs[key] = str(value)
                 else:

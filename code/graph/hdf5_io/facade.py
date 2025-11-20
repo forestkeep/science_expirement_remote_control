@@ -1,16 +1,11 @@
-# facade.py
-from typing import Dict, Optional, List
-from pathlib import Path
+from typing import Dict, Optional
 from datetime import datetime
-import h5py
-
 from .hdf5_entities.file import HDF5File
-from .models import ProjectFile, Session, Plot, OscillogramData
+from .models import ProjectFile
 from .load_strategies.base import BaseLoadStrategy
 from .load_strategies.full_load_strategy import FullLoadStrategy
 from .adapters import ProjectToHDF5Adapter, HDF5ToProjectAdapter
 
-# facade.py
 class HDF5Facade:
     """Фасад для работы с HDF5 файлами проектов."""
     
@@ -37,15 +32,12 @@ class HDF5Facade:
             core_project: Объект проекта из ядра приложения
             file_path: Путь к файлу
         """
-        # Преобразуем объект ядра в модель HDF5
         project_file = self.core_to_hdf5.convert_project(core_project)
         
-        # Сохраняем через HDF5File
         with HDF5File(file_path, 'a') as h5_file:
             h5_file.write_file_attributes(project_file)
             h5_file.write_aliases(project_file.aliases)
             
-            # Сохраняем все сессии
             for session_id, session in project_file.sessions.items():
                 h5_file.write_session(session, session_id=session_id)
     
@@ -65,10 +57,8 @@ class HDF5Facade:
         strategy = load_strategy or self.default_load_strategy
         
         with HDF5File(file_path, 'r', strategy) as h5_file:
-            # Читаем атрибуты файла
             file_attrs = h5_file.read_file_attributes()
 
-            # Создаем объект проекта
             project_file = ProjectFile(
                 name=file_attrs.get('name', ''),
                 description=file_attrs.get('description', ''),
@@ -78,7 +68,6 @@ class HDF5Facade:
 
             project_file.aliases = h5_file.read_aliases()
             
-            # Загружаем все сессии
             session_uuids = h5_file.get_session_uuids()
 
             for session_id in session_uuids:
@@ -87,5 +76,4 @@ class HDF5Facade:
                 session = h5_file.read_session(session_id)
                 project_file.sessions[session_id] = session
             
-            # Преобразуем модель HDF5 в объект ядра
             return self.hdf5_to_core.convert(project_file, core_project_class)

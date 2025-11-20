@@ -1,4 +1,3 @@
-import h5py
 import numpy as np
 from .base import BaseHDF5Entity
 from ..models import OscillogramData
@@ -8,7 +7,6 @@ class HDF5OscillogramData(BaseHDF5Entity):
     
     def write(self, data: OscillogramData):
         """Записывает данные осциллограммы в HDF5."""
-        # Записываем атрибуты
         attributes = {
             'name': data.name,
             'description': data.description,
@@ -18,7 +16,6 @@ class HDF5OscillogramData(BaseHDF5Entity):
         }
         self._write_attributes(attributes)
         
-        # Записываем datasets
         if 'time_values' in self._hdf5_object:
             del self._hdf5_object['time_values']
         if 'data_values' in self._hdf5_object:
@@ -29,10 +26,8 @@ class HDF5OscillogramData(BaseHDF5Entity):
     
     def read(self) -> OscillogramData:
         """Читает данные осциллограммы из HDF5."""
-        # Читаем атрибуты
         attrs = self._read_attributes()
         
-        # Читаем datasets
         time_values = np.array(self._hdf5_object['time_values'])
         data_values = np.array(self._hdf5_object['data_values'])
         

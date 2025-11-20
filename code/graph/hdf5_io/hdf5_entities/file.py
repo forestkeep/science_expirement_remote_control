@@ -1,6 +1,4 @@
-# hdf5_entities/file.py
 import h5py
-from datetime import datetime
 from typing import Dict, Optional
 from .base import BaseHDF5Entity
 from ..models import ProjectFile, Session

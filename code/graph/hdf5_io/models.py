@@ -1,18 +1,13 @@
-# models.py
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple
 import numpy as np
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtCore
 from datetime import datetime
 
-# Базовый класс для всех моделей с общими полями
 @dataclass
 class BaseModel:
 	name: str = ""
 	description: Optional[str] = None
-
-#--------------------------модели кривых и их представлений-------------------------------
-# Модели для графиков
 
 @dataclass
 class GraphStyle(BaseModel):
@@ -42,17 +37,13 @@ class HistoryEntry(BaseModel):
 	action: str = ""
 	parameters: Dict[str, Any] = field(default_factory=dict)
 
-
-# Модель для параметров CurveTreeItem
 @dataclass
 class CurveTreeItemData(BaseModel):
 	parameters: Dict[str, Any] = field(default_factory=dict)
-	# Несериализуемые объекты заменены на текстовые представления
 	font_info: str = "Italic,10"
 	color_info: str = "#ff30ea"
 	col_font_info: str = "15"
 
-# Модель для legendName
 @dataclass
 class LegendNameData(BaseModel):
 	full_name: str = ""
@@ -60,7 +51,6 @@ class LegendNameData(BaseModel):
 	custom_name: str = ""
 	current_name: str = ""
 
-# Модель для graphData
 @dataclass
 class GraphData(BaseModel):
 	raw_data_x: np.ndarray = field(default_factory=lambda: np.empty(0))
@@ -79,55 +69,39 @@ class GraphData(BaseModel):
 	is_draw: bool = False
 	is_curve_selected: bool = False
 	
-	# Ссылка на tree_item как на данные
 	tree_item_data: CurveTreeItemData = field(default_factory=CurveTreeItemData)
 
-# Модель для linearData
 @dataclass
 class LinearData(GraphData):
-	# Дополнительные поля specific to linearData
 	tip: str = "linear"
 
-# Обновленная модель Plot
 @dataclass
 class Plot(BaseModel):
 
-	# Статус и стиль
 	status: str = "active"
 	style: GraphStyle = field(default_factory=GraphStyle)
 	statistics: Statistics = field(default_factory=Statistics)
 	history: List[HistoryEntry] = field(default_factory=list)
 	
-	# Данные из linearData
 	linear_data: LinearData = field(default_factory=LinearData)
 	
-	# Несериализуемые объекты (заменены на текстовые представления)
 	plot_obj_info: str = "PlotObject"
 	parent_graph_field_info: str = "ViewBox"
 	legend_field_info: str = "LegendItem"
 
 	axis : int = 1
 	
-	# Параметры отображения
 	is_draw: bool = False
 	is_curve_selected: bool = False
-
-	# Оси
 
 	x_name: str = ""
 	y_name: str = ""
 
-
-
-#------------------------------------------------------------------------------------------
-
-# Модели для настроек полей
-
 @dataclass
 class AxisStyle:
 	"""Стиль оси (сериализуемый в HDF5)"""
-	text_font: str = "Arial,13,-1,5,50,0,0,0,0,0"  # сериализованный QFont
-	tick_font: str = "Arial,10,-1,5,50,0,0,0,0,0"  # сериализованный QFont
+	text_font: str = "Arial,13,-1,5,50,0,0,0,0,0"
+	tick_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
 	color: str = "#000000"
 	
 	@classmethod
@@ -160,32 +134,26 @@ class AxisSettings:
 	auto_range: bool = True
 	range: Optional[Tuple[float, float]] = None
 	custom_style: AxisStyle = field(default_factory=AxisStyle)
-	# Флаг для отслеживания, какой стиль сейчас применен (только для runtime, не сериализуется)
-	current_style_type: str = field(default="common", init=False)  # "common" или "custom"
+	current_style_type: str = field(default="common", init=False)
 
 @dataclass
 class GraphFieldSettings:
 	"""Комплексные настройки графика (сериализуемые в HDF5)"""
 	
-	# Основные настройки графика
 	title: str = ""
 	background_color: str = "#FFFFFF"
 	grid_enabled: bool = True
 	grid_color: str = "#CCCCCC"
 	grid_alpha: float = 0.5
 	
-	# Общий стиль осей (применяется если не переопределен для конкретной оси)
 	common_axis_style: AxisStyle = field(default_factory=AxisStyle)
 	
-	# Настройки отдельных осей
 	axes: Dict[str, AxisSettings] = field(default_factory=dict)
 	
-	# Настройки легенды
 	legend_enabled: bool = True
 	legend_text_color: str = "#000000"
 	legend_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
 	
-	# Дополнительные настройки
 	antialiasing: bool = True
 	is_second_axis_enabled: bool = False
 	is_multiple_selection_enabled: bool = False
@@ -203,26 +171,20 @@ class GraphFieldSettings:
 class OscilloscopeFieldSettings(BaseModel):
 	"""Комплексные настройки графика (сериализуемые в HDF5)"""
 	
-	# Основные настройки графика
 	title: str = ""
 	background_color: str = "#FFFFFF"
 	grid_enabled: bool = True
 	grid_color: str = "#CCCCCC"
 	grid_alpha: float = 0.5
 	
-	# Общий стиль осей (применяется если не переопределен для конкретной оси)
 	common_axis_style: AxisStyle = field(default_factory=AxisStyle)
 	
-	# Настройки отдельных осей
 	axes: Dict[str, AxisSettings] = field(default_factory=dict)
 	
-	# Настройки легенды
 	legend_enabled: bool = True
-	#legend_position: str = "top right"
 	legend_text_color: str = "#000000"
 	legend_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
 	
-	# Дополнительные настройки
 	antialiasing: bool = True
 	
 	def __post_init__(self):
@@ -239,7 +201,6 @@ class FieldSettings(BaseModel):
 	graph_field: GraphFieldSettings = field(default_factory=GraphFieldSettings)
 	oscilloscope_field: OscilloscopeFieldSettings = field(default_factory=OscilloscopeFieldSettings)
 
-# Модели для данных
 @dataclass
 class OscillogramData(BaseModel):
 	device: str = ""
@@ -262,10 +223,8 @@ class DataManager(BaseModel):
 	parameter_data: Dict[str, ParameterData] = field(default_factory=dict)
 
 
-# Модели для сессии
 @dataclass
 class SessionParameters(BaseModel):
-	# Пример:
 	uuid: str = ""
 	experiment_date: Optional[datetime] = None
 	operator: str = ""
@@ -278,7 +237,6 @@ class Session(BaseModel):
 	data_manager: DataManager = field(default_factory=DataManager)
 	plots: Dict[str, Plot] = field(default_factory=dict)
 
-# Модель файла верхнего уровня
 @dataclass
 class ProjectFile(BaseModel):
 	version: str = "1.0"

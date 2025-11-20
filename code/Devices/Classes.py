@@ -354,18 +354,18 @@ class base_device():
                             except:
                                 self.active_channel_act.is_time_act_correct = False
 
-                    if True:
-                        try:
-                            if int(self.setting_window.num_act_enter.currentText()) < 1:
+
+                    try:
+                        if int(self.setting_window.num_act_enter.currentText()) < 1:
+                            self.active_channel_act.is_num_steps_act_correct = False
+                    except:
+                            if self.setting_window.num_act_enter.currentText() == QApplication.translate("Device","Пока активны другие приборы") \
+                            and self.installation_class.get_signal_list(self.name, self.active_channel_act) != []:
+                                pass
+                            else:
                                 self.active_channel_act.is_num_steps_act_correct = False
-                        except:
-                                if self.setting_window.num_act_enter.currentText() == QApplication.translate("Device","Пока активны другие приборы") \
-                                and self.installation_class.get_signal_list(self.name, self.active_channel_act) != []:
-                                    pass
-                                else:
-                                    self.active_channel_act.is_num_steps_act_correct = False
-            
-                        self.setting_window.num_act_enter.setStyleSheet(ready_style_border)
+        
+                    self.setting_window.num_act_enter.setStyleSheet(ready_style_border)
 
                     self.setting_window.sourse_act_enter.setStyleSheet(ready_style_border)
 

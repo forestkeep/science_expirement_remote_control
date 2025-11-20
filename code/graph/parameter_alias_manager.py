@@ -77,8 +77,8 @@ class ParameterAliasManager(QObject):
     
     def _is_valid_alias(self, alias: str) -> bool:
         """Проверяет валидность псевдонима"""
-        return bool(self._validation_pattern.match(alias)) and alias.strip() != ""
-
+        return not alias or (bool(self._validation_pattern.fullmatch(alias)) and (alias == "" or any(c not in ' ' for c in alias)))
+    
 class AliasDelegate(QStyledItemDelegate):
     """Делегат для валидации ввода псевдонимов"""
     
@@ -87,7 +87,7 @@ class AliasDelegate(QStyledItemDelegate):
         self.dialog = parent
         self.alias_manager = alias_manager
     
-    def createEditor(self, parent, option, index):
+    def createEditor(self, parent, _option, _index):
         editor = QLineEdit(parent)
         editor.textChanged.connect(lambda text: self.validate_text(editor, text))
         return editor
@@ -95,7 +95,6 @@ class AliasDelegate(QStyledItemDelegate):
     def validate_text(self, editor, text):
         """Валидация текста на лету"""
         is_valid = self.alias_manager._is_valid_alias(text)
-        
         # Дополнительные проверки, специфичные для UI
         if is_valid:
             # Проверка уникальности (если нужно)
@@ -143,19 +142,16 @@ class ParameterAliasDialog(QDialog):
         
         layout = QVBoxLayout()
         
-        # Таблица параметров
         self.table = QTableWidget()
-        self.table.setColumnCount(2)  # Убрали столбец "Действия"
+        self.table.setColumnCount(2)
         self.table.setHorizontalHeaderLabels(["Оригинальное имя", "Псевдоним"])
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         
-        # Устанавливаем делегат для столбца псевдонимов
         self.table.setItemDelegateForColumn(1, AliasDelegate(self.alias_manager, self))
         
         layout.addWidget(self.table)
         
-        # Кнопки
         button_layout = QHBoxLayout()
         
         self.save_button = QPushButton("Сохранить")
@@ -188,8 +184,6 @@ class ParameterAliasDialog(QDialog):
         alias_item = QTableWidgetItem(alias)
         self.table.setItem(row, 1, alias_item)
         
-        # Функция добавления строки остается, но вызывается автоматически
-        # при необходимости (например, при вводе в последнюю строку)
         self.setup_alias_validation(row)
     
     def setup_alias_validation(self, row: int):
@@ -208,12 +202,19 @@ class ParameterAliasDialog(QDialog):
             editor.setStyleSheet("border: 2px solid red;")
 
     def check_available_name(self, name: str):
-        '''Имя доступно в том случае, если оно больше не использовано нигде'''
+        '''Имя доступно в том случае, если оно больше не использовано нигде, за исключением пустой строки'''
+        if name == "":
+            return True
+        
+        count = 0
         for row in range(self.table.rowCount()):
             alias_item = self.table.item(row, 1)
             text = alias_item.text().strip()
             if text == name:
-                return False
+                count+=1
+
+        if count > 1:
+            return False
         return True
     
     def add_parameter_row(self):
@@ -244,6 +245,5 @@ class ParameterAliasDialog(QDialog):
                                       f"Ошибка для параметра '{original_name}': {message}")
             else:
                 pass
-                #self.alias_manager.remove_alias(original_name)
         
         self.accept()

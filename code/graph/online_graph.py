@@ -314,12 +314,14 @@ class sessionController():
                             'median': np.median(values)
                         })
             
-            # Выводим сгруппированные данные
+            # Выводим сгруппированные данные с сортировкой по session_name
             for param_name, sessions_data in param_data.items():
                 print(f"Parameter: {param_name}")
-                print("Session, mean, std, median")
-                for data in sessions_data:
-                    print(f"{data['session_name']}, {data['mean']}, {data['std']}, {data['median']}")
+                # Сортируем данные по session_name, преобразуя строку в кортеж чисел
+                sorted_sessions_data = sorted(sessions_data, 
+                                            key=lambda x: tuple(map(int, x['session_name'].split())))
+                for data in sorted_sessions_data:
+                    print(f"{data['session_name']}, {data['mean']}, {data['std']}")
                 print()  # Пустая строка между параметрами
 
     def push_button_save_graph(self):

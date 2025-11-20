@@ -1,25 +1,13 @@
-# adapters.py
-from typing import Dict, List, Any
-from datetime import datetime
-import numpy as np
-
-from .models import ProjectFile, Session, SessionParameters, FieldSettings, DataManager, GraphFieldSettings, OscilloscopeFieldSettings
-from .models import Plot, OscillogramData, ParameterData, GraphStyle, Statistics, HistoryEntry, CurveTreeItemData, LegendNameData, GraphData, LinearData
+from .models import (ProjectFile, Session, SessionParameters, FieldSettings, DataManager,Plot, OscillogramData,
+					ParameterData, GraphStyle, Statistics, CurveTreeItemData, GraphData, LinearData)
 from .utils import extract_plot_widget_settings, string_to_qfont, string_to_color
 import pyqtgraph as pg
 import logging
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtCore, QtGui
 
-# adapters.py
 import numpy as np
 from datetime import datetime
-from typing import Dict, Any, List
-from .models import (
-	ProjectFile, Session, SessionParameters, FieldSettings,
-	GraphFieldSettings, OscilloscopeFieldSettings, DataManager,
-	OscillogramData, ParameterData, Plot, GraphStyle,
-	Statistics, HistoryEntry
-)
+
 from ..dataManager import graphDataManager, relationData, measTimeData
 from ..curve_data import linearData, LineStyle
 from ..customPlotWidget import PatchedPlotWidget, axisController, axisSettings, axisStyle
@@ -40,7 +28,6 @@ class ProjectToHDF5Adapter:
 		Returns:
 			ProjectFile: Модель проекта для HDF5
 		"""
-		# Анализируем структуру core_project и преобразуем в ProjectFile
 		project_file = ProjectFile(
 			name=None,
 			description=None,
@@ -48,10 +35,8 @@ class ProjectToHDF5Adapter:
 			creation_date=datetime.now()
 		)
 
-		# Преобразуем менеджер псевдонимов
 		self.convert_alias_manager(project_file, core_project.alias_manager)
 		
-		# Преобразуем сессии
 		for session_id, core_session in core_project.graph_sessions.items():
 			session = self.convert_session(core_session)
 			project_file.sessions[session_id] = session
@@ -71,10 +56,8 @@ class ProjectToHDF5Adapter:
 		Returns:
 			Session: Модель сессии для HDF5
 		"""
-		# Преобразуем менеджер данных
 		data_manager = self._convert_data_manager(core_session.data_manager)
 
-		# Преобразуем параметры сессии
 		parameters = SessionParameters(
 			name=core_session.session_name,
 			description=core_session.description,
@@ -94,19 +77,13 @@ class ProjectToHDF5Adapter:
 		field_settings.oscilloscope_field =oscilloscope_settings
 		field_settings.graph_field.is_second_axis_enabled = is_second_axis_enabled
 		field_settings.graph_field.is_multiple_selection_enabled = is_multiple_selection_enabled
-		
-		#=============================================
-		# Преобразуем графики
-		
+			
 		plots = {}
 		
 		for plot_name, core_plot in core_session.graph_main.stack_curve.items():
 			plot = self.convert_plot(core_plot)
 			plots[plot_name.replace('\\', '_').replace('/', '_')] = plot
 		
-		
-		#======================================================
-		# Создаем модель сессии
 		return Session(
 			name=core_session.session_name,
 			description=core_session.description,
@@ -156,17 +133,15 @@ class ProjectToHDF5Adapter:
 		"""
 		Преобразует объект графика ядра в Plot.
 		"""
-		# Создаем объекты для вложенных данных
+
 		style_settings = self.from_graph_item( graph_item = core_plot)
 		
-		# Создаем статистику на основе параметров tree_item
 		stats = Statistics(
 			mean=core_plot.tree_item.parameters.get('mean', 0.0),
 			median=core_plot.tree_item.parameters.get('median', 0.0),
 			std_dev=core_plot.tree_item.parameters.get('std', 0.0)
 		)
 		
-		# Создаем данные для CurveTreeItem
 		tree_item_data = CurveTreeItemData(
 			parameters=core_plot.tree_item.parameters.copy(),
 			font_info=f"Italic,{core_plot.tree_item.font.pointSize()}" if hasattr(core_plot.tree_item, 'font') else "Italic,10",
@@ -174,7 +149,6 @@ class ProjectToHDF5Adapter:
 			col_font_info=f"{core_plot.tree_item.col_font.pointSize()}" if hasattr(core_plot.tree_item, 'col_font') else "15"
 		)
 		
-		# Создаем объект GraphData
 		graph_data = GraphData(
 			raw_data_x=core_plot.raw_data_x,
 			raw_data_y=core_plot.raw_data_y,
@@ -192,22 +166,20 @@ class ProjectToHDF5Adapter:
 			tree_item_data=tree_item_data,
 		)
 		
-		# Создаем объект LinearData
 		linear_data = LinearData(
-			**graph_data.__dict__,  # Копируем все поля из GraphData
+			**graph_data.__dict__,
 			tip=core_plot.tree_item.parameters.get('tip', 'linear'),
 		)
 		
-		# Создаем и возвращаем объект Plot
 		return Plot(
-			status="active",  # Значение по умолчанию
+			status="active",
 			style=style_settings,
 			statistics=stats,
-			history=[],  # Пустая история, так как в исходном коде не видно механизма заполнения
+			history=[],
 			linear_data=linear_data,
-			plot_obj_info="PlotObject",  # Заглушка для несериализуемого объекта
-			parent_graph_field_info="ViewBox",  # Заглушка для несериализуемого объекта
-			legend_field_info="LegendItem",  # Заглушка для несериализуемого объекта
+			plot_obj_info="PlotObject",
+			parent_graph_field_info="ViewBox",
+			legend_field_info="LegendItem",
 			is_draw=core_plot.is_draw,
 			is_curve_selected=core_plot.is_curve_selected,
 			name=core_plot.curve_name if hasattr(core_plot, 'curve_name') else "",
@@ -281,10 +253,12 @@ class HDF5ToProjectAdapter:
 			core_session.graph_sessions[session_id].graph_main.add_curve(curve_obj, type_axis="left" if axis == 1 else "right")
 
 			if plot.is_draw:
+				if selection_x_param and selection_x_param != plot.x_name:
+					logger.warning(f"Conflict selection x parameter {plot.x_name} {selection_x_param}")
+					continue
+
 				if not selection_x_param:
 					selection_x_param = plot.x_name
-				else:
-					logger.warning(f"Duplicate selection parameter {plot.x_name}")
 
 				if axis == 1:
 					selection_y_first_params.append(plot.y_name)
@@ -311,16 +285,13 @@ class HDF5ToProjectAdapter:
 		"""
 		graph_settings = settings.graph_field
 		
-		# Основные настройки графика
 		graph_widget.setTitle(graph_settings.title)
 		graph_widget.setCustomBackgroundColor(color = QtGui.QColor(graph_settings.background_color))
 		
-		# Сетка
 		graph_widget.toggleGrid(graph_settings.grid_enabled)
 		if hasattr(graph_widget, 'set_grid_color'):
 			graph_widget.set_grid_color(graph_settings.grid_color)
 		
-		# Общий стиль осей
 		common_style = axisStyle(
 			text_font=string_to_qfont(graph_settings.common_axis_style.text_font),
 			
@@ -329,23 +300,19 @@ class HDF5ToProjectAdapter:
 		)
 		graph_widget.common_style = common_style
 		
-		# Настройки отдельных осей
 		for axis_name, axis_settings in graph_settings.axes.items():
 			if axis_name in graph_widget.axises:
 				axis_controller = graph_widget.axises[axis_name]
 				
-				# Базовые настройки
 				axis_controller.settings.label = axis_settings.label
 				axis_controller.settings.is_visible = axis_settings.is_visible
 				axis_controller.settings.is_inverted = axis_settings.is_inverted
 				
-				# Видимость оси
 				if axis_settings.is_visible:
 					axis_controller.show()
 				else:
 					axis_controller.hide()
 				
-				# Инвертирование
 				if axis_name == 'bottom':
 					graph_widget.invert_x_axis(axis_settings.is_inverted)
 				elif axis_name in ['left', 'right']:
@@ -354,7 +321,6 @@ class HDF5ToProjectAdapter:
 					else:
 						graph_widget.invert_y2_axis(axis_settings.is_inverted)
 				
-				# Стиль оси
 				custom_style = axisStyle(
 						text_font=string_to_qfont(axis_settings.custom_style.text_font),
 						tick_font=string_to_qfont(axis_settings.custom_style.tick_font),
@@ -365,37 +331,30 @@ class HDF5ToProjectAdapter:
 				else:
 					axis_controller.set_common_style(common_style)
 				
-				# Логарифмический режим и диапазон
 				if hasattr(axis_controller, 'setLogMode'):
 					axis_controller.setLogMode(axis_settings.log_mode)
 				
 				if not axis_settings.auto_range and axis_settings.range:
 					axis_controller.setRange(*axis_settings.range)
 		
-		# Легенда
 		if hasattr(graph_widget, 'legend'):
 			graph_widget.legend.setVisible(graph_settings.legend_enabled)
 			graph_widget.legend2.setVisible(graph_settings.legend_enabled)
-			
-			# Цвет текста легенды
+
 			if hasattr(graph_widget, 'set_legend_color'):
 				graph_widget.set_legend_color(graph_settings.legend_text_color)
 		
-		# Антиалиасинг
 		graph_widget.setAntialiasing(graph_settings.antialiasing)
 
 
 	def prepare_data_dict(self, data_items):
-			# Создаем словари для каждого уровня вложенности
 			level_3 = {}
 			level_2 = {}
 			level_1 = {}
 			
 			for item in data_items:
-				# Формируем структуру данных [values, times]
 				data_pairs = [item.data_values, item.time_values]
 				
-				# Распределяем по уровням в зависимости от заполненности полей
 				if item.device:
 					if item.device not in level_3:
 						level_3[item.device] = {}
@@ -424,7 +383,6 @@ class HDF5ToProjectAdapter:
 				if data_dict:
 					core_manager.add_measurement_data(data_dict, "osc")
 
-		# Обрабатываем параметры
 		param_data = list(model.parameter_data.values())
 		if param_data:
 			param_l3, param_l2, param_l1 = self.prepare_data_dict(param_data)
@@ -434,8 +392,7 @@ class HDF5ToProjectAdapter:
 
 	def restore_curve_from_model(self, plot_model: Plot, alias_manager) -> linearData:
 		"""Восстанавливает кривую из модели Plot"""
-		# Создаем корректные measTimeData для relationData
-		# Для оси X
+
 		x_meas = measTimeData(
 			device=plot_model.linear_data.device,
 			ch=plot_model.linear_data.channel,
@@ -444,7 +401,6 @@ class HDF5ToProjectAdapter:
 			num_or_time=np.arange(len(plot_model.linear_data.raw_data_x))
 		)
 		
-		# Для оси Y
 		y_meas = measTimeData(
 			device=plot_model.linear_data.device,
 			ch=plot_model.linear_data.channel,
@@ -453,28 +409,22 @@ class HDF5ToProjectAdapter:
 			num_or_time=np.arange(len(plot_model.linear_data.raw_data_y))
 		)
 		
-		# Создаем relationData с корректными данными
 		rel_data = relationData(x_meas, y_meas)
 		
-		# Создаем базовый объект linearData
 		new_data = linearData(data=rel_data, alias_manager=alias_manager)
 		new_data.tree_item.change_name(plot_model.linear_data.curve_name)
 		
-		# Восстанавливаем основные атрибуты
 		new_data.device = plot_model.linear_data.device
 		new_data.channel = plot_model.linear_data.channel
 		new_data.curve_name = plot_model.linear_data.curve_name
 		new_data.number = plot_model.linear_data.number
 		new_data.number_axis = plot_model.linear_data.number_axis
 		
-		# Восстанавливаем данные (уже установлены через relationData, но на всякий случай дублируем)
 		new_data.raw_data_x = plot_model.linear_data.raw_data_x
 		new_data.raw_data_y = plot_model.linear_data.raw_data_y
 		new_data.filtered_x_data = plot_model.linear_data.filtered_x_data
 		new_data.filtered_y_data = plot_model.linear_data.filtered_y_data
 		
-		
-		# Создаем графический объект
 		graph = pg.PlotDataItem(
 			new_data.filtered_x_data,
 			new_data.filtered_y_data,
@@ -487,17 +437,14 @@ class HDF5ToProjectAdapter:
 
 		line_style = self.transform_line_style(plot_model.style)
 		
-		# Устанавливаем графический объект
 		new_data.set_plot_obj(plot_obj=graph, style=line_style)
 		
-		# Восстанавливаем состояние
 		new_data.is_draw = plot_model.linear_data.is_draw
 		new_data.is_curve_selected = plot_model.linear_data.is_curve_selected
 		
 		return new_data
 	
 	def transform_line_style(self, style: GraphStyle) -> LineStyle:
-		# Создаем перо
 		styles = {
 			"Solid": QtCore.Qt.SolidLine,
 			"Dash": QtCore.Qt.DashLine,

@@ -15,9 +15,9 @@ from datetime import datetime
 import pyqtgraph as pg
 import logging
 import numpy as np
-from PyQt5.QtCore import QObject, Qt, pyqtSignal, QCoreApplication
+from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QFont, QFontMetrics, QIcon, QColor
-from PyQt5.QtWidgets import QApplication, QHBoxLayout, QSizePolicy, QSpacerItem, QVBoxLayout, QComboBox, QLineEdit, QMenu, QAction, QColorDialog, QPushButton, QWidget
+from PyQt5.QtWidgets import QApplication, QHBoxLayout, QSizePolicy, QVBoxLayout, QComboBox, QLineEdit, QMenu, QAction, QColorDialog, QPushButton, QWidget
 from PyQt5 import QtWidgets, QtGui, QtCore
 from graph.colors import GColors
 from graph.curve_data import linearData, LineStyle

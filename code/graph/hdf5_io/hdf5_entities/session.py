@@ -1,14 +1,12 @@
 # hdf5_entities/session.py
 import h5py
-from typing import Dict, Optional
+from typing import Optional
 import datetime
 from .base import BaseHDF5Entity
-from ..models import Session, SessionParameters, FieldSettings, DataManager, Plot, GraphFieldSettings, OscilloscopeFieldSettings, OscillogramData, ParameterData
+from ..models import Session, SessionParameters, FieldSettings, DataManager, OscilloscopeFieldSettings, OscillogramData, ParameterData
 from .plot import HDF5Plot
 from ..utils import settings_to_dict, save_dict_to_hdf5_with_subgroups, load_dict_from_hdf5_group, dict_to_graph_field_settings
 from ..load_strategies.base import BaseLoadStrategy
-
-
 
 def print_nested(data, indent=0):
     for key, value in data.items():
@@ -28,14 +26,12 @@ class HDF5Session(BaseHDF5Entity):
     
     def write(self, session: Session):
         """Записывает сессию в HDF5."""
-        # Записываем основные атрибуты сессии
         attributes = {
             'name': session.name,
             'description': session.description
         }
         self._write_attributes(attributes)
         
-        # Записываем параметры сессии
         if 'parameters' not in self._hdf5_object:
             self._hdf5_object.create_group('parameters')
         params_group = self._hdf5_object['parameters']
@@ -52,12 +48,10 @@ class HDF5Session(BaseHDF5Entity):
             if value is not None:
                 params_group.attrs[key] = value
         
-        # Записываем настройки полей
         if 'field_settings' not in self._hdf5_object:
             self._hdf5_object.create_group('field_settings')
         field_settings_group = self._hdf5_object['field_settings']
         
-        # Настройки поля графиков
         if 'graph_field' not in field_settings_group:
             field_settings_group.create_group('graph_field')
         graph_field_group = field_settings_group['graph_field']
@@ -65,7 +59,6 @@ class HDF5Session(BaseHDF5Entity):
         graph_field_attrs = settings_to_dict(session.field_settings.graph_field)
         save_dict_to_hdf5_with_subgroups(graph_field_group, graph_field_attrs)
         
-        # Настройки поля осциллограмм (аналогично)
         if 'oscilloscope_field' not in field_settings_group:
             field_settings_group.create_group('oscilloscope_field')
         oscilloscope_field_group = field_settings_group['oscilloscope_field']
@@ -74,12 +67,10 @@ class HDF5Session(BaseHDF5Entity):
 
         save_dict_to_hdf5_with_subgroups(oscilloscope_field_group, oscilloscope_field_attrs)
         
-        # Записываем менеджер данных
         if 'data_manager' not in self._hdf5_object:
             self._hdf5_object.create_group('data_manager')
         data_manager_group = self._hdf5_object['data_manager']
         
-        # Данные осциллограмм
         if 'oscillogram_data' not in data_manager_group:
             data_manager_group.create_group('oscillogram_data')
         oscillogram_data_group = data_manager_group['oscillogram_data']
@@ -89,12 +80,10 @@ class HDF5Session(BaseHDF5Entity):
                 del oscillogram_data_group[data_name]
             data_entity_group = oscillogram_data_group.create_group(data_name)
             
-            # Используем HDF5OscillogramData для записи
             from .oscillogram_data import HDF5OscillogramData
             data_entity = HDF5OscillogramData(data_entity_group)
             data_entity.write(data)
 
-        # Данные параметров
         if 'parameters_data' not in data_manager_group:
             data_manager_group.create_group('parameters_data')
         parameters_data_group = data_manager_group['parameters_data']
@@ -104,13 +93,10 @@ class HDF5Session(BaseHDF5Entity):
                 del parameters_data_group[data_name]
             data_entity_group = parameters_data_group.create_group(data_name)
             
-            # Используем HDF5OscillogramData для записи
             from .oscillogram_data import HDF5OscillogramData
             data_entity = HDF5OscillogramData(data_entity_group)
             data_entity.write(data)
         
-        
-        # Записываем графики
         if 'plots' not in self._hdf5_object:
             self._hdf5_object.create_group('plots')
         plots_group = self._hdf5_object['plots']
@@ -124,12 +110,9 @@ class HDF5Session(BaseHDF5Entity):
     
     def read(self) -> Session:
         """Читает сессию из HDF5 и возвращает объект Session."""
-        # Читаем основные атрибуты сессии
         name = self._hdf5_object.attrs.get('name', '')
         description = self._hdf5_object.attrs.get('description', '')
 
-        
-        # Читаем параметры сессии
         parameters = SessionParameters()
         if 'parameters' in self._hdf5_object:
             params_group = self._hdf5_object['parameters']
@@ -142,15 +125,13 @@ class HDF5Session(BaseHDF5Entity):
                 parameters.experiment_date = datetime.fromisoformat(exp_date_str)
             parameters.operator = params_group.attrs.get('operator', '')
             parameters.comment = params_group.attrs.get('comment', '')
-        # Читаем настройки полей
+
         field_settings = self.read_field_settings()
         
-        # Читаем менеджер данных
         data_manager = DataManager()
         if 'data_manager' in self._hdf5_object:
             data_manager_group = self._hdf5_object['data_manager']
             
-            # Читаем данные осциллограмм
             if 'oscillogram_data' in data_manager_group:
                 oscillogram_data_group = data_manager_group['oscillogram_data']
                 for data_name in oscillogram_data_group:
@@ -165,7 +146,6 @@ class HDF5Session(BaseHDF5Entity):
                         data.data_values = data_entity_group['data_values'][:]
                     data_manager.oscillogram_data[data_name] = data
             
-            # Читаем данные параметров
             if 'parameters_data' in data_manager_group:
                 parameters_data_group = data_manager_group['parameters_data']
                 for data_name in parameters_data_group:
@@ -181,7 +161,6 @@ class HDF5Session(BaseHDF5Entity):
                     data_manager.parameter_data[data_name] = data
 
         
-        # Читаем графики
         plots = {}
         if 'plots' in self._hdf5_object:
             plots_group = self._hdf5_object['plots']
@@ -191,7 +170,6 @@ class HDF5Session(BaseHDF5Entity):
                 plot = plot_entity.read()
                 plots[plot_name] = plot
         
-        # Создаем и возвращаем объект сессии
         session = Session(
             name=name,
             description=description,
@@ -208,17 +186,13 @@ class HDF5Session(BaseHDF5Entity):
         if 'field_settings' in self._hdf5_object:
             field_settings_group = self._hdf5_object['field_settings']
             
-            # Читаем настройки поля графиков (новая версия)
             if 'graph_field' in field_settings_group:
                 graph_field_group = field_settings_group['graph_field']
                 
-                # Загружаем данные из HDF5 группы в словарь
                 graph_field_data = load_dict_from_hdf5_group(graph_field_group)
-                # Преобразуем словарь в объект GraphFieldSettings
                 graph_field_settings = dict_to_graph_field_settings(graph_field_data)
                 field_settings.graph_field = graph_field_settings
             
-            # Читаем настройки поля осциллограмм (старая версия - оставляем как есть)
             if 'oscilloscope_field' in field_settings_group:
                 oscilloscope_field_group = field_settings_group['oscilloscope_field']
                 oscilloscope_field = OscilloscopeFieldSettings()
