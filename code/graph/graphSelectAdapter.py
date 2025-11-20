@@ -43,6 +43,7 @@ class graphSelectAdapter:
 		first_parameters = []
 		second_parameters = []
 		y_name = curve_data_obj.rel_data.y_name
+		logger.info(f"hide_curve {curve_data_obj.rel_data.name=}")
 		if y_name == "gen":
 			curve_data_obj.delete_curve_from_graph()
 		else:
@@ -60,12 +61,13 @@ class graphSelectAdapter:
 		self.selector.stop_session()
 
 	def destroy_curve(self, curve_data_obj: linearData):
-		#self.hide_curve(curve_data_obj)
+		self.hide_curve(curve_data_obj)
+		logger.info(f"destroy_curve {curve_data_obj.rel_data.name=}")
 		self.graph.destroy_curve(curve_data_obj)
 
 	def show_curve(self, curve_data_obj: linearData):
 		#возможны два случая, когда кривая сгенерирована из сырых данных и когда кривая посчитана по формуле. Когда кривая посчитана по формуле, мы просто проверяем пространства и напрямую отображаем ее
-		logger.info(f"show_curve {curve_data_obj.rel_data.y_name=}")
+		logger.info(f"show_curve {curve_data_obj.rel_data.name=}")
 		paramx, paramy1, paramy2 = self.selector.get_parameters()
 		if paramx == curve_data_obj.rel_data.x_name:#пространство нужное	
 			y_name = curve_data_obj.rel_data.y_name
@@ -149,7 +151,7 @@ class graphSelectAdapter:
 		self.graph.update_data(data_first_axis, data_second_axis, is_updated = True)
 
 	def parameters_choised(self, param_x, param_y1, param_y2):
-		'''метод вызывается селектором в моменты, когда пользователь выбрал новые параметры'''
+		'''метод вызывается селектором в моменты, когда пользователь выбрал новые параметры или снял выделение со старых'''
 		logger.info(f"parameters_choised {param_x} {param_y1} {param_y2}")
 		if param_x == "numbers":
 			for key in param_y1:
@@ -161,5 +163,7 @@ class graphSelectAdapter:
 					
 		if param_x and (param_y1 or param_y2):
 			data_first_axis, data_second_axis = self.data_manager.get_relation_data(param_x, param_y1, param_y2, self.type_data)
+		else:
+			data_first_axis, data_second_axis = [], []
 
-			self.graph.update_data(data_first_axis, data_second_axis)
+		self.graph.update_data(data_first_axis, data_second_axis)

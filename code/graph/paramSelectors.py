@@ -238,7 +238,6 @@ class paramController( QObject):
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
     def y_first_param_changed(self):
-        logger.info(f"y_first_param_changed {self.curent_y_first_parameters=} {self.previous_y_first_parameter=}")
 
         self.manage_y_selectors(selector = self.paramSelector.y_first_param_selector,
                                 current_parameters = self.curent_y_first_parameters,
@@ -256,7 +255,7 @@ class paramController( QObject):
                                 opposite_selector = self.paramSelector.y_first_param_selector,
                                 previous_parameter = self.previous_y_second_parameter
                                 )
-        
+        logger.info(f"y_second_param_changed update current parameters {self.curent_y_second_parameters=}")
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
     def manage_y_selectors(self, selector, current_parameters, opposite_selector, previous_parameter):
