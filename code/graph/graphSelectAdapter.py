@@ -52,8 +52,6 @@ class graphSelectAdapter:
 			if curve_data_obj.number_axis == 1:
 				first_parameters = [y_name]
 
-			logger.debug(f"hide_curve {first_parameters=} {second_parameters=}")
-
 			self.selector.clear_selections("", first_parameters, second_parameters)
 
 	def stop_session(self):
@@ -61,7 +59,8 @@ class graphSelectAdapter:
 		self.selector.stop_session()
 
 	def destroy_curve(self, curve_data_obj: linearData):
-		self.hide_curve(curve_data_obj)
+		if curve_data_obj.is_draw:
+			self.hide_curve(curve_data_obj)
 		logger.info(f"destroy_curve {curve_data_obj.rel_data.name=}")
 		self.graph.destroy_curve(curve_data_obj)
 
