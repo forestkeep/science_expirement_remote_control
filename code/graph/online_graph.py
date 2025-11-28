@@ -36,6 +36,7 @@ from graph.hdf5_io.facade import HDF5Facade
 from graph.parameter_alias_manager import ParameterAliasManager
 import uuid
 import numpy as np
+from functions import open_log_file
 
 try:
     from parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
@@ -86,25 +87,28 @@ class GraphWindow(QMainWindow):
     def __add_menu(self):
         menubar = self.menuBar()
         
-        file_menu = menubar.addMenu("Файл")
+        file_menu = menubar.addMenu(QApplication.translate('graph',"Файл") )
 
-        data_menu = menubar.addMenu("Данные")
-        self.rename_param_action = QAction("Изменить имена параметров", self)
-        self.read_all_statistics_action = QAction("Показать статистику", self)
+        data_menu = menubar.addMenu(QApplication.translate('graph',"Данные") )
+        self.rename_param_action = QAction(QApplication.translate('graph',"Изменить имена параметров"), self)
+        self.read_all_statistics_action = QAction(QApplication.translate('graph',"Показать статистику"), self)
+
+        self.log_path_open = QtWidgets.QAction(QApplication.translate('graph',"Открыть лог файл"),self)
         
-        self.save_action = QAction("Сохранить", self)
+        self.save_action = QAction(QApplication.translate('graph',"Сохранить"), self)
         self.save_action.setShortcut("Ctrl + S")
-        self.save_action_as = QAction("Сохранить как...", self)
+        self.save_action_as = QAction(QApplication.translate('graph',"Сохранить как..."), self)
         self.save_action_as.setShortcut("Ctrl + Shift + S")
-        self.load_action = QAction("Загрузить", self)
+        self.load_action = QAction(QApplication.translate('graph',"Загрузить"), self)
         self.load_action.setShortcut("Ctrl + O")
         
         file_menu.addAction(self.save_action)
         file_menu.addAction(self.save_action_as)
         file_menu.addAction(self.load_action)
+        file_menu.addAction(self.log_path_open)
 
         data_menu.addAction(self.rename_param_action)
-        data_menu.addAction(self.read_all_statistics_action)
+        #data_menu.addAction(self.read_all_statistics_action)
         
 class GraphSession(QWidget):
     graph_win_close_signal = pyqtSignal(int)
@@ -266,12 +270,17 @@ class sessionController():
         self.graphics_win = GraphWindow(self.controll_sessions_win)
         self.graphics_win.save_action.triggered.connect(self.push_button_save_graph)
         self.graphics_win.load_action.triggered.connect(self.push_button_open_graph)
+        self.graphics_win.log_path_open.triggered.connect(open_log_file)
         self.graphics_win.save_action_as.triggered.connect(self.push_button_save_graph_as)
         self.graphics_win.rename_param_action.triggered.connect(self.show_alias_dialog)
         self.graphics_win.read_all_statistics_action.triggered.connect(self.read_statistics)
         self.way_to_save_file = None
 
         self.graph_sessions = {}
+
+    def push_button_open_log(self):
+        if self.way_to_save_file is not None:
+            os.startfile(self.way_to_save_file)
 
     def show_alias_dialog(self):
         """Показывает диалог управления псевдонимами"""
