@@ -342,54 +342,39 @@ class manageGraph(QObject):
                     if key not in [data.name for data in data_first_axis] and key not in [data.name for data in data_second_axis]:
                             curve.delete_curve_from_graph()
 
-        for data in data_first_axis:
-            if self.stack_curve.get(data.name) is None:
-                self.create_and_place_curve(
-                                            data = data,
-                                            graph_field = self.graphView,
-                                            legend_field = self.graphView.legend,
-                                            number_axis=1
-                                            )
-            else:
-                if not self.stack_curve[data.name].is_draw:
-                    self.stack_curve[data.name].place_curve_on_graph(graph_field  = self.graphView,
-                                                                    legend_field  = self.graphView.legend,
-                                                                    number_axis=1
-                                                                    )
-                else:
-                    if is_updated:
-                        if self.is_all_points_showing:
-                            x = data.x_result
-                            y = data.y_result
-                        else:
-                            x = data.x_result[-1*self.num_showing_points:]
-                            y = data.y_result[-1*self.num_showing_points:]
-                        self.stack_curve[data.name].plot_obj.setData(x, y)
-                        self.stack_curve[data.name].setData(data)
-                
-        for data in data_second_axis:
-            if self.stack_curve.get(data.name) is None:
-                self.create_and_place_curve(
-                                            data = data,
-                                            graph_field = self.graphView.second_graphView,
-                                            legend_field = self.graphView.legend2,
-                                            number_axis=2
-                                            )
-            else:
-                if not self.stack_curve[data.name].is_draw:
-                    self.stack_curve[data.name].place_curve_on_graph(graph_field  = self.graphView.second_graphView,
-                                                                    legend_field  = self.graphView.legend2,
-                                                                    number_axis=2)
-                else:
-                    if is_updated:
-                        if self.is_all_points_showing:
-                            x = data.x_result
-                            y = data.y_result
-                        else:
-                            x = data.x_result[-1*self.num_showing_points:]
-                            y = data.y_result[-1*self.num_showing_points:]
-                        self.stack_curve[data.name].plot_obj.setData(x, y)
-                        self.stack_curve[data.name].rel_data = data
+        self._process_axis_curves(data_first_axis, self.graphView, self.graphView.legend, 1, is_updated)
+        self._process_axis_curves(data_second_axis, self.graphView.second_graphView, self.graphView.legend2, 2, is_updated)
+
+    def _process_axis_curves(self, data_list, graph, legend, axis_num, is_updated):
+        """Обработка кривых для конкретной оси"""
+        for data in data_list:
+            self._handle_curve(data, graph, legend, axis_num, is_updated)
+
+    def _handle_curve(self, data, graph, legend, axis_num, is_updated):
+        """Обработка отдельной кривой"""
+        curve = self.stack_curve.get(data.name)
+        
+        if curve is None:
+            self.create_and_place_curve(data, graph, legend, axis_num)
+        elif not curve.is_draw:
+            curve.place_curve_on_graph(graph, legend, axis_num)
+        elif is_updated:
+            self._refresh_curve_data(curve, data)
+
+    def _refresh_curve_data(self, curve, data):
+        """Обновление данных существующей кривой"""
+        x_data, y_data = self._get_visible_data(data)
+        curve.plot_obj.setData(x_data, y_data)
+        curve.setData(data)
+
+    def _get_visible_data(self, data):
+        """Получение данных для отображения с учетом настроек видимости"""
+        if self.is_all_points_showing:
+            return data.x_result, data.y_result
+        return (
+            data.x_result[-self.num_showing_points:],
+            data.y_result[-self.num_showing_points:]
+        )
 
     def destroy_curve(self, curve_data_obj):
         curve_data_obj.delete_curve_from_graph()
@@ -399,10 +384,8 @@ class manageGraph(QObject):
             self.stack_curve.pop(key)
 
     def stop_session(self):
-        i = 0
         for curve in self.stack_curve.values():
             curve.stop_session()
-            i+=1
 
     def hide_curve(self, curve_data_obj:linearData):
         curve_data_obj.delete_curve_from_graph()
