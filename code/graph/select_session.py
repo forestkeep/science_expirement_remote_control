@@ -194,8 +194,10 @@ class SessionSelectControl(QObject):
     def _session_renamed(self, session_id, new_name):
         for session in self.sessions:
             if session['id'] == session_id:
+                if session['name'] == new_name:
+                    return
+                logger.info(f"session_name_changed emitted id:{session_id} last_name:{session['name']} new_name:{new_name}")
                 session['name'] = new_name
-                logger.info(f"session_name_changed emitted {session_id}")
                 self.session_name_changed.emit(session_id, str(new_name))
 
     def update_view(self):

@@ -253,7 +253,8 @@ class graphData:
     def stop_session(self):
         if self.plot_obj is not None:
             self.plot_obj.setData(self.raw_data_x, self.raw_data_y)
-            self.data_reset()
+            if not self.data_reset():
+                logger.info(f"{self.curve_name} data not reseted after experiment stop")
 
 class linearData(graphData):
     def __init__(self, data: relationData, alias_manager) -> None:

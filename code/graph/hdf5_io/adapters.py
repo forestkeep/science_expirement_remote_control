@@ -223,7 +223,7 @@ class HDF5ToProjectAdapter:
 			self._convert_session(session_model, core_session)
 
 	def _convert_session(self, session: Session, core_session):
-
+		logger.info(f"Converting session {session.name}")
 		uuid = session.parameters.uuid
 		use_timestamp = True if 'time' in session.data_manager.parameter_data.keys() else False
 		session_id = core_session.start_new_session(session_name = session.name, use_timestamps = use_timestamp, uuid = uuid)
@@ -251,19 +251,20 @@ class HDF5ToProjectAdapter:
 				continue
 			curve_obj = self.restore_curve_from_model(plot_model=plot, alias_manager = core_session.alias_manager)
 			core_session.graph_sessions[session_id].graph_main.add_curve(curve_obj, type_axis="left" if axis == 1 else "right")
+			logger.debug(f"Added curve {curve_obj.name}")
 
 			if plot.is_draw:
-				if selection_x_param and selection_x_param != plot.x_name:
+				if selection_x_param and selection_x_param != core_session.alias_manager.get_alias(plot.x_name):
 					logger.warning(f"Conflict selection x parameter {plot.x_name} {selection_x_param}")
 					continue
 
 				if not selection_x_param:
-					selection_x_param = plot.x_name
+					selection_x_param = core_session.alias_manager.get_alias(plot.x_name)
 
 				if axis == 1:
-					selection_y_first_params.append(plot.y_name)
+					selection_y_first_params.append(core_session.alias_manager.get_alias(plot.y_name))
 				elif axis == 2:
-					selection_y_second_params.append(plot.y_name)
+					selection_y_second_params.append(core_session.alias_manager.get_alias(plot.y_name))
 				else:
 					logger.warning(f"Unknown axis {axis} plot{plot.name}")
 			else:

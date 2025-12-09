@@ -16,13 +16,12 @@ from installation_controller import instController
 
 logger = logging.getLogger(__name__)
 
-VERSION_APP = "1.2.0"
+VERSION_APP = "1.3.0"
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     multiprocessing.set_start_method('spawn')
 
-    # Настройка окружения
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
     FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
@@ -30,7 +29,7 @@ if __name__ == "__main__":
     logger.handlers.clear()
 
     console = logging.StreamHandler()
-    console.setLevel(logging.WARNING)
+    console.setLevel(logging.INFO)
     console.setFormatter(logging.Formatter(FORMAT))
 
     folder_path = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")
@@ -46,12 +45,10 @@ if __name__ == "__main__":
 
     logging.basicConfig(handlers=[file_handler, console], level=logging.DEBUG)
 
-    # Создание приложения
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
     os.environ["APP_THEME"] = "dark"
 
-    # Настройка перевода
     translator = QTranslator()
     QtWidgets.QApplication.instance().installTranslator(translator)
 

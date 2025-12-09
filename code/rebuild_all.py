@@ -15,6 +15,7 @@ def build_python_app():
         '--noconsole', 
         '--hidden-import=pyvisa_py', 
         '--hidden-import=multiprocessing',
+        '--hidden-import=h5py._npystrings',
         '--exclude-module=PyQt6,PySide6,PySide2, mammoth, pytest, OpenGL',  
         '--icon=picture/picture/cat.ico',
         '--clean',

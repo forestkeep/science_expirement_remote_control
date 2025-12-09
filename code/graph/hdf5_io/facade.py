@@ -5,6 +5,9 @@ from .models import ProjectFile
 from .load_strategies.base import BaseLoadStrategy
 from .load_strategies.full_load_strategy import FullLoadStrategy
 from .adapters import ProjectToHDF5Adapter, HDF5ToProjectAdapter
+import logging
+
+logger = logging.getLogger(__name__)
 
 class HDF5Facade:
     """Фасад для работы с HDF5 файлами проектов."""
@@ -65,14 +68,18 @@ class HDF5Facade:
                 version=file_attrs.get('version', '1.0'),
                 creation_date=datetime.fromisoformat(file_attrs.get('creation_date', datetime.now().isoformat()))
             )
+            logger.info(f"Project {project_file.name} loaded from {file_path}")
 
             project_file.aliases = h5_file.read_aliases()
+
+            logger.info(f"Aliases loaded")
             
             session_uuids = h5_file.get_session_uuids()
 
             for session_id in session_uuids:
                 if session_id == "aliases":
                     continue
+                logger.info(f"Start loading session {session_id}")
                 session = h5_file.read_session(session_id)
                 project_file.sessions[session_id] = session
             

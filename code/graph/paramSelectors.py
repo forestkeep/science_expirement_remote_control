@@ -47,20 +47,25 @@ class customQListWidget(QListWidget):
                 if self.item(index):
                     if self.item(index).text() == parameter:
                         self.takeItem(index)
-    def __manage_selection(self, text: str, checked: bool):
+                        
+    def __manage_selection(self, text: str, checked: bool, is_signal = True):
         for index in range(self.count()):
             if self.item(index):
                 if self.item(index).text() == text:
-                    logger.info(f"manage_selection {text} {checked}")
+                    logger.info(f"parameter  {text} set checked {checked}")
                     self.setCurrentItem(self.item(index))
                     self.item(index).setSelected(checked)
-                    self.itemClicked.emit(self.item(index))#программно вызываем соответсвующую логику событий, будто кликнули на элемент
+                    if is_signal:
+                        self.itemClicked.emit(self.item(index))#программно вызываем соответсвующую логику событий, будто кликнули на элемент
+                    return
+
+        logger.warning(f"parameter {text} not found in selector")
 
     def clear_selection(self, text: str):
         self.__manage_selection(text, False)
 
-    def set_selection(self, text: str):
-        self.__manage_selection(text, True)
+    def set_selection(self, text: str, is_signal = True):
+        self.__manage_selection(text, True, is_signal)
 
 class paramSelector(QWidget):
 
@@ -203,6 +208,7 @@ class paramController( QObject):
         self.__y_second_parameters = set()
 
     def alias_changed(self, original_name, old_alias, alias):
+        logger.info(f"alias_changed {original_name} {old_alias} {alias}")
         #++++++++++++++previous+++++++++++++++++
         for index, name in enumerate(self.previous_x_parameter):
             if name == old_alias:
@@ -259,7 +265,7 @@ class paramController( QObject):
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
     def manage_y_selectors(self, selector, current_parameters, opposite_selector, previous_parameter):
-        logger.debug(f"manage_y_selectors {current_parameters=}, {previous_parameter=}") 
+        logger.info(f"manage_y_selectors in {current_parameters=}, {previous_parameter=} {selector.currentItem()=}") 
         if self.paramSelector.check_miltiple.isChecked():
             buf_text = selector.currentItem().text()
             if buf_text in current_parameters:
@@ -283,6 +289,7 @@ class paramController( QObject):
                     previous_parameter[0] = buf_text
                     current_parameters.append(buf_text)
                     opposite_selector.remove_parameters(buf_text)
+        logger.info(f"manage_y_selectors out {current_parameters=}, {previous_parameter=}")
 
     def second_check_box_changed(self):
         self.curent_y_second_parameters.clear()
@@ -324,19 +331,19 @@ class paramController( QObject):
         self.multiple_checked.emit( is_multiple )
 
     def clear_selections(self, x_param: str, y_first_params: list, y_second_params: list):
-        logger.debug(f"clear_selections {x_param=} {y_first_params=} {y_second_params=}")
+        logger.info(f"clear_selections {x_param=} {y_first_params=} {y_second_params=}")
         self.paramSelector.x_param_selector.clear_selection(x_param)
         for param in y_first_params:
             self.paramSelector.y_first_param_selector.clear_selection(param)
         for param in y_second_params:
             self.paramSelector.y_second_param_selector.clear_selection(param)
 
-    def set_selections(self, x_param: str, y_first_params: list, y_second_params: list):
-        self.paramSelector.x_param_selector.set_selection(x_param)
+    def set_selections(self, x_param: str, y_first_params: list, y_second_params: list, is_signal = True):
+        self.paramSelector.x_param_selector.set_selection(x_param, is_signal)
         for param in y_first_params:
-            self.paramSelector.y_first_param_selector.set_selection(param)
+            self.paramSelector.y_first_param_selector.set_selection(param, is_signal)
         for param in y_second_params:
-            self.paramSelector.y_second_param_selector.set_selection(param)
+            self.paramSelector.y_second_param_selector.set_selection(param, is_signal)
 
     def set_default(self):
         self.curent_x_parameter = None

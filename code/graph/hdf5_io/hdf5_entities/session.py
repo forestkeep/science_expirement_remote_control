@@ -7,6 +7,9 @@ from ..models import Session, SessionParameters, FieldSettings, DataManager, Osc
 from .plot import HDF5Plot
 from ..utils import settings_to_dict, save_dict_to_hdf5_with_subgroups, load_dict_from_hdf5_group, dict_to_graph_field_settings
 from ..load_strategies.base import BaseLoadStrategy
+import logging
+
+logger = logging.getLogger(__name__)
 
 def print_nested(data, indent=0):
     for key, value in data.items():
@@ -113,6 +116,7 @@ class HDF5Session(BaseHDF5Entity):
         name = self._hdf5_object.attrs.get('name', '')
         description = self._hdf5_object.attrs.get('description', '')
 
+        logger.info(f"reading parameters")
         parameters = SessionParameters()
         if 'parameters' in self._hdf5_object:
             params_group = self._hdf5_object['parameters']
@@ -127,7 +131,8 @@ class HDF5Session(BaseHDF5Entity):
             parameters.comment = params_group.attrs.get('comment', '')
 
         field_settings = self.read_field_settings()
-        
+
+        logger.info("reading data manager")
         data_manager = DataManager()
         if 'data_manager' in self._hdf5_object:
             data_manager_group = self._hdf5_object['data_manager']
@@ -160,7 +165,7 @@ class HDF5Session(BaseHDF5Entity):
                         data.data_values = data_entity_group['data_values'][:]
                     data_manager.parameter_data[data_name] = data
 
-        
+        logger.info("reading plots")
         plots = {}
         if 'plots' in self._hdf5_object:
             plots_group = self._hdf5_object['plots']
