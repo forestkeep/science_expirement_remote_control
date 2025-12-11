@@ -83,7 +83,7 @@ class ProjectToHDF5Adapter:
 		for plot_name, core_plot in core_session.graph_main.stack_curve.items():
 			plot = self.convert_plot(core_plot)
 			plots[plot_name.replace('\\', '_').replace('/', '_')] = plot
-		
+			
 		return Session(
 			name=core_session.session_name,
 			description=core_session.description,
