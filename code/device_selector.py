@@ -44,8 +44,12 @@ class deviceSelector():
             logger.warning(f"Не удалось получить путь к JSON приборам из настроек")
             self.JSON_devices = {}
         else:
-            os.makedirs(self.directory_devices, exist_ok=True)
-            self.JSON_devices = get_new_JSON_devs(self.directory_devices)
+            try:
+                os.makedirs(self.directory_devices, exist_ok=True)
+                self.JSON_devices = get_new_JSON_devs(self.directory_devices)
+            except Exception as e:
+                logger.warning(f"Не удалось получить список JSON приборов, исключение: {e}")
+                self.JSON_devices = {}
 
     def get_single_device(self):
         if not self.single_select_win:
