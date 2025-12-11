@@ -243,15 +243,16 @@ class HDF5ToProjectAdapter:
 		selection_x_param = None
 		selection_y_first_params = []
 		selection_y_second_params = []
-
+		logger.info(f"обнаружены графики:")
 		for plot in session.plots.values():
+			logger.info(f"график {plot.name}")
 			axis = plot.axis
 			if axis not in [1, 2]:
 				logger.warning(f"Unknown axis {axis} plot{plot.name}")
 				continue
+
 			curve_obj = self.restore_curve_from_model(plot_model=plot, alias_manager = core_session.alias_manager)
 			core_session.graph_sessions[session_id].graph_main.add_curve(curve_obj, type_axis="left" if axis == 1 else "right")
-			logger.debug(f"Added curve {curve_obj.name}")
 
 			if plot.is_draw:
 				if selection_x_param and selection_x_param != core_session.alias_manager.get_alias(plot.x_name):
@@ -425,7 +426,7 @@ class HDF5ToProjectAdapter:
 		new_data.raw_data_y = plot_model.linear_data.raw_data_y
 		new_data.filtered_x_data = plot_model.linear_data.filtered_x_data
 		new_data.filtered_y_data = plot_model.linear_data.filtered_y_data
-		
+	
 		graph = pg.PlotDataItem(
 			new_data.filtered_x_data,
 			new_data.filtered_y_data,

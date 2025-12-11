@@ -42,8 +42,8 @@ class graphSelectAdapter:
 	def hide_curve(self, curve_data_obj: linearData):
 		first_parameters = []
 		second_parameters = []
-		y_name = curve_data_obj.rel_data.y_name
-		logger.info(f"hide_curve {curve_data_obj.rel_data.name=}")
+		y_name = curve_data_obj.rel_data.y_root_name
+		logger.info(f"hide_curve {curve_data_obj.rel_data.root_name=}")
 		if y_name == "gen":
 			curve_data_obj.delete_curve_from_graph()
 		else:
@@ -61,15 +61,15 @@ class graphSelectAdapter:
 	def destroy_curve(self, curve_data_obj: linearData):
 		if curve_data_obj.is_draw:
 			self.hide_curve(curve_data_obj)
-		logger.info(f"destroy_curve {curve_data_obj.rel_data.name=}")
+		logger.info(f"destroy_curve {curve_data_obj.rel_data.root_name=}")
 		self.graph.destroy_curve(curve_data_obj)
 
 	def show_curve(self, curve_data_obj: linearData):
 		#возможны два случая, когда кривая сгенерирована из сырых данных и когда кривая посчитана по формуле. Когда кривая посчитана по формуле, мы просто проверяем пространства и напрямую отображаем ее
-		logger.info(f"show_curve {curve_data_obj.rel_data.name=}")
+		logger.info(f"show_curve {curve_data_obj.rel_data.root_name=}")
 		paramx, paramy1, paramy2 = self.selector.get_parameters()
-		if paramx == curve_data_obj.rel_data.x_name:#пространство нужное	
-			y_name = curve_data_obj.rel_data.y_name
+		if paramx == curve_data_obj.rel_data.x_root_name:#пространство нужное	
+			y_name = curve_data_obj.rel_data.y_root_name
 			if y_name == "gen":
 				curve_data_obj.place_curve_on_graph(graph_field  = curve_data_obj.parent_graph_field,
                                                     legend_field  = curve_data_obj.legend_field,
@@ -90,9 +90,9 @@ class graphSelectAdapter:
 	def curve_created(self, data: relationData, formula:str = None, description:str = None):
 		status = self.graph.create_and_place_curve(data = data)
 		if not status:
-			logger.warning(f"Кривая с именем {data.name} уже существует в системе")
+			logger.warning(f"Кривая с именем {data.root_name} уже существует в системе")
 		else:
-			curve = self.graph.get_curve(data.name)
+			curve = self.graph.get_curve(data.root_name)
 			if curve:
 				blocks = {}
 				if formula:

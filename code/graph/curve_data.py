@@ -210,6 +210,10 @@ class graphData:
             The LegendItem to add the curve to.
         """
 
+        #logger.info(f"placing curve {self.name} on graph {self.plot_obj=}")
+        #logger.info(f"{self.filtered_y_data = }, {self.raw_data_y = }")
+        #logger.info(f"{self.plot_obj.yData = }")
+
         if self.parent_graph_field:
             if graph_field is not self.parent_graph_field:
                 self.parent_graph_field.removeItem(self.plot_obj)
@@ -262,8 +266,8 @@ class linearData(graphData):
         self.alias_manager = alias_manager
         self.rel_data = data
 
-        self.rel_data.update_names(self.alias_manager.get_alias(self.rel_data.x_name),
-                                   self.alias_manager.get_alias(self.rel_data.y_name))
+        self.rel_data.update_names(self.alias_manager.get_alias(self.rel_data.x_root_name),
+                                   self.alias_manager.get_alias(self.rel_data.y_root_name))
 
         self.curve_name = self.rel_data.current_name
         self.legend = legendName(self.curve_name)
@@ -331,7 +335,7 @@ class oscData(graphData):
     def __init__(self, data: relationData) -> None:
         super().__init__(data)
         self.rel_data = data
-        self.curve_name = self.rel_data.name
+        self.curve_name = self.rel_data.root_name
         self.legend = legendName(self.curve_name)
 
 class hystLoop(graphData):

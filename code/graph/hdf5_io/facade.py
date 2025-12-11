@@ -72,7 +72,7 @@ class HDF5Facade:
 
             project_file.aliases = h5_file.read_aliases()
 
-            logger.info(f"Aliases loaded")
+            #logger.info(f"Aliases loaded")
             
             session_uuids = h5_file.get_session_uuids()
 

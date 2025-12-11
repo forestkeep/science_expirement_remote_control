@@ -48,14 +48,16 @@ class sessionMeasData:
 
 class relationData:
     def __init__(self, data_x_axis: measTimeData, data_y_axis: measTimeData):
-        self.x_name, self.y_name, self.name = self.create_base_names(
+        self.x_root_name, self.y_root_name, self.root_name = self.create_base_names(
             data_x_axis.device, data_x_axis.ch, data_x_axis.param,
             data_y_axis.device, data_y_axis.ch, data_y_axis.param
         )
 
-        self._y_current_name = copy.copy(self.y_name)  # Приватная переменная
-        self.x_current_name = copy.copy(self.x_name)
-        self.current_name = copy.copy(self.name)
+        logger.info(f"Creating relation {self.root_name} between {self.x_root_name} and {self.y_root_name}")
+
+        self._y_current_name = copy.copy(self.y_root_name)  # Приватная переменная
+        self.x_current_name = copy.copy(self.x_root_name)
+        self.current_name = copy.copy(self.root_name)
         self.data_x_axis = data_x_axis
         self.data_y_axis = data_y_axis
 
@@ -124,6 +126,7 @@ class graphDataManager(QObject):
 
     def get_relation_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> list[relationData]:
         # Конвертируем псевдонимы обратно в оригинальные имена
+        logger.info(f"get_relation_data {keysx=} {keysy1=} {keysy2=}")
         original_keysx = self.alias_manager.get_original_name(keysx)
         original_keysy1 = [self.alias_manager.get_original_name(key) for key in keysy1]
         original_keysy2 = [self.alias_manager.get_original_name(key) for key in keysy2]

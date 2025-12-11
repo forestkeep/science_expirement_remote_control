@@ -75,7 +75,7 @@ class manageGraph(QObject):
         self.num_showing_points = 10
         self.is_all_points_showing = True
 
-        self.stack_curve = {}
+        self.__stack_curve = {}
 
         self.inf_lines = []
 
@@ -188,8 +188,11 @@ class manageGraph(QObject):
                 self.graphView.removeItem(item)
         self.graphView.second_graphView.clear()
 
+    def get_list_curves(self):
+        return list(self.__stack_curve.values())
+
     def set_filters(self, filter_func):
-        for curve in self.stack_curve.values():
+        for curve in self.__stack_curve.values():
             if curve.is_curve_selected:
                 curve.filtered_x_data, curve.filtered_y_data, message = filter_func(curve.filtered_x_data, curve.filtered_y_data)
                 curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
@@ -226,7 +229,7 @@ class manageGraph(QObject):
                 name_block = QApplication.translate("GraphWindow","История изменения")
                 curve.tree_item.delete_block(name_block)
         else:
-            for curve in self.stack_curve.values():
+            for curve in self.__stack_curve.values():
                 if curve.is_curve_selected:
                     curve.data_reset()
                     curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
@@ -281,7 +284,7 @@ class manageGraph(QObject):
                 self.focus_axis = None
                 self.axislabel_line_edit.setVisible(False)
         else:
-            self.__callback_click_scene( self.stack_curve.values() )
+            self.__callback_click_scene( self.__stack_curve.values() )
 
             if self.axislabel_line_edit.isVisible():
                 self.axislabel_line_edit.setVisible(False)
@@ -304,7 +307,7 @@ class manageGraph(QObject):
 
     def delete_key_press(self):
         curv_for_del = []
-        for curve in self.stack_curve.values():
+        for curve in self.__stack_curve.values():
             if curve.is_curve_selected:
                 if curve.is_draw:
                     curv_for_del.append(curve)
@@ -317,13 +320,13 @@ class manageGraph(QObject):
             current_items = list(item.text() for item in selector.selectedItems())
             if string_y not in current_items and string_y != "Select parameter":
                 curve_key = string_y + string_x
-                if self.stack_curve.get(curve_key) is not None:
-                    self.stack_curve[curve_key].delete_curve_from_graph()
-                    second_selector.addItem(self.stack_curve[curve_key].y_name)
+                if self.__stack_curve.get(curve_key) is not None:
+                    self.__stack_curve[curve_key].delete_curve_from_graph()
+                    second_selector.addItem(self.__stack_curve[curve_key].y_name)
                     return True
         else:
             #отменить отрисовку всех кривых в блоке
-            for data_curve in self.stack_curve.values():
+            for data_curve in self.__stack_curve.values():
                 if data_curve.is_draw and data_curve.parent_graph_field is graph_field:
                     data_curve.delete_curve_from_graph()
                     second_selector.addItem(data_curve.y_name)
@@ -333,27 +336,27 @@ class manageGraph(QObject):
         self.graphView.hide_second_line_grid()
 
     #@time_decorator
-    def update_data(self, data_first_axis, data_second_axis, is_updated = False):
-
+    def update_data(self, data_first_axis:list[relationData], data_second_axis:list[relationData], is_updated = False):
+        logger.info(f"update_data {is_updated}")
         self.hide_second_line_grid()
 
         if not is_updated:
-            for key, curve in self.stack_curve.items():    
+            for key, curve in self.__stack_curve.items():    
                 if curve.is_draw:
-                    if key not in [data.name for data in data_first_axis] and key not in [data.name for data in data_second_axis]:
+                    if key not in [data.root_name for data in data_first_axis] and key not in [data.root_name for data in data_second_axis]:
                             curve.delete_curve_from_graph()
 
         self._process_axis_curves(data_first_axis, self.graphView, self.graphView.legend, 1, is_updated)
         self._process_axis_curves(data_second_axis, self.graphView.second_graphView, self.graphView.legend2, 2, is_updated)
 
-    def _process_axis_curves(self, data_list, graph, legend, axis_num, is_updated):
+    def _process_axis_curves(self, data_list: list[relationData], graph, legend, axis_num, is_updated):
         """Обработка кривых для конкретной оси"""
         for data in data_list:
             self._handle_curve(data, graph, legend, axis_num, is_updated)
 
-    def _handle_curve(self, data, graph, legend, axis_num, is_updated):
+    def _handle_curve(self, data : relationData, graph, legend, axis_num, is_updated):
         """Обработка отдельной кривой"""
-        curve = self.stack_curve.get(data.name)
+        curve = self.__stack_curve.get(data.root_name)
         
         if curve is None:
             self.create_and_place_curve(data, graph, legend, axis_num)
@@ -381,11 +384,11 @@ class manageGraph(QObject):
         curve_data_obj.delete_curve_from_graph()
         curve_data_obj.is_draw = False
         key = curve_data_obj.curve_name
-        if self.stack_curve.get(key) is not None:
-            self.stack_curve.pop(key)
+        if self.__stack_curve.get(key) is not None:
+            self.__stack_curve.pop(key)
 
     def stop_session(self):
-        for curve in self.stack_curve.values():
+        for curve in self.__stack_curve.values():
             curve.stop_session()
 
     def hide_curve(self, curve_data_obj:linearData):
@@ -395,7 +398,7 @@ class manageGraph(QObject):
         self.__is_multiple = is_multiple
 
     def get_curve(self, name):
-        return self.stack_curve.get(name)
+        return self.__stack_curve.get(name)
 
     def create_curve(self, data: relationData) -> linearData:
             new_data = linearData(data=data, alias_manager = self.alias_manager)
@@ -429,13 +432,15 @@ class manageGraph(QObject):
                                   style      = style)
             
             return new_data
-    @time_decorator
+
     def create_and_place_curve(self, data: relationData,
                                     graph_field = None,
                                     legend_field = None,
                                     number_axis = None):
-        if self.stack_curve.get(data.name):
+        if self.__stack_curve.get(data.root_name):
             return False
+        
+        logger.info(f"create curve {data.root_name}")
         
         if not graph_field:
             graph_field = self.graphView
@@ -445,19 +450,17 @@ class manageGraph(QObject):
             number_axis=1
         new_data = self.create_curve(data = data)
         self.main_class.tree_class.add_curve(new_data.tree_item)
-        self.stack_curve[data.name] = new_data
+        self.__stack_curve[data.root_name] = new_data
             
-        self.stack_curve[data.name].place_curve_on_graph(graph_field  = graph_field,
+        self.__stack_curve[data.root_name].place_curve_on_graph(graph_field  = graph_field,
                                                              legend_field  = legend_field,
                                                              number_axis = number_axis
                                                             )
         return True
         
-    def add_curve_to_stack(self, curve_data_obj):   
-        self.stack_curve[curve_data_obj.y_name + curve_data_obj.x_name] = curve_data_obj
-
     def add_curve(self, curve_data_obj: linearData, type_axis: str = "left"):
-        self.stack_curve[curve_data_obj.curve_name] = curve_data_obj
+        logger.info(f"add curve {curve_data_obj.curve_name} root name {curve_data_obj.rel_data.root_name}")
+        self.__stack_curve[curve_data_obj.rel_data.root_name] = curve_data_obj
         if type_axis == "left":
             curve_data_obj.place_curve_on_graph(graph_field  = self.graphView,
                                                 legend_field  = self.graphView.legend,

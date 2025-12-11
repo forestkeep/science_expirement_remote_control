@@ -17,7 +17,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QApplication, QDoubleSpinBox, QHBoxLayout, QLabel,
                              QPushButton, QSpinBox, QVBoxLayout, QWidget,
-                             QCheckBox, QGroupBox, QToolTip)
+                             QCheckBox, QGroupBox, QToolTip, QComboBox)
 
 class filterWin(QWidget):
     def __init__(self):
@@ -32,18 +32,21 @@ class filterWin(QWidget):
         self.calman_button   = QPushButton("Применить")
         self.exp_mean_button = QPushButton("Применить")
         self.thinning_button = QPushButton("Применить прореживание")
+        self.normalize_button = QPushButton("Применить нормировку")  # Добавлена кнопка нормировки
 
         # Добавляем тултипы к кнопкам
         self.median_button.setToolTip(self.get_median_description())
         self.average_button.setToolTip(self.get_average_description())
         self.exp_mean_button.setToolTip(self.get_exp_mean_description())
         self.thinning_button.setToolTip(self.get_thinning_description())
+        self.normalize_button.setToolTip(self.get_normalize_description())  # Тултип для нормировки
 
         self.median_button.setMinimumSize(30, 20)
         self.average_button.setMinimumSize(30, 20)
         self.calman_button.setMinimumSize(30, 20)
         self.exp_mean_button.setMinimumSize(30, 20)
         self.thinning_button.setMinimumSize(30, 20)
+        self.normalize_button.setMinimumSize(30, 20)  # Минимальный размер для кнопки нормировки
 
         self.spin_median   = QSpinBox() 
         self.spin_average  = QSpinBox()
@@ -65,10 +68,18 @@ class filterWin(QWidget):
         self.check_max = QCheckBox("Удалить максимальные")
         self.check_min = QCheckBox("Удалить минимальные")
 
-        # Добавляем тултипы к чекбоксам прореживания
+        # Элементы для нормировки
+        self.combo_norm_type = QComboBox()
+        self.combo_norm_type.addItem("0-1 (Min-Max)")
+        self.combo_norm_type.addItem("-1-1")
+        self.combo_norm_type.addItem("Z-score")
+        self.combo_norm_type.addItem("Robust (медиана/IQR)")
+        
+        # Добавляем тултипы к элементам управления
         self.check_uniform.setToolTip(self.get_uniform_thinning_description())
         self.check_max.setToolTip(self.get_max_thinning_description())
         self.check_min.setToolTip(self.get_min_thinning_description())
+        self.combo_norm_type.setToolTip(self.get_norm_type_description())
 
         main_layout.addLayout(self.create_layer_filter(
             QApplication.translate("filters", "Медианный фильтр"), 
@@ -114,6 +125,24 @@ class filterWin(QWidget):
         thinning_layout.addWidget(self.thinning_button)
         thinning_group.setLayout(thinning_layout)
         main_layout.addWidget(thinning_group)
+        
+        # Группа нормировки (добавлено)
+        norm_group = QGroupBox("Нормировка данных")
+        norm_group.setToolTip(self.get_normalize_group_description())
+        norm_layout = QVBoxLayout()
+        
+        # Выбор типа нормировки
+        type_layout = QHBoxLayout()
+        type_label = QLabel("Тип нормировки:")
+        type_layout.addWidget(type_label)
+        type_layout.addWidget(self.combo_norm_type)
+        type_layout.addStretch()
+        norm_layout.addLayout(type_layout)
+        
+        # Кнопка
+        norm_layout.addWidget(self.normalize_button)
+        norm_group.setLayout(norm_layout)
+        main_layout.addWidget(norm_group)
 
         self.setLayout(main_layout)
 
@@ -280,6 +309,55 @@ class filterWin(QWidget):
             "• Полезно для данных с асимметричным распределением\n"
             "• Не сохраняет форму сигнала в области минимумов"
         )
+    
+    # Новые описания для нормировки (добавлено)
+    def get_normalize_description(self):
+        return QApplication.translate("filters",
+            "Нормировка данных - преобразование данных к стандартному диапазону значений.\n\n"
+            "Применение:\n"
+            "• Подготовка данных для машинного обучения\n"
+            "• Сравнение сигналов с разными амплитудами\n"
+            "• Улучшение сходимости алгоритмов\n"
+            "• Визуализация данных в едином масштабе\n\n"
+            "Доступные методы:\n"
+            "1. 0-1 (Min-Max) - приведение к диапазону [0, 1]\n"
+            "2. -1-1 - приведение к диапазону [-1, 1]\n"
+            "3. Z-score - стандартизация (среднее=0, std=1)\n"
+            "4. Robust - устойчивая нормировка на основе медианы и IQR\n\n"
+            "Нормировка применяется только к значениям Y (данным), X-координаты остаются без изменений."
+        )
+    
+    def get_normalize_group_description(self):
+        return QApplication.translate("filters",
+            "Группа параметров для нормировки данных\n\n"
+            "Нормировка (стандартизация) преобразует данные к определенному диапазону значений.\n"
+            "Это полезно для:\n"
+            "• Машинного обучения и нейронных сетей\n"
+            "• Сравнения сигналов разной амплитуды\n"
+            "• Ускорения сходимости градиентных методов\n"
+            "• Устранения влияния масштаба на анализ данных\n"
+        )
+    
+    def get_norm_type_description(self):
+        return QApplication.translate("filters",
+            "Выбор типа нормировки:\n\n"
+            "1. 0-1 (Min-Max):\n"
+            "   • Диапазон: [0, 1]\n"
+            "   • Формула: (x - min) / (max - min)\n"
+            "   • Чувствителен к выбросам\n\n"
+            "2. -1-1:\n"
+            "   • Диапазон: [-1, 1]\n"
+            "   • Формула: 2*(x - min)/(max - min) - 1\n"
+            "   • Сохраняет знак исходных отклонений\n\n"
+            "3. Z-score:\n"
+            "   • Среднее = 0, Стандартное отклонение = 1\n"
+            "   • Формула: (x - mean) / std\n"
+            "   • Хорош для данных с нормальным распределением\n\n"
+            "4. Robust (медиана/IQR):\n"
+            "   • На основе медианы и межквартильного размаха\n"
+            "   • Устойчив к выбросам\n"
+            "   • Формула: (x - median) / IQR\n"
+        )
 
 class filtersClass():
     def __init__(self):
@@ -292,6 +370,7 @@ class filtersClass():
         self.filt_window.calman_button.clicked.connect( lambda: self.prepare_filters(self.calman_filt) )
         self.filt_window.exp_mean_button.clicked.connect( lambda: self.prepare_filters(self.exp_mean_filt) )
         self.filt_window.thinning_button.clicked.connect( lambda: self.prepare_filters(self.thinning_filt) )
+        self.filt_window.normalize_button.clicked.connect( lambda: self.prepare_filters(self.normalize_filt) )  # Подключение кнопки нормировки
 
     def set_filter_slot(self, slot_func):
         '''сюда передаются калбеки сигналов фильтров. При срабатывании какой-либо кнопки фильтра в эти калбеки будет передана ссылка на функцию фильтр'''
@@ -309,6 +388,9 @@ class filtersClass():
         self.thinning_uniform = self.filt_window.check_uniform.isChecked()
         self.thinning_max = self.filt_window.check_max.isChecked()
         self.thinning_min = self.filt_window.check_min.isChecked()
+        
+        # Параметры нормировки (добавлено)
+        self.norm_type = self.filt_window.combo_norm_type.currentText()
 
         for callback in self.filters_callbacks:
             callback(func)
@@ -555,6 +637,91 @@ class filtersClass():
         
         description = f"Прореживание {self.thinning_percent}% ({', '.join(desc_methods)})"
         return current_x, current_y, description
+    
+    def normalize_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray]) -> Tuple[np.ndarray, np.ndarray, str]:
+        """
+        Применяет нормировку данных к выбранному диапазону.
+        
+        Доступные типы нормировки:
+        1. 0-1 (Min-Max): приведение к диапазону [0, 1]
+        2. -1-1: приведение к диапазону [-1, 1]
+        3. Z-score: стандартизация (среднее=0, стандартное отклонение=1)
+        4. Robust: устойчивая нормировка на основе медианы и межквартильного размаха
+        
+        Параметры:
+            x: X-координаты данных
+            y: Y-координаты данных
+            
+        Возвращает:
+            Tuple[np.ndarray, np.ndarray, str]: Нормированные x, y и описание
+        """
+        x_array = np.array(x)
+        y_array = np.array(y)
+        
+        if len(y_array) == 0:
+            return x_array.copy(), y_array.copy(), "Нормировка: нет данных"
+        
+        norm_type = self.norm_type
+        
+        if norm_type == "0-1 (Min-Max)":
+            # Нормировка к диапазону [0, 1]
+            y_min = np.min(y_array)
+            y_max = np.max(y_array)
+            
+            if y_max == y_min:  # Все значения одинаковы
+                y_norm = np.zeros_like(y_array) if y_min == 0 else np.ones_like(y_array) * 0.5
+            else:
+                y_norm = (y_array - y_min) / (y_max - y_min)
+            
+            description = f"Нормировка [0,1] (min={y_min:.3f}, max={y_max:.3f})"
+            
+        elif norm_type == "-1-1":
+            # Нормировка к диапазону [-1, 1]
+            y_min = np.min(y_array)
+            y_max = np.max(y_array)
+            
+            if y_max == y_min:  # Все значения одинаковы
+                y_norm = np.zeros_like(y_array)
+            else:
+                y_norm = 2 * ((y_array - y_min) / (y_max - y_min)) - 1
+            
+            description = f"Нормировка [-1,1] (min={y_min:.3f}, max={y_max:.3f})"
+            
+        elif norm_type == "Z-score":
+            # Z-score стандартизация
+            y_mean = np.mean(y_array)
+            y_std = np.std(y_array)
+            
+            if y_std == 0:  # Все значения одинаковы
+                y_norm = np.zeros_like(y_array)
+            else:
+                y_norm = (y_array - y_mean) / y_std
+            
+            description = f"Z-score (mean={y_mean:.3f}, std={y_std:.3f})"
+            
+        elif norm_type == "Robust (медиана/IQR)":
+            # Устойчивая нормировка на основе медианы и межквартильного размаха
+            y_median = np.median(y_array)
+            q75, q25 = np.percentile(y_array, [75, 25])
+            iqr = q75 - q25
+            
+            if iqr == 0:  # Все значения близки или одинаковы
+                # Используем стандартное отклонение как запасной вариант
+                y_std = np.std(y_array)
+                if y_std == 0:
+                    y_norm = np.zeros_like(y_array)
+                else:
+                    y_norm = (y_array - y_median) / y_std
+                description = f"Robust (медиана={y_median:.3f}, std={y_std:.3f})"
+            else:
+                y_norm = (y_array - y_median) / iqr
+                description = f"Robust (медиана={y_median:.3f}, IQR={iqr:.3f})"
+        else:
+            # По умолчанию возвращаем исходные данные
+            y_norm = y_array.copy()
+            description = f"Нормировка: неизвестный тип '{norm_type}'"
+        
+        return x_array, y_norm, description
 
 # Пример использования тултипов с подробным описанием функций
 def show_tooltip_example():
