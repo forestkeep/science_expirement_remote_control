@@ -9,14 +9,15 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-from typing import Union
+from typing import Union, Tuple
 
 import numpy as np
 import pandas as pd
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QApplication, QDoubleSpinBox, QHBoxLayout, QLabel,
-                             QPushButton, QSpinBox, QVBoxLayout, QWidget)
+                             QPushButton, QSpinBox, QVBoxLayout, QWidget,
+                             QCheckBox, QGroupBox, QToolTip)
 
 class filterWin(QWidget):
     def __init__(self):
@@ -30,39 +31,102 @@ class filterWin(QWidget):
         self.average_button  = QPushButton("Применить")
         self.calman_button   = QPushButton("Применить")
         self.exp_mean_button = QPushButton("Применить")
+        self.thinning_button = QPushButton("Применить прореживание")
+
+        # Добавляем тултипы к кнопкам
+        self.median_button.setToolTip(self.get_median_description())
+        self.average_button.setToolTip(self.get_average_description())
+        self.exp_mean_button.setToolTip(self.get_exp_mean_description())
+        self.thinning_button.setToolTip(self.get_thinning_description())
 
         self.median_button.setMinimumSize(30, 20)
         self.average_button.setMinimumSize(30, 20)
         self.calman_button.setMinimumSize(30, 20)
         self.exp_mean_button.setMinimumSize(30, 20)
+        self.thinning_button.setMinimumSize(30, 20)
 
         self.spin_median   = QSpinBox() 
         self.spin_average  = QSpinBox()
         self.spin_calman   = QSpinBox()
         self.spin_calman2  = QSpinBox()
         self.spin_exp_mean = QDoubleSpinBox()
+        self.spin_thinning = QSpinBox()
 
         self.spin_calman.setMaximum(10)
         self.spin_calman2.setMaximum(10)
         self.spin_exp_mean.setMaximum(1)
+        self.spin_thinning.setRange(0, 100)
+        self.spin_thinning.setSuffix("%")
 
         self.spin_exp_mean.setSingleStep(0.01)
 
-        main_layout.addLayout(self.create_layer_filter(QApplication.translate("filters","Медианный фильтр"), [self.create_spin_box("Окно", self.spin_median)],
-                                                                            self.median_button) )
+        # Чекбоксы для прореживания
+        self.check_uniform = QCheckBox("Равномерно")
+        self.check_max = QCheckBox("Удалить максимальные")
+        self.check_min = QCheckBox("Удалить минимальные")
+
+        # Добавляем тултипы к чекбоксам прореживания
+        self.check_uniform.setToolTip(self.get_uniform_thinning_description())
+        self.check_max.setToolTip(self.get_max_thinning_description())
+        self.check_min.setToolTip(self.get_min_thinning_description())
+
+        main_layout.addLayout(self.create_layer_filter(
+            QApplication.translate("filters", "Медианный фильтр"), 
+            [self.create_spin_box("Окно", self.spin_median)],
+            self.median_button,
+            self.get_median_description()
+        ))
         
-        main_layout.addLayout(self.create_layer_filter(QApplication.translate("filters","Бегущее среднее"), [self.create_spin_box("Окно", self.spin_average)],
-                                                                           self.average_button) )
-        '''
-        main_layout.addLayout(self.create_layer_filter(QApplication.translate("filters","Фильтр Калмана"), [self.create_spin_box("Q", self.spin_calman),
-                                                                          self.create_spin_box("R", self.spin_calman2)],
-                                                                          self.calman_button) )
-        '''
-        main_layout.addLayout(self.create_layer_filter(QApplication.translate("filters","Экспоненциальное \n среднее"),
-                                                        [self.create_spin_box("Коэфф", self.spin_exp_mean)],
-                                                         self.exp_mean_button)  )
+        main_layout.addLayout(self.create_layer_filter(
+            QApplication.translate("filters", "Бегущее среднее"), 
+            [self.create_spin_box("Окно", self.spin_average)],
+            self.average_button,
+            self.get_average_description()
+        ))
+        
+        main_layout.addLayout(self.create_layer_filter(
+            QApplication.translate("filters", "Экспоненциальное \n среднее"),
+            [self.create_spin_box("Коэфф", self.spin_exp_mean)],
+            self.exp_mean_button,
+            self.get_exp_mean_description()
+        ))
+        
+        # Группа прореживания
+        thinning_group = QGroupBox("Прореживание данных")
+        thinning_group.setToolTip(self.get_thinning_group_description())
+        thinning_layout = QVBoxLayout()
+        
+        # Процент удаления
+        percent_layout = QHBoxLayout()
+        percent_label = QLabel("Процент удаления:")
+        percent_layout.addWidget(percent_label)
+        percent_layout.addWidget(self.spin_thinning)
+        percent_layout.addStretch()
+        thinning_layout.addLayout(percent_layout)
+        
+        # Чекбоксы
+        thinning_layout.addWidget(self.check_uniform)
+        thinning_layout.addWidget(self.check_max)
+        thinning_layout.addWidget(self.check_min)
+        self.check_uniform.setChecked(True)
+        
+        # Кнопка
+        thinning_layout.addWidget(self.thinning_button)
+        thinning_group.setLayout(thinning_layout)
+        main_layout.addWidget(thinning_group)
 
         self.setLayout(main_layout)
+
+        self.setStyleSheet("""
+                            QToolTip {
+                            color: #000000;
+                            background-color: #f0f0f0;
+                            border: 2px solid #cccccc;
+                            padding: 5px;
+                            border-radius: 3px;
+                            opacity: 240;
+                            }
+                            """)
 
     def create_spin_box(self, label, spinbox):
         spin_widget = QWidget()
@@ -78,13 +142,14 @@ class filterWin(QWidget):
 
         return spin_widget
 
-    def create_layer_filter(self, filter_name, spinboxes, button):
+    def create_layer_filter(self, filter_name, spinboxes, button, description):
         filter_layout = QVBoxLayout()
 
         filter_layout.setContentsMargins(0, 0, 0, 0)
         
         filter_label = QLabel(filter_name)
         filter_label.setAlignment(Qt.AlignCenter)
+        filter_label.setToolTip(description)
         filter_layout.addWidget(filter_label)
 
         font = QFont('Arial', 10, QFont.Bold)
@@ -102,114 +167,430 @@ class filterWin(QWidget):
 
         return filter_layout
 
+    # Функции для получения описаний (обернуты в QApplication.translate для локализации)
+    
+    def get_median_description(self):
+        return QApplication.translate("filters",
+            "Медианный фильтр - нелинейный метод фильтрации, который заменяет каждое значение в сигнале медианой значений в скользящем окне заданного размера.\n\n"
+            "Принцип работы:\n"
+            "1. Для каждой точки данных создается окно из соседних значений\n"
+            "2. Все значения в окне сортируются по возрастанию\n"
+            "3. В качестве отфильтрованного значения берется медиана (среднее значение в отсортированном списке)\n\n"
+            "Преимущества:\n"
+            "• Эффективно удаляет импульсные шумы (выбросы)\n"
+            "• Сохраняет резкие перепады сигнала (ступенчатые изменения)\n"
+            "• Устойчив к экстремальным значениям\n\n"
+            "Рекомендуется для: удаления одиночных выбросов, обработки сигналов с импульсными помехами"
+        )
+    
+    def get_average_description(self):
+        return QApplication.translate("filters",
+            "Фильтр скользящего среднего (бегущее среднее) - линейный метод сглаживания данных путем усреднения значений в скользящем окне.\n\n"
+            "Принцип работы:\n"
+            "1. Для каждой точки данных создается окно из соседних значений\n"
+            "2. Вычисляется среднее арифметическое всех значений в окне\n"
+            "3. Это среднее становится новым значением для центральной точки окна\n\n"
+            "Характеристики:\n"
+            "• Размер окна определяет степень сглаживания (большее окно = большее сглаживание)\n"
+            "• Уменьшает высокочастотный шум\n"
+            "• Может вызывать фазовые задержки и сглаживание резких изменений\n"
+            "• Простота реализации и низкие вычислительные затраты\n\n"
+            "Рекомендуется для: плавного сглаживания данных, удаления высокочастотного шума"
+        )
+    
+    def get_exp_mean_description(self):
+        return QApplication.translate("filters",
+            "Экспоненциальное скользящее среднее (EMA) - рекурсивный фильтр, который присваивает больший вес последним наблюдениям.\n\n"
+            "Принцип работы:\n"
+            "• Новое значение = α * текущее_измерение + (1-α) * предыдущее_отфильтрованное_значение\n"
+            "• Коэффициент α (0 < α ≤ 1) определяет скорость забывания старых значений\n"
+            "• Большее α = больше вес текущих измерений, меньшее сглаживание\n"
+            "• Меньшее α = больше сглаживание, но больше задержка\n\n"
+            "Особенности:\n"
+            "• Требует меньше памяти (хранит только предыдущее значение)\n"
+            "• Более чувствителен к последним изменениям\n"
+            "• Эффективно для онлайн-обработки данных в реальном времени\n"
+            "• Не требует буферизации данных\n\n"
+            "Рекомендуется для: потоковой обработки данных, адаптивного сглаживания"
+        )
+    
+    def get_thinning_description(self):
+        return QApplication.translate("filters",
+            "Прореживание данных - метод уменьшения количества точек данных путем выборочного удаления части из них.\n\n"
+            "Применение:\n"
+            "• Уменьшение объема данных для хранения или передачи\n"
+            "• Ускорение обработки и визуализации\n"
+            "• Удаление выбросов и аномальных значений\n\n"
+            "Доступные методы:\n"
+            "1. Равномерное прореживание - удаление точек с постоянным шагом\n"
+            "2. Удаление максимальных - удаление точек с наибольшими значениями\n"
+            "3. Удаление минимальных - удаление точек с наименьшими значениями\n\n"
+            "Методы можно комбинировать. Приоритет выполнения: равномерно → максимальные → минимальные."
+        )
+    
+    def get_thinning_group_description(self):
+        return QApplication.translate("filters",
+            "Группа параметров для прореживания данных\n\n"
+            "Прореживание позволяет уменьшить количество точек данных путем выборочного удаления.\n"
+            "Это полезно для:\n"
+            "• Уменьшения объема данных\n"
+            "• Снижения вычислительной нагрузки\n"
+            "• Уменьшения времени отрисовки графиков\n"
+            "• Удаления статистических выбросов\n\n"
+            "Выберите метод(ы) прореживания и укажите процент удаляемых точек."
+        )
+    
+    def get_uniform_thinning_description(self):
+        return QApplication.translate("filters",
+            "Равномерное прореживание - удаление точек данных через равные интервалы.\n\n"
+            "Пример:\n"
+            "• При 20% удаления будет удалена каждая пятая точка\n"
+            "• При 33% удаления будет удалена каждая третья точка\n\n"
+            "Преимущества:\n"
+            "• Сохраняет общую форму сигнала\n"
+            "• Простота реализации\n"
+            "• Равномерное распределение оставшихся точек\n\n"
+            "Недостатки:\n"
+            "• Может пропускать важные особенности сигнала\n"
+            "• Не учитывает значения точек"
+        )
+    
+    def get_max_thinning_description(self):
+        return QApplication.translate("filters",
+            "Удаление максимальных значений - удаление заданного процента точек с наибольшими значениями.\n\n"
+            "Применение:\n"
+            "• Удаление положительных выбросов\n"
+            "• Ограничение диапазона данных\n"
+            "• Подготовка данных для алгоритмов, чувствительных к максимумам\n\n"
+            "Особенности:\n"
+            "• Может искажать пиковые значения сигнала\n"
+            "• Полезно для данных с асимметричным распределением\n"
+            "• Не сохраняет форму сигнала в области максимумов"
+        )
+    
+    def get_min_thinning_description(self):
+        return QApplication.translate("filters",
+            "Удаление минимальных значений - удаление заданного процента точек с наименьшими значениями.\n\n"
+            "Применение:\n"
+            "• Удаление отрицательных выбросов\n"
+            "• Игнорирование фонового шума\n"
+            "• Подготовка данных для алгоритмов, чувствительных к минимумам\n\n"
+            "Особенности:\n"
+            "• Может искажать минимальные значения сигнала\n"
+            "• Полезно для данных с асимметричным распределением\n"
+            "• Не сохраняет форму сигнала в области минимумов"
+        )
+
 class filtersClass():
     def __init__(self):
         self.filters_callbacks = []
+        self.thinning_callbacks = []
         self.filt_window = filterWin()
 
         self.filt_window.median_button.clicked.connect( lambda: self.prepare_filters(self.med_filt) )
         self.filt_window.average_button.clicked.connect( lambda: self.prepare_filters(self.average_filt) )      
         self.filt_window.calman_button.clicked.connect( lambda: self.prepare_filters(self.calman_filt) )
         self.filt_window.exp_mean_button.clicked.connect( lambda: self.prepare_filters(self.exp_mean_filt) )
+        self.filt_window.thinning_button.clicked.connect( lambda: self.prepare_filters(self.thinning_filt) )
 
     def set_filter_slot(self, slot_func):
         '''сюда передаются калбеки сигналов фильтров. При срабатывании какой-либо кнопки фильтра в эти калбеки будет передана ссылка на функцию фильтр'''
         self.filters_callbacks.append(slot_func)
+    
+    def set_thinning_slot(self, slot_func):
+        '''сюда передаются калбеки сигналов прореживания'''
+        self.thinning_callbacks.append(slot_func)
 
     def prepare_filters(self, func):
         self.range_avg = int(self.filt_window.spin_average.value())
         self.range_median = int(self.filt_window.spin_median.value())
         self.alpha_exp = float(self.filt_window.spin_exp_mean.value())
+        self.thinning_percent = int(self.filt_window.spin_thinning.value())
+        self.thinning_uniform = self.filt_window.check_uniform.isChecked()
+        self.thinning_max = self.filt_window.check_max.isChecked()
+        self.thinning_min = self.filt_window.check_min.isChecked()
 
         for callback in self.filters_callbacks:
             callback(func)
-
-    def med_filt(self, data : Union[list, np.ndarray]):
+    
+    def med_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray]) -> Tuple[np.ndarray, np.ndarray, str]:
         """
-        Applies a median filter to the input data.
-
-        This function constructs a sliding window of size `self.range_median` 
-        around each element of the input `data`, and calculates the median 
-        value within the window. The edges are padded using the border values 
-        of the input data to handle incomplete windows at the boundaries.
-
-        Parameters:
-            data (array-like): The input array of data to be filtered.
-
-        Returns:
-            np.ndarray: The array of filtered data with the same length as the input data.
+        Применяет медианный фильтр к входным данным.
+        
+        Функция создает скользящее окно размера `self.range_median` вокруг каждого элемента 
+        входных данных `y` и вычисляет медианное значение в пределах окна. 
+        Для обработки границ используется заполнение граничными значениями исходных данных.
+        
+        Параметры:
+            x: массив X-координат данных
+            y: массив Y-координат данных для фильтрации
+            
+        Возвращает:
+            Кортеж из трех элементов:
+            - X-координаты отфильтрованных данных
+            - Y-координаты отфильтрованных данных
+            - Описание примененного фильтра
         """
         k2 = (self.range_median - 1) // 2
-        y = np.zeros ((len (data), self.range_median), dtype=data.dtype)
-        y[:,k2] = data
+        data_y = np.zeros ((len (y), self.range_median), dtype=y.dtype)
+        data_y[:,k2] = y
         for i in range (k2):
             j = k2 - i
-            y[j:,i] = data[:-j]
-            y[:j,i] = data[0]
-            y[:-j,-(i+1)] = data[j:]
-            y[-j:,-(i+1)] = data[-1]
-        return np.median(y, axis=1), QApplication.translate("GraphWindow","Медиана({})").format(self.range_median)
+            data_y[j:,i] = y[:-j]
+            data_y[:j,i] = y[0]
+            data_y[:-j,-(i+1)] = y[j:]
+            data_y[-j:,-(i+1)] = y[-1]
 
-    def exp_mean_filt(self, data : Union[list, np.ndarray]):
+        data_y_ret = np.median(data_y, axis=1)
+        x_data = x[-len(data_y_ret):]
+        return x_data, data_y_ret, QApplication.translate("GraphWindow","Медиана({})").format(self.range_median)
 
-        data = pd.Series(data)
-        ema = data.ewm(alpha=self.alpha_exp, adjust=False).mean()
+    def exp_mean_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray]) -> Tuple[np.ndarray, np.ndarray, str]:
+        """
+        Применяет экспоненциальное скользящее среднее к входным данным.
+        
+        Использует метод экспоненциального взвешивания, где более свежим данным 
+        присваивается больший вес. Коэффициент α определяет скорость забывания 
+        старых значений.
+        
+        Параметры:
+            x: массив X-координат данных
+            y: массив Y-координат данных для фильтрации
+            
+        Возвращает:
+            Кортеж из трех элементов:
+            - X-координаты отфильтрованных данных
+            - Y-координаты отфильтрованных данных
+            - Описание примененного фильтра
+        """
+        data_y = y
+        data_y = pd.Series(data_y)
+        ema = data_y.ewm(alpha=self.alpha_exp, adjust=False).mean()
 
         ema_array = ema.to_numpy()
 
-        return ema_array, QApplication.translate("GraphWindow", "экспоненциальное среднее(alpha = {})").format( round(self.alpha_exp, 2) )
+
+        x_data = x[-len(ema_array):]
+
+        return x_data, ema_array, QApplication.translate("GraphWindow", "экспоненциальное среднее(alpha = {})").format( round(self.alpha_exp, 2) )
 
     def calman_filt(self, data):
         return data
 
-    def average_filt(self, data: Union[list, np.ndarray]):
+    def average_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray]) -> Tuple[np.ndarray, np.ndarray, str]:
+        """
+        Применяет фильтр скользящего среднего к входным данным.
+        
+        Выполняет свертку данных с ядром усреднения для сглаживания сигнала.
+        Режим 'valid' возвращает только те участки, где свертка определена полностью.
+        
+        Параметры:
+            x: массив X-координат данных
+            y: массив Y-координат данных для фильтрации
+            
+        Возвращает:
+            Кортеж из трех элементов:
+            - X-координаты отфильтрованных данных
+            - Y-координаты отфильтрованных данных
+            - Описание примененного фильтра
+        """
         N = self.range_avg
+        y_data = np.convolve(y, np.ones(N)/N, 'valid')
+        x_data = x[-len(y_data):]
 
-        return np.convolve(data, np.ones(N)/N, 'valid'), QApplication.translate("GraphWindow","Скользящее среднее({})").format(N) #same #full #valid
+        return x_data, y_data, QApplication.translate("GraphWindow","Скользящее среднее({})").format(N) #same #full #valid
+    
+    def _apply_uniform_thinning(self, x: np.ndarray, y: np.ndarray, percent: float) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Равномерное прореживание - удаление каждой N-ой точки.
+        
+        Сохраняет общую форму сигнала, равномерно распределяя оставшиеся точки.
+        
+        Параметры:
+            x: массив X-координат данных
+            y: массив Y-координат данных
+            percent: процент удаляемых точек
+            
+        Возвращает:
+            Кортеж из X и Y координат после прореживания
+        """
+        if percent <= 0 or percent >= 100:
+            return x.copy(), y.copy()
+        
+        n_points = len(y)
+        if n_points == 0:
+            return x.copy(), y.copy()
+        
+        keep_ratio = (100 - percent) / 100
+        n_keep = int(round(n_points * keep_ratio))
+        
+        if n_keep >= n_points:
+            return x.copy(), y.copy()
+        if n_keep <= 0:
+            return np.array([]), np.array([])
+        
+        indices = np.linspace(0, n_points - 1, n_keep, dtype=int)
+        
+        return x[indices], y[indices]
+    
+    def _apply_max_thinning(self, x: np.ndarray, y: np.ndarray, percent: float) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Удаление максимальных значений.
+        
+        Удаляет заданный процент точек с наибольшими значениями Y.
+        Полезно для удаления положительных выбросов.
+        
+        Параметры:
+            x: массив X-координат данных
+            y: массив Y-координат данных
+            percent: процент удаляемых точек
+            
+        Возвращает:
+            Кортеж из X и Y координат после прореживания
+        """
+        if percent <= 0 or percent >= 100:
+            return x.copy(), y.copy()
+        
+        n_to_remove = int(len(y) * percent / 100)
+        if n_to_remove == 0:
+            return x.copy(), y.copy()
+        
+        # Находим индексы максимальных значений
+        max_indices = np.argsort(-y)[:n_to_remove]
+        
+        # Создаем маску для сохранения
+        mask = np.ones(len(y), dtype=bool)
+        mask[max_indices] = False
+        
+        return x[mask], y[mask]
+    
+    def _apply_min_thinning(self, x: np.ndarray, y: np.ndarray, percent: float) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Удаление минимальных значений.
+        
+        Удаляет заданный процент точек с наименьшими значениями Y.
+        Полезно для удаления отрицательных выбросов.
+        
+        Параметры:
+            x: массив X-координат данных
+            y: массив Y-координат данных
+            percent: процент удаляемых точек
+            
+        Возвращает:
+            Кортеж из X и Y координат после прореживания
+        """
+        if percent <= 0 or percent >= 100:
+            return x.copy(), y.copy()
+        
+        n_to_remove = int(len(y) * percent / 100)
+        if n_to_remove == 0:
+            return x.copy(), y.copy()
+        
+        # Находим индексы минимальных значений
+        min_indices = np.argsort(y)[:n_to_remove]
+        
+        # Создаем маску для сохранения
+        mask = np.ones(len(y), dtype=bool)
+        mask[min_indices] = False
+        
+        return x[mask], y[mask]
+    
+    def thinning_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray]) -> Tuple[np.ndarray, np.ndarray, str]:
+        """
+        Применяет прореживание данных.
+        
+        Удаляет заданный процент точек в соответствии с выбранными методами.
+        Приоритет: равномерно -> максимальные -> минимальные.
+        
+        Параметры:
+            x: X-координаты данных
+            y: Y-координаты данных
+            
+        Возвращает:
+            Tuple[np.ndarray, np.ndarray, str]: Отфильтрованные x, y и описание
+        """
+        if self.thinning_percent == 0:
+            return np.array(x).copy(), np.array(y).copy(), "Без прореживания"
+        
+        x_array = np.array(x)
+        y_array = np.array(y)
+        
+        # Подсчитываем количество выбранных методов
+        methods = []
+        if self.thinning_uniform:
+            methods.append('uniform')
+        if self.thinning_max:
+            methods.append('max')
+        if self.thinning_min:
+            methods.append('min')
 
+        if not methods:
+            return x_array.copy(), y_array.copy(), "Без прореживания"
+        
+        # Вычисляем процент для каждого метода
+        percent_per_method = self.thinning_percent / len(methods)
+        
+        # Применяем методы в порядке приоритета
+        current_x, current_y = x_array.copy(), y_array.copy()
+        
+        for method in methods:
+            if len(current_y) == 0:
+                break
+                
+            if method == 'uniform':
+                current_x, current_y = self._apply_uniform_thinning(current_x, current_y, percent_per_method)
+            elif method == 'max':
+                current_x, current_y = self._apply_max_thinning(current_x, current_y, percent_per_method)
+            elif method == 'min':
+                current_x, current_y = self._apply_min_thinning(current_x, current_y, percent_per_method)
+        
+        # Создаем описание
+        desc_methods = []
+        if self.thinning_uniform:
+            desc_methods.append("равномерно")
+        if self.thinning_max:
+            desc_methods.append("макс")
+        if self.thinning_min:
+            desc_methods.append("мин")
+        
+        description = f"Прореживание {self.thinning_percent}% ({', '.join(desc_methods)})"
+        return current_x, current_y, description
 
-def test_filters():
-    import matplotlib.pyplot as plt
-    np.random.seed(42)
-    x = np.linspace(0, 10, 100)
-    clean_data = np.sin(x)
-    noise = np.random.normal(0, 0.5, size=x.shape)
-    noisy_data = clean_data + noise
-
-    filter_instance = filtersClass()
-    filter_instance.filt_window.spin_average.setValue(5)
-    filter_instance.filt_window.spin_median.setValue(5)
-    filter_instance.filt_window.spin_exp_mean.setValue(0.1)
-
-    filter_instance.range_avg = 5
-    filter_instance.range_median = 5
-    filter_instance.alpha_exp = 0.5
-
-    filtered_average = filter_instance.average_filt(noisy_data)
-    filtered_median = filter_instance.med_filt(noisy_data)
-    filtered_exp_mean = filter_instance.exp_mean_filt(noisy_data)
-
-    plt.figure(figsize=(12, 6))
-    plt.plot(x, noisy_data, label='Зашумленные данные', color='gray', alpha=0.5)
-    plt.plot(x, clean_data, label='Чистый сигнал', color='green', linestyle='--')
-    plt.plot(x[:len(filtered_average)], filtered_average, label='Отфильтрованные (среднее)', color='blue')
-    plt.plot(x, filtered_median, label='Отфильтрованные (медиана)', color='orange')
-    plt.plot(x, filtered_exp_mean, label='Отфильтрованные (экспоненциальный)', color='purple')
-
-    plt.title('Фильтрация сигналов')
-    plt.legend()
-    plt.xlabel('Время')
-    plt.ylabel('Амплитуда')
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
+# Пример использования тултипов с подробным описанием функций
+def show_tooltip_example():
+    app = QApplication([])
+    
+    # Создаем экземпляр окна фильтров
+    window = filterWin()
+    
+    # Показываем окно
+    window.setWindowTitle("Фильтры данных с подробными описаниями")
+    window.show()
+    
+    # Демонстрация тултипов
+    QToolTip.setFont(QFont('Arial', 10))
+    QToolTip.setStyleSheet("""
+        QToolTip {
+            background-color: #f0f0f0;
+            color: #000000;
+            border: 2px solid #cccccc;
+            padding: 5px;
+            border-radius: 3px;
+            opacity: 240;
+            max-width: 600px;
+        }
+    """)
+    
+    app.exec_()
 
 if __name__ == '__main__':
-
     import sys
     app = QApplication(sys.argv)
-    test_filters()
+    
+    # Для тестирования можно использовать:
+    # show_tooltip_example()  # Для демонстрации тултипов
+    
+    # Или полный тест фильтров:
     widget = filtersClass()
     widget.filt_window.setWindowTitle("Фильтры данных")
     widget.filt_window.show()
