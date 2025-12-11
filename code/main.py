@@ -16,7 +16,7 @@ from installation_controller import instController
 
 logger = logging.getLogger(__name__)
 
-VERSION_APP = "1.3.0"
+VERSION_APP = "1.3.1"
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
