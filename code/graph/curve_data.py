@@ -266,22 +266,25 @@ class linearData(graphData):
         self.alias_manager = alias_manager
         self.rel_data = data
 
-        self.rel_data.update_names(self.alias_manager.get_alias(self.rel_data.x_root_name),
-                                   self.alias_manager.get_alias(self.rel_data.y_root_name))
+        x_name = self.alias_manager.get_alias(self.rel_data.x_root_name)
+        y_name = self.alias_manager.get_alias(self.rel_data.y_root_name)
+        self.rel_data.update_names(x_name,
+                                   y_name)
 
         self.curve_name = self.rel_data.current_name
         self.legend = legendName(self.curve_name)
         self.alias_manager.aliases_updated.connect(self.alias_changed)
         self.is_name_curve_customized = False#флаг, указывающий на то, что название кривой было изменено пользователем
 
+        self.tree_item.change_name(self.rel_data.current_name, reset=True)
         self.recalc_stats_param()
 
     def alias_changed(self, original_name, old_alias, alias):
         new_x_name = self.rel_data.x_current_name
         new_y_name = self.rel_data.y_current_name
-        if old_alias == self.rel_data.x_current_name:
+        if original_name == self.rel_data.x_root_name:
             new_x_name = alias
-        if old_alias == self.rel_data.y_current_name:
+        if original_name == self.rel_data.y_root_name:
             new_y_name = alias
         self.rel_data.update_names(new_x_name, new_y_name)
 

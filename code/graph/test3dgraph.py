@@ -94,6 +94,7 @@ class Custom3DAxis(gl.GLAxisItem):
             val.setGLViewWidget(self.parent)
             self.parent.addItem(val)
 
+    '''
     def paint(self):
         import pyqtgraph.opengl as ogl
         self.setupGLState()
@@ -117,11 +118,14 @@ class Custom3DAxis(gl.GLAxisItem):
         ogl.glVertex3f(x, 0, 0)
         ogl.glEnd()
 
+        super().paint()
+        '''
+
 
 app = QtWidgets.QApplication([])
 fig1 = gl.GLViewWidget()
-background_color = app.palette().color(QtGui.QPalette.Background)
-fig1.setBackgroundColor(background_color)
+#background_color = app.palette().color(QtGui.QPalette.white)
+#fig1.setBackgroundColor(background_color)
 
 n = 51
 y = np.linspace(-10, 10, n)
@@ -138,9 +142,9 @@ for i in range(n):
 
 
 axis = Custom3DAxis(fig1, color=(0.2, 0.2, 0.2, 0.6))
-axis.setSize(x=12, y=12, z=12)
+axis.setSize(x=120, y=120, z=120)
 axis.add_labels()
-axis.add_tick_values(xticks=[0, 4, 8, 12], yticks=[0, 6, 12], zticks=[0, 3, 6, 9, 12])
+#axis.add_tick_values(xticks=[0, 4, 8, 12], yticks=[0, 6, 12], zticks=[0, 3, 6, 9, 12])
 fig1.addItem(axis)
 fig1.opts["distance"] = 40
 

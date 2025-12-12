@@ -106,15 +106,27 @@ class experimentControl( ):
 				device.set_client(client)
 			else:
 				logger.warning(f"Для прибора {device.name} не создан клиент {client=}")
+				text =\
+					QApplication.translate('exp_flow',"Для прибора")\
+					+ " " + device.name + " "\
+					+ QApplication.translate('exp_flow',"не получилось инициализировать клиент, проверьте подключение.")
+					
+				self.first_queue.put(("add_text_to_log", {"text": text, "status": "err"}))
+				raise Exception(text)
 
 	def run(self):
 		self.has_unsaved_data = False 
-		self.set_clients()
+		status = True
+		try:
+			self.set_clients()
+		except Exception as e:
+			status = False
 
 		self.start_exp_time = time.perf_counter()
 		self.adjusted_start_time = time.perf_counter()
-		  
-		status = self.check_connections()
+		
+		if status:
+			status = self.check_connections()
 
 		if status != False:
 			status = self.set_settings_before_exp()
@@ -134,9 +146,6 @@ class experimentControl( ):
 				# не определено время
 
 			self.first_queue.put(("update_remaining_time", {"remaining_time": self.remaining_time}))
-
-			self.start_exp_time = time.perf_counter()
-			self.adjusted_start_time = time.perf_counter()
 
 			self.set_start_priorities()
 
@@ -219,7 +228,9 @@ class experimentControl( ):
 								elif ch.get_type() == "meas":
 									error, ans_request, time_step = self.do_meas(device=device, ch=ch)
 
-								if not self.has_unsaved_data:
+								if not self.has_unsaved_data and \
+										error != ch_response_to_step.Step_fail and \
+										error != ch_response_to_step.Incorrect_ch:
 									self.has_unsaved_data = True
 									self.important_queue.put(("has_data_to_save", {}))
 

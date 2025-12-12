@@ -414,7 +414,6 @@ class HDF5ToProjectAdapter:
 		rel_data = relationData(x_meas, y_meas)
 		
 		new_data = linearData(data=rel_data, alias_manager=alias_manager)
-		new_data.tree_item.change_name(plot_model.linear_data.curve_name)
 		
 		new_data.device = plot_model.linear_data.device
 		new_data.channel = plot_model.linear_data.channel

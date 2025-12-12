@@ -208,7 +208,6 @@ class paramController( QObject):
         self.__y_second_parameters = set()
 
     def alias_changed(self, original_name, old_alias, alias):
-        logger.info(f"alias_changed {original_name} {old_alias} {alias}")
         #++++++++++++++previous+++++++++++++++++
         for index, name in enumerate(self.previous_x_parameter):
             if name == old_alias:

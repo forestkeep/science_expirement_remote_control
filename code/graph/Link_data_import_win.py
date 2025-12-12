@@ -35,16 +35,13 @@ class Check_data_import_win(QDialog):
 
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
-        #self.scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         self.scroll_content_widget = QWidget()
         self.scroll_content_layout = QVBoxLayout(self.scroll_content_widget)
 
-        # Устанавливаем содержимое в scroll_area
         self.scroll_area.setWidget(self.scroll_content_widget)
 
-        # Добавляем scroll_area в основной макет
         layout_vert_main.addWidget(self.scroll_area)
 
         self.step_combo = QComboBox()

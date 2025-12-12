@@ -48,14 +48,15 @@ class sessionMeasData:
 
 class relationData:
     def __init__(self, data_x_axis: measTimeData, data_y_axis: measTimeData):
-        self.x_root_name, self.y_root_name, self.root_name = self.create_base_names(
+
+        self._x_root_name, self._y_root_name, self._root_name = self.create_base_names(
             data_x_axis.device, data_x_axis.ch, data_x_axis.param,
             data_y_axis.device, data_y_axis.ch, data_y_axis.param
         )
 
         logger.info(f"Creating relation {self.root_name} between {self.x_root_name} and {self.y_root_name}")
 
-        self._y_current_name = copy.copy(self.y_root_name)  # Приватная переменная
+        self._y_current_name = copy.copy(self.y_root_name)
         self.x_current_name = copy.copy(self.x_root_name)
         self.current_name = copy.copy(self.root_name)
         self.data_x_axis = data_x_axis
@@ -85,6 +86,18 @@ class relationData:
     @property
     def y_current_name(self):
         return self._y_current_name
+    
+    @property
+    def x_root_name(self):
+        return self._x_root_name
+    
+    @property
+    def y_root_name(self):
+        return self._y_root_name
+    
+    @property
+    def root_name(self):
+        return self._root_name
 
     @y_current_name.setter
     def y_current_name(self, value):
