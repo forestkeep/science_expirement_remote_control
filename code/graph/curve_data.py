@@ -210,10 +210,6 @@ class graphData:
             The LegendItem to add the curve to.
         """
 
-        #logger.info(f"placing curve {self.name} on graph {self.plot_obj=}")
-        #logger.info(f"{self.filtered_y_data = }, {self.raw_data_y = }")
-        #logger.info(f"{self.plot_obj.yData = }")
-
         if self.parent_graph_field:
             if graph_field is not self.parent_graph_field:
                 self.parent_graph_field.removeItem(self.plot_obj)
@@ -258,7 +254,7 @@ class graphData:
         if self.plot_obj is not None:
             self.plot_obj.setData(self.raw_data_x, self.raw_data_y)
             if not self.data_reset():
-                logger.info(f"{self.curve_name} data not reseted after experiment stop")
+                logger.warning(f"{self.curve_name} data not reseted after experiment stop")
 
 class linearData(graphData):
     def __init__(self, data: relationData, alias_manager) -> None:

@@ -199,10 +199,10 @@ class ExperimentBridge(analyse):
             name = self.graph_controller.get_session_name(self.current_session_graph_id)
 
             if self.settings_manager.get_setting('should_prompt_for_session_name')[1]:
-                logger.info("запрашиваем имя сессии и описание")
+                logger.debug("запрашиваем имя сессии и описание")
                 self.meas_session.ask_session_name_description( text = "Эксперимент завершен",def_name = name )
             else:
-                logger.info("имя сессии и описание устанавливаем дефолтными")
+                logger.debug("имя сессии и описание устанавливаем дефолтными")
                 self.meas_session.set_default_session_name_description()
 
             if not self.meas_session.session_name:
@@ -220,7 +220,7 @@ class ExperimentBridge(analyse):
                 try:
                     self.save_results()
                 except Exception as e:
-                    logger.warning(f"не удалось сохранить результаты {str(e)}", self.buf_file)
+                    logger.warning(f"не удалось сохранить результаты по окончании эксперимента {str(e)}", self.buf_file)
 
         self.exp_call_stack.activate_all_actors()
         

@@ -19,7 +19,7 @@ class ParameterAliasManager(QObject):
         self._original_to_alias: Dict[str, str] = {}  # оригинальное_имя -> псевдоним
         self._alias_to_original: Dict[str, str] = {}  # псевдоним -> оригинальное_имя
         self._validation_pattern = re.compile(r'^[A-Za-z0-9А-Яа-я ]+$')
-        logger.info(f"ParameterAliasManager init {self}")
+        logger.debug(f"ParameterAliasManager init {self}")
     
     def set_alias(self, original_name: str, alias: str) -> Tuple[bool, str]:
         """Устанавливает псевдоним для параметра"""
@@ -58,7 +58,7 @@ class ParameterAliasManager(QObject):
     
     def get_alias(self, original_name: str) -> str:
         """Возвращает псевдоним или оригинальное имя если псевдоним не задан"""
-        logger.info(f"get_alias {original_name=} alias = {self._original_to_alias.get(original_name, original_name)}")
+        logger.debug(f"get_alias {original_name=} alias = {self._original_to_alias.get(original_name, original_name)}")
         return self._original_to_alias.get(original_name, original_name)
     
     def get_original_name(self, alias_or_original: str) -> str:

@@ -36,26 +36,22 @@ class pidControllerTCN06(pidController):
 
     def _write_reg(self, address, slave, values) -> bool:
         if self.is_test == True:
-            return self.client.write_registers(
-                address=address, slave=slave, values=values
-            )
+            return self.client.write_registers(address=address, slave=slave, values=values)
         else:
             try:
-                ans = self.client.write_registers(
-                    address=address, slave=slave, values=values
-                )
+                ans = self.client.write_registers(address=address, slave=slave, values=values)
                 if ans.isError():
+                    logger.warning(f"ошибка в ответе записи регистров {address=} {slave=} {values=} {ans=}")
                     return False
                 else:
                     pass
             except Exception as e:
-                logger.warning(f"ошибка записи регистров {str(e)}")
+                logger.warning(f"ошибка записи регистров, исключение {str(e)}")
                 return False
             return True
 
     def _get_current_temperature(self, ch_num):
         ans = self._read_reg(address=TCN06_REGISTERS['Измеренная температура (PV)']['address'], slave=self.dict_settable_parameters["slave_id"])
-        print(ans)
         return ans
 
     def _get_current_power_percent(self, ch_num):
@@ -72,7 +68,7 @@ class pidControllerTCN06(pidController):
                 return value
 
             else:
-                logger.warning(f"Ошибка чтения регистра {address} : {result}")
+                logger.warning(f"Ошибка чтения регистра {address}  {slave=}: {result}")
                 return False
         except ModbusException as e:
             logger.warning(f"Modbus ошибка чтения регистра {address} : {e}")

@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
 
-    log_level_consol = logging.ERROR
+    log_level_consol = logging.INFO
     log_level_file = logging.WARNING
 
     logger.handlers.clear()

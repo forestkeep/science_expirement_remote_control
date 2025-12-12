@@ -276,7 +276,7 @@ class experimentControl( ):
 				except Exception as e:
 					logger.warning(f"Ошибка действия прибора {dev} при окончании эксперимента {e}")
 
-			logger.info(f"основной цикл эксперимента завершен, ждем доставки всех данных")
+			logger.debug(f"основной цикл эксперимента завершен, ждем доставки всех данных")
 
 			#ждем пока все данные будут переданы в основной поток
 			status_send = True
@@ -306,7 +306,7 @@ class experimentControl( ):
 			for device, ch in get_active_ch_and_device( self.device_classes ):
 				device.client.close()
 		else:
-			logger.warning("процесс эксперимента закрыт")
+			logger.critical("процесс эксперимента закрыт")
 
 	def do_act(self, device, ch):
 		error = False
@@ -359,6 +359,8 @@ class experimentControl( ):
 	def do_meas(self, device, ch):
 
 		error = False
+		param = None
+		message = False
 		ans = ch_response_to_step.Step_fail
 		text = \
 			QApplication.translate('exp_flow',"Выполняется измерение") + " "\
@@ -387,15 +389,14 @@ class experimentControl( ):
 			if result != ch_response_to_step.Step_fail:
 				if len(result) == 3:
 					ans, param, step_time = result
-					message = False
 				elif len(result) == 4:
 					ans, param, step_time, message = result
 				else:
 					logger.warning(f"неправильная структура ответа прибора result = {result}")
 
-				logger.info(f"расшифрованные параметры {param=}")
+				logger.debug(f"расшифрованные параметры {param=}")
 				if ans == ch_response_to_step.Incorrect_ch:
-					break
+					logger.warning(f"некорректный канал передан в процедуру измерения прибора {device} канал {ch}")
 
 				if message != False:
 					text = device.get_name()\

@@ -31,7 +31,7 @@ def time_decorator(func):
         start_time = time.perf_counter()
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
-        logger.info(f"Метод  {func.__name__} выполнялся {end_time - start_time} с")
+        logger.debug(f"Метод  {func.__name__} выполнялся {end_time - start_time} с")
         return result
     return wrapper
 
@@ -337,7 +337,6 @@ class manageGraph(QObject):
 
     #@time_decorator
     def update_data(self, data_first_axis:list[relationData], data_second_axis:list[relationData], is_updated = False):
-        logger.info(f"update_data {is_updated}")
         self.hide_second_line_grid()
 
         if not is_updated:
@@ -440,8 +439,6 @@ class manageGraph(QObject):
         if self.__stack_curve.get(data.root_name):
             return False
         
-        logger.info(f"create curve {data.root_name}")
-        
         if not graph_field:
             graph_field = self.graphView
         if not legend_field:
@@ -459,7 +456,7 @@ class manageGraph(QObject):
         return True
         
     def add_curve(self, curve_data_obj: linearData, type_axis: str = "left"):
-        logger.info(f"add curve {curve_data_obj.curve_name} root name {curve_data_obj.rel_data.root_name}")
+        logger.debug(f"add curve {curve_data_obj.curve_name} root name {curve_data_obj.rel_data.root_name}")
         self.__stack_curve[curve_data_obj.rel_data.root_name] = curve_data_obj
         if type_axis == "left":
             curve_data_obj.place_curve_on_graph(graph_field  = self.graphView,

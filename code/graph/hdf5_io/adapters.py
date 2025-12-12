@@ -223,13 +223,13 @@ class HDF5ToProjectAdapter:
 			self._convert_session(session_model, core_session)
 
 	def _convert_session(self, session: Session, core_session):
-		logger.info(f"Converting session {session.name}")
+		logger.debug(f"Converting session {session.name}")
 		uuid = session.parameters.uuid
 		use_timestamp = True if 'time' in session.data_manager.parameter_data.keys() else False
 		session_id = core_session.start_new_session(session_name = session.name, use_timestamps = use_timestamp, uuid = uuid)
 
 		if not session_id:
-			logger.warning(f"Failed to start session {session.name=} {uuid=}")
+			logger.warning(f"Failed to start session {session.name=} {uuid=}, convert session skipped")
 			return
 		
 		core_session.update_session_description(session_id, session.description)
@@ -243,12 +243,10 @@ class HDF5ToProjectAdapter:
 		selection_x_param = None
 		selection_y_first_params = []
 		selection_y_second_params = []
-		logger.info(f"обнаружены графики:")
 		for plot in session.plots.values():
-			logger.info(f"график {plot.name}")
 			axis = plot.axis
 			if axis not in [1, 2]:
-				logger.warning(f"Unknown axis {axis} plot{plot.name}")
+				logger.warning(f"Unknown axis {axis} plot{plot.name} available axes [1, 2]")
 				continue
 
 			curve_obj = self.restore_curve_from_model(plot_model=plot, alias_manager = core_session.alias_manager)
@@ -266,8 +264,7 @@ class HDF5ToProjectAdapter:
 					selection_y_first_params.append(core_session.alias_manager.get_alias(plot.y_name))
 				elif axis == 2:
 					selection_y_second_params.append(core_session.alias_manager.get_alias(plot.y_name))
-				else:
-					logger.warning(f"Unknown axis {axis} plot{plot.name}")
+
 			else:
 				curve_obj.delete_curve_from_graph()
 

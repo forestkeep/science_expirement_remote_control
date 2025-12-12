@@ -52,7 +52,7 @@ class customQListWidget(QListWidget):
         for index in range(self.count()):
             if self.item(index):
                 if self.item(index).text() == text:
-                    logger.info(f"parameter  {text} set checked {checked}")
+                    logger.debug(f"parameter  {text} set checked {checked}")
                     self.setCurrentItem(self.item(index))
                     self.item(index).setSelected(checked)
                     if is_signal:
@@ -158,14 +158,13 @@ class paramSelector(QWidget):
             self.y_first_param_selector.clearSelection()
     
     def second_check_box_changed(self):
-        logger.info(f"second_check_box_changed {self.second_check_box.isChecked()}")
+        logger.debug(f"second_check_box_changed {self.second_check_box.isChecked()}")
         if self.second_check_box.isChecked():
             self.y_second_param_hover.setVisible(True)
         else:
             self.y_second_param_hover.setVisible(False)
 
     def set_second_check_box(self, state: bool):
-        logger.info(f"set_second_check_box {state}")
         self.second_check_box.setChecked(state)
 
     def set_multiple_mode(self, state: bool):
@@ -249,7 +248,7 @@ class paramController( QObject):
                                 opposite_selector = self.paramSelector.y_second_param_selector,
                                 previous_parameter = self.previous_y_first_parameter)
         
-        logger.info(f"y_first_param_changed update current parameters {self.curent_y_first_parameters=}")
+        logger.debug(f"y_first_param_changed update current parameters {self.curent_y_first_parameters=}")
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
 
@@ -260,11 +259,10 @@ class paramController( QObject):
                                 opposite_selector = self.paramSelector.y_first_param_selector,
                                 previous_parameter = self.previous_y_second_parameter
                                 )
-        logger.info(f"y_second_param_changed update current parameters {self.curent_y_second_parameters=}")
+        logger.debug(f"y_second_param_changed update current parameters {self.curent_y_second_parameters=}")
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
     def manage_y_selectors(self, selector, current_parameters, opposite_selector, previous_parameter):
-        logger.info(f"manage_y_selectors in {current_parameters=}, {previous_parameter=} {selector.currentItem()=}") 
         if self.paramSelector.check_miltiple.isChecked():
             buf_text = selector.currentItem().text()
             if buf_text in current_parameters:
@@ -288,7 +286,6 @@ class paramController( QObject):
                     previous_parameter[0] = buf_text
                     current_parameters.append(buf_text)
                     opposite_selector.remove_parameters(buf_text)
-        logger.info(f"manage_y_selectors out {current_parameters=}, {previous_parameter=}")
 
     def second_check_box_changed(self):
         self.curent_y_second_parameters.clear()
@@ -330,7 +327,7 @@ class paramController( QObject):
         self.multiple_checked.emit( is_multiple )
 
     def clear_selections(self, x_param: str, y_first_params: list, y_second_params: list):
-        logger.info(f"clear_selections {x_param=} {y_first_params=} {y_second_params=}")
+        logger.debug(f"clear_selections {x_param=} {y_first_params=} {y_second_params=}")
         self.paramSelector.x_param_selector.clear_selection(x_param)
         for param in y_first_params:
             self.paramSelector.y_first_param_selector.clear_selection(param)

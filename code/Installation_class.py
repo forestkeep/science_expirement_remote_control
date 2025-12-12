@@ -173,9 +173,7 @@ class installation_class( ExperimentBridge, analyse):
         i = 0
         for device_name in installation_list:
             try:
-                device = self.dict_device_class[device_name](
-                    name=f"{device_name}_{i+1}", installation_class=self
-                )
+                device = self.dict_device_class[device_name](name=f"{device_name}_{i+1}", installation_class=self)
                 self.dict_active_device_class[f"{device_name}_{i+1}"] = device
             except Exception as e:
                 logger.error(f"Failed to create instance of {device_name} {e}")
@@ -265,7 +263,7 @@ class installation_class( ExperimentBridge, analyse):
             self.get_time_line_devices()
             ############################
 
-            logger.debug("все каналы имеют статус настроен")
+            logger.debug("все каналы настроены")
             matrix = self.get_call_matrix()
 
             self.cycle_analyse(matrix)
@@ -415,7 +413,7 @@ class installation_class( ExperimentBridge, analyse):
             self.installation_window.devices_lay = buf_wid
             self.dict_active_device_class = buf_dev
             self.preparation_experiment()
-            logger.info("выход из функции удаления прибора")
+            logger.debug("выход из функции удаления прибора")
         else:
             self.add_text_to_log(
                 QApplication.translate('main install',"Запрещено удалять прибор во время эксперимента"), status="war"
@@ -452,7 +450,7 @@ class installation_class( ExperimentBridge, analyse):
 
                 if status is False:
                     self.add_text_to_log(text=text, status='war')
-                    logger.warning(f"Подписки {trig_val} не существует")
+                    logger.warning(f"Подписки {trig_val} не существует в менеджере подписок. {device=} {ch=}")
         return status
     
     def action_stop_experiment(self):
@@ -782,9 +780,7 @@ class installation_class( ExperimentBridge, analyse):
                 state_text = widget.label_settings_channel.text()
 
                 if is_ch_active:
-                    install_dict[dev_name]["channels"][ch_name]["state"] = (
-                        "active" if state_text != QApplication.translate('main install', "Не настроено") else "not settings"
-                    )
+                    install_dict[dev_name]["channels"][ch_name]["state"] = ("active" if state_text != QApplication.translate('main install', "Не настроено") else "not settings")
                 else:
                     install_dict[dev_name]["channels"][ch_name]["state"] = "not active"
 
@@ -811,7 +807,7 @@ class installation_class( ExperimentBridge, analyse):
                 buffer: dict[str, any] = json.load(file)
 
         except FileNotFoundError:
-            logger.error(f"Файл {filename} не найден.")
+            logger.error(f"Файл сохраненной установки {filename} не найден.")
             return False, {}
 
         except json.JSONDecodeError:
@@ -834,7 +830,7 @@ class installation_class( ExperimentBridge, analyse):
 
         self.dict_active_device_class.clear()
         self.message_broker.clear_all()
-        logger.info(f"Закрыто окно установки {self.installation_window}, реконструируем новое")
+        logger.debug(f"Закрыто окно установки {self.installation_window}, реконструируем новое")
 
         self.close_window_installation()
 
