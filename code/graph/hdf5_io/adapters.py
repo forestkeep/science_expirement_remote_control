@@ -80,7 +80,7 @@ class ProjectToHDF5Adapter:
 			
 		plots = {}
 		
-		for plot_name, core_plot in core_session.graph_main.stack_curve.items():
+		for plot_name, core_plot in core_session.graph_main.get_curves().items():
 			plot = self.convert_plot(core_plot)
 			plots[plot_name.replace('\\', '_').replace('/', '_')] = plot
 			
@@ -460,6 +460,3 @@ class HDF5ToProjectAdapter:
 			fill_color=style.fill_color
 		)
 	
-
-
-

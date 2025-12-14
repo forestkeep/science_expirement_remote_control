@@ -292,6 +292,9 @@ class manageGraph(QObject):
 
         self.hide_second_line_grid()
 
+    def get_curves(self):
+        return self.__stack_curve
+
     def __callback_click_scene(self, focus_objects: list):
         is_click_plot = True
         for graph in focus_objects:

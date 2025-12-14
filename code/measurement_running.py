@@ -48,10 +48,12 @@ class experimentControl( ):
 						buf_file:              str,
 						pipe_installation,
 						data_pipe,
-						session_id:            int
+						session_id:            int,
+						logger_level
 						):
 		
 		super().__init__()
+
 		self.device_classes = device_classes
 		self.message_broker = message_broker
 		self.is_debug = is_debug
@@ -61,6 +63,7 @@ class experimentControl( ):
 		self.session_id = session_id
 		self.buf_file = buf_file
 		self.pipe_installation = pipe_installation
+		self.logger_level = logger_level
 
 		self.is_closed = False
 
@@ -74,7 +77,7 @@ class experimentControl( ):
 		self.__stop_experiment = False
 		self.__is_paused = False
 
-		self.shared_buffer_manager = SharedBufferManager(data_pipe)
+		self.shared_buffer_manager = SharedBufferManager(data_pipe, self.logger_level)
 
 		self.has_unsaved_data = False 
 
@@ -115,6 +118,7 @@ class experimentControl( ):
 				raise Exception(text)
 
 	def run(self):
+		logger.setLevel(self.logger_level)
 		self.has_unsaved_data = False 
 		status = True
 		try:
@@ -305,6 +309,8 @@ class experimentControl( ):
 
 			for device, ch in get_active_ch_and_device( self.device_classes ):
 				device.client.close()
+
+			self.shared_buffer_manager.print_statistics()
 		else:
 			logger.critical("процесс эксперимента закрыт")
 

@@ -565,7 +565,8 @@ class installation_class( ExperimentBridge, analyse):
                         buf_file              =self.buf_file,
                         pipe_installation     =self.pipe_installation,
                         data_pipe             =self.data_exp_to_installation,
-                        session_id            =self.current_session_graph_id
+                        session_id            =self.current_session_graph_id,
+                        logger_level          =logger.level
                     )
 
                     self.current_state = ExperimentState.IN_PROGRESS

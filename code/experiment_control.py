@@ -16,6 +16,8 @@ import time
 from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QElapsedTimer, QEventLoop
+from PyQt5.QtCore import QTimer
 
 from Analyse_in_installation import analyse
 from Devices.Classes import not_ready_style_background, ready_style_background
@@ -35,6 +37,12 @@ class ExperimentBridge(analyse):
     def __init__(self) -> None:
         super().__init__()
         self.pause_start_time  = 0
+        self.ui_lag_time = 0
+        self.max_time_for_event = 0
+        self.ui_max_lag_time = 0
+
+        self.current_butch = 1
+        self.MAX_BUTCHES = 100
         
     def is_experiment_running(self) -> bool:
         answer = False
@@ -42,20 +50,62 @@ class ExperimentBridge(analyse):
             answer = self.experiment_process is not None and self.experiment_process.is_alive()
         return answer
     
+    def measure_ui_responsiveness(self):
+            """Измеряет, сколько времени UI тратит на свою работу"""
+            if not hasattr(self, "max_lag"):
+                self.max_lag = 0
+            
+            # 1. Запоминаем время отправки
+            self.send_time_lag = time.perf_counter()
+            
+            # 2. Отправляем тестовое событие в очередь Qt
+            # singleShot(0) = "выполни в следующем цикле событий"
+            QTimer.singleShot(0, lambda: self.process_ui_lag())
+
+    def process_ui_lag(self):
+        self.ui_lag_time = (time.perf_counter()-self.send_time_lag)*1000
+        
+        if self.ui_lag_time > self.max_lag:
+            self.max_lag = self.ui_lag_time
+
+    def calculate_batch_size(self):
+        """Определяет сколько пакетов обрабатывать"""
+        
+        if self.ui_lag_time < 1.0:
+            return 10
+        elif self.ui_lag_time < 3.0:
+            return 5
+        elif self.ui_lag_time < 8.0:
+            return 3
+        elif self.ui_lag_time < 16.0:
+            return 2
+        else:               
+            return 1
+    
     def receive_data_exp(self):
+
+        self.measure_ui_responsiveness()
+        self.current_batch = self.calculate_batch_size()
+
         if self.is_experiment_running():
-            if self.data_from_exp.poll():
-                received = self.data_from_exp.recv()
-                if isinstance(received, tuple) and len(received) == 2:
-                    data = _process_received_data(self.data_from_exp, *received)
-                    #logger.warning(f"received data : {data}")
-                    if data:
-                        val = [data[0], data[1]]
-                        status_update = self.graph_controller.decode_add_exp_parameters(session_id = self.current_session_graph_id, entry      = val,time       = data[2])
-                        if not status_update:
-                            logger.warning(f"Error updating parameters: {val}")
+            for i in range(self.current_batch):
+                
+                if self.data_from_exp.poll():
+                    received = self.data_from_exp.recv()
+                    if isinstance(received, tuple) and len(received) == 2:
+                        data = _process_received_data(self.data_from_exp, *received)
+                        #logger.warning(f"received data : {data}")
+                        if data:
+                            val = [data[0], data[1]]
+                            status_update = self.graph_controller.decode_add_exp_parameters(session_id = self.current_session_graph_id, entry      = val,time       = data[2])
+                            if not status_update:
+                                logger.warning(f"Error updating parameters: {val}")
+                        else:
+                            logger.warning(f"Ошибка в расшифровке принятых данных {received=}")
                     else:
-                        logger.warning(f"Ошибка в расшифровке принятых данных")
+                        logger.warning(f"Неверная сигнатура принятых данных: {received=}")
+                else:
+                    break
                     
     def connection_two_thread(self):
         """функция для обновления интерфейса во время эксперимента"""
@@ -240,6 +290,12 @@ class ExperimentBridge(analyse):
             self.installation_window.pause_button.setStyleSheet(not_ready_style_background)
             self.set_state_text(text = QApplication.translate('exp_flow',"Ожидание старта"))
             self.is_search_resources = True#разрешение на сканирование ресурсов
+
+            self.ui_lag_time = 0
+            self.max_time_for_event = 0
+            self.ui_max_lag_time = 0
+            self.max_lag = 0
+
             self.preparation_experiment()
 
     

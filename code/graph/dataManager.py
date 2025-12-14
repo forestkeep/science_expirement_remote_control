@@ -54,7 +54,7 @@ class relationData:
             data_y_axis.device, data_y_axis.ch, data_y_axis.param
         )
 
-        logger.info(f"Creating relation {self.root_name} between {self.x_root_name} and {self.y_root_name}")
+        logger.debug(f"Creating relation {self.root_name} between {self.x_root_name} and {self.y_root_name}")
 
         self._y_current_name = copy.copy(self.y_root_name)
         self.x_current_name = copy.copy(self.x_root_name)
@@ -139,7 +139,7 @@ class graphDataManager(QObject):
 
     def get_relation_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> list[relationData]:
         # Конвертируем псевдонимы обратно в оригинальные имена
-        logger.info(f"get_relation_data {keysx=} {keysy1=} {keysy2=}")
+        logger.debug(f"get_relation_data {keysx=} {keysy1=} {keysy2=}")
         original_keysx = self.alias_manager.get_original_name(keysx)
         original_keysy1 = [self.alias_manager.get_original_name(key) for key in keysy1]
         original_keysy2 = [self.alias_manager.get_original_name(key) for key in keysy2]
@@ -445,7 +445,7 @@ class graphDataManager(QObject):
                     try:
                         buf.append(float(val))
                     except ValueError:
-                        logger.warning(f"не удалось преобразовать в число: {device=} {channel=} {name=} {val=}")
+                        logger.debug(f"не удалось преобразовать в число: {device=} {channel=} {name=} {val=}")
                         continue
                 value = list(buf)
 
@@ -453,7 +453,7 @@ class graphDataManager(QObject):
                 try:
                     value = float(value)
                 except ValueError:
-                    logger.info(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
+                    logger.debug(f"не удалось преобразовать в число: {device=} {channel=} {name=} {value=}")
                     continue
 
             if name not in data[device][channel]:

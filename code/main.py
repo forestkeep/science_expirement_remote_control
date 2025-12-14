@@ -16,7 +16,7 @@ from installation_controller import instController
 
 logger = logging.getLogger(__name__)
 
-VERSION_APP = "1.3.1"
+VERSION_APP = "1.4.0"
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
 
     log_level_consol = logging.INFO
-    log_level_file = logging.WARNING
+    log_level_file = logging.INFO
 
     logger.handlers.clear()
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     file_handler.setLevel( log_level_file )
     file_handler.setFormatter( logging.Formatter(FORMAT) )
 
-    logging.basicConfig(handlers=[file_handler, console], level=logging.DEBUG)
+    logging.basicConfig(handlers=[file_handler, console], level=log_level_file)
 
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
