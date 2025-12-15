@@ -156,8 +156,8 @@ class ProjectToHDF5Adapter:
 			filtered_y_data=core_plot.filtered_y_data,
 			device=core_plot.device,
 			channel=core_plot.ch,
-			x_name= core_plot.rel_data.x_name,
-			y_name= core_plot.rel_data.y_name,
+			x_name= core_plot.rel_data.x_root_name,
+			y_name= core_plot.rel_data.y_root_name,
 			curve_name=core_plot.curve_name,
 			number=core_plot.number,
 			number_axis=core_plot.number_axis,
@@ -183,8 +183,8 @@ class ProjectToHDF5Adapter:
 			is_draw=core_plot.is_draw,
 			is_curve_selected=core_plot.is_curve_selected,
 			name=core_plot.curve_name if hasattr(core_plot, 'curve_name') else "",
-			x_name= core_plot.rel_data.x_name,
-			y_name= core_plot.rel_data.y_name,
+			x_name= core_plot.rel_data.x_root_name,
+			y_name= core_plot.rel_data.y_root_name,
 			axis = core_plot.number_axis
 		)
 	
