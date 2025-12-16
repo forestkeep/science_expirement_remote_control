@@ -513,6 +513,7 @@ class base_device():
             return answer
         if int(ch.step_index) < int(stps)-1:
             ch.step_index += 1
+            print(f"ch.step_index = {ch.step_index}")
         else:
             answer = ch_response_to_step.End_list_of_steps  # след шага нет
         return answer

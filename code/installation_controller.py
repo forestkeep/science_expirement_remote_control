@@ -97,7 +97,7 @@ class instController(QtWidgets.QMainWindow):
         status = False
         if os.path.isfile(file_path):
             self.cur_install.reconstruct_installation([], [])
-            status = self.cur_install.open_saved_installation(fileName=file_path)
+            status, buffer = self.cur_install.open_saved_installation(fileName=file_path)
             if status:
                 self.cur_install.installation_window.installation_close_signal.connect(
                 self.unlock_to_create_new_installation
@@ -111,7 +111,7 @@ class instController(QtWidgets.QMainWindow):
 
                 self.close()
             else:
-                print("ошибка восстановления установки")
+                logger.warning(f"ошибка восстановления установки {file_path=} {buffer=}")
 
         return status
 
@@ -146,7 +146,6 @@ class instController(QtWidgets.QMainWindow):
 
     def load_language(self, lang):
         file_path = {'RUS': "translations/translation_ru.qm"}.get(lang, next((p for p in ["translations/translation_en.qm", "translation_en.qm"] if os.path.isfile(p)), None))
-
         if file_path is not None:
             self.translator.load(file_path)
             QtWidgets.QApplication.instance().installTranslator(self.translator)

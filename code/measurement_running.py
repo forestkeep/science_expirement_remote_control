@@ -346,7 +346,7 @@ class experimentControl( ):
 		elif ans == ch_response_to_step.Step_fail:
 			ch.am_i_active_in_experiment = False
 
-			text = QApplication.translate('exp_flow',"Ошибка опроса") + " "\
+			text = QApplication.translate('exp_flow',"Ошибка действия") + " "\
 				+ device.get_name()\
 				+ str(ch.get_name())
 
@@ -419,10 +419,11 @@ class experimentControl( ):
 					par = device.distribute_parameters(par)
 				else:
 					par = {1:param}
-					
-				for val in par.values():
-						if len(val) > 1:#если размер меньше одного, то данных нет
-							self.shared_buffer_manager.add_data(val, time_t)
+				
+				if ans == ch_response_to_step.Step_done:
+					for val in par.values():
+							if len(val) > 1:#если размер меньше одного, то данных нет
+								self.shared_buffer_manager.add_data(val, time_t)
 
 				ch.last_step_time = step_time
 

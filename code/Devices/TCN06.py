@@ -32,9 +32,11 @@ class pidControllerTCN06(pidController):
     #ниже прописываем свои функции, которые понадобятся для управления контроллером
 
     def _set_temperature(self, ch_num, temperature) -> bool:
-        return self._write_reg(address=TCN06_REGISTERS['Заданная температура (SV)']['address'], slave=self.dict_settable_parameters["slave_id"], values=int(temperature),)
+        return self._write_reg(address=TCN06_REGISTERS['Заданная температура (SV)']['address'], slave=self.dict_settable_parameters["slave_id"], values=int(temperature))
 
     def _write_reg(self, address, slave, values) -> bool:
+        if isinstance(values, int) or isinstance(values, float):
+            values = [values]
         if self.is_test == True:
             return self.client.write_registers(address=address, slave=slave, values=values)
         else:

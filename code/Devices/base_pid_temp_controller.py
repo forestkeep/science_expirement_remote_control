@@ -336,7 +336,7 @@ class basePidController(base_device):
         status = True
         if ch.get_type() == "act":
 
-            self._set_temperature(ch_num=ch.get_number(), temperature=self.active_channel_act.dict_settable_parameters["low_limit"])
+            self._set_temperature(ch_num=ch.get_number(), temperature=float(self.active_channel_act.dict_settable_parameters["low_limit"]))
             
         return status
 
@@ -346,7 +346,6 @@ class basePidController(base_device):
         start_time = time.perf_counter()
         if ch.get_type() == "act":
             if ch.step_index < len(ch.steps_temp) - 1:
-
                 i = 0
                 answer = ch_response_to_step.Step_fail
                 while i - 1 < repeat and answer == ch_response_to_step.Step_fail:
@@ -407,7 +406,7 @@ class basePidController(base_device):
                         val = ["temp_set=" + "fail"]
                         parameters.append(val)
 
-            if ch.dict_settable_parameters["meas_power"] == True:
+            if ch.dict_settable_parameters["meas_power"] is True:
                 current = self._get_current_power_percent(ch.get_number())
                 if current is not False:
                     val = ["power_percent=" + str(current)]

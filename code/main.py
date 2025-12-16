@@ -18,6 +18,81 @@ logger = logging.getLogger(__name__)
 
 VERSION_APP = "1.4.0"
 
+
+def migrate_settings(old_settings: dict[str, any], current_version: str) -> dict[str, any]:
+    """
+    Миграция старых настроек к текущей версии
+    """
+
+    def version_to_tuple(version_str: str):
+        parts = version_str.split('.')
+        return tuple(int(part) for part in parts[:3])
+    
+    old_version_str = old_settings.get('version', '1.0.0')
+    old_version = version_to_tuple(old_version_str)
+    current_version_tuple = version_to_tuple(current_version)
+    
+    migrated_settings = old_settings.copy()
+    
+    migrated_settings['version'] = current_version
+    
+    return migrated_settings
+def load_settings_with_backward_compatibility(app_name: str, version: str) -> QtCore.QSettings:
+    """
+    Загружает настройки с поддержкой обратной совместимости
+    """
+
+    temp_settings = QtCore.QSettings(
+        QtCore.QSettings.IniFormat,
+        QtCore.QSettings.UserScope,
+        "misis_lab",
+        app_name + version
+    )
+    temp_file_path = temp_settings.fileName()
+    settings_dir = os.path.dirname(temp_file_path)
+
+    if os.path.exists(temp_file_path):
+        return temp_settings
+    
+    old_settings_files = []
+    if os.path.exists(settings_dir):
+        for file in os.listdir(settings_dir):
+            if file.endswith('.ini'):
+                old_settings_files.append(os.path.join(settings_dir, file))
+    
+    if old_settings_files:
+        old_settings_files.sort(key=os.path.getmtime, reverse=True)
+        
+        for old_file in old_settings_files:
+            try:
+                old_settings = QtCore.QSettings(old_file, QtCore.QSettings.IniFormat)
+                
+                migrated_values = {}
+                for key in old_settings.allKeys():
+                    migrated_values[key] = old_settings.value(key)
+                
+                migrated_values = migrate_settings(migrated_values, version)
+                
+                new_settings = QtCore.QSettings(
+                    QtCore.QSettings.IniFormat,
+                    QtCore.QSettings.UserScope,
+                    "misis_lab",
+                    app_name + version
+                )
+                
+                for key, value in migrated_values.items():
+                    new_settings.setValue(key, value)
+                
+                new_settings.sync()
+                logger.warning(f"Настройки успешно загружены из файла старой версии {old_file}")
+                return new_settings
+                
+            except Exception as e:
+                logger.warning(f"Ошибка при миграции настроек из {old_file}: {str(e)}")
+                continue
+    
+    return temp_settings
+
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     multiprocessing.set_start_method('spawn')
@@ -55,13 +130,7 @@ if __name__ == "__main__":
     translator = QTranslator()
     QtWidgets.QApplication.instance().installTranslator(translator)
 
-    # Загрузка настроек
-    settings = QtCore.QSettings(
-        QtCore.QSettings.IniFormat,
-        QtCore.QSettings.UserScope,
-        "misis_lab",
-        "exp_control" + VERSION_APP,
-    )
+    settings = load_settings_with_backward_compatibility("exp_control", VERSION_APP)
 
     current_dir =os.path.dirname(os.path.realpath(__file__))
     default_JSON_directory_devices = os.path.join(current_dir, "my_devices")

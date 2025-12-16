@@ -718,32 +718,34 @@ class installation_class( ExperimentBridge, analyse):
             options=options,
         )
         if ans == "Installation(*.ns)":
-            self.open_saved_installation(fileName)
+            status, buffer = self.open_saved_installation(fileName)
+            if not status:
+                self.add_text_to_log(
+                    QApplication.translate('main install',"Установка не загружена из файла ") + fileName, "error"
+                )
+                logger.error(f"Установка не загружена из файла {fileName} {buffer}")
 
-    def open_saved_installation(self, fileName) -> bool:
-        status = self.extract_saved_installlation(fileName=fileName)
+    def open_saved_installation(self, fileName):
+        status, buffer = self.extract_saved_installlation(fileName=fileName)
         if status:
             self.way_to_save_installation_file = fileName
             self.installation_window.setWindowTitle("Experiment control - " + fileName + " " + self.version_app)
-            return True
-        else:
-            return False
+        return status, buffer
         
-    def extract_saved_installlation(self, fileName) -> bool:
+    def extract_saved_installlation(self, fileName):
         status, buffer = self.read_info_by_saved_installation(fileName)
-
+        #TODO: добавить проверку буффера на корректность
         if status:
             self.show_window_installation()
             self.timer_open = QTimer()
             self.timer_open.timeout.connect(lambda: self.timer_open_timeout(buffer, fileName))
             self.timer_open.setSingleShot(True)
             self.timer_open.start(800)
-            return True
-        else:
-            return False
+  
+        return status, buffer
 
     def timer_open_timeout(self, buffer, fileName):
-        self.add_parameter_devices(buffer)
+        self.add_parameter_devices(buffer, fileName)
         self.installation_window.setWindowTitle("Experiment control - " + fileName + " " + self.version_app)
         self.way_to_save_installation_file = fileName
 
@@ -839,7 +841,7 @@ class installation_class( ExperimentBridge, analyse):
 
         return True, buffer
 
-    def add_parameter_devices(self, buffer: dict[str, any]):
+    def add_parameter_devices(self, buffer: dict[str, any], fileName: str):
 
         """
         Добавляет параметры устройств и каналов на основе данных из буфера.
@@ -850,9 +852,8 @@ class installation_class( ExperimentBridge, analyse):
         for key, data in buffer.items():
 
             if key not in self.dict_active_device_class:
-                logger.warning(f"Устройство с ключом {key} не найдено в dict_active_device_class.")
+                logger.warning(f"При открытии установки {fileName} Устройство с ключом {key} не найдено в dict_active_device_class. ")
                 continue
-
 
             device = self.dict_active_device_class[key]
             settings_dev = data["settings"]
@@ -871,11 +872,22 @@ class installation_class( ExperimentBridge, analyse):
                     )
                     self.add_text_to_log(text=log_message, status="err")
 
+                    logger.warning(f"При открытии установки {fileName} не нашли настройки канала {ch_name} у прибора {device.get_name()}")
+
                 else:
                     ch_data = data["channels"][ch_name]
                     is_open = ch_data.get("state") != "not active"
                     self.get_device_widget(device.get_name()).set_state_ch_widget(ch.number, is_open)
-                    device.set_parameters_ch(ch_name, ch_data)
+                    try:
+                        device.set_parameters_ch(ch_name, ch_data)
+                    except Exception as e:
+                        log_message = QApplication.translate(
+                                                            'main install',
+                                                            f"Ошибка чтения настроек канала {ch_name} у прибора {device.get_name()}. Увы, необходимо их ввести заново :( .)"
+                                                            )
+                        self.add_text_to_log(text=log_message, status="err")
+
+                        logger.warning(f"Ошибка при установке параметров канала. после открытия сохраненной установки.файл: {fileName} устройство: {device.get_name()}, канал {ch_name} data:{ch_data}: {e}")
 
             self.get_device_widget(device.get_name()).update_widgets()
 
