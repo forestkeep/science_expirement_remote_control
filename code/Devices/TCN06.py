@@ -35,13 +35,17 @@ class pidControllerTCN06(pidController):
         return self._write_reg(address=TCN06_REGISTERS['Заданная температура (SV)']['address'], slave=self.dict_settable_parameters["slave_id"], values=int(temperature))
 
     def _write_reg(self, address, slave, values) -> bool:
-        if isinstance(values, int) or isinstance(values, float):
-            values = [values]
+        self.client.comm_params.parity = "N"#TODO: костыль, необходимо настроки модбас выносить выше в интерфейс
         if self.is_test == True:
-            return self.client.write_registers(address=address, slave=slave, values=values)
+            return self.client.write_register(address=address, slave=slave, values=values)
         else:
             try:
-                ans = self.client.write_registers(address=address, slave=slave, values=values)
+                if not self.client.is_socket_open():
+                    if not self.client.connect():
+                        logger.warning(f"не удалось подключиться к устройству модбас {self.client}")
+                        return False
+                    
+                ans = self.client.write_register(address=address, value = values, slave=slave)
                 if ans.isError():
                     logger.warning(f"ошибка в ответе записи регистров {address=} {slave=} {values=} {ans=}")
                     return False
@@ -63,6 +67,7 @@ class pidControllerTCN06(pidController):
         return self._read_reg(address=TCN06_REGISTERS['Заданная температура (SV)']['address'], slave=self.dict_settable_parameters["slave_id"])
       
     def _read_reg(self, address, slave):
+        self.client.comm_params.parity = "N"#TODO: костыль, необходимо настроки модбас выносить выше в интерфейс
         try:
             result = self.client.read_holding_registers(address=address, count=1, slave=slave)
             if not result.isError():
