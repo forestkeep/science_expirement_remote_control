@@ -1,7 +1,6 @@
 import subprocess
 import os
 import shutil
-import time
 
 import PyInstaller.__main__
 
@@ -89,10 +88,19 @@ def build_instruction():
 
     return html_path
 
+def remove_all_exe(directory):
+    if os.path.exists(directory):
+        for file in os.listdir(directory):
+            if file.endswith('.exe'):
+                print(f"Удалено: {os.path.join(directory, file)}")
+                os.remove(os.path.join(directory, file))
+
+
 if __name__ == "__main__":
+    
     instruction_path = build_instruction()
     if instruction_path:
-
+        
         if os.path.exists('dist'):
             shutil.rmtree('dist')
 
@@ -113,9 +121,14 @@ if __name__ == "__main__":
                 shutil.rmtree('dist')
             except Exception as e:
                 print(f"Error deleting dist folder: {e}")
+
+
+        current_dir = os.getcwd()
+        remove_all_exe(os.path.dirname(current_dir))
         
         move_file_up_one_directory('installation_controller.exe')
 
         remove_pycaches(os.getcwd())
 
         os.remove(instruction_path)
+        

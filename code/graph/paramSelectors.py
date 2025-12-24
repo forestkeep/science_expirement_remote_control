@@ -328,6 +328,9 @@ class paramController( QObject):
 
     def clear_selections(self, x_param: str, y_first_params: list, y_second_params: list):
         logger.debug(f"clear_selections {x_param=} {y_first_params=} {y_second_params=}")
+        x_param = self.alias_manager.get_alias(x_param)
+        y_first_params = [self.alias_manager.get_alias(param) for param in y_first_params]
+        y_second_params = [self.alias_manager.get_alias(param) for param in y_second_params]
         self.paramSelector.x_param_selector.clear_selection(x_param)
         for param in y_first_params:
             self.paramSelector.y_first_param_selector.clear_selection(param)
@@ -335,6 +338,9 @@ class paramController( QObject):
             self.paramSelector.y_second_param_selector.clear_selection(param)
 
     def set_selections(self, x_param: str, y_first_params: list, y_second_params: list, is_signal = True):
+        x_param = self.alias_manager.get_alias(x_param)
+        y_first_params = [self.alias_manager.get_alias(param) for param in y_first_params]
+        y_second_params = [self.alias_manager.get_alias(param) for param in y_second_params]
         self.paramSelector.x_param_selector.set_selection(x_param, is_signal)
         for param in y_first_params:
             self.paramSelector.y_first_param_selector.set_selection(param, is_signal)

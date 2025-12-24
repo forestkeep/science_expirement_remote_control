@@ -23,6 +23,7 @@ import copy
 
 from graph.calc_values_for_graph import ArrayProcessor
 from graph.customize_style_curve import GraphCustomizer
+from graph.dataManager import relationData, measTimeData
 import numexpr as ne
 import numpy as np
 import logging
@@ -480,28 +481,34 @@ class treeWin(QWidget):
                 return
             
             names_x_parameters = set()
-            x_name = ""
+            #x_name = ""
             for id, curve in choised_curves.items():
-                if curve.curve_data_obj.rel_data.x_name not in names_x_parameters and names_x_parameters:
+                if curve.curve_data_obj.rel_data.x_root_name not in names_x_parameters and names_x_parameters:
                     logger.info(f"Выбранные кривые построены в различных пространствах. {names_x_parameters}")
                     self.main_class.show_tooltip( QApplication.translate("GraphWindow","Выбранные кривые находятся в разных пространствах. Построение невозможно."), timeout=3000)
                     return
-                names_x_parameters.add(curve.curve_data_obj.rel_data.x_name)
-                x_name = curve.curve_data_obj.rel_data.x_name
+                names_x_parameters.add(curve.curve_data_obj.rel_data.x_root_name)
+                #x_name = curve.curve_data_obj.rel_data.x_root_name
 
-            context, all_x, status = self.preparation_arrays(context)
+            all_curves, all_x, status = self.preparation_arrays(context)
             if not status:
                 logger.info("ошибка в расчете, таймаут, возможно, что-то с исходными данными")
                 self.main_class.show_tooltip( QApplication.translate("GraphWindow","Таймаут при расчете параметров. Возможно, исходные данные содержат некорректные значенияю."), timeout=3000)
                 return
                 
-            result = self.evaluate_expression(self.buf_formula, context)
+            result = self.evaluate_expression(self.buf_formula, all_curves)
 
-            buf_rel_data = copy.deepcopy( curve.curve_data_obj.rel_data )
-            buf_rel_data.name = self.buf_new_curve_name
-            buf_rel_data.y_result = result
+            temp_rel_data = copy.deepcopy( curve.curve_data_obj.rel_data )
+            #buf_rel_data.name = self.buf_new_curve_name
+            #buf_rel_data.y_result = result
 
-            buf_rel_data.y_name = "gen"
+            #buf_rel_data.y_current_name = "gen"
+
+            #buf_rel_data.update_names(buf_rel_data.x_current_name, buf_rel_data.y_current_name)
+
+            x_meas = measTimeData(device=temp_rel_data.x_device, ch=temp_rel_data.x_ch, param=temp_rel_data.x_param, par_val=all_x, num_or_time=np.arange(len(all_x)))
+            y_meas = measTimeData(device=self.buf_new_curve_name, ch=self.buf_new_curve_name, param=self.buf_new_curve_name, par_val=result, num_or_time=np.arange(len(result)))
+            buf_rel_data = relationData(x_meas, y_meas, is_gen=True)
 
             self.curve_created.emit(buf_rel_data, self.buf_formula, self.buf_description)
 
@@ -610,10 +617,7 @@ class treeWin(QWidget):
             self.curve_reset.emit(item.curve_data_obj)
 
     def change_name_curve(self, item):
-        dialog = NameChangeDialog(
-            self,
-            item.curve_data_obj.name
-        )
+        dialog = NameChangeDialog(self, item.curve_data_obj.name)
         if dialog.exec_() == QDialog.Accepted:
             text, ok, reset = dialog.get_results()
             if ok:

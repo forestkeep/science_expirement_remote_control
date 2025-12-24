@@ -47,12 +47,14 @@ class sessionMeasData:
     is_running: bool
 
 class relationData:
-    def __init__(self, data_x_axis: measTimeData, data_y_axis: measTimeData):
+    def __init__(self, data_x_axis: measTimeData, data_y_axis: measTimeData, is_gen: bool = False):
 
         self._x_root_name, self._y_root_name, self._root_name = self.create_base_names(
             data_x_axis.device, data_x_axis.ch, data_x_axis.param,
             data_y_axis.device, data_y_axis.ch, data_y_axis.param
         )
+
+        self._is_gen = is_gen
 
         logger.debug(f"Creating relation {self.root_name} between {self.x_root_name} and {self.y_root_name}")
 
@@ -61,6 +63,13 @@ class relationData:
         self.current_name = copy.copy(self.root_name)
         self.data_x_axis = data_x_axis
         self.data_y_axis = data_y_axis
+
+        self.x_device = data_x_axis.device
+        self.x_ch = data_x_axis.ch
+        self.x_param = data_x_axis.param
+        self.y_device = data_y_axis.device
+        self.y_ch = data_y_axis.ch
+        self.y_param = data_y_axis.param
 
         if data_x_axis.param == "time" or data_x_axis.param == "numbers":
             self.__base_x = data_y_axis.num_or_time
@@ -82,6 +91,10 @@ class relationData:
         y_original = f"{y_device}{y_ch}{y_param}"
         
         return x_original, y_original, f"{y_original}/{x_original}"
+    
+    @property
+    def is_gen(self):
+        return self._is_gen
     
     @property
     def y_current_name(self):
@@ -110,9 +123,13 @@ class relationData:
         pass
         #print(f"y_current_name changed from {old_value} to {new_value}")
 
-    def update_names(self, x_name, y_name):
+    def update_names(self, x_name = None, y_name = None):
+        if x_name is None:
+            x_name = self.x_current_name
+        if y_name is None:
+            y_name = self.y_current_name
         self.x_current_name = x_name
-        self.y_current_name = y_name  # Использует сеттер property
+        self.y_current_name = y_name 
         self.current_name = f"{y_name}/{x_name}"
 
 class graphDataManager(QObject):

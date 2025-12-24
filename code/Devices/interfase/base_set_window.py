@@ -190,10 +190,12 @@ class base_settings_window(QtWidgets.QDialog):
         
 
     def closeEvent(self, event):  # эта функция вызывается при закрытии окна крестиком
-        print("окно настройки закрыто крестиком")
+        pass
+        #print("окно настройки закрыто крестиком")
 
     def onReject(self):
-        print("окно настройки закрыто через esc")
+        pass
+        #print("окно настройки закрыто через esc")
 
     def remove_meas(self):
         for i in reversed(range(self.Layout_set_triger_meas.count())):
