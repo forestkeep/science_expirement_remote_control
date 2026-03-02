@@ -8,7 +8,7 @@ import logging
 import pandas as pd
 import numpy as np
 
-from graph.Link_data_import_win import Check_data_import_win
+from graph.Link_data_import_win import Check_data_import_win, SheetSelectionDialog
 from graph.Message_graph import messageDialog
 
 logger = logging.getLogger(__name__)
@@ -249,7 +249,6 @@ class SessionSelectControl(QObject):
         return new_id
 
     def handle_import_data(self):
-
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         fileName, ans = QFileDialog.getOpenFileName(
@@ -259,58 +258,81 @@ class SessionSelectControl(QObject):
             options=options,
         )
         
-        if fileName:
-            if ans == "Книга Excel (*.xlsx)":
+        if fileName and ans == "Книга Excel (*.xlsx)":
+            try:
+                xl = pd.ExcelFile(fileName, engine='openpyxl')
+                sheet_names = xl.sheet_names
+            except Exception as e:
+                logger.error(f"Failed to read Excel file: {e}")
+                return
 
-                df = pd.read_excel(fileName, engine='openpyxl')
+            sheet_dialog = SheetSelectionDialog(sheet_names)
+            if sheet_dialog.exec_() != QDialog.Accepted:
+                return
+            selected_sheets = sheet_dialog.get_selected_sheets()
+            if not selected_sheets:
+                logger.warning("No sheets selected. Import aborted")
+                return
+
+            for sheet in selected_sheets:
+                try:
+                    df = pd.read_excel(fileName, sheet_name=sheet, engine='openpyxl')
+                except Exception as e:
+                    logger.error(f"Failed to read sheet '{sheet}': {e}")
+                    continue
 
                 df = df.dropna(axis=1, how='all')
+                if df.empty or len(df.columns) == 0:
+                    logger.warning(f"Sheet '{sheet}' has no data. Skipping.")
+                    continue
 
                 df_col_type = type(df.columns[0])
+                column_names = sorted([str(col) for col in df.columns])
 
-                window = Check_data_import_win(sorted([str(col) for col in df.columns]))
+                window = Check_data_import_win(column_names)
+                window.setWindowTitle(
+                    QApplication.translate("GraphWindow", f"Импорт данных с листа '{sheet}'")
+                )
                 ans = window.exec_()
-                if ans == QDialog.Accepted: 
-                    selected_columns = [df_col_type(cb.text()) for cb in window.checkboxes if cb.isChecked()]
-                else:
-                    return
-                
+                if ans != QDialog.Accepted:
+                    logger.info(f"User cancelled column selection for sheet '{sheet}'. Skipping.")
+                    continue
+
+                selected_columns = [df_col_type(cb.text()) for cb in window.checkboxes if cb.isChecked()]
                 if not selected_columns:
-                    logger.warning("No selected columns. Import aborted")
-                    return
+                    logger.warning(f"No columns selected for sheet '{sheet}'. Skipping.")
+                    continue
 
                 result = {}
                 errors_col = []
-
                 for col in selected_columns:
                     try:
                         df[col] = pd.to_numeric(df[col], errors='raise')
                     except ValueError:
                         errors_col.append(str(col))
-                        continue
 
-                    
-                if errors_col != []:
+                if errors_col:
                     res = ', '.join(errors_col)
-                    text = QApplication.translate("GraphWindow", "В столбцах {res} обнаружены данные, которые не получается преобразовать в числа.\nПри построение эти точки будут пропущены.")
-                    text = text.format(res = res)
+                    text = QApplication.translate(
+                        "GraphWindow",
+                        "В столбцах {res} обнаружены данные, которые не получается преобразовать в числа.\nПри построение эти точки будут пропущены."
+                    ).format(res=res)
                     message = messageDialog(
-                        title = QApplication.translate("GraphWindow","Сообщение"),
-                        text= text
+                        title=QApplication.translate("GraphWindow", "Сообщение"),
+                        text=text
                     )
                     message.exec_()
-                    
+
                 for col in selected_columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
                     col_ = str(col).replace('(', '[').replace(')', ']')
-                    buf = np.array( df[col].tolist())
-                    result[col_] = [ buf, np.array([i for i in range(len(buf))]) ]
+                    buf = np.array(df[col].tolist())
+                    result[col_] = [buf, np.array(range(len(buf)))]
 
                 id = self.get_free_id()
-                #self.add_session({'id': id, 'name': fileName, 'status': 'imported'})
-                logger.info(f"Data imported emitted {id}")
-                self.new_data_imported.emit(fileName, id, result)
-                #self.add_session({'id': id, 'name': fileName, 'status': 'imported'})
+                display_name = f"{fileName} [Лист: {sheet}]"
+                logger.info(f"Data imported emitted {id} for sheet '{sheet}'")
+                self.new_data_imported.emit(display_name, id, result)
 
     def handle_import_osc(self):
         options = QFileDialog.Options()

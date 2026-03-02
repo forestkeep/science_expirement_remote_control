@@ -13,7 +13,7 @@ import sys
 
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                              QHBoxLayout, QLabel, QPushButton, QVBoxLayout,
-                             QScrollArea, QWidget, QSizePolicy, QComboBox)
+                             QScrollArea, QWidget, QSizePolicy, QComboBox, QDialogButtonBox)
 
 class Check_data_import_win(QDialog):
     def __init__(self, strings, callback=None, is_osc=False):
@@ -87,6 +87,46 @@ class Check_data_import_win(QDialog):
     def retranslateUi(self):
         self.setWindowTitle( QApplication.translate("GraphWindow","Мастер импорта") )
         
+class SheetSelectionDialog(QDialog):
+    def __init__(self, sheet_names, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(QApplication.translate("GraphWindow", "Выберите листы для импорта"))
+        layout = QVBoxLayout()
+        
+        label = QLabel(QApplication.translate("GraphWindow", "Выберите листы для импорта:"))
+        layout.addWidget(label)
+
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(scroll_content)
+        
+        self.checkboxes = []
+        for sheet in sheet_names:
+            cb = QCheckBox(sheet)
+            self.scroll_layout.addWidget(cb)
+            self.checkboxes.append(cb)
+        
+        self.scroll_area.setWidget(scroll_content)
+        layout.addWidget(self.scroll_area)
+
+        self.all_checkbox = QCheckBox(QApplication.translate("GraphWindow", "Выбрать все"))
+        self.all_checkbox.clicked.connect(self.on_all_checked)
+        layout.addWidget(self.all_checkbox)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+        self.setLayout(layout)
+
+    def on_all_checked(self, checked):
+        for cb in self.checkboxes:
+            cb.setChecked(checked)
+
+    def get_selected_sheets(self):
+        return [cb.text() for cb in self.checkboxes if cb.isChecked()]
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
