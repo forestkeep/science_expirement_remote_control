@@ -32,6 +32,7 @@ from schematic_exp.actions_diagram import actDiagram
 from saving_data.Parse_data import type_save_file
 from available_devices import dict_device_class, JSON_dict_device_class
 from meas_session_data import measSession
+from color_manager import ColorManager
 from experiment_control import ExperimentBridge
 from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, create_clients, ExperimentState, open_log_file
 from graph.online_graph import sessionController
@@ -95,6 +96,8 @@ class installation_class( ExperimentBridge, analyse):
         self.version_app         = version
 
         self.device_selector = None
+
+        self.inst_color_manager = ColorManager()
 
         self.dict_device_class  = dict_device_class
         self.JSON_dict_device_class = JSON_dict_device_class
@@ -168,6 +171,7 @@ class installation_class( ExperimentBridge, analyse):
         """Reconstruct installation from list of device names"""
         self.dict_active_device_class = {}
         self.graph_controller = sessionController()
+        self.inst_color_manager = ColorManager()
         #self.graph_controller.graphics_win.graph_win_close_signal.connect(self.graph_win_closed)
         self.measurement_parameters = {}
         i = 0
@@ -191,8 +195,16 @@ class installation_class( ExperimentBridge, analyse):
                     logger.error(f"Failed to create instance of {dev.name} {e}")
                 i += 1
 
-        self.exp_diagram = expDiagram()
-        self.exp_call_stack = actDiagram()
+        for dev in self.dict_active_device_class.values():
+            identifiers = [dev.get_name()]
+            for ch in dev.channels:
+                identifiers.append( f"{dev.get_name()} {ch.get_name()}")
+
+            color = self.inst_color_manager.register_color(dev, identifiers)
+            dev.set_color(color)
+
+        self.exp_diagram = expDiagram(color_manager=self.inst_color_manager)
+        self.exp_call_stack = actDiagram(color_manager=self.inst_color_manager)
         
         self.installation_window = Ui_Installation()
         self.installation_window.setWindowTitle(
@@ -625,14 +637,14 @@ class installation_class( ExperimentBridge, analyse):
             if handler:
                 handler(**data)
 
-    def update_exp_meta_data(self, name, info):
+    def update_exp_meta_data(self, name, info, status = None, trigger = None):
         self.meta_data_exp.exp_queue.append( self.meta_data_exp.numbers[name] )
         self.meta_data_exp.queue_info.append(info)
 
         if not self.exp_call_stack.actors.get(name):
             self.exp_call_stack.add_actor(name)
 
-        self.exp_call_stack.add_action(actor_name=name, action_info=info)
+        self.exp_call_stack.add_action(actor_name=name, action_info=info, status=status, trigger=trigger)
                 
     def update_remaining_time(self, remaining_time: float):
         logger.debug(f"update_remaining_time {remaining_time}")

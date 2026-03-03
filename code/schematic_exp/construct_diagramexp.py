@@ -433,8 +433,9 @@ class blockDevice(QWidget):
         #self.frame.setStyleSheet(self.base_color)
 
 class expDiagram(QWidget):
-    def __init__(self):
+    def __init__(self, color_manager):
         super().__init__()
+        self.color_manager = color_manager
         self.is_ctrl_pressed = False
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.connections = []
@@ -642,25 +643,19 @@ class expDiagram(QWidget):
             widget.hide()
             widget.setParent(None)
 
-    def rebuild_schematic(self, install_class, components):
+    def rebuild_schematic(self, install_class, components: dict):
 
         self.delete_old_draw()
         self.labels = []
-        color_index = 0
         color_map = {}
         
         for dev, ch in get_active_ch_and_device( install_class.dict_active_device_class ):
             y = install_class.message_broker.get_subscribers(publisher = ch, name_subscribe = ch.do_operation_trigger)
             name_dev = dev.get_name()
             if name_dev not in color_map:
-                if color_index < len(unique_colors):
-                    color_map[name_dev] = unique_colors[color_index]
-                    color_index += 1
-                else:
-                    color_map[name_dev] = "#ffffff"  # цвет по умолчанию, белый
+                color_map[name_dev] = self.color_manager.get_color(name_dev)
             
             color = color_map[name_dev]
-            
             
             lb = blockDevice(ch.get_name(), dev.get_name(), self)
             lb.type_trigger = dev.get_trigger(ch)

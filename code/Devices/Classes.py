@@ -65,11 +65,19 @@ class which_part_in_ch(Enum):
     only_meas = 1
     only_act = 2
 
+
 class ch_response_to_step(Enum):
     End_list_of_steps = 0
     Step_done = 1
     Step_fail = 2
     Incorrect_ch = 3
+
+response_to_bool = {
+    ch_response_to_step.End_list_of_steps: True,
+    ch_response_to_step.Step_done: True,
+    ch_response_to_step.Step_fail: False,
+    ch_response_to_step.Incorrect_ch: False
+}
 
 class control_in_experiment():
     def __init__(self) -> None:
@@ -118,7 +126,10 @@ class base_device():
         self.name = name
         self.setting_window = None
 
+        self.color_manager = installation_class.inst_color_manager
         self.message_broker = installation_class.message_broker
+
+        self.main_color = None
 
         self.number_steps = "3"
 
@@ -135,6 +146,9 @@ class base_device():
 
         self.key_to_signal_func = False
         logger.debug(f"класс {self.name} создан")
+
+    def set_color(self, color):
+        self.main_color = color
 
     def set_name(self, name):
         self.name = name
@@ -513,7 +527,6 @@ class base_device():
             return answer
         if int(ch.step_index) < int(stps)-1:
             ch.step_index += 1
-            print(f"ch.step_index = {ch.step_index}")
         else:
             answer = ch_response_to_step.End_list_of_steps  # след шага нет
         return answer
@@ -645,7 +658,6 @@ class base_device():
             
         else:
             answer = False
-        
         return answer
 
     def get_trigger(self, ch):
@@ -886,8 +898,3 @@ def time_decorator(func):
         logger.info(f"Метод {func.__name__} выполнялся {end_time - start_time} с")
         return result
     return wrapper
-
-
-if __name__ == "__main__":
-    print(float(False))
-    

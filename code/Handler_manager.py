@@ -124,6 +124,16 @@ class messageBroker:
                     return sub.subscribers
                 else:
                     return False
+                
+    def get_publisher(self, name_subscribe):
+        """
+        Возвращает издателя (publisher) подписки с указанным именем.
+        Если подписка не найдена, возвращает None.
+        """
+        for sub in self.subscribe_list:
+            if sub.get_name() == name_subscribe:
+                return sub.publisher
+        return None
 
 class MockSubscriber:
     def __init__(self, name):

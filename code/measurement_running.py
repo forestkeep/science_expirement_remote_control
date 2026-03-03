@@ -14,7 +14,7 @@ import logging
 from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
-from Devices.Classes import ch_response_to_step
+from Devices.Classes import ch_response_to_step, response_to_bool
 from Handler_manager import messageBroker
 #from profilehooks import profile
 
@@ -196,7 +196,7 @@ class experimentControl( ):
 									if time.perf_counter() - ch.previous_step_time >= ch.pause_time:
 										ch.previous_step_time = time.perf_counter()
 										device.set_status_step(ch.get_name(), True)
-										
+						
 						if number_active_device == 0:
 							"""остановка эксперимента, нет активных приборов"""
 							text = QApplication.translate('exp_flow',"Остановка эксперимента") + "..."
@@ -269,7 +269,17 @@ class experimentControl( ):
 										Number step = {ch.number_meas} \n\r
 										Priority = {current_priority}\n\r
 									'''
-							self.first_queue.put( ("meta_data", {"name": f"{device.get_name()} {ch.get_name()}", "info": text}) )
+							publisher = self.message_broker.get_publisher(device.get_trigger_value(ch))#получаем класс канала, издателя
+							pub_ch_name = None
+							pub_dev_name = None
+							if publisher is not None:
+								pub_ch_name = publisher.get_name()
+								pub_dev_name = publisher.device_class_name
+							self.first_queue.put( ("meta_data", {"name": f"{device.get_name()} {ch.get_name()}",
+																	"info": text,
+																	"trigger": f"{pub_dev_name} {pub_ch_name}",
+																	"status": f"{response_to_bool[ans_request]}"}) )
+							
 
 					status_send = self.shared_buffer_manager.send_data()
 
