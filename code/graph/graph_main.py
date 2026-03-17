@@ -197,8 +197,6 @@ class manageGraph(QObject):
                 curve.filtered_x_data, curve.filtered_y_data, message = filter_func(curve.filtered_x_data, curve.filtered_y_data)
                 curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
 
-                print(f"{len(curve.filtered_x_data) = }, {len(curve.filtered_y_data) = }")
-                print(f"{curve.filtered_x_data = }, {curve.filtered_y_data = }")
                 curve.recalc_stats_param()
 
                 name_block = QApplication.translate("GraphWindow","История изменения")

@@ -73,10 +73,8 @@ class LineStyle:
     
     def apply_to_curve(self, plot_data_item):
         """Применить стиль к кривой (PlotDataItem)"""
-        # Установка пера для линии
         plot_data_item.setPen(self.to_pen())
         
-        # Настройка символов, если они заданы
         if self.symbol is not None:
             plot_data_item.setSymbol(self.symbol)
             plot_data_item.setSymbolSize(self.symbol_size)
@@ -304,7 +302,6 @@ class linearData(graphData):
             self.legend.set_custom(name)
 
     def recalc_stats_param(self):
-        #вычисление моды
         filtered_data = self.filtered_y_data[~np.isnan(self.filtered_y_data)]
         if filtered_data.size == 0:
             mode_value = np.nan

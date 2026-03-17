@@ -32,21 +32,20 @@ class filterWin(QWidget):
         self.calman_button   = QPushButton("Применить")
         self.exp_mean_button = QPushButton("Применить")
         self.thinning_button = QPushButton("Применить прореживание")
-        self.normalize_button = QPushButton("Применить нормировку")  # Добавлена кнопка нормировки
+        self.normalize_button = QPushButton("Применить нормировку")
 
-        # Добавляем тултипы к кнопкам
         self.median_button.setToolTip(self.get_median_description())
         self.average_button.setToolTip(self.get_average_description())
         self.exp_mean_button.setToolTip(self.get_exp_mean_description())
         self.thinning_button.setToolTip(self.get_thinning_description())
-        self.normalize_button.setToolTip(self.get_normalize_description())  # Тултип для нормировки
+        self.normalize_button.setToolTip(self.get_normalize_description())
 
         self.median_button.setMinimumSize(30, 20)
         self.average_button.setMinimumSize(30, 20)
         self.calman_button.setMinimumSize(30, 20)
         self.exp_mean_button.setMinimumSize(30, 20)
         self.thinning_button.setMinimumSize(30, 20)
-        self.normalize_button.setMinimumSize(30, 20)  # Минимальный размер для кнопки нормировки
+        self.normalize_button.setMinimumSize(30, 20)
 
         self.spin_median   = QSpinBox() 
         self.spin_average  = QSpinBox()
@@ -63,19 +62,16 @@ class filterWin(QWidget):
 
         self.spin_exp_mean.setSingleStep(0.01)
 
-        # Чекбоксы для прореживания
         self.check_uniform = QCheckBox("Равномерно")
         self.check_max = QCheckBox("Удалить максимальные")
         self.check_min = QCheckBox("Удалить минимальные")
 
-        # Элементы для нормировки
         self.combo_norm_type = QComboBox()
         self.combo_norm_type.addItem("0-1 (Min-Max)")
         self.combo_norm_type.addItem("-1-1")
         self.combo_norm_type.addItem("Z-score")
         self.combo_norm_type.addItem("Robust (медиана/IQR)")
         
-        # Добавляем тултипы к элементам управления
         self.check_uniform.setToolTip(self.get_uniform_thinning_description())
         self.check_max.setToolTip(self.get_max_thinning_description())
         self.check_min.setToolTip(self.get_min_thinning_description())
@@ -102,12 +98,10 @@ class filterWin(QWidget):
             self.get_exp_mean_description()
         ))
         
-        # Группа прореживания
         thinning_group = QGroupBox("Прореживание данных")
         thinning_group.setToolTip(self.get_thinning_group_description())
         thinning_layout = QVBoxLayout()
         
-        # Процент удаления
         percent_layout = QHBoxLayout()
         percent_label = QLabel("Процент удаления:")
         percent_layout.addWidget(percent_label)
@@ -115,23 +109,19 @@ class filterWin(QWidget):
         percent_layout.addStretch()
         thinning_layout.addLayout(percent_layout)
         
-        # Чекбоксы
         thinning_layout.addWidget(self.check_uniform)
         thinning_layout.addWidget(self.check_max)
         thinning_layout.addWidget(self.check_min)
         self.check_uniform.setChecked(True)
         
-        # Кнопка
         thinning_layout.addWidget(self.thinning_button)
         thinning_group.setLayout(thinning_layout)
         main_layout.addWidget(thinning_group)
         
-        # Группа нормировки (добавлено)
         norm_group = QGroupBox("Нормировка данных")
         norm_group.setToolTip(self.get_normalize_group_description())
         norm_layout = QVBoxLayout()
         
-        # Выбор типа нормировки
         type_layout = QHBoxLayout()
         type_label = QLabel("Тип нормировки:")
         type_layout.addWidget(type_label)
@@ -139,7 +129,6 @@ class filterWin(QWidget):
         type_layout.addStretch()
         norm_layout.addLayout(type_layout)
         
-        # Кнопка
         norm_layout.addWidget(self.normalize_button)
         norm_group.setLayout(norm_layout)
         main_layout.addWidget(norm_group)
@@ -196,8 +185,6 @@ class filterWin(QWidget):
 
         return filter_layout
 
-    # Функции для получения описаний (обернуты в QApplication.translate для локализации)
-    
     def get_median_description(self):
         return QApplication.translate("filters",
             "Медианный фильтр - нелинейный метод фильтрации, который заменяет каждое значение в сигнале медианой значений в скользящем окне заданного размера.\n\n"
@@ -389,7 +376,6 @@ class filtersClass():
         self.thinning_max = self.filt_window.check_max.isChecked()
         self.thinning_min = self.filt_window.check_min.isChecked()
         
-        # Параметры нормировки (добавлено)
         self.norm_type = self.filt_window.combo_norm_type.currentText()
 
         for callback in self.filters_callbacks:
@@ -537,10 +523,8 @@ class filtersClass():
         if n_to_remove == 0:
             return x.copy(), y.copy()
         
-        # Находим индексы максимальных значений
         max_indices = np.argsort(-y)[:n_to_remove]
         
-        # Создаем маску для сохранения
         mask = np.ones(len(y), dtype=bool)
         mask[max_indices] = False
         
@@ -568,10 +552,8 @@ class filtersClass():
         if n_to_remove == 0:
             return x.copy(), y.copy()
         
-        # Находим индексы минимальных значений
         min_indices = np.argsort(y)[:n_to_remove]
         
-        # Создаем маску для сохранения
         mask = np.ones(len(y), dtype=bool)
         mask[min_indices] = False
         
@@ -597,7 +579,6 @@ class filtersClass():
         x_array = np.array(x)
         y_array = np.array(y)
         
-        # Подсчитываем количество выбранных методов
         methods = []
         if self.thinning_uniform:
             methods.append('uniform')
@@ -609,10 +590,8 @@ class filtersClass():
         if not methods:
             return x_array.copy(), y_array.copy(), "Без прореживания"
         
-        # Вычисляем процент для каждого метода
         percent_per_method = self.thinning_percent / len(methods)
         
-        # Применяем методы в порядке приоритета
         current_x, current_y = x_array.copy(), y_array.copy()
         
         for method in methods:
@@ -626,7 +605,6 @@ class filtersClass():
             elif method == 'min':
                 current_x, current_y = self._apply_min_thinning(current_x, current_y, percent_per_method)
         
-        # Создаем описание
         desc_methods = []
         if self.thinning_uniform:
             desc_methods.append("равномерно")
@@ -664,11 +642,10 @@ class filtersClass():
         norm_type = self.norm_type
         
         if norm_type == "0-1 (Min-Max)":
-            # Нормировка к диапазону [0, 1]
             y_min = np.min(y_array)
             y_max = np.max(y_array)
             
-            if y_max == y_min:  # Все значения одинаковы
+            if y_max == y_min:
                 y_norm = np.zeros_like(y_array) if y_min == 0 else np.ones_like(y_array) * 0.5
             else:
                 y_norm = (y_array - y_min) / (y_max - y_min)
@@ -676,11 +653,10 @@ class filtersClass():
             description = f"Нормировка [0,1] (min={y_min:.3f}, max={y_max:.3f})"
             
         elif norm_type == "-1-1":
-            # Нормировка к диапазону [-1, 1]
             y_min = np.min(y_array)
             y_max = np.max(y_array)
             
-            if y_max == y_min:  # Все значения одинаковы
+            if y_max == y_min:
                 y_norm = np.zeros_like(y_array)
             else:
                 y_norm = 2 * ((y_array - y_min) / (y_max - y_min)) - 1
@@ -688,11 +664,10 @@ class filtersClass():
             description = f"Нормировка [-1,1] (min={y_min:.3f}, max={y_max:.3f})"
             
         elif norm_type == "Z-score":
-            # Z-score стандартизация
             y_mean = np.mean(y_array)
             y_std = np.std(y_array)
             
-            if y_std == 0:  # Все значения одинаковы
+            if y_std == 0:
                 y_norm = np.zeros_like(y_array)
             else:
                 y_norm = (y_array - y_mean) / y_std
@@ -700,13 +675,11 @@ class filtersClass():
             description = f"Z-score (mean={y_mean:.3f}, std={y_std:.3f})"
             
         elif norm_type == "Robust (медиана/IQR)":
-            # Устойчивая нормировка на основе медианы и межквартильного размаха
             y_median = np.median(y_array)
             q75, q25 = np.percentile(y_array, [75, 25])
             iqr = q75 - q25
             
-            if iqr == 0:  # Все значения близки или одинаковы
-                # Используем стандартное отклонение как запасной вариант
+            if iqr == 0:
                 y_std = np.std(y_array)
                 if y_std == 0:
                     y_norm = np.zeros_like(y_array)
@@ -717,24 +690,19 @@ class filtersClass():
                 y_norm = (y_array - y_median) / iqr
                 description = f"Robust (медиана={y_median:.3f}, IQR={iqr:.3f})"
         else:
-            # По умолчанию возвращаем исходные данные
             y_norm = y_array.copy()
             description = f"Нормировка: неизвестный тип '{norm_type}'"
         
         return x_array, y_norm, description
 
-# Пример использования тултипов с подробным описанием функций
 def show_tooltip_example():
     app = QApplication([])
     
-    # Создаем экземпляр окна фильтров
     window = filterWin()
     
-    # Показываем окно
     window.setWindowTitle("Фильтры данных с подробными описаниями")
     window.show()
     
-    # Демонстрация тултипов
     QToolTip.setFont(QFont('Arial', 10))
     QToolTip.setStyleSheet("""
         QToolTip {
@@ -754,10 +722,6 @@ if __name__ == '__main__':
     import sys
     app = QApplication(sys.argv)
     
-    # Для тестирования можно использовать:
-    # show_tooltip_example()  # Для демонстрации тултипов
-    
-    # Или полный тест фильтров:
     widget = filtersClass()
     widget.filt_window.setWindowTitle("Фильтры данных")
     widget.filt_window.show()

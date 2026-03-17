@@ -64,6 +64,15 @@ class PatchedPlotWidget(pg.PlotWidget):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.preset_styles = [
+            {"name": "Светлый", "bg": (255,255,255), "text": (0,0,0), "grid": (200,200,200), "legend": (0,0,0)},
+            {"name": "Тёмный", "bg": (0,0,0), "text": (255,255,255), "grid": (80,80,80), "legend": (255,255,255)},
+            {"name": "Серый", "bg": (240,240,240), "text": (0,0,0), "grid": (180,180,180), "legend": (0,0,0)},
+            {"name": "Высококонтрастный", "bg": (255,255,255), "text": (0,0,0), "grid": (0,0,0), "legend": (0,0,0)},
+            {"name": "Минималистичный", "bg": (255,255,255), "text": (50,50,50), "grid": (230,230,230), "legend": (50,50,50)},
+        ]
+
         self.setupCustomMenu()
         
         self.is_second_axis = False
@@ -121,16 +130,26 @@ class PatchedPlotWidget(pg.PlotWidget):
 
         view_rect = self.plots_lay.vb.viewRect()
             
-        # Устанавливаем позицию тултипа в правый верхний угол
-        # с небольшим отступом от краев
         tooltip_x = view_rect.right()# - (view_rect.width() * 0.02)  # 2% отступа от правого края
         tooltip_y = view_rect.top()# + (view_rect.height() * 0.02)   # 2% отступа от верхнего края
 
         #self.tooltip.setPos(50, 50)
 
+
     def add_inf_line(self, line):
         self.inf_lines.append(line)
         self.addItem(line)
+
+    def apply_preset_style(self, style):
+        self.common_style.color = style["text"]
+        for axis in self.axises.values():
+            axis.settings.is_style_customized = False
+            axis.set_common_style(self.common_style)
+        self.setCustomBackgroundColor(style["bg"])
+        self.setGridColor(style["grid"])
+        self.set_legend_color(style["legend"])
+        self.toggleGrid(True)
+        
 
     def remove_inf_line(self, line):
         self.removeItem(line)
@@ -142,25 +161,11 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.second_graphView.linkedViewChanged(self.plots_lay.vb, self.second_graphView.XAxis)
 
     def showToolTip(self, pos):
-        """Обновленный метод для отображения тултипа в правом верхнем углу"""
         if self.plots_lay.vb.sceneBoundingRect().contains(pos):
             mouse_point = self.plots_lay.vb.mapSceneToView(pos)
             x, y = mouse_point.x(), mouse_point.y()
-            
-            # Обновляем текст тултипа
             self.tooltip.setText(f"X: {x:.2f}, Y: {y:.2f}")
             
-            '''
-            # Получаем границы ViewBox
-            view_rect = self.plots_lay.vb.viewRect()
-            
-            # Устанавливаем позицию тултипа в правый верхний угол
-            # с небольшим отступом от краев
-            tooltip_x = view_rect.right() - (view_rect.width() * 0.02)  # 2% отступа от правого края
-            tooltip_y = view_rect.top() + (view_rect.height() * 0.02)   # 2% отступа от верхнего края
-            
-            self.tooltip.setPos(tooltip_x, tooltip_y)
-            '''
 
     def set_second_axis(self, state: bool):
         """Включение/выключение второй оси"""
@@ -218,7 +223,6 @@ class PatchedPlotWidget(pg.PlotWidget):
         font_menu.addAction(choise_tick_font)
         font_menu.addAction(choise_text_font)
         
-        # Инвертирование
         invert_action = QtWidgets.QAction("Invert", menu)
         invert_action.setCheckable(True)
         invert_action.setChecked(False)
@@ -253,7 +257,6 @@ class PatchedPlotWidget(pg.PlotWidget):
 
         viewbox_menu.addSeparator()
         
-        # Меню внешнего вида
         appearance_menu = QtWidgets.QMenu("Внешний вид графика", viewbox_menu)
         viewbox_menu.addMenu(appearance_menu)
         
@@ -265,7 +268,6 @@ class PatchedPlotWidget(pg.PlotWidget):
 
         appearance_menu.addAction(self.grid_action)
         appearance_menu.addSeparator()
-        #шрифт
         font_menu = QtWidgets.QMenu("Шрифт", appearance_menu)
         appearance_menu.addMenu(font_menu)
 
@@ -276,7 +278,6 @@ class PatchedPlotWidget(pg.PlotWidget):
         font_menu.addAction(choise_tick_font)
         font_menu.addAction(choise_text_font)
         
-        # Цвет фона
         bg_color_menu = QtWidgets.QMenu("Цвет фона", appearance_menu)
         appearance_menu.addMenu(bg_color_menu)
         
@@ -380,6 +381,14 @@ class PatchedPlotWidget(pg.PlotWidget):
         antialias_action.setChecked(False)
         antialias_action.triggered.connect(self.toggleAntialias)
         appearance_menu.addAction(antialias_action)
+
+        preset_menu = QtWidgets.QMenu("Предустановленные стили", appearance_menu)
+        appearance_menu.addMenu(preset_menu)
+
+        for style in self.preset_styles:
+            action = QtWidgets.QAction(style["name"], preset_menu)
+            action.triggered.connect(lambda checked, s=style: self.apply_preset_style(s))
+            preset_menu.addAction(action)
 
     def chooseCustomLegendColor(self):
         color = QtWidgets.QColorDialog.getColor()

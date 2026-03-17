@@ -25,7 +25,6 @@ class GraphCustomizer(QtWidgets.QDialog):
     def apply_preset(self, preset_name):
         if preset_name in PRESETS_LINE:
             preset = PRESETS_LINE[preset_name]
-            # Применяем параметры стиля из пресета
             self.current_style.color = preset['color']
             self.current_style.line_style = preset['line_style']
             self.current_style.line_width = preset['line_width']
@@ -33,14 +32,12 @@ class GraphCustomizer(QtWidgets.QDialog):
             self.current_style.symbol_size = preset['symbol_size']
             self.current_style.symbol_color = preset['symbol_color']
             self.current_style.fill_color = preset['fill_color']
-            self.current_style.px_mode = preset.get('px_mode', True)  # Добавлено применение pxMode
+            self.current_style.px_mode = preset.get('px_mode', True)
             
-            # Обновляем UI в соответствии с новым стилем
             self.update_ui_from_style()
             self.update_style()
 
     def update_ui_from_style(self):
-        # Обновляем комбобокс стиля линии
         line_style_name = next(
             (name for name, style in self.line_styles.items() 
              if style == self.current_style.line_style),
@@ -48,7 +45,6 @@ class GraphCustomizer(QtWidgets.QDialog):
         )
         self.line_style.setCurrentText(line_style_name)
         
-        # Обновляем другие элементы UI
         self.line_width.setValue(int(self.current_style.line_width))
         
         symbol_text = self.current_style.symbol if self.current_style.symbol else "None"
@@ -57,13 +53,12 @@ class GraphCustomizer(QtWidgets.QDialog):
             self.symbol.setCurrentIndex(index)
             
         self.symbol_size.setValue(int(self.current_style.symbol_size))
-        self.px_mode_checkbox.setChecked(self.current_style.px_mode)  # Добавлено обновление чекбокса
+        self.px_mode_checkbox.setChecked(self.current_style.px_mode)
         
     def get_current_properties(self):
         """Получить текущие свойства графика"""
         opts = self.graph_item.plot_obj.opts
         
-        # Обработка цвета линии
         if isinstance(opts['pen'], str):
             color = pg.mkColor(opts['pen'])
             line_style = QtCore.Qt.SolidLine
@@ -77,7 +72,6 @@ class GraphCustomizer(QtWidgets.QDialog):
             line_style = QtCore.Qt.SolidLine
             line_width = 1
         
-        # Обработка цвета символа
         if opts['symbolPen'] is None:
             symbol_color = pg.mkColor('w')
         elif isinstance(opts['symbolPen'], dict):
@@ -89,7 +83,6 @@ class GraphCustomizer(QtWidgets.QDialog):
         else:
             symbol_color = pg.mkColor('w')
         
-        # Обработка цвета заливки
         if opts['symbolBrush'] is None:
             fill_color = pg.mkColor('w')
         elif isinstance(opts['symbolBrush'], dict):
@@ -101,7 +94,6 @@ class GraphCustomizer(QtWidgets.QDialog):
         else:
             fill_color = pg.mkColor('w')
         
-        # Получаем значение pxMode
         px_mode = opts.get('pxMode', True)
         
         return {
@@ -112,13 +104,12 @@ class GraphCustomizer(QtWidgets.QDialog):
             'symbol_size': opts['symbolSize'],
             'symbol_color': symbol_color.name(),
             'fill_color': fill_color.name(),
-            'px_mode': px_mode  # Добавлено получение pxMode
+            'px_mode': px_mode
         }
 
     def setup_ui(self):
         layout = QtWidgets.QVBoxLayout()
 
-        # Добавляем выбор предустановленных стилей
         layout.addWidget(QtWidgets.QLabel("Предустановленные стили:"))
         self.preset_combo = QtWidgets.QComboBox()
         self.preset_combo.addItem("Выберите стиль")
@@ -126,16 +117,14 @@ class GraphCustomizer(QtWidgets.QDialog):
         self.preset_combo.currentTextChanged.connect(self.apply_preset)
         layout.addWidget(self.preset_combo)
 
-        # Выбор цвета линии
         self.color_btn = QtWidgets.QPushButton("Цвет линии")
         self.color_btn.clicked.connect(self.choose_color)
         layout.addWidget(self.color_btn)
 
-        # Стиль линии
         layout.addWidget(QtWidgets.QLabel("Стиль линии:"))
         self.line_style = QtWidgets.QComboBox()
         self.line_style.addItems(self.line_styles.keys())
-        # Устанавливаем текущий стиль
+
         current_style = self.original_style.line_style
         if current_style == QtCore.Qt.SolidLine:
             self.line_style.setCurrentText("Solid")
@@ -148,7 +137,6 @@ class GraphCustomizer(QtWidgets.QDialog):
         self.line_style.currentIndexChanged.connect(self.line_style_changed)
         layout.addWidget(self.line_style)
 
-        # Толщина линии
         layout.addWidget(QtWidgets.QLabel("Толщина линии:"))
         self.line_width = QtWidgets.QSpinBox()
         self.line_width.setRange(1, 10)
@@ -156,7 +144,6 @@ class GraphCustomizer(QtWidgets.QDialog):
         self.line_width.valueChanged.connect(self.line_width_changed)
         layout.addWidget(self.line_width)
 
-        # Символ
         layout.addWidget(QtWidgets.QLabel("Маркер:"))
         self.symbol = QtWidgets.QComboBox()
         self.symbol.addItems([
@@ -182,7 +169,6 @@ class GraphCustomizer(QtWidgets.QDialog):
                                         "crosshair"     # Перекрестие
                                     ])
 
-        # Устанавливаем текущее значение
         current_symbol = self.original_style.symbol
         index = self.symbol.findText(current_symbol if current_symbol else "None")
         if index >= 0:
@@ -190,7 +176,6 @@ class GraphCustomizer(QtWidgets.QDialog):
         self.symbol.currentIndexChanged.connect(self.symbol_changed)
         layout.addWidget(self.symbol)
 
-        # Размер символа
         layout.addWidget(QtWidgets.QLabel("Размер маркера:"))
         self.symbol_size = QtWidgets.QSpinBox()
         self.symbol_size.setRange(1, 20)
@@ -198,23 +183,19 @@ class GraphCustomizer(QtWidgets.QDialog):
         self.symbol_size.valueChanged.connect(self.symbol_size_changed)
         layout.addWidget(self.symbol_size)
 
-        # Чекбокс pxMode
         self.px_mode_checkbox = QtWidgets.QCheckBox("Режим пикселей (pxMode)")
         self.px_mode_checkbox.setChecked(self.original_style.px_mode)
         self.px_mode_checkbox.stateChanged.connect(self.px_mode_changed)
         layout.addWidget(self.px_mode_checkbox)
 
-        # Цвет символа
         self.symbol_color_btn = QtWidgets.QPushButton("Цвет маркера")
         self.symbol_color_btn.clicked.connect(self.choose_symbol_color)
         layout.addWidget(self.symbol_color_btn)
 
-        # Цвет заливки
         self.fill_color_btn = QtWidgets.QPushButton("Цвет заливки маркера")
         self.fill_color_btn.clicked.connect(self.choose_fill_color)
         layout.addWidget(self.fill_color_btn)
 
-        # Кнопки принятия/отмены
         btn_box = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
         )
@@ -224,7 +205,6 @@ class GraphCustomizer(QtWidgets.QDialog):
 
         self.setLayout(layout)
         
-        # Инициализируем текущие цвета
         self.current_style = copy.deepcopy(self.original_style)
 
     def line_style_changed(self, index):
@@ -266,7 +246,6 @@ class GraphCustomizer(QtWidgets.QDialog):
             self.update_style()
 
     def update_style(self):
-        # Обновляем стиль графика
         self.graph_item.change_style(self.current_style)
 
     def get_pen_style(self):
@@ -279,11 +258,9 @@ class GraphCustomizer(QtWidgets.QDialog):
         return styles[self.line_style.currentText()]
 
     def accept(self):
-        # Сохраняем изменения
         super().accept()
 
     def reject(self):
-        # Восстанавливаем оригинальные свойства
         self.restore_original_properties()
         super().reject()
 
