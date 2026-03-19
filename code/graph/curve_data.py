@@ -137,6 +137,8 @@ class graphData:
         self.parent_graph_field = None
         self.legend_field = None
 
+        self.main_plot_obj = None
+
         self.tree_item = CurveTreeItem(curve_data_obj=self)
 
         self.is_curve_selected = False
@@ -175,6 +177,28 @@ class graphData:
         plot_item.sigClicked.connect(self.on_plot_clicked)
 
         return plot_item
+
+    def set_main_plot_obj(self, plot_obj, style: LineStyle, highlight = False):
+        self.main_plot_obj = plot_obj
+        self.main_plot_obj.setFocus()
+        self.main_plot_obj.setZValue(100)
+        self.main_plot_obj.setCurveClickable( state = True, width = 10)#установить кривую кликабельной с шириной 10 пикселей
+        self.main_plot_obj.sigClicked.connect(self.on_plot_clicked)
+
+        self.is_curve_selected = False
+
+        self.i_am_click_now = False #флаг поднимается в момент, когда по графику кликают мышкой. Сбрасывается в методе, вызванном по сигналу от клика по всей сцене, 
+        #в этом методе проверяется. был-ли только то кликнут график, и если да, то выделенные графики не сбрасываются
+        self.preselection_style = style #эта пеерменная необходимо для запоминания стиля перед выделением графика через меню дерева
+        self.saved_style = style
+
+        self.tree_item.setForeground(1, QBrush(QColor(self.saved_style.color)))
+
+        if highlight:
+            self.is_curve_selected = True
+            self.clicked_style.apply_to_curve(self.main_plot_obj)
+        else:
+            self.saved_style.apply_to_curve(self.main_plot_obj)
     
     def add_to_graph(self, graph_field, legend_field, number_axis):
         """
