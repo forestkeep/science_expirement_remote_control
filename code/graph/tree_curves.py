@@ -122,6 +122,9 @@ class CurveTreeItem(QTreeWidgetItem):
         self.parameters["name"] = name
         self.curve_data_obj.set_legend_name(name)
 
+    def add_in_compare(self):
+        pass
+
     def add_basic_characteristics(self):
 
         self.addChild(QTreeWidgetItem([f"ID: {self.parameters['id']}"]))
@@ -529,9 +532,9 @@ class treeWin(QWidget):
 
             curve_rel_data.y_name = "gen"
             
-            curve_rel_data.name+=("(autocorr)")
+            curve_rel_data.current_name+=("(autocorr)")
             desc = QApplication.translate("GraphWindow", "Автокорреляционная функция от {data}" )
-            desc = desc.format(data = curve.rel_data.name)
+            desc = desc.format(data = curve.rel_data.current_name)
             self.curve_created.emit(curve_rel_data, None, desc )
 
     def preparation_arrays(self, tree_curves: dict):
@@ -596,6 +599,7 @@ class treeWin(QWidget):
             reset_data_action = QAction( QApplication.translate("GraphWindow","Сбросить фильтры"), self)
             add_note_action = QAction( QApplication.translate("GraphWindow","Добавить заметку"), self)
             create_autocorrelation = QAction( QApplication.translate("GraphWindow","Построить автокорреляционную функцию"), self)
+            add_in_compare = QAction( QApplication.translate("GraphWindow","Добавить в сравнение"), self)
 
             context_menu.addAction(name_action)
             context_menu.addAction(style_action)
@@ -603,6 +607,7 @@ class treeWin(QWidget):
             context_menu.addAction(reset_data_action)
             context_menu.addAction(add_note_action)
             context_menu.addAction(create_autocorrelation)
+            context_menu.addAction(add_in_compare)
 
             name_action.triggered.connect(lambda: self.change_name_curve(root_item))
             style_action.triggered.connect(lambda: self.change_curve_style(root_item))
@@ -610,11 +615,15 @@ class treeWin(QWidget):
             reset_data_action.triggered.connect(lambda: self.reset_filters(root_item))
             add_note_action.triggered.connect(lambda: self.add_note(root_item))
             create_autocorrelation.triggered.connect(lambda: self.create_autocorrelation(root_item))
+            add_in_compare.triggered.connect(lambda: self.add_in_compare(root_item))
 
             context_menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
     def reset_filters(self, item=None):
         if item in self.curves:
             self.curve_reset.emit(item.curve_data_obj)
+
+    def add_in_compare(self, item):
+        item.add_in_compare()
 
     def change_name_curve(self, item):
         dialog = NameChangeDialog(self, item.curve_data_obj.name)

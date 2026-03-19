@@ -24,8 +24,10 @@ class legendName():
     def __init__(self, name) -> None:
         self.__name = name
         self.current_name = self.__name
+        self.previous_name = ""
 
     def set_custom(self, name: str):
+        self.previous_name = self.__name
         self.__name = name
         self.current_name = self.__name
 
@@ -113,7 +115,7 @@ class graphData:
         self.filtered_x_data = np.array(raw_x)
         self.filtered_y_data = np.array(raw_y)
 
-        self.plot_obj = None
+        self.plot_items = {}
         self.data_x = None
         self.data_y = None
 
@@ -121,6 +123,10 @@ class graphData:
         self.ch = None
         self.name = None
         self.number = None
+
+        self.is_curve_selected = False
+
+        self.i_am_click_now = False 
 
         self.number_axis = None
 
@@ -139,99 +145,139 @@ class graphData:
 
         self.clicked_style = LineStyle(color=(180, 150, 150), line_style=QtCore.Qt.DashLine, line_width=4, symbol="+", symbol_size=10, symbol_color=(150, 150, 150), fill_color='w')
 
+    def create_plot_item(self, viewbox=None, legend_field=None, number_axis=None):
+        """
+        Создаёт новый PlotDataItem на основе текущих данных и стиля.
+        Возвращает созданный item.
+        """
+        # Данные для отображения (можно использовать self.filtered_x_data и self.filtered_y_data)
+        x = self.filtered_x_data
+        y = self.filtered_y_data
 
-    def set_plot_obj(self, plot_obj, style: LineStyle, highlight = False):
-        self.plot_obj = plot_obj
-        self.plot_obj.setFocus()
-        self.plot_obj.setZValue(100)
-        self.plot_obj.setCurveClickable( state = True, width = 10)#установить кривую кликабельной с шириной 10 пикселей
-        self.plot_obj.sigClicked.connect(self.on_plot_clicked)
+        pen = self.saved_style.to_pen()
+        symbol = self.saved_style.symbol
+        symbol_pen = self.saved_style.to_symbol_pen()
+        symbol_brush = self.saved_style.to_brush()
 
-        self.is_curve_selected = False
+        plot_item = pg.PlotDataItem(
+            x, y,
+            pen=pen,
+            name=self.legend.current_name,   # имя для легенды
+            symbol=symbol,
+            symbolPen=symbol_pen,
+            symbolBrush=symbol_brush,
+        )
+        plot_item.setClipToView(True)
+        #plot_item.setDownsampling(auto=True, method='peak')
+        plot_item.setFocus()
+        plot_item.setZValue(100)
+        plot_item.setCurveClickable(state=True, width=10)
+        plot_item.sigClicked.connect(self.on_plot_clicked)
 
-        self.i_am_click_now = False #флаг поднимается в момент, когда по графику кликают мышкой. Сбрасывается в методе, вызванном по сигналу от клика по всей сцене, 
-        #в этом методе проверяется. был-ли только то кликнут график, и если да, то выделенные графики не сбрасываются
-        self.preselection_style = style #эта пеерменная необходимо для запоминания стиля перед выделением графика через меню дерева
-        self.saved_style = style
+        return plot_item
+    
+    def add_to_graph(self, graph_field, legend_field, number_axis):
+        """
+        Добавляет копию кривой на указанный график.
+        Если для этого viewbox уже есть копия, ничего не делает (или обновляет).
+        """
+        if graph_field in self.plot_items:
+            # можно просто обновить данные/стиль, если уже есть
+            return
 
-        self.tree_item.setForeground(1, QBrush(QColor(self.saved_style.color)))
+        # Создаём новый PlotDataItem
+        new_item = self.create_plot_item(graph_field, legend_field, number_axis)
+        # Добавляем на график и в легенду
+        graph_field.addItem(new_item)
+        if legend_field.getLabel(new_item) is None:
+            legend_field.addItem(new_item, self.legend.current_name)
 
-        if highlight:
-            self.is_curve_selected = True
-            self.clicked_style.apply_to_curve(self.plot_obj)
+        # Сохраняем привязку
+        self.plot_items[graph_field] = {
+            'item': new_item,
+            'legend': legend_field,
+            'axis': number_axis
+        }
+
+        # Если кривая должна быть выделена (is_curve_selected), применяем стиль выделения
+        if self.is_curve_selected:
+            self.clicked_style.apply_to_curve(new_item)
         else:
-            self.saved_style.apply_to_curve(self.plot_obj)
+            self.saved_style.apply_to_curve(new_item)
 
-    def change_style(self, new_style: LineStyle):
-        self.saved_style = new_style
-        self.saved_style.apply_to_curve(self.plot_obj)
+        self.is_draw = True
+
+    def remove_from_graph(self, viewbox):
+        """Удаляет копию кривой с конкретного графика."""
+        if viewbox in self.plot_items:
+            info = self.plot_items.pop(viewbox)
+            viewbox.removeItem(info['item'])
+            info['legend'].removeItem(self.legend.current_name)
+
+    def remove_all_from_graphs(self):
+        """Удаляет со всех графиков."""
+        for viewbox in list(self.plot_items.keys()):
+            self.remove_from_graph(viewbox)
+
+    def update_all_plots_data(self):
+        """Обновляет данные во всех копиях PlotDataItem."""
+        for info in self.plot_items.values():
+            info['item'].setData(self.filtered_x_data, self.filtered_y_data)
+
+    def apply_style_to_all(self, style):
+        """Применяет стиль (например, LineStyle) ко всем копиям."""
+        for info in self.plot_items.values():
+            style.apply_to_curve(info['item'])
+
+    def on_plot_clicked(self, obj):
+        """Обработчик клика по любой копии кривой."""
+        self.i_am_click_now = True
+        # Переключаем состояние выделения
+        if self.is_curve_selected:
+            self.is_curve_selected = False
+            self.apply_style_to_all(self.saved_style)
+        else:
+            self.is_curve_selected = True
+            self.apply_style_to_all(self.clicked_style)
 
     def higlight_curve(self):
         if self.higlighted_flag:
             return
         self.higlighted_flag = True
-        if self.is_curve_selected:
-            self.preselection_style = self.clicked_style
-        else:
-            self.preselection_style = self.saved_style
-        self.plot_obj.setPen(pg.mkPen(color=(150, 150, 150, 90), width=5))
-        self.plot_obj.setSymbolBrush(color=(150, 150, 150, 90))
-        self.plot_obj.setSymbolPen(pg.mkPen(color=(150, 150, 150, 90)))
+        # Запоминаем текущий стиль
+        self.preselection_style = self.clicked_style if self.is_curve_selected else self.saved_style
+        # Применяем стиль подсветки ко всем копиям
+        for info in self.plot_items.values():
+            info['item'].setPen(pg.mkPen(color=(150,150,150,90), width=5))
+            info['item'].setSymbolBrush(color=(150,150,150,90))
+            info['item'].setSymbolPen(pg.mkPen(color=(150,150,150,90)))
 
     def unhiglight_curve(self):
         if not self.higlighted_flag:
             return
         self.higlighted_flag = False
-        self.preselection_style.apply_to_curve(self.plot_obj)
+        self.apply_style_to_all(self.preselection_style)
 
-    def on_plot_clicked(self, obj):
-        self.i_am_click_now = True
+    # В методе stop_session нужно обновить данные во всех копиях
+    def stop_session(self):
+        if self.plot_items:
+            self.update_all_plots_data()
+        if not self.data_reset():
+            logger.warning(...)
 
-        if self.is_curve_selected:
-            self.is_curve_selected = False
-            self.saved_style.apply_to_curve(self.plot_obj)
-        else:
-            self.is_curve_selected = True
-            self.clicked_style.apply_to_curve(self.plot_obj)
-    
-    def place_curve_on_graph(self, graph_field: pg.ViewBox, legend_field, number_axis):
-        """
-        Places the curve on the given graph and legend fields. If the given fields
-        are different from the current fields, the curve is first removed from the
-        current fields before being added to the new fields.
 
-        Parameters
-        ----------
-        graph_field : pg.ViewBox
-            The ViewBox to add the curve to.
-        legend_field : pg.LegendItem
-            The LegendItem to add the curve to.
-        """
+    def change_style(self, new_style: LineStyle):
+        self.saved_style = new_style
 
-        if self.parent_graph_field:
-            if graph_field is not self.parent_graph_field:
-                self.parent_graph_field.removeItem(self.plot_obj)
-
-        if self.legend_field:
-            if self.legend_field is not legend_field:
-                self.legend_field.removeItem(self.legend.current_name)
-
-        self.parent_graph_field = graph_field
-        self.legend_field = legend_field
-        self.number_axis = number_axis
-
-        self.parent_graph_field.addItem(self.plot_obj)
-
-        if self.legend_field.getLabel( self.plot_obj ) is None:
-            self.legend_field.addItem(self.plot_obj, self.legend.current_name)
-
-        self.is_draw = True
+        for curves in self.plot_items.values():
+                self.saved_style.apply_to_curve(curves['item'])
 
     def delete_curve_from_graph(self):
         if self.is_draw:
             self.is_draw = False
-            self.parent_graph_field.removeItem(self.plot_obj)
-            self.legend_field.removeItem(self.legend.current_name)
+            for graph_field, data_item in self.plot_items.items():
+                graph_field.removeItem(data_item['item'])
+                data_item['legend'].removeItem(self.legend.current_name)
     
     def data_reset(self) -> bool:
         if self.filtered_x_data is self.raw_data_x:
@@ -247,12 +293,6 @@ class graphData:
         self.rel_data.update_names(old_x, old_y)
         self.raw_data_x = np.array(data.x_result)
         self.raw_data_y = np.array(data.y_result)
-
-    def stop_session(self):
-        if self.plot_obj is not None:
-            self.plot_obj.setData(self.raw_data_x, self.raw_data_y)
-            if not self.data_reset():
-                logger.warning(f"{self.curve_name} data not reseted after experiment stop")
 
 class linearData(graphData):
     def __init__(self, data: relationData, alias_manager) -> None:
@@ -291,15 +331,12 @@ class linearData(graphData):
         self.recalc_stats_param()
 
     def set_legend_name(self, name):
-        if self.legend_field:
-            if self.is_draw:
-                self.legend_field.removeItem(self.legend.current_name)
-                self.legend.set_custom(name)
-                self.legend_field.addItem(self.plot_obj, self.legend.current_name)
-            else:
-                self.legend.set_custom(name)
-        else:
-            self.legend.set_custom(name)
+        """Изменяет имя в легенде для всех графиков."""
+        self.legend.set_custom(name)
+        for info in self.plot_items.values():
+            # Удаляем старую запись в легенде и добавляем новую
+            info['legend'].removeItem(self.legend.previous_name)  # нужно хранить предыдущее имя
+            info['legend'].addItem(info['item'], self.legend.current_name)
 
     def recalc_stats_param(self):
         filtered_data = self.filtered_y_data[~np.isnan(self.filtered_y_data)]

@@ -18,7 +18,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QPoint, QTimer, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
-                             QSizePolicy, QSplitter, QTabWidget, QWidget, QMenu, QAction, QVBoxLayout, QStackedWidget, QFileDialog)
+                             QSizePolicy, QSplitter, QTabWidget, QWidget, QDialog, QAction, QVBoxLayout, QStackedWidget, QFileDialog)
 
 from graph.filters_win import filtersClass
 from graph.graph_main import manageGraph
@@ -33,7 +33,9 @@ from graph.select_session import SessionSelectControl
 from graph.osc_selector import OscilloscopeSelector
 from graph.waveSelectAdapter import waveSelectAdapter
 from graph.hdf5_io.facade import HDF5Facade
+from graph.select_compare_data import MultiSelectionDialog
 from graph.parameter_alias_manager import ParameterAliasManager
+from graph.compare_sessions_graph import CompareWindowMediator
 import uuid
 import numpy as np
 from functions import open_log_file
@@ -266,6 +268,7 @@ class sessionController():
         self.session_selector.new_data_imported.connect(self.data_imported)
         self.session_selector.session_name_changed.connect(self._session_renamed)
         self.session_selector.session_description_changed.connect(self._session_description_changed)
+        self.session_selector.compare_sessions_requested.connect(self.compare_sessions)
 
         self.graphics_win = GraphWindow(self.controll_sessions_win)
         self.graphics_win.save_action.triggered.connect(self.push_button_save_graph)
@@ -277,6 +280,45 @@ class sessionController():
         self.way_to_save_file = None
 
         self.graph_sessions = {}
+
+    def compare_sessions(self):
+        data = {}
+        for session_id, session in self.graph_sessions.items():
+            data[session_id] = {"name": session.session_name, "values": session.data_manager.get_name_params()}
+        data_test = {
+            101: {"name": "Фрукты", "values": ["яблоко", "банан", "апельсин", "киви"]},
+            102: {"name": "Овощи", "values": ["морковь", "картофель", "помидор", "огурец"]},
+            103: {"name": "Ягоды", "values": ["клубника", "малина", "черника", "ежевика"]},
+            104: {"name": "Фрукты", "values": ["груша", "персик", "слива"]}
+        }
+
+        exclude = ["numbers", "time", "timestamp"]
+
+        is_valid = False
+        dialog = MultiSelectionDialog(data, exclude_list=exclude, min_items=2)
+        if dialog.exec_() == QDialog.Accepted:
+            result = dialog.get_result()
+            is_valid = True
+            print("Выбранные данные после фильтрации (ключи - ID):")
+            for id_key, values in result.items():
+                name = data[id_key]["name"]
+                print(f"{id_key} ({name}): {values}")
+        else:
+            print("Отмена")
+
+        if is_valid:
+            graph_compare = GraphSession(
+                id=125,
+                name="test",
+                alias_manager=self.alias_manager,
+                ses_uuid=125
+            )
+            self.compare_graph = CompareWindowMediator(1,     
+                                "test",
+                                self.alias_manager,
+                                graph_compare,
+                                )
+            
 
     def push_button_open_log(self):
         if self.way_to_save_file is not None:

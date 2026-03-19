@@ -20,6 +20,7 @@ class SessionWidget(QWidget):
     import_oscillograms_requested = pyqtSignal()
     session_renamed = pyqtSignal(str, str)  # session_id, new_name
     session_description_updated = pyqtSignal(str, str)  # session_id, new_description
+    compare_sessions_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -31,10 +32,13 @@ class SessionWidget(QWidget):
         
         self.btn_import_data = QPushButton(QApplication.translate("filters","Импортировать данные"))
         self.btn_import_osc = QPushButton(QApplication.translate("filters","Импортировать осциллограммы"))
+        self.btn_compare_sessions = QPushButton(QApplication.translate("filters","Сравнение сессий"))
         
         button_layout = QHBoxLayout()
         button_layout.addWidget(self.btn_import_data)
         button_layout.addWidget(self.btn_import_osc)
+        button_layout.addStretch()
+        button_layout.addWidget(self.btn_compare_sessions)
         
         self.table = QTableWidget()
         self.table.setColumnCount(3)
@@ -47,12 +51,13 @@ class SessionWidget(QWidget):
         
         self.layout.addWidget(self.table)
         self.layout.addLayout(button_layout)
-        
+
         self.btn_import_data.clicked.connect(self.import_data_requested)
         self.btn_import_osc.clicked.connect(self.import_oscillograms_requested)
         self.table.cellDoubleClicked.connect(self._on_cell_double_click)
         self.table.cellClicked.connect(self._on_cell_clicked)
         self.table.model().dataChanged.connect(self._on_data_changed)
+        self.btn_compare_sessions.clicked.connect(self.compare_sessions_requested)
 
     def _on_data_changed(self, top_left, bottom_right):
         if top_left.column() <= 1 <= bottom_right.column():
@@ -163,6 +168,7 @@ class SessionSelectControl(QObject):
     session_deleted = pyqtSignal(str)
     new_data_imported = pyqtSignal(str, str, dict)
     session_description_changed = pyqtSignal(str, str)
+    compare_sessions_requested = pyqtSignal() 
 
     def __init__(self):
         super().__init__()
@@ -175,6 +181,7 @@ class SessionSelectControl(QObject):
         self.widget.import_oscillograms_requested.connect(self.handle_import_osc)
         self.widget.session_renamed.connect(self._session_renamed)
         self.widget.session_description_updated.connect(self._session_description_updated)
+        self.widget.compare_sessions_requested.connect(self.compare_sessions_requested)
 
     def _session_description_updated(self, session_id, new_description):
         for session in self.sessions:

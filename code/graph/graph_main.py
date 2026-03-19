@@ -195,7 +195,8 @@ class manageGraph(QObject):
         for curve in self.__stack_curve.values():
             if curve.is_curve_selected:
                 curve.filtered_x_data, curve.filtered_y_data, message = filter_func(curve.filtered_x_data, curve.filtered_y_data)
-                curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
+                for curves in curve.plot_items.values():
+                    curves['item'].setData(curve.filtered_x_data, curve.filtered_y_data)
 
                 curve.recalc_stats_param()
 
@@ -221,7 +222,8 @@ class manageGraph(QObject):
         if curve:
             if not curve.data_reset():
                 self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Все фильтры уже сброшены, сбрасывать больше нечего." ) )
-            curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
+            for curves in curve.plot_items.values():
+                curves['item'].setData(curve.filtered_x_data, curve.filtered_y_data)
             curve.recalc_stats_param()
             if hasattr(curve, "tree_item"):
                 name_block = QApplication.translate("GraphWindow","История изменения")
@@ -230,7 +232,8 @@ class manageGraph(QObject):
             for curve in self.__stack_curve.values():
                 if curve.is_curve_selected:
                     curve.data_reset()
-                    curve.plot_obj.setData(curve.filtered_x_data, curve.filtered_y_data)
+                    for curves in curve.plot_items.values():
+                        curves['item'].setData(curve.filtered_x_data, curve.filtered_y_data)
                     curve.recalc_stats_param()
                     if hasattr(curve, "tree_item"):
                         name_block = QApplication.translate("GraphWindow","История изменения")
@@ -295,16 +298,16 @@ class manageGraph(QObject):
 
     def __callback_click_scene(self, focus_objects: list):
         is_click_plot = True
-        for graph in focus_objects:
-            if graph.i_am_click_now:
-                graph.i_am_click_now = False
+        for curve in focus_objects:
+            if curve.i_am_click_now:
+                curve.i_am_click_now = False
                 is_click_plot = False
 
         if is_click_plot:
-            for graph in focus_objects:
-                if graph.is_curve_selected:
-                        graph.is_curve_selected = False
-                        graph.saved_style.apply_to_curve(graph.plot_obj)
+            for curve in focus_objects:
+                if curve.is_curve_selected:
+                        curve.change_style(curve.saved_style)
+                        curve.is_curve_selected = False
 
     def delete_key_press(self):
         curv_for_del = []
@@ -361,14 +364,15 @@ class manageGraph(QObject):
         if curve is None:
             self.create_and_place_curve(data, graph, legend, axis_num)
         elif not curve.is_draw:
-            curve.place_curve_on_graph(graph, legend, axis_num)
+            curve.add_to_graph(graph, legend, axis_num)
         elif is_updated:
             self._refresh_curve_data(curve, data)
 
     def _refresh_curve_data(self, curve, data):
         """Обновление данных существующей кривой"""
         x_data, y_data = self._get_visible_data(data)
-        curve.plot_obj.setData(x_data, y_data)
+        for curves in curve.plot_items.values():
+                curves['item'].setData(x_data, y_data)
         curve.setData(data)
 
     def _get_visible_data(self, data):
@@ -401,37 +405,16 @@ class manageGraph(QObject):
         return self.__stack_curve.get(name)
 
     def create_curve(self, data: relationData) -> linearData:
-            new_data = linearData(data=data, alias_manager = self.alias_manager)
-            buf_color = next(self.color_warm_gen)
+        new_data = linearData(data=data, alias_manager=self.alias_manager)
+        buf_color = next(self.color_warm_gen)
 
-            if new_data.saved_style == None:
-                buf_pen = {
-                            "color": buf_color,
-                            "width": 1,
-                            "antialias": True,  
-                            "symbol": "o",
-                }
-            else:
-                buf_pen = new_data.saved_style
-
-            graph = pg.PlotDataItem(new_data.filtered_x_data, 
-                                            new_data.filtered_y_data, 
-                                            pen  = buf_pen,
-                                            name = new_data.legend,
-                                            symbolPen=buf_pen,
-                                            symbolBrush=buf_color,
-                                            symbol='o',
-                                            )
-            graph.setClipToView(True)
-            graph.setDownsampling(auto=True, method='peak')
-
-            style = LineStyle(color=buf_color, line_style=Qt.SolidLine, line_width=1, 
-                 symbol="o", symbol_size=3, symbol_color=buf_color, fill_color=buf_color)
-
-            new_data.set_plot_obj(plot_obj = graph,
-                                  style      = style)
-            
-            return new_data
+        if new_data.saved_style is None:
+            style = LineStyle(color=buf_color, line_style=Qt.SolidLine, line_width=1,
+                            symbol="o", symbol_size=3, symbol_color=buf_color, fill_color=buf_color)
+            new_data.saved_style = style
+        else:
+            pass
+        return new_data
 
     def create_and_place_curve(self, data: relationData,
                                     graph_field = None,
@@ -450,7 +433,7 @@ class manageGraph(QObject):
         self.main_class.tree_class.add_curve(new_data.tree_item)
         self.__stack_curve[data.root_name] = new_data
             
-        self.__stack_curve[data.root_name].place_curve_on_graph(graph_field  = graph_field,
+        self.__stack_curve[data.root_name].add_to_graph(graph_field  = graph_field,
                                                              legend_field  = legend_field,
                                                              number_axis = number_axis
                                                             )
@@ -460,12 +443,12 @@ class manageGraph(QObject):
         logger.debug(f"add curve {curve_data_obj.curve_name} root name {curve_data_obj.rel_data.root_name}")
         self.__stack_curve[curve_data_obj.rel_data.root_name] = curve_data_obj
         if type_axis == "left":
-            curve_data_obj.place_curve_on_graph(graph_field  = self.graphView,
+            curve_data_obj.add_to_graph(graph_field  = self.graphView,
                                                 legend_field  = self.graphView.legend,
                                                 number_axis = 1
                                                 )
         else:
-            curve_data_obj.place_curve_on_graph(graph_field  = self.graphView.second_graphView,
+            curve_data_obj.add_to_graph(graph_field  = self.graphView.second_graphView,
                                                 legend_field  = self.graphView.legend2,
                                                 number_axis = 2
                                                 )

@@ -65,6 +65,9 @@ class filterWin(QWidget):
         self.check_uniform = QCheckBox("Равномерно")
         self.check_max = QCheckBox("Удалить максимальные")
         self.check_min = QCheckBox("Удалить минимальные")
+        # NEW: чекбоксы для удаления первых и последних процентов по индексу
+        self.check_first = QCheckBox("Удалить первые %")
+        self.check_last  = QCheckBox("Удалить последние %")
 
         self.combo_norm_type = QComboBox()
         self.combo_norm_type.addItem("0-1 (Min-Max)")
@@ -75,6 +78,9 @@ class filterWin(QWidget):
         self.check_uniform.setToolTip(self.get_uniform_thinning_description())
         self.check_max.setToolTip(self.get_max_thinning_description())
         self.check_min.setToolTip(self.get_min_thinning_description())
+        # NEW: тултипы для новых чекбоксов
+        self.check_first.setToolTip(self.get_first_thinning_description())
+        self.check_last.setToolTip(self.get_last_thinning_description())
         self.combo_norm_type.setToolTip(self.get_norm_type_description())
 
         main_layout.addLayout(self.create_layer_filter(
@@ -112,6 +118,9 @@ class filterWin(QWidget):
         thinning_layout.addWidget(self.check_uniform)
         thinning_layout.addWidget(self.check_max)
         thinning_layout.addWidget(self.check_min)
+        # NEW: добавляем новые чекбоксы
+        thinning_layout.addWidget(self.check_first)
+        thinning_layout.addWidget(self.check_last)
         self.check_uniform.setChecked(True)
         
         thinning_layout.addWidget(self.thinning_button)
@@ -149,40 +158,29 @@ class filterWin(QWidget):
     def create_spin_box(self, label, spinbox):
         spin_widget = QWidget()
         lay = QVBoxLayout(spin_widget)
-
         lay.setContentsMargins(0, 0, 0, 0)
-
         spinbox.setMaximumSize(50, 20)
         label_widget = QLabel(label)
-
         lay.addWidget(label_widget)
         lay.addWidget(spinbox)
-
         return spin_widget
 
     def create_layer_filter(self, filter_name, spinboxes, button, description):
         filter_layout = QVBoxLayout()
-
         filter_layout.setContentsMargins(0, 0, 0, 0)
-        
         filter_label = QLabel(filter_name)
         filter_label.setAlignment(Qt.AlignCenter)
         filter_label.setToolTip(description)
         filter_layout.addWidget(filter_label)
-
         font = QFont('Arial', 10, QFont.Bold)
         filter_label.setFont(font)
-
         parameter_layout = QHBoxLayout()
         parameter_layout.setContentsMargins(0, 0, 0, 0)
         parameter_layout.setSpacing(0)
-        
         for spin in spinboxes:
             parameter_layout.addWidget(spin)
-
         filter_layout.addLayout(parameter_layout)
         filter_layout.addWidget(button)
-
         return filter_layout
 
     def get_median_description(self):
@@ -197,6 +195,20 @@ class filterWin(QWidget):
             "• Сохраняет резкие перепады сигнала (ступенчатые изменения)\n"
             "• Устойчив к экстремальным значениям\n\n"
             "Рекомендуется для: удаления одиночных выбросов, обработки сигналов с импульсными помехами"
+        )
+    
+    def get_first_thinning_description(self):
+        return QApplication.translate("filters",
+            "Удаление первых процентов данных – удаляет указанный процент точек с начала массива.\n\n"
+            "Точки удаляются по индексу, независимо от их значений.\n"
+            "Полезно, например, для отбрасывания начальных нестационарных участков сигнала."
+        )
+
+    def get_last_thinning_description(self):
+        return QApplication.translate("filters",
+            "Удаление последних процентов данных – удаляет указанный процент точек с конца массива.\n\n"
+            "Точки удаляются по индексу, независимо от их значений.\n"
+            "Может использоваться для обрезания хвоста записи."
         )
     
     def get_average_description(self):
@@ -357,14 +369,12 @@ class filtersClass():
         self.filt_window.calman_button.clicked.connect( lambda: self.prepare_filters(self.calman_filt) )
         self.filt_window.exp_mean_button.clicked.connect( lambda: self.prepare_filters(self.exp_mean_filt) )
         self.filt_window.thinning_button.clicked.connect( lambda: self.prepare_filters(self.thinning_filt) )
-        self.filt_window.normalize_button.clicked.connect( lambda: self.prepare_filters(self.normalize_filt) )  # Подключение кнопки нормировки
+        self.filt_window.normalize_button.clicked.connect( lambda: self.prepare_filters(self.normalize_filt) )
 
     def set_filter_slot(self, slot_func):
-        '''сюда передаются калбеки сигналов фильтров. При срабатывании какой-либо кнопки фильтра в эти калбеки будет передана ссылка на функцию фильтр'''
         self.filters_callbacks.append(slot_func)
     
     def set_thinning_slot(self, slot_func):
-        '''сюда передаются калбеки сигналов прореживания'''
         self.thinning_callbacks.append(slot_func)
 
     def prepare_filters(self, func):
@@ -375,6 +385,8 @@ class filtersClass():
         self.thinning_uniform = self.filt_window.check_uniform.isChecked()
         self.thinning_max = self.filt_window.check_max.isChecked()
         self.thinning_min = self.filt_window.check_min.isChecked()
+        self.thinning_first = self.filt_window.check_first.isChecked()
+        self.thinning_last = self.filt_window.check_last.isChecked()
         
         self.norm_type = self.filt_window.combo_norm_type.currentText()
 
@@ -559,19 +571,37 @@ class filtersClass():
         
         return x[mask], y[mask]
     
+    def _apply_first_thinning(self, x: np.ndarray, y: np.ndarray, percent: float) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Удаление первых процентов точек (по индексу).
+        percent – процент от текущего размера данных.
+        """
+        if percent <= 0 or percent >= 100:
+            return x.copy(), y.copy()
+        n_points = len(y)
+        n_to_remove = int(n_points * percent / 100)
+        if n_to_remove == 0:
+            return x.copy(), y.copy()
+        # оставляем все, начиная с индекса n_to_remove
+        return x[n_to_remove:], y[n_to_remove:]
+
+    def _apply_last_thinning(self, x: np.ndarray, y: np.ndarray, percent: float) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Удаление последних процентов точек (по индексу).
+        """
+        if percent <= 0 or percent >= 100:
+            return x.copy(), y.copy()
+        n_points = len(y)
+        n_to_remove = int(n_points * percent / 100)
+        if n_to_remove == 0:
+            return x.copy(), y.copy()
+        # оставляем все до последних n_to_remove
+        return x[:-n_to_remove], y[:-n_to_remove]
+
     def thinning_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray]) -> Tuple[np.ndarray, np.ndarray, str]:
         """
-        Применяет прореживание данных.
-        
-        Удаляет заданный процент точек в соответствии с выбранными методами.
-        Приоритет: равномерно -> максимальные -> минимальные.
-        
-        Параметры:
-            x: X-координаты данных
-            y: Y-координаты данных
-            
-        Возвращает:
-            Tuple[np.ndarray, np.ndarray, str]: Отфильтрованные x, y и описание
+        Применяет прореживание данных с учётом выбранных методов.
+        Порядок применения: равномерно -> макс -> мин -> первые -> последние.
         """
         if self.thinning_percent == 0:
             return np.array(x).copy(), np.array(y).copy(), "Без прореживания"
@@ -579,6 +609,7 @@ class filtersClass():
         x_array = np.array(x)
         y_array = np.array(y)
         
+        # Формируем список методов в нужном порядке
         methods = []
         if self.thinning_uniform:
             methods.append('uniform')
@@ -586,6 +617,10 @@ class filtersClass():
             methods.append('max')
         if self.thinning_min:
             methods.append('min')
+        if self.thinning_first:      # NEW
+            methods.append('first')
+        if self.thinning_last:       # NEW
+            methods.append('last')
 
         if not methods:
             return x_array.copy(), y_array.copy(), "Без прореживания"
@@ -604,6 +639,10 @@ class filtersClass():
                 current_x, current_y = self._apply_max_thinning(current_x, current_y, percent_per_method)
             elif method == 'min':
                 current_x, current_y = self._apply_min_thinning(current_x, current_y, percent_per_method)
+            elif method == 'first':      # NEW
+                current_x, current_y = self._apply_first_thinning(current_x, current_y, percent_per_method)
+            elif method == 'last':       # NEW
+                current_x, current_y = self._apply_last_thinning(current_x, current_y, percent_per_method)
         
         desc_methods = []
         if self.thinning_uniform:
@@ -612,6 +651,10 @@ class filtersClass():
             desc_methods.append("макс")
         if self.thinning_min:
             desc_methods.append("мин")
+        if self.thinning_first:          # NEW
+            desc_methods.append("первые")
+        if self.thinning_last:           # NEW
+            desc_methods.append("последние")
         
         description = f"Прореживание {self.thinning_percent}% ({', '.join(desc_methods)})"
         return current_x, current_y, description

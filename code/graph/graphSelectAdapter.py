@@ -71,7 +71,7 @@ class graphSelectAdapter:
 		if paramx == curve_data_obj.rel_data.x_root_name:#пространство нужное	
 			y_name = curve_data_obj.rel_data.y_root_name
 			if curve_data_obj.rel_data.is_gen:
-				curve_data_obj.place_curve_on_graph(graph_field  = curve_data_obj.parent_graph_field,
+				curve_data_obj.add_to_graph(graph_field  = curve_data_obj.parent_graph_field,
                                                     legend_field  = curve_data_obj.legend_field,
                                                     number_axis = curve_data_obj.number_axis
                                                     )
