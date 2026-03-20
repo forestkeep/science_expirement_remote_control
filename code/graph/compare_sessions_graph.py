@@ -8,11 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class CompareWindowMediator:
-    """
-    Класс-посредник для создания и управления окном, содержащим GraphSession.
-    Принимает необходимые аргументы, создаёт главное окно и виджет,
-    предоставляет методы для управления (показать/скрыть/обновить и т.д.).
-    """
+
 
     def __init__(self, session_id, session_name, alias_manager, graph_session, ses_uuid=None, parent=None):
         """
@@ -33,8 +29,6 @@ class CompareWindowMediator:
 
         self._create_window()
 
-        self.window.show()
-
     def _create_window(self):
         """Создаёт главное окно и помещает в него GraphSession."""
         self.window = QMainWindow(self.parent)
@@ -45,6 +39,9 @@ class CompareWindowMediator:
 
         # Подключаем сигнал закрытия GraphSession к обработчику
         self.graph_session.graph_win_close_signal.connect(self._on_graph_session_closed)
+
+    def get_graph_fields(self):
+        return self.graph_session.graph_main.graphView
 
     def _on_graph_session_closed(self, value):
         """

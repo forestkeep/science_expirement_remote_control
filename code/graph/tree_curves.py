@@ -37,17 +37,14 @@ class NameChangeDialog(QDialog):
         
         self.setWindowTitle(QApplication.translate("GraphWindow", "Новое название"))
         layout = QVBoxLayout(self)
-        
-        # Поле ввода
+
         self.line_edit = QLineEdit(current_name)
         layout.addWidget(self.line_edit)
-        
-        # Кнопка сброса
+
         self.reset_button = QPushButton(QApplication.translate("GraphWindow", "Сбросить название"))
         self.reset_button.clicked.connect(self.on_reset_clicked)
         layout.addWidget(self.reset_button)
         
-        # Стандартные кнопки OK/Cancel
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             Qt.Horizontal, self
@@ -58,10 +55,9 @@ class NameChangeDialog(QDialog):
 
     def on_reset_clicked(self):
         self.reset_clicked = True
-        self.accept()  # Закрываем диалог с статусом OK
+        self.accept()
 
     def get_results(self):
-        # Если была нажата кнопка сброса, возвращаем исходное имя
         if self.reset_clicked:
             text = self.original_name
         else:
@@ -121,9 +117,6 @@ class CurveTreeItem(QTreeWidgetItem):
         self.setText(0, QApplication.translate("filters",f"Кривая {name}"))
         self.parameters["name"] = name
         self.curve_data_obj.set_legend_name(name)
-
-    def add_in_compare(self):
-        pass
 
     def add_basic_characteristics(self):
 
@@ -623,7 +616,9 @@ class treeWin(QWidget):
             self.curve_reset.emit(item.curve_data_obj)
 
     def add_in_compare(self, item):
-        item.add_in_compare()
+        compare_controller = self.main_class.get_compare_graph()
+        graph_compare_field = compare_controller.get_graph_fields()
+        item.curve_data_obj.add_to_graph(graph_compare_field, graph_compare_field.legend, 1)
 
     def change_name_curve(self, item):
         dialog = NameChangeDialog(self, item.curve_data_obj.name)

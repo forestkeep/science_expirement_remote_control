@@ -163,8 +163,8 @@ class manageGraph(QObject):
         # Создаем виджет для кнопок
         self.buttons_widget = QWidget()
         self.buttons_widget.setLayout(self.buttons_layout)
-        
-        self.tab1Layout.addWidget( self.select_win )
+        if self.select_win is not None:
+            self.tab1Layout.addWidget( self.select_win )
         self.tab1Layout.addWidget(self.graphView)
         self.tab1Layout.addWidget(self.buttons_widget)
         self.page.setLayout(self.tab1Layout)

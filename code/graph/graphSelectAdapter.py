@@ -90,7 +90,7 @@ class graphSelectAdapter:
 	def curve_created(self, data: relationData, formula:str = None, description:str = None):
 		status = self.graph.create_and_place_curve(data = data)
 		if not status:
-			logger.warning(f"Кривая с именем {data.root_name} уже существует в системе")
+			logger.warning(f"Кривая с именем {data.root_name=} {data.current_name=} уже существует в системе")
 		else:
 			curve = self.graph.get_curve(data.root_name)
 			if curve:
@@ -162,7 +162,4 @@ class graphSelectAdapter:
 					
 		if param_x and (param_y1 or param_y2):
 			data_first_axis, data_second_axis = self.data_manager.get_relation_data(param_x, param_y1, param_y2, self.type_data)
-		else:
-			data_first_axis, data_second_axis = [], []
-
-		self.graph.update_data(data_first_axis, data_second_axis)
+			self.graph.update_data(data_first_axis, data_second_axis)

@@ -435,8 +435,9 @@ class HDF5ToProjectAdapter:
 
 		line_style = self.transform_line_style(plot_model.style)
 
-		new_data.set_main_plot_obj(plot_obj=graph, style=line_style)
-		
+		new_data.preselection_style = line_style
+		new_data.saved_style = line_style
+
 		new_data.is_draw = plot_model.linear_data.is_draw
 		new_data.is_curve_selected = plot_model.linear_data.is_curve_selected
 		

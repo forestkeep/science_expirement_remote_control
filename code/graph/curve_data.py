@@ -152,7 +152,6 @@ class graphData:
         Создаёт новый PlotDataItem на основе текущих данных и стиля.
         Возвращает созданный item.
         """
-        # Данные для отображения (можно использовать self.filtered_x_data и self.filtered_y_data)
         x = self.filtered_x_data
         y = self.filtered_y_data
 
@@ -164,13 +163,13 @@ class graphData:
         plot_item = pg.PlotDataItem(
             x, y,
             pen=pen,
-            name=self.legend.current_name,   # имя для легенды
+            name=self.legend.current_name,
             symbol=symbol,
             symbolPen=symbol_pen,
             symbolBrush=symbol_brush,
         )
         plot_item.setClipToView(True)
-        #plot_item.setDownsampling(auto=True, method='peak')
+        plot_item.setDownsampling(auto=True, method='peak')
         plot_item.setFocus()
         plot_item.setZValue(100)
         plot_item.setCurveClickable(state=True, width=10)
@@ -178,52 +177,26 @@ class graphData:
 
         return plot_item
 
-    def set_main_plot_obj(self, plot_obj, style: LineStyle, highlight = False):
-        self.main_plot_obj = plot_obj
-        self.main_plot_obj.setFocus()
-        self.main_plot_obj.setZValue(100)
-        self.main_plot_obj.setCurveClickable( state = True, width = 10)#установить кривую кликабельной с шириной 10 пикселей
-        self.main_plot_obj.sigClicked.connect(self.on_plot_clicked)
-
-        self.is_curve_selected = False
-
-        self.i_am_click_now = False #флаг поднимается в момент, когда по графику кликают мышкой. Сбрасывается в методе, вызванном по сигналу от клика по всей сцене, 
-        #в этом методе проверяется. был-ли только то кликнут график, и если да, то выделенные графики не сбрасываются
-        self.preselection_style = style #эта пеерменная необходимо для запоминания стиля перед выделением графика через меню дерева
-        self.saved_style = style
-
-        self.tree_item.setForeground(1, QBrush(QColor(self.saved_style.color)))
-
-        if highlight:
-            self.is_curve_selected = True
-            self.clicked_style.apply_to_curve(self.main_plot_obj)
-        else:
-            self.saved_style.apply_to_curve(self.main_plot_obj)
-    
     def add_to_graph(self, graph_field, legend_field, number_axis):
         """
         Добавляет копию кривой на указанный график.
         Если для этого viewbox уже есть копия, ничего не делает (или обновляет).
         """
-        if graph_field in self.plot_items:
-            # можно просто обновить данные/стиль, если уже есть
+        if self.plot_items.get(graph_field) is not None:
+            logger.info(f"Curve {self.name} already exists on graph {graph_field} skiped")
             return
 
-        # Создаём новый PlotDataItem
         new_item = self.create_plot_item(graph_field, legend_field, number_axis)
-        # Добавляем на график и в легенду
         graph_field.addItem(new_item)
         if legend_field.getLabel(new_item) is None:
             legend_field.addItem(new_item, self.legend.current_name)
 
-        # Сохраняем привязку
         self.plot_items[graph_field] = {
             'item': new_item,
             'legend': legend_field,
             'axis': number_axis
         }
 
-        # Если кривая должна быть выделена (is_curve_selected), применяем стиль выделения
         if self.is_curve_selected:
             self.clicked_style.apply_to_curve(new_item)
         else:
@@ -256,7 +229,6 @@ class graphData:
     def on_plot_clicked(self, obj):
         """Обработчик клика по любой копии кривой."""
         self.i_am_click_now = True
-        # Переключаем состояние выделения
         if self.is_curve_selected:
             self.is_curve_selected = False
             self.apply_style_to_all(self.saved_style)
