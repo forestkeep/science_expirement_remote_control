@@ -15,7 +15,7 @@ import random
 
 import logging
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import QPoint, QTimer, pyqtSignal
+from PyQt5.QtCore import QPoint, QTimer, pyqtSignal, Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
                              QSizePolicy, QSplitter, QTabWidget, QWidget, QDialog, QAction, QVBoxLayout, QStackedWidget, QFileDialog)
@@ -72,35 +72,27 @@ class GraphWindow(QMainWindow):
     def initUI(self, session_selector, import_buttons):
         self.__add_menu()
 
-        splitter = QSplitter(0)
-        # Сохраняем splitter и session_selector как атрибуты класса
-        self.splitter = splitter
-        self.session_selector = session_selector
-
-        # Устанавливаем ограничения ширины для селектора сессий
-        self.session_selector.setMinimumWidth(50)   # узкое состояние
-        self.session_selector.setMaximumWidth(500)  # максимальная ширина при раскрытии
-
-        # Устанавливаем начальные размеры: селектор минимальной ширины, стек занимает остальное
-        self.splitter.setSizes([self.width() - 50, 50])
-
-        # Устанавливаем фильтр событий для отслеживания наведения
-        self.session_selector.installEventFilter(self)
-
         self.mainWidget = QWidget(self)
         self.main_lay = QVBoxLayout(self.mainWidget)
-        self.setWindowIcon(QIcon('picture/graph.png')) 
+        self.setWindowIcon(QIcon('picture/graph.png'))
         self.setCentralWidget(self.mainWidget)
 
         self.stack = QStackedWidget(self)
+        self.stack.setMinimumWidth(0)
+        self.stack.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         splitter = QSplitter(0)
-        
         splitter.addWidget(self.stack)
         splitter.addWidget(session_selector)
 
+        self.splitter = splitter
+        self.session_selector = session_selector
 
-        self.main_lay.addWidget(splitter)
+        self.splitter.setSizes([self.width() - 50, 50])
+
+        self.session_selector.installEventFilter(self)
+
+        self.main_lay.addWidget(self.splitter)
         self.main_lay.addWidget(import_buttons)
 
         self.main_lay.setStretch(0, 1)
@@ -135,12 +127,28 @@ class GraphWindow(QMainWindow):
     def eventFilter(self, obj, event):
         if obj == self.session_selector:
             if event.type() == QEvent.Enter:
-                # При наведении расширяем селектор до желаемой ширины (например, 200)
-                self.splitter.setSizes([self.stack.width(), 200])
+                desired_width = self._compute_desired_session_width()
+                desired_width = max(self.session_selector.minimumWidth(),
+                                    min(desired_width, self.session_selector.maximumWidth()))
+                total_width = self.splitter.width()
+                self.splitter.setSizes([total_width - desired_width, desired_width])
             elif event.type() == QEvent.Leave:
-                # При уходе мыши возвращаем узкий размер (50)
-                self.splitter.setSizes([self.stack.width(), 50])
+                min_width = self.session_selector.minimumWidth()
+                min_width = max(self.session_selector.minimumWidth(),50)
+                total_width = self.splitter.width()
+                self.splitter.setSizes([total_width - min_width, min_width])
         return super().eventFilter(obj, event)
+
+    def _compute_desired_session_width(self):
+        if hasattr(self.session_selector, 'table'):
+            table = self.session_selector.table
+            total_height = table.horizontalHeader().height()
+            total_height += table.verticalHeader().height()
+            for row in range(table.rowCount()):
+                total_height += table.rowHeight(row)
+            return total_height
+        else:
+            return self.session_selector.sizeHint().width()
         
 class GraphSession(QWidget):
     graph_win_close_signal = pyqtSignal(int)
@@ -172,7 +180,7 @@ class GraphSession(QWidget):
         self.tabWidget = QTabWidget()
 
         splitter = QSplitter()
-        splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored)
         splitter.setOrientation(1)
 
         if not simple:
