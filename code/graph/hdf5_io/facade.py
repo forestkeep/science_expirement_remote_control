@@ -6,6 +6,7 @@ from .load_strategies.base import BaseLoadStrategy
 from .load_strategies.full_load_strategy import FullLoadStrategy
 from .adapters import ProjectToHDF5Adapter, HDF5ToProjectAdapter
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class HDF5Facade:
                 h5_file.write_session(session, session_id=session_id)
     
     def load_project(self, file_path: str, core_project_class, 
-                    load_strategy: Optional[BaseLoadStrategy] = None):
+                load_strategy: Optional[BaseLoadStrategy] = None):
         """
         Загружает проект из файла в объект ядра.
         
@@ -57,10 +58,16 @@ class HDF5Facade:
         Returns:
             Объект проекта ядра
         """
+        start_total = time.time()
+        logger.info(f"Starting project load from {file_path}")
+
         strategy = load_strategy or self.default_load_strategy
         
         with HDF5File(file_path, 'r', strategy) as h5_file:
+            start_attrs = time.time()
             file_attrs = h5_file.read_file_attributes()
+            attrs_time = time.time() - start_attrs
+            logger.info(f"File attributes loaded in {attrs_time:.3f}s")
 
             project_file = ProjectFile(
                 name=file_attrs.get('name', ''),
@@ -70,17 +77,33 @@ class HDF5Facade:
             )
             logger.info(f"Project {project_file.name} loaded from {file_path}")
 
-            project_file.aliases = h5_file.read_aliases()
 
-            #logger.info(f"Aliases loaded")
-            
+            project_file.aliases = h5_file.read_aliases()
             session_uuids = h5_file.get_session_uuids()
 
+            total_sessions_time = 0.0
+            sessions_count = 0
             for session_id in session_uuids:
                 if session_id == "aliases":
                     continue
+                start_session = time.time()
                 logger.info(f"Start loading session {session_id}")
                 session = h5_file.read_session(session_id)
                 project_file.sessions[session_id] = session
+                session_time = time.time() - start_session
+                total_sessions_time += session_time
+                sessions_count += 1
+                logger.info(f"Session {session_id} loaded in {session_time:.3f}s")
             
-            return self.hdf5_to_core.convert(project_file, core_project_class)
+            if sessions_count > 0:
+                logger.info(f"All {sessions_count} sessions loaded in {total_sessions_time:.3f}s")
+
+            start_convert = time.time()
+            result = self.hdf5_to_core.convert(project_file, core_project_class)
+            convert_time = time.time() - start_convert
+            logger.info(f"Conversion to core object completed in {convert_time:.3f}s")
+
+        total_time = time.time() - start_total
+        logger.info(f"Total project load completed in {total_time:.3f}s")
+        
+        return result

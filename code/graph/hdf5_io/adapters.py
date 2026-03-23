@@ -222,8 +222,9 @@ class HDF5ToProjectAdapter:
 		for session_name, session_model in project.sessions.items():
 			self._convert_session(session_model, core_session)
 
+
 	def _convert_session(self, session: Session, core_session):
-		logger.debug(f"Converting session {session.name}")
+		logger.info(f"Converting session {session.name}")
 		uuid = session.parameters.uuid
 		use_timestamp = True if 'time' in session.data_manager.parameter_data.keys() else False
 		session_id = core_session.start_new_session(session_name = session.name, use_timestamps = use_timestamp, uuid = uuid)
@@ -374,7 +375,7 @@ class HDF5ToProjectAdapter:
 
 	def _convert_data_manager(self, core_manager: graphDataManager, model: DataManager):
 		"""Преобразует данные измерений и осциллограмм"""
-
+		logger.info("Converting data manager")
 		osc_data = list(model.oscillogram_data.values())
 		if osc_data:
 			osc_l3, osc_l2, osc_l1 = self.prepare_data_dict(osc_data)
@@ -392,6 +393,7 @@ class HDF5ToProjectAdapter:
 	def restore_curve_from_model(self, plot_model: Plot, alias_manager) -> linearData:
 		"""Восстанавливает кривую из модели Plot"""
 
+		logger.info("Restoring curve from model")
 		x_meas = measTimeData(
 			device=plot_model.linear_data.device,
 			ch=plot_model.linear_data.channel,

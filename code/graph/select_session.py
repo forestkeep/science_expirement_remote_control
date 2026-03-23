@@ -84,6 +84,17 @@ class SessionWidget(QWidget):
             self.table.setItem(row, 1, QTableWidgetItem(session['name']))
             self.table.setItem(row, 2, QTableWidgetItem(session['status']))
 
+    def update_session(self, session):
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 0)
+            if item and item.text() == session['id']:
+                self.table.setItem(row, 1, QTableWidgetItem(session['name']))
+                self.table.setItem(row, 2, QTableWidgetItem(session['status']))
+                # Если нужно обновить и внутренний список сессий:
+                if 0 <= row < len(self.sessions_data):
+                    self.sessions_data[row] = session
+                break
+
     def show_context_menu(self, pos: QPoint):
         menu = QMenu(self)
         
@@ -114,6 +125,13 @@ class SessionWidget(QWidget):
         if 0 <= row < len(self.sessions_data):
             session_id = self.sessions_data[row]['id']
             self.session_deleted.emit(session_id)
+
+    def add_session_view(self, session):
+        self.sessions_data.append(session)
+        self.table.insertRow(self.table.rowCount())
+        self.table.setItem(self.table.rowCount() - 1, 0, QTableWidgetItem(session['id']))
+        self.table.setItem(self.table.rowCount() - 1, 1, QTableWidgetItem(session['name']))
+        self.table.setItem(self.table.rowCount() - 1, 2, QTableWidgetItem(session['status']))
 
     def _add_description(self, row):
         """Открывает модальное окно для редактирования описания сессии"""
@@ -187,10 +205,11 @@ class SessionSelectControl(QObject):
                 break
     
     def update_session_description(self, session_id, new_description):
+        logger.info(f"update_session_description {session_id=} {new_description}")
         for session in self.sessions:
             if session['id'] == session_id:
                 session['description'] = new_description
-                self.widget.update_sessions(self.sessions)
+                self.widget.update_session(session)
                 break
 
     def _session_renamed(self, session_id, new_name):
@@ -233,7 +252,8 @@ class SessionSelectControl(QObject):
     def add_session(self, session_data: dict):
         logger.info(f"Adding session {session_data}")
         self.sessions.append(session_data)
-        self.update_view()
+        self.widget.add_session_view(session_data)
+        #self.update_view()
 
     def handle_session_deleted(self, session_id):
         self.session_deleted.emit(session_id)

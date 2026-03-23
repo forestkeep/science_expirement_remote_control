@@ -22,6 +22,7 @@ class ParameterAliasManager(QObject):
         logger.debug(f"ParameterAliasManager init {self}")
     
     def set_alias(self, original_name: str, alias: str) -> Tuple[bool, str]:
+        logger.info(f"set_alias {original_name} {alias}")
         """Устанавливает псевдоним для параметра"""
         if not self._is_valid_alias(alias):
             return False, "Имя может содержать только буквы, цифры и пробелы"
