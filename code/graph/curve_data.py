@@ -11,7 +11,7 @@
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtGui import QBrush, QColor
+from PyQt5.QtWidgets import QApplication
 import logging
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 from graph.tree_curves import CurveTreeItem
 from graph.dataManager import relationData
+from graph.filters_instance_class import FilterCommand
+from datetime import datetime
 
 class legendName():
     def __init__(self, name) -> None:
@@ -145,6 +147,8 @@ class graphData:
         self.preselection_style = None
         self.higlighted_flag = False
 
+        self.filters_history = []
+
         self.clicked_style = LineStyle(color=(180, 150, 150), line_style=QtCore.Qt.DashLine, line_width=4, symbol="+", symbol_size=10, symbol_color=(150, 150, 150), fill_color='w')
 
     def create_plot_item(self, viewbox=None, legend_field=None, number_axis=None):
@@ -240,9 +244,7 @@ class graphData:
         if self.higlighted_flag:
             return
         self.higlighted_flag = True
-        # Запоминаем текущий стиль
         self.preselection_style = self.clicked_style if self.is_curve_selected else self.saved_style
-        # Применяем стиль подсветки ко всем копиям
         for info in self.plot_items.values():
             info['item'].setPen(pg.mkPen(color=(150,150,150,90), width=5))
             info['item'].setSymbolBrush(color=(150,150,150,90))
@@ -289,6 +291,28 @@ class graphData:
         self.rel_data.update_names(old_x, old_y)
         self.raw_data_x = np.array(data.x_result)
         self.raw_data_y = np.array(data.y_result)
+
+    def set_filter(self, filter_command: FilterCommand):
+        self.filtered_x_data, self.filtered_y_data, message = filter_command.apply(self.filtered_x_data, self.filtered_y_data)
+        for curves in self.plot_items.values():
+            curves['item'].setData(self.filtered_x_data, self.filtered_y_data)
+
+        self.recalc_stats_param()
+
+        self.filters_history.append(filter_command)
+
+        self.tree_item.update_history_block(data={str(datetime.now().strftime("%H:%M:%S")): message,},
+                                            filter_command = filter_command,)
+    def delete_filter(self, filter_command: FilterCommand):
+        for filters in self.filters_history:
+            if filters is filter_command:
+                self.filters_history.remove(filter_command)
+                break
+
+        self.data_reset()
+        for filters in self.filters_history:
+            self.set_filter(filters)
+
 
 class linearData(graphData):
     def __init__(self, data: relationData, alias_manager) -> None:

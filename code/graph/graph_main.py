@@ -10,7 +10,6 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import time
-from datetime import datetime
 
 import pyqtgraph as pg
 import logging
@@ -23,6 +22,7 @@ from graph.colors import GColors
 from graph.curve_data import linearData, LineStyle
 from graph.dataManager import relationData
 from graph.customPlotWidget import PatchedPlotWidget
+from graph.filters_instance_class import FilterCommand
 
 logger = logging.getLogger(__name__)
 
@@ -147,20 +147,16 @@ class manageGraph(QObject):
 
         self.axislabel_line_edit.setParent(self.graphView)
 
-            # Создаем слой с кнопками
         self.buttons_layout = QHBoxLayout()
         
-        # Кнопка для добавления вертикальной линии
         self.add_vertical_line_btn = QPushButton("Добавить вертикальную линию")
         self.add_vertical_line_btn.clicked.connect(self.graphView.add_vertical_line)
         self.buttons_layout.addWidget(self.add_vertical_line_btn)
         
-        # Кнопка для добавления горизонтальной линии
         self.add_horizontal_line_btn = QPushButton("Добавить горизонтальную линию")
         self.add_horizontal_line_btn.clicked.connect(self.graphView.add_horizontal_line)
         self.buttons_layout.addWidget(self.add_horizontal_line_btn)
         
-        # Создаем виджет для кнопок
         self.buttons_widget = QWidget()
         self.buttons_widget.setLayout(self.buttons_layout)
         if self.select_win is not None:
@@ -191,28 +187,10 @@ class manageGraph(QObject):
     def get_list_curves(self):
         return list(self.__stack_curve.values())
 
-    def set_filters(self, filter_func):
+    def set_filters(self, filter_comand: FilterCommand):
         for curve in self.__stack_curve.values():
             if curve.is_curve_selected:
-                curve.filtered_x_data, curve.filtered_y_data, message = filter_func(curve.filtered_x_data, curve.filtered_y_data)
-                for curves in curve.plot_items.values():
-                    curves['item'].setData(curve.filtered_x_data, curve.filtered_y_data)
-
-                curve.recalc_stats_param()
-
-                name_block = QApplication.translate("GraphWindow","История изменения")
-
-                status = curve.tree_item.update_block_data( 
-                        block_name   = name_block,
-                        data         = {str(datetime.now().strftime("%H:%M:%S")): message,},
-                        is_add_force = True
-                                                    )
-
-                if not status:
-                    curve.tree_item.add_new_block(
-                    block_name   = name_block,
-                    data         = {str(datetime.now().strftime("%H:%M:%S")): message,},
-                                                 )
+                curve.set_filter(filter_comand)
 
     def reset_filters(self, curve = None):
         if self.main_class.data_manager.is_session_running():

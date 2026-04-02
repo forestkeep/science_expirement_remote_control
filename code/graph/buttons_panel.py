@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import (QWidget, QTableWidget, QTableWidgetItem, QHeaderVie
                              QHBoxLayout, QVBoxLayout, QPushButton, QMenu, QAbstractItemView,
                              QAction, QFileDialog, QApplication, QDialog, QTextEdit, QDialogButtonBox)
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QPoint
-
+import os
 import logging
 
 import pandas as pd
@@ -28,6 +28,8 @@ class ButtonsWidget(QWidget):
         button_layout.addStretch()
         button_layout.addWidget(self.btn_compare_sessions)
 
+
+
 class ButtonsControl(QObject):
 
     new_data_imported = pyqtSignal(str, str, dict)
@@ -51,7 +53,7 @@ class ButtonsControl(QObject):
             filter="Книга Excel (*.xlsx)",
             options=options,
         )
-        
+
         if fileName and ans == "Книга Excel (*.xlsx)":
             try:
                 xl = pd.ExcelFile(fileName, engine='openpyxl')
@@ -63,10 +65,15 @@ class ButtonsControl(QObject):
             sheet_dialog = SheetSelectionDialog(sheet_names)
             if sheet_dialog.exec_() != QDialog.Accepted:
                 return
+
             selected_sheets = sheet_dialog.get_selected_sheets()
             if not selected_sheets:
                 logger.warning("No sheets selected. Import aborted")
                 return
+
+            short_name_flag = sheet_dialog.get_short_name()
+            all_data_flag = sheet_dialog.get_import_all_data()   # <-- новый флаг
+            base_name = os.path.basename(fileName)
 
             for sheet in selected_sheets:
                 try:
@@ -80,36 +87,41 @@ class ButtonsControl(QObject):
                     logger.warning(f"Sheet '{sheet}' has no data. Skipping.")
                     continue
 
-                df_col_type = type(df.columns[0])
-                column_names = sorted([str(col) for col in df.columns])
+                if all_data_flag:
+                    selected_columns = list(df.columns)
+                    logger.info(f"Auto-importing all {len(selected_columns)} columns from sheet '{sheet}'")
+                else:
+                    df_col_type = type(df.columns[0])
+                    column_names = sorted([str(col) for col in df.columns])
 
-                window = Check_data_import_win(column_names)
-                window.setWindowTitle(
-                    QApplication.translate("GraphWindow", f"Импорт данных с листа '{sheet}'")
-                )
-                ans = window.exec_()
-                if ans != QDialog.Accepted:
-                    logger.info(f"User cancelled column selection for sheet '{sheet}'. Skipping.")
-                    continue
+                    window = Check_data_import_win(column_names)
+                    window.setWindowTitle(
+                        QApplication.translate("GraphWindow", f"Импорт данных с листа '{sheet}'")
+                    )
+                    ans = window.exec_()
+                    if ans != QDialog.Accepted:
+                        logger.info(f"User cancelled column selection for sheet '{sheet}'. Skipping.")
+                        continue
 
-                selected_columns = [df_col_type(cb.text()) for cb in window.checkboxes if cb.isChecked()]
-                if not selected_columns:
-                    logger.warning(f"No columns selected for sheet '{sheet}'. Skipping.")
-                    continue
+                    selected_columns = [df_col_type(cb.text()) for cb in window.checkboxes if cb.isChecked()]
+                    if not selected_columns:
+                        logger.warning(f"No columns selected for sheet '{sheet}'. Skipping.")
+                        continue
 
                 result = {}
                 errors_col = []
+
                 for col in selected_columns:
                     try:
-                        df[col] = pd.to_numeric(df[col], errors='raise')
-                    except ValueError:
+                        pd.to_numeric(df[col], errors='raise')
+                    except (ValueError, TypeError):
                         errors_col.append(str(col))
 
                 if errors_col:
                     res = ', '.join(errors_col)
                     text = QApplication.translate(
                         "GraphWindow",
-                        "В столбцах {res} обнаружены данные, которые не получается преобразовать в числа.\nПри построение эти точки будут пропущены."
+                        "В столбцах {res} обнаружены данные, которые не получается преобразовать в числа.\nПри построении эти точки будут пропущены."
                     ).format(res=res)
                     message = messageDialog(
                         title=QApplication.translate("GraphWindow", "Сообщение"),
@@ -119,12 +131,17 @@ class ButtonsControl(QObject):
 
                 for col in selected_columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
-                    col_ = str(col).replace('(', '[').replace(')', ']')
-                    buf = np.array(df[col].tolist())
-                    result[col_] = [buf, np.array(range(len(buf)))]
+                    col_name = str(col).replace('(', '[').replace(')', ']')
+                    values = np.array(df[col].tolist())
+                    result[col_name] = [values, np.array(range(len(values)))]
 
                 id = self.session_selector.get_free_id()
-                display_name = f"{fileName} [Лист: {sheet}]"
+
+                if short_name_flag:
+                    display_name = sheet
+                else:
+                    display_name = f"{base_name} {sheet}"
+
                 logger.info(f"Data imported emitted {id} for sheet '{sheet}'")
                 self.new_data_imported.emit(display_name, id, result)
 

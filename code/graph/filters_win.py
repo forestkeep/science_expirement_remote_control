@@ -18,6 +18,10 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QApplication, QDoubleSpinBox, QHBoxLayout, QLabel,
                              QPushButton, QSpinBox, QVBoxLayout, QWidget,
                              QCheckBox, QGroupBox, QToolTip, QComboBox)
+from graph.filters_instance_class import FilterCommand
+import logging
+
+logger = logging.getLogger(__name__)
 
 class filterWin(QWidget):
     def __init__(self):
@@ -364,12 +368,12 @@ class filtersClass():
         self.thinning_callbacks = []
         self.filt_window = filterWin()
 
-        self.filt_window.median_button.clicked.connect( lambda: self.prepare_filters(self.med_filt) )
-        self.filt_window.average_button.clicked.connect( lambda: self.prepare_filters(self.average_filt) )      
+        self.filt_window.median_button.clicked.connect( lambda: self.prepare_filters('median') )
+        self.filt_window.average_button.clicked.connect( lambda: self.prepare_filters('average') )      
         self.filt_window.calman_button.clicked.connect( lambda: self.prepare_filters(self.calman_filt) )
-        self.filt_window.exp_mean_button.clicked.connect( lambda: self.prepare_filters(self.exp_mean_filt) )
-        self.filt_window.thinning_button.clicked.connect( lambda: self.prepare_filters(self.thinning_filt) )
-        self.filt_window.normalize_button.clicked.connect( lambda: self.prepare_filters(self.normalize_filt) )
+        self.filt_window.exp_mean_button.clicked.connect( lambda: self.prepare_filters('exp_mean') )
+        self.filt_window.thinning_button.clicked.connect( lambda: self.prepare_filters('thinning') )
+        self.filt_window.normalize_button.clicked.connect( lambda: self.prepare_filters('normalize') )
 
     def set_filter_slot(self, slot_func):
         self.filters_callbacks.append(slot_func)
@@ -377,27 +381,36 @@ class filtersClass():
     def set_thinning_slot(self, slot_func):
         self.thinning_callbacks.append(slot_func)
 
-    def prepare_filters(self, func):
-        self.range_avg = int(self.filt_window.spin_average.value())
-        self.range_median = int(self.filt_window.spin_median.value())
-        self.alpha_exp = float(self.filt_window.spin_exp_mean.value())
-        self.thinning_percent = int(self.filt_window.spin_thinning.value())
-        self.thinning_uniform = self.filt_window.check_uniform.isChecked()
-        self.thinning_max = self.filt_window.check_max.isChecked()
-        self.thinning_min = self.filt_window.check_min.isChecked()
-        self.thinning_first = self.filt_window.check_first.isChecked()
-        self.thinning_last = self.filt_window.check_last.isChecked()
-        
-        self.norm_type = self.filt_window.combo_norm_type.currentText()
+    def prepare_filters(self, filter_type):
+        params = {}
+        if filter_type == 'median':
+            params['window'] = int(self.filt_window.spin_median.value())
+        elif filter_type == 'average':
+            params['window'] = int(self.filt_window.spin_average.value())
+        elif filter_type == 'exp_mean':
+            params['alpha'] = float(self.filt_window.spin_exp_mean.value())
+        elif filter_type == 'thinning':
+            params['percent'] = int(self.filt_window.spin_thinning.value())
+            params['uniform'] = self.filt_window.check_uniform.isChecked()
+            params['max'] = self.filt_window.check_max.isChecked()
+            params['min'] = self.filt_window.check_min.isChecked()
+            params['first'] = self.filt_window.check_first.isChecked()
+            params['last'] = self.filt_window.check_last.isChecked()
+        elif filter_type == 'normalize':
+            params['norm_type'] = self.filt_window.combo_norm_type.currentText()
+        else:
+            logger.error(f"Unknown filter type: {filter_type}")
+
+        filter_command = FilterCommand(filter_type=filter_type, params=params, filters_instance=self)
 
         for callback in self.filters_callbacks:
-            callback(func)
+            callback(filter_command)
     
-    def med_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray]) -> Tuple[np.ndarray, np.ndarray, str]:
+    def med_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray], window: int) -> Tuple[np.ndarray, np.ndarray, str]:
         """
         Применяет медианный фильтр к входным данным.
         
-        Функция создает скользящее окно размера `self.range_median` вокруг каждого элемента 
+        Функция создает скользящее окно размера `window` вокруг каждого элемента 
         входных данных `y` и вычисляет медианное значение в пределах окна. 
         Для обработки границ используется заполнение граничными значениями исходных данных.
         
@@ -411,8 +424,9 @@ class filtersClass():
             - Y-координаты отфильтрованных данных
             - Описание примененного фильтра
         """
-        k2 = (self.range_median - 1) // 2
-        data_y = np.zeros ((len (y), self.range_median), dtype=y.dtype)
+
+        k2 = (window - 1) // 2
+        data_y = np.zeros ((len (y), window), dtype=y.dtype)
         data_y[:,k2] = y
         for i in range (k2):
             j = k2 - i
@@ -423,9 +437,9 @@ class filtersClass():
 
         data_y_ret = np.median(data_y, axis=1)
         x_data = x[-len(data_y_ret):]
-        return x_data, data_y_ret, QApplication.translate("GraphWindow","Медиана({})").format(self.range_median)
+        return x_data, data_y_ret, QApplication.translate("GraphWindow","Медиана({})").format(window)
 
-    def exp_mean_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray]) -> Tuple[np.ndarray, np.ndarray, str]:
+    def exp_mean_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray], alpha: float) -> Tuple[np.ndarray, np.ndarray, str]:
         """
         Применяет экспоненциальное скользящее среднее к входным данным.
         
@@ -445,19 +459,19 @@ class filtersClass():
         """
         data_y = y
         data_y = pd.Series(data_y)
-        ema = data_y.ewm(alpha=self.alpha_exp, adjust=False).mean()
+        ema = data_y.ewm(alpha=alpha, adjust=False).mean()
 
         ema_array = ema.to_numpy()
 
 
         x_data = x[-len(ema_array):]
 
-        return x_data, ema_array, QApplication.translate("GraphWindow", "экспоненциальное среднее(alpha = {})").format( round(self.alpha_exp, 2) )
+        return x_data, ema_array, QApplication.translate("GraphWindow", "экспоненциальное среднее(alpha = {})").format( round(alpha, 2) )
 
     def calman_filt(self, data):
         return data
 
-    def average_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray]) -> Tuple[np.ndarray, np.ndarray, str]:
+    def average_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray], window: int) -> Tuple[np.ndarray, np.ndarray, str]:
         """
         Применяет фильтр скользящего среднего к входным данным.
         
@@ -474,11 +488,11 @@ class filtersClass():
             - Y-координаты отфильтрованных данных
             - Описание примененного фильтра
         """
-        N = self.range_avg
+        N = window
         y_data = np.convolve(y, np.ones(N)/N, 'valid')
         x_data = x[-len(y_data):]
 
-        return x_data, y_data, QApplication.translate("GraphWindow","Скользящее среднее({})").format(N) #same #full #valid
+        return x_data, y_data, QApplication.translate("GraphWindow","Скользящее среднее({})").format(window)
     
     def _apply_uniform_thinning(self, x: np.ndarray, y: np.ndarray, percent: float) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -598,34 +612,40 @@ class filtersClass():
         # оставляем все до последних n_to_remove
         return x[:-n_to_remove], y[:-n_to_remove]
 
-    def thinning_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray]) -> Tuple[np.ndarray, np.ndarray, str]:
+    def thinning_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray], percent: float,
+                uniform: bool, max: bool, min: bool, first: bool, last: bool) -> Tuple[np.ndarray, np.ndarray, str]:
         """
         Применяет прореживание данных с учётом выбранных методов.
         Порядок применения: равномерно -> макс -> мин -> первые -> последние.
         """
-        if self.thinning_percent == 0:
+        if percent == 0:
             return np.array(x).copy(), np.array(y).copy(), "Без прореживания"
         
         x_array = np.array(x)
         y_array = np.array(y)
         
-        # Формируем список методов в нужном порядке
         methods = []
-        if self.thinning_uniform:
+        desc_methods = []
+        if uniform:
             methods.append('uniform')
-        if self.thinning_max:
+            desc_methods.append('равномерное')
+        if max:
             methods.append('max')
-        if self.thinning_min:
+            desc_methods.append('максимальное')
+        if min:
             methods.append('min')
-        if self.thinning_first:      # NEW
+            desc_methods.append('минимальное')
+        if first:
             methods.append('first')
-        if self.thinning_last:       # NEW
+            desc_methods.append('первые')
+        if last:
             methods.append('last')
+            desc_methods.append('последние')
 
         if not methods:
             return x_array.copy(), y_array.copy(), "Без прореживания"
         
-        percent_per_method = self.thinning_percent / len(methods)
+        percent_per_method = percent / len(methods)
         
         current_x, current_y = x_array.copy(), y_array.copy()
         
@@ -639,27 +659,15 @@ class filtersClass():
                 current_x, current_y = self._apply_max_thinning(current_x, current_y, percent_per_method)
             elif method == 'min':
                 current_x, current_y = self._apply_min_thinning(current_x, current_y, percent_per_method)
-            elif method == 'first':      # NEW
+            elif method == 'first':
                 current_x, current_y = self._apply_first_thinning(current_x, current_y, percent_per_method)
-            elif method == 'last':       # NEW
+            elif method == 'last':
                 current_x, current_y = self._apply_last_thinning(current_x, current_y, percent_per_method)
         
-        desc_methods = []
-        if self.thinning_uniform:
-            desc_methods.append("равномерно")
-        if self.thinning_max:
-            desc_methods.append("макс")
-        if self.thinning_min:
-            desc_methods.append("мин")
-        if self.thinning_first:          # NEW
-            desc_methods.append("первые")
-        if self.thinning_last:           # NEW
-            desc_methods.append("последние")
-        
-        description = f"Прореживание {self.thinning_percent}% ({', '.join(desc_methods)})"
+        description = f"Прореживание {percent}% ({', '.join(desc_methods)})"
         return current_x, current_y, description
     
-    def normalize_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray]) -> Tuple[np.ndarray, np.ndarray, str]:
+    def normalize_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray], norm_type: str) -> Tuple[np.ndarray, np.ndarray, str]:
         """
         Применяет нормировку данных к выбранному диапазону.
         
@@ -682,7 +690,6 @@ class filtersClass():
         if len(y_array) == 0:
             return x_array.copy(), y_array.copy(), "Нормировка: нет данных"
         
-        norm_type = self.norm_type
         
         if norm_type == "0-1 (Min-Max)":
             y_min = np.min(y_array)

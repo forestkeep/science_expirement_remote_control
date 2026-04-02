@@ -13,7 +13,8 @@ import sys
 
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                              QHBoxLayout, QLabel, QPushButton, QVBoxLayout,
-                             QScrollArea, QWidget, QSizePolicy, QComboBox, QDialogButtonBox)
+                             QScrollArea, QWidget, QSizePolicy, QComboBox, QDialogButtonBox, QListWidget, QListWidgetItem)
+from PyQt5.QtCore import pyqtSignal, Qt
 
 class Check_data_import_win(QDialog):
     def __init__(self, strings, callback=None, is_osc=False):
@@ -90,47 +91,65 @@ class Check_data_import_win(QDialog):
 class SheetSelectionDialog(QDialog):
     def __init__(self, sheet_names, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(QApplication.translate("GraphWindow", "Выберите листы для импорта"))
-        layout = QVBoxLayout()
-        
-        label = QLabel(QApplication.translate("GraphWindow", "Выберите листы для импорта:"))
-        layout.addWidget(label)
+        self.setWindowTitle("Выбор листов")
+        self.setModal(True)
 
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        scroll_content = QWidget()
-        self.scroll_layout = QVBoxLayout(scroll_content)
-        
-        self.checkboxes = []
-        for sheet in sheet_names:
-            cb = QCheckBox(sheet)
-            self.scroll_layout.addWidget(cb)
-            self.checkboxes.append(cb)
-        
-        self.scroll_area.setWidget(scroll_content)
-        layout.addWidget(self.scroll_area)
+        layout = QVBoxLayout(self)
 
-        self.all_checkbox = QCheckBox(QApplication.translate("GraphWindow", "Выбрать все"))
-        self.all_checkbox.clicked.connect(self.on_all_checked)
-        layout.addWidget(self.all_checkbox)
+        layout.addWidget(QLabel("Выберите листы для импорта:"))
 
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
+        self.list_widget = QListWidget()
+        for name in sheet_names:
+            item = QListWidgetItem(name)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(Qt.Checked)
+            self.list_widget.addItem(item)
+        layout.addWidget(self.list_widget)
 
-        self.setLayout(layout)
+        self.import_all_checkbox = QCheckBox("Импортировать все листы")
+        self.import_all_checkbox.stateChanged.connect(self.toggle_all_sheets)
+        layout.addWidget(self.import_all_checkbox)
 
-    def on_all_checked(self, checked):
-        for cb in self.checkboxes:
-            cb.setChecked(checked)
+        self.short_name_checkbox = QCheckBox("Короткое имя (только имя листа)")
+        layout.addWidget(self.short_name_checkbox)
+
+        self.import_all_data_checkbox = QCheckBox("Импортировать все данные (без выбора столбцов)")
+        layout.addWidget(self.import_all_data_checkbox)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+
+    def toggle_all_sheets(self, state):
+        enabled = (state != Qt.Checked)
+        self.list_widget.setEnabled(enabled)
+        if state == Qt.Checked:
+            for i in range(self.list_widget.count()):
+                item = self.list_widget.item(i)
+                item.setCheckState(Qt.Checked)
 
     def get_selected_sheets(self):
-        return [cb.text() for cb in self.checkboxes if cb.isChecked()]
+        if self.import_all_checkbox.isChecked():
+            return [self.list_widget.item(i).text() for i in range(self.list_widget.count())]
+        else:
+            return [self.list_widget.item(i).text()
+                    for i in range(self.list_widget.count())
+                    if self.list_widget.item(i).checkState() == Qt.Checked]
+
+    def get_import_all_sheets(self):
+        return self.import_all_checkbox.isChecked()
+
+    def get_short_name(self):
+        return self.short_name_checkbox.isChecked()
+
+    def get_import_all_data(self):
+        """Возвращает True, если нужно импортировать все столбцы без выбора"""
+        return self.import_all_data_checkbox.isChecked()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    sample_strings = ["sec", "Ch 2", "CH 3"]  # Пример строк
+    sample_strings = ["sec", "Ch 2", "CH 3"]
     window = Check_data_import_win(sample_strings, None, True)
     window.show()
     sys.exit(app.exec_())

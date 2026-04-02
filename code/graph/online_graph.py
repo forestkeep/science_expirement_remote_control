@@ -41,6 +41,7 @@ from graph.compare_sessions_graph import CompareWindowMediator
 import uuid
 import numpy as np
 from functions import open_log_file
+from graph.filters_instance_class import FilterCommand
 
 try:
     from parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
@@ -263,7 +264,7 @@ class GraphSession(QWidget):
         else:
             self.notification.show_with_animation(timeout=timeout)
 
-    def filters_callback(self, filter_func):
+    def filters_callback(self, filter_comand: FilterCommand):
 
         is_apply = True
         if self.data_manager is not None:
@@ -273,9 +274,9 @@ class GraphSession(QWidget):
         if is_apply:
             active_tab_index = self.tabWidget.currentIndex()
             if active_tab_index == 0:
-                self.graph_main.set_filters(filter_func)
+                self.graph_main.set_filters(filter_comand)
             elif active_tab_index == 1:
-                self.graph_wave.set_filters(filter_func)
+                self.graph_wave.set_filters(filter_comand)
 
             self.show_tooltip( QApplication.translate("GraphWindow","Фильтры применены к выделенным графикам. \n Для сброса фильтров выделите графики и нажмите кнопку esc."), timeout=5000)
         else:

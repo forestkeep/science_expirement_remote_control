@@ -66,6 +66,10 @@ class NameChangeDialog(QDialog):
         ok = self.result() == QDialog.Accepted
         return text, ok, self.reset_clicked
 
+class HistoryItem(QTreeWidgetItem):
+    def __init__(self, text: str, filter_command, parent=None):
+        super().__init__(parent, [text])
+        self.filter_command = filter_command
 
 class CurveTreeItem(QTreeWidgetItem):
     def __init__(self, curve_data_obj=None, parent=None, name=None):
@@ -174,6 +178,18 @@ class CurveTreeItem(QTreeWidgetItem):
 
         for key, value in data.items():
             block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
+
+    def update_history_block(self, data, filter_command = None):
+        block_name = QApplication.translate("GraphWindow","История изменения")
+        block_item = self.findChild(block_name)
+
+        if block_item is None:
+            block_item = QTreeWidgetItem(self, [block_name])
+            block_item.setFont(0, self.font)
+            block_item.setExpanded(True)
+
+        for key, value in data.items():
+            block_item.addChild(HistoryItem(text = f"{key}: {value}", filter_command = filter_command))
 
     def delete_block(self, block_name) -> bool:
         block_item = self.findChild(block_name)
@@ -402,9 +418,7 @@ class treeWin(QWidget):
         self.tree_widget = customTreeWidget(self)
         self.tree_widget.setColumnCount(3)
         self.tree_widget.setSortingEnabled(False)
-        self.tree_widget.setHeaderLabels([QApplication.translate("GraphWindow","Кривые"),
-                                          QApplication.translate("GraphWindow","Цвет"),
-                                          QApplication.translate("GraphWindow", "Статус")])
+        self.tree_widget.setHeaderLabels([QApplication.translate("GraphWindow","Кривые")])
 
         left_layout.addWidget(self.tree_widget)
 
@@ -418,6 +432,31 @@ class treeWin(QWidget):
 
         self.tree_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree_widget.customContextMenuRequested.connect(self.show_context_menu)
+        self.tree_widget.itemDoubleClicked.connect(self.on_history_item_double_clicked)
+
+    def on_history_item_double_clicked(self, item, column):
+        # Игнорируем клик не по первому столбцу (по желанию)
+        if column != 0:
+            return
+
+        # Получаем родительский элемент (блок "История изменения")
+        parent = item.parent()
+        if parent is None:
+            return
+
+        # Проверяем, что родитель — это блок истории
+        history_block_title = QApplication.translate("GraphWindow", "История изменения")
+        if parent.text(0) != history_block_title:
+            return
+
+        while True:
+            root_item = parent
+            parent = parent.parent()
+            if parent  is None:
+                break
+
+        if root_item:
+            root_item.curve_data_obj.delete_filter(item.filter_command)
 
     def on_item_entered(self, item):
         root_item = None
@@ -563,8 +602,12 @@ class treeWin(QWidget):
         curve_item.update_parameters({"id": "CUR" + str(len(self.curves) + 1)})
         self.curves.append(curve_item)
 
+        #self.button = QPushButton("Нажми меня")
+        #self.tree_widget.setItemWidget(curve_item, 1, self.button)
+
     def show_context_menu(self, position):
         item = self.tree_widget.itemAt(position)
+
         parent = item
         while True:
             root_item = parent
