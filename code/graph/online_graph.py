@@ -151,6 +151,10 @@ class GraphWindow(QMainWindow):
         else:
             return self.session_selector.sizeHint().width()
         
+    def closeEvent(self, event):
+        self.graph_win_close_signal.emit(1)
+        event.accept()
+        
 class GraphSession(QWidget):
     graph_win_close_signal = pyqtSignal(int)
 
@@ -343,6 +347,7 @@ class sessionController():
         self.buttons_controller.compare_sessions_requested.connect(self.compare_sessions)
 
         self.graphics_win = GraphWindow(self.controll_sessions_win, self.buttons_controller.widget)
+        self.graphics_win.graph_win_close_signal.connect(self.close_graph_window)
         self.graphics_win.save_action.triggered.connect(self.push_button_save_graph)
         self.graphics_win.load_action.triggered.connect(self.push_button_open_graph)
         self.graphics_win.log_path_open.triggered.connect(open_log_file)
@@ -354,6 +359,10 @@ class sessionController():
         self.graph_sessions = {}
         self.compare_graph = None
 
+    def close_graph_window(self):
+        if self.compare_graph is not None:
+            self.compare_graph.close()
+            
     def compare_sessions(self):
         data = {}
         for session_id, session in self.graph_sessions.items():
