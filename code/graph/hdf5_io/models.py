@@ -10,6 +10,11 @@ class BaseModel:
 	description: Optional[str] = None
 
 @dataclass
+class FilterEntry(BaseModel):
+	filter_type: str = ''
+	params: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
 class GraphStyle(BaseModel):
 	color: str = "#ffffff"
 	line_style: QtCore.Qt.PenStyle = QtCore.Qt.SolidLine
@@ -81,7 +86,7 @@ class Plot(BaseModel):
 	status: str = "active"
 	style: GraphStyle = field(default_factory=GraphStyle)
 	statistics: Statistics = field(default_factory=Statistics)
-	history: List[HistoryEntry] = field(default_factory=list)
+	history: List[FilterEntry] = field(default_factory=list)
 	
 	linear_data: LinearData = field(default_factory=LinearData)
 	

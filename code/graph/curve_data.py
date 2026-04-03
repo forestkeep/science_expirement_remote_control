@@ -304,15 +304,18 @@ class graphData:
         self.tree_item.update_history_block(data={str(datetime.now().strftime("%H:%M:%S")): message,},
                                             filter_command = filter_command,)
     def delete_filter(self, filter_command: FilterCommand):
-        for filters in self.filters_history:
-            if filters is filter_command:
-                self.filters_history.remove(filter_command)
-                break
-
+        if filter_command not in self.filters_history:
+            return
+        self.filters_history.remove(filter_command)
         self.data_reset()
-        for filters in self.filters_history:
-            self.set_filter(filters)
+        self.update_filters_after_delete(self.filters_history)
 
+    def update_filters_after_delete(self, filters: list):
+        for filter in filters:
+            self.filtered_x_data, self.filtered_y_data, message = filter.apply(self.filtered_x_data, self.filtered_y_data)
+        for curves in self.plot_items.values():
+            curves['item'].setData(self.filtered_x_data, self.filtered_y_data)
+        self.recalc_stats_param()
 
 class linearData(graphData):
     def __init__(self, data: relationData, alias_manager) -> None:

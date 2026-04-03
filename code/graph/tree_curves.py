@@ -343,12 +343,6 @@ class CurveDialog(QDialog):
     def get_curve_data(self):
         return self.name_input.text(), self.formula_input.text(), self.description_input.toPlainText()
 
-def choose_color():
-    color = QColorDialog.getColor()
-    if color.isValid():
-        return color.name()
-    return None
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -435,28 +429,21 @@ class treeWin(QWidget):
         self.tree_widget.itemDoubleClicked.connect(self.on_history_item_double_clicked)
 
     def on_history_item_double_clicked(self, item, column):
-        # Игнорируем клик не по первому столбцу (по желанию)
-        if column != 0:
-            return
 
-        # Получаем родительский элемент (блок "История изменения")
-        parent = item.parent()
-        if parent is None:
-            return
+        if isinstance(item, HistoryItem):
 
-        # Проверяем, что родитель — это блок истории
-        history_block_title = QApplication.translate("GraphWindow", "История изменения")
-        if parent.text(0) != history_block_title:
-            return
+            parent = item
+            while True:
+                root_item = parent
+                parent = parent.parent()
+                if parent  is None:
+                    break
 
-        while True:
-            root_item = parent
-            parent = parent.parent()
-            if parent  is None:
-                break
-
-        if root_item:
-            root_item.curve_data_obj.delete_filter(item.filter_command)
+            if isinstance(root_item, CurveTreeItem):
+                root_item.curve_data_obj.delete_filter(item.filter_command)
+                del item.filter_command
+                item.parent().removeChild(item)
+                
 
     def on_item_entered(self, item):
         root_item = None

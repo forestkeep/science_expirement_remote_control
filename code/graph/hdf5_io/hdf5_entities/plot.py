@@ -1,10 +1,12 @@
 from datetime import datetime
 from .base import BaseHDF5Entity
-from ..models import Plot, GraphStyle, Statistics, HistoryEntry, LinearData, CurveTreeItemData
+from ..models import Plot, GraphStyle, Statistics, FilterEntry, LinearData, CurveTreeItemData
+import json
 
 class HDF5Plot(BaseHDF5Entity):
     """Представление графика в HDF5."""
     
+
     def write(self, plot: Plot):
         """Записывает график в HDF5."""
         attributes = {
@@ -67,24 +69,20 @@ class HDF5Plot(BaseHDF5Entity):
             
             for i, entry in enumerate(plot.history):
                 entry_group = history_group.create_group(f'entry_{i}')
-                entry_attrs = {
-                    'name': entry.name,
-                    'description': entry.description if entry.description else "",
-                    'timestamp': entry.timestamp.isoformat(),
-                    'action': entry.action
-                }
-                for key, value in entry_attrs.items():
-                    entry_group.attrs[key] = value
                 
-                for param_key, param_value in entry.parameters.items():
-                    entry_group.attrs[f'param_{param_key}'] = str(param_value)
-        
+                entry_group.attrs['name'] = entry.name if entry.name else "filter"#пока в инстории только филттры
+                entry_group.attrs['description'] = entry.description if entry.description else ""
+                entry_group.attrs['filter_type'] = entry.filter_type
+                  
+                params_group = entry_group.create_group('params')
+                for param_key, param_value in entry.params.items():
+                    params_group.attrs[param_key] = str(param_value)
+                
         if 'linear_data' in self._hdf5_object:
             del self._hdf5_object['linear_data']
         linear_data_group = self._hdf5_object.create_group('linear_data')
         
         linear_attrs = {
-            
             'device': plot.linear_data.device if plot.linear_data.device else "",
             'channel': plot.linear_data.channel if plot.linear_data.channel else "",
             'curve_name': plot.linear_data.curve_name if plot.linear_data.curve_name else "",
@@ -175,19 +173,28 @@ class HDF5Plot(BaseHDF5Entity):
             history_group = self._hdf5_object['history']
             for entry_name in history_group:
                 entry_group = history_group[entry_name]
-                entry = HistoryEntry()
+                entry = FilterEntry()
                 entry.name = entry_group.attrs.get('name', '')
                 entry.description = entry_group.attrs.get('description', '')
-                timestamp_str = entry_group.attrs.get('timestamp', '')
-                if timestamp_str:
-                    entry.timestamp = datetime.fromisoformat(timestamp_str)
-                entry.action = entry_group.attrs.get('action', '')
+                entry.filter_type = entry_group.attrs.get('filter_type', '')
                 
-                entry.parameters = {}
-                for attr_name in entry_group.attrs:
-                    if attr_name.startswith('param_'):
-                        param_name = attr_name[6:]
-                        entry.parameters[param_name] = entry_group.attrs[attr_name]
+                entry.params = {}
+                params_group = entry_group['params']
+                for param_name in params_group.attrs:
+                    value_str = params_group.attrs[param_name]
+                    
+                    if value_str.lower() == 'true':
+                        entry.params[param_name] = True
+                    elif value_str.lower() == 'false':
+                        entry.params[param_name] = False
+                    else:
+                        try:
+                            entry.params[param_name] = int(value_str)
+                        except ValueError:
+                            try:
+                                entry.params[param_name] = float(value_str)
+                            except ValueError:
+                                entry.params[param_name] = value_str
                 
                 history.append(entry)
         

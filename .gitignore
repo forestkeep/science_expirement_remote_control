@@ -5,5 +5,7 @@ __pycache__/
 code/rig_test_data.txt
 installation_controller/
 myenv/
+testmeasvoltage
+test_data/
 
 

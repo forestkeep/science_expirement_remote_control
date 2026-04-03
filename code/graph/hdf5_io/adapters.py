@@ -1,5 +1,5 @@
 from .models import (ProjectFile, Session, SessionParameters, FieldSettings, DataManager,Plot, OscillogramData,
-					ParameterData, GraphStyle, Statistics, CurveTreeItemData, GraphData, LinearData)
+					ParameterData, GraphStyle, Statistics, CurveTreeItemData, GraphData, LinearData, FilterEntry)
 from .utils import extract_plot_widget_settings, string_to_qfont, string_to_color
 import pyqtgraph as pg
 import logging
@@ -11,7 +11,7 @@ from datetime import datetime
 from ..dataManager import graphDataManager, relationData, measTimeData
 from ..curve_data import linearData, LineStyle
 from ..customPlotWidget import PatchedPlotWidget, axisController, axisSettings, axisStyle
-
+from ..filters_instance_class import FilterCommand
 
 logger = logging.getLogger(__name__)
 
@@ -170,12 +170,22 @@ class ProjectToHDF5Adapter:
 			**graph_data.__dict__,
 			tip=core_plot.tree_item.parameters.get('tip', 'linear'),
 		)
+
+		history = []
+		for filter in core_plot.filters_history:
+			temp_flt = FilterEntry(
+									name = "",
+									description = "",
+									filter_type =  filter.filter_type,
+									params =  filter.params
+								)
+			history.append(temp_flt)
 		
 		return Plot(
 			status="active",
 			style=style_settings,
 			statistics=stats,
-			history=[],
+			history=history,
 			linear_data=linear_data,
 			plot_obj_info="PlotObject",
 			parent_graph_field_info="ViewBox",
@@ -250,7 +260,7 @@ class HDF5ToProjectAdapter:
 				logger.warning(f"Unknown axis {axis} plot{plot.name} available axes [1, 2]")
 				continue
 
-			curve_obj = self.restore_curve_from_model(plot_model=plot, alias_manager = core_session.alias_manager)
+			curve_obj = self.restore_curve_from_model(plot_model=plot, alias_manager = core_session.alias_manager,filter_instance = core_session.graph_sessions[session_id].filter_class)
 			core_session.graph_sessions[session_id].graph_main.add_curve(curve_obj, type_axis="left" if axis == 1 else "right")
 
 			if plot.is_draw:
@@ -390,7 +400,7 @@ class HDF5ToProjectAdapter:
 				if data_dict:
 					core_manager.add_measurement_data(data_dict)
 
-	def restore_curve_from_model(self, plot_model: Plot, alias_manager) -> linearData:
+	def restore_curve_from_model(self, plot_model: Plot, alias_manager, filter_instance) -> linearData:
 		"""Восстанавливает кривую из модели Plot"""
 
 		logger.info("Restoring curve from model")
@@ -442,6 +452,12 @@ class HDF5ToProjectAdapter:
 
 		new_data.is_draw = plot_model.linear_data.is_draw
 		new_data.is_curve_selected = plot_model.linear_data.is_curve_selected
+
+		for filter in plot_model.history:
+			filter_temp = FilterCommand(
+				filter_type=filter.filter_type,
+				params=filter.params, filters_instance=filter_instance)
+			new_data.set_filter(filter_temp)
 		
 		return new_data
 	
