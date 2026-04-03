@@ -369,6 +369,13 @@ class manageGraph(QObject):
         if self.__stack_curve.get(key) is not None:
             self.__stack_curve.pop(key)
 
+    def destroy_all_curves(self):
+        for curve in self.__stack_curve.values():
+            curve.delete_curve_from_graph()
+            curve.is_draw = False
+
+        self.__stack_curve.clear()
+
     def stop_session(self):
         for curve in self.__stack_curve.values():
             curve.stop_session()

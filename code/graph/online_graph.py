@@ -562,6 +562,7 @@ class sessionController():
         if self.graph_sessions.get(session_id) is not None:
             if not self.graph_sessions[session_id].data_manager.is_session_running():   
                 self.graphics_win.stack.removeWidget(self.graph_sessions[session_id])
+                self.graph_sessions[session_id].graph_main.destroy_all_curves()
                 self.graph_sessions[session_id].deleteLater()
                 del self.graph_sessions[session_id]
                 self.session_selector.delete_session(session_id)
