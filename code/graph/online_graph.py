@@ -128,19 +128,19 @@ class GraphWindow(QMainWindow):
     def eventFilter(self, obj, event):
         if obj == self.session_selector:
             if event.type() == QEvent.Enter:
-                desired_width = self._compute_desired_session_width()
-                desired_width = max(self.session_selector.minimumWidth(),
-                                    min(desired_width, self.session_selector.maximumWidth()))
-                total_width = self.splitter.width()
-                self.splitter.setSizes([total_width - desired_width, desired_width])
+                desired_height = self._compute_desired_session_height()
+                desired_height = max(self.session_selector.minimumHeight(),
+                                    min(desired_height, self.session_selector.maximumHeight()))
+                total_height = self.splitter.height()
+                self.splitter.setSizes([total_height - desired_height, desired_height])
             elif event.type() == QEvent.Leave:
-                min_width = self.session_selector.minimumWidth()
-                min_width = max(self.session_selector.minimumWidth(),50)
-                total_width = self.splitter.width()
-                self.splitter.setSizes([total_width - min_width, min_width])
+                min_height = self.session_selector.minimumHeight()
+                min_height = max(self.session_selector.minimumHeight(), 50)
+                total_height = self.splitter.height()
+                self.splitter.setSizes([total_height - min_height, min_height])
         return super().eventFilter(obj, event)
 
-    def _compute_desired_session_width(self):
+    def _compute_desired_session_height(self):
         if hasattr(self.session_selector, 'table'):
             table = self.session_selector.table
             total_height = table.horizontalHeader().height()
@@ -149,7 +149,7 @@ class GraphWindow(QMainWindow):
                 total_height += table.rowHeight(row)
             return total_height
         else:
-            return self.session_selector.sizeHint().width()
+            return self.session_selector.sizeHint().height()
         
     def closeEvent(self, event):
         self.graph_win_close_signal.emit(1)
@@ -437,7 +437,6 @@ class sessionController():
 
     def read_statistics(self, group_by_param=True):
         if False:
-            # Исходная логика (группировка по сессиям)
             for session in self.graph_sessions.values():
                 session_data = session.data_manager.get_all_data()
                 main_data = session_data['main'].data
@@ -448,10 +447,8 @@ class sessionController():
                     if values is not None:
                         print(self.alias_manager.get_alias(name), np.mean(values), np.std(values), np.median(values))
         else:
-            # Новая логика (группировка по параметрам)
             param_data = {}
             
-            # Собираем данные по всем сессиям
             for session in self.graph_sessions.values():
                 session_data = session.data_manager.get_all_data()
                 main_data = session_data['main'].data
@@ -470,15 +467,14 @@ class sessionController():
                             'median': np.median(values)
                         })
             
-            # Выводим сгруппированные данные с сортировкой по session_name
             for param_name, sessions_data in param_data.items():
                 print(f"Parameter: {param_name}")
-                # Сортируем данные по session_name, преобразуя строку в кортеж чисел
+
                 sorted_sessions_data = sorted(sessions_data, 
                                             key=lambda x: tuple(map(int, x['session_name'].split())))
                 for data in sorted_sessions_data:
                     print(f"{data['session_name']}, {data['mean']}, {data['std']}")
-                print()  # Пустая строка между параметрами
+                print()
 
     def push_button_save_graph(self):
         if self.way_to_save_file is not None:

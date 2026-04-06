@@ -309,7 +309,7 @@ class manageGraph(QObject):
         else:
             #отменить отрисовку всех кривых в блоке
             for data_curve in self.__stack_curve.values():
-                if data_curve.is_draw and data_curve.parent_graph_field is graph_field:
+                if data_curve.is_draw:
                     data_curve.delete_curve_from_graph()
                     second_selector.addItem(data_curve.y_name)
         return False

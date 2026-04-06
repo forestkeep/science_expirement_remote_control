@@ -68,6 +68,7 @@ class GraphData(BaseModel):
 	x_name : Optional[str] = None
 	y_name : Optional[str] = None
 	curve_name: Optional[str] = None
+	is_name_customized: bool = False,
 	number: Optional[int] = None
 	number_axis: Optional[int] = None
 	
@@ -90,10 +91,6 @@ class Plot(BaseModel):
 	
 	linear_data: LinearData = field(default_factory=LinearData)
 	
-	plot_obj_info: str = "PlotObject"
-	parent_graph_field_info: str = "ViewBox"
-	legend_field_info: str = "LegendItem"
-
 	axis : int = 1
 	
 	is_draw: bool = False

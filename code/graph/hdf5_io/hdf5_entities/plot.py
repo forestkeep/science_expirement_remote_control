@@ -17,9 +17,6 @@ class HDF5Plot(BaseHDF5Entity):
             'x_name': plot.x_name,
             'y_name': plot.y_name,
             'is_curve_selected': plot.is_curve_selected,
-            'plot_obj_info': plot.plot_obj_info,
-            'parent_graph_field_info': plot.parent_graph_field_info,
-            'legend_field_info': plot.legend_field_info,
             'axis': plot.axis
         }
         self._write_attributes(attributes)
@@ -86,6 +83,7 @@ class HDF5Plot(BaseHDF5Entity):
             'device': plot.linear_data.device if plot.linear_data.device else "",
             'channel': plot.linear_data.channel if plot.linear_data.channel else "",
             'curve_name': plot.linear_data.curve_name if plot.linear_data.curve_name else "",
+            'is_name_customized': plot.linear_data.is_name_customized,
             'number': plot.linear_data.number if plot.linear_data.number is not None else -1,
             'number_axis': plot.linear_data.number_axis if plot.linear_data.number_axis is not None else -1,
             
@@ -133,9 +131,6 @@ class HDF5Plot(BaseHDF5Entity):
         status = self._hdf5_object.attrs.get('status', 'active')
         is_draw = bool(self._hdf5_object.attrs.get('is_draw', False))
         is_curve_selected = bool(self._hdf5_object.attrs.get('is_curve_selected', False))
-        plot_obj_info = self._hdf5_object.attrs.get('plot_obj_info', 'PlotObject')
-        parent_graph_field_info = self._hdf5_object.attrs.get('parent_graph_field_info', 'ViewBox')
-        legend_field_info = self._hdf5_object.attrs.get('legend_field_info', 'LegendItem')
         x_name = self._hdf5_object.attrs.get('x_name', 'X_default')
         y_name = self._hdf5_object.attrs.get('y_name', 'Y_default')
         axis = self._hdf5_object.attrs.get('axis', 1)
@@ -204,6 +199,7 @@ class HDF5Plot(BaseHDF5Entity):
             linear_data.device = linear_data_group.attrs.get('device', '')
             linear_data.channel = linear_data_group.attrs.get('channel', '')
             linear_data.curve_name = linear_data_group.attrs.get('curve_name', '')
+            linear_data.is_name_customized = bool(linear_data_group.attrs.get('is_name_customized', False))
             number = linear_data_group.attrs.get('number', -1)
             linear_data.number = number if number != -1 else None
             number_axis = linear_data_group.attrs.get('number_axis', -1)
@@ -250,9 +246,6 @@ class HDF5Plot(BaseHDF5Entity):
             linear_data=linear_data,
             x_name = x_name,
             y_name = y_name,
-            plot_obj_info=plot_obj_info,
-            parent_graph_field_info=parent_graph_field_info,
-            legend_field_info=legend_field_info,
             is_draw=is_draw,
             is_curve_selected=is_curve_selected,
             axis=axis

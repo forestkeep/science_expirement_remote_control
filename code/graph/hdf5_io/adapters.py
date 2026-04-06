@@ -159,6 +159,8 @@ class ProjectToHDF5Adapter:
 			x_name= core_plot.rel_data.x_root_name,
 			y_name= core_plot.rel_data.y_root_name,
 			curve_name=core_plot.curve_name,
+
+			is_name_customized=core_plot.is_name_curve_customized,
 			number=core_plot.number,
 			number_axis=core_plot.number_axis,
 			is_draw=core_plot.is_draw,
@@ -187,9 +189,6 @@ class ProjectToHDF5Adapter:
 			statistics=stats,
 			history=history,
 			linear_data=linear_data,
-			plot_obj_info="PlotObject",
-			parent_graph_field_info="ViewBox",
-			legend_field_info="LegendItem",
 			is_draw=core_plot.is_draw,
 			is_curve_selected=core_plot.is_curve_selected,
 			name=core_plot.curve_name if hasattr(core_plot, 'curve_name') else "",
@@ -458,6 +457,11 @@ class HDF5ToProjectAdapter:
 				filter_type=filter.filter_type,
 				params=filter.params, filters_instance=filter_instance)
 			new_data.set_filter(filter_temp)
+
+		if plot_model.linear_data.is_name_customized:
+			new_data.change_name(plot_model.linear_data.curve_name)
+		else:
+			new_data.reset_name()
 		
 		return new_data
 	

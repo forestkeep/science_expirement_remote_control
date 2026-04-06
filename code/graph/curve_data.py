@@ -136,9 +136,6 @@ class graphData:
 
         self.is_draw = False
 
-        self.parent_graph_field = None
-        self.legend_field = None
-
         self.main_plot_obj = None
 
         self.tree_item = CurveTreeItem(curve_data_obj=self)
@@ -151,7 +148,7 @@ class graphData:
 
         self.clicked_style = LineStyle(color=(180, 150, 150), line_style=QtCore.Qt.DashLine, line_width=4, symbol="+", symbol_size=10, symbol_color=(150, 150, 150), fill_color='w')
 
-    def create_plot_item(self, viewbox=None, legend_field=None, number_axis=None):
+    def create_plot_item(self):
         """
         Создаёт новый PlotDataItem на основе текущих данных и стиля.
         Возвращает созданный item.
@@ -187,10 +184,10 @@ class graphData:
         Если для этого viewbox уже есть копия, ничего не делает (или обновляет).
         """
         if self.plot_items.get(graph_field) is not None:
-            logger.info(f"Curve {self.name} already exists on graph {graph_field} skiped")
+            logger.info(f"Curve {self.curve_name} already exists on graph {graph_field} skiped")
             return
 
-        new_item = self.create_plot_item(graph_field, legend_field, number_axis)
+        new_item = self.create_plot_item()
         graph_field.addItem(new_item)
         if legend_field.getLabel(new_item) is None:
             legend_field.addItem(new_item, self.legend.current_name)
@@ -224,6 +221,25 @@ class graphData:
         """Обновляет данные во всех копиях PlotDataItem."""
         for info in self.plot_items.values():
             info['item'].setData(self.filtered_x_data, self.filtered_y_data)
+
+
+    def change_name(self, name):
+        """
+        Изменяет пользовательское имя кривой и обновляет имя в легенде для всех графиков.
+        :param name: Новое имя кривой
+        :type name: str
+        """
+        
+        self.is_name_curve_customized = True
+        self.curve_name = name
+        self.set_legend_name(self.curve_name)
+        self.tree_item.set_name(self.curve_name)
+    
+    def reset_name(self):
+        self.is_name_curve_customized = False
+        self.curve_name = self.rel_data.current_name
+        self.set_legend_name(self.curve_name)
+        self.tree_item.set_name(self.curve_name)
 
     def apply_style_to_all(self, style):
         """Применяет стиль (например, LineStyle) ко всем копиям."""
@@ -333,7 +349,7 @@ class linearData(graphData):
         self.alias_manager.aliases_updated.connect(self.alias_changed)
         self.is_name_curve_customized = False#флаг, указывающий на то, что название кривой было изменено пользователем
 
-        self.tree_item.change_name(self.rel_data.current_name, reset=True)
+        self.tree_item.set_name(self.curve_name)
         self.recalc_stats_param()
 
     def alias_changed(self, original_name, old_alias, alias):
@@ -345,9 +361,9 @@ class linearData(graphData):
             new_y_name = alias
         self.rel_data.update_names(new_x_name, new_y_name)
 
-        self.curve_name = self.rel_data.current_name
         if not self.is_name_curve_customized:
-            self.tree_item.change_name(self.rel_data.current_name, reset=True)
+            self.curve_name = self.rel_data.current_name
+            self.tree_item.set_name(self.curve_name)
 
     def stop_session(self):
         super().stop_session()

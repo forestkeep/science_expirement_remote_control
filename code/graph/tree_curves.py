@@ -38,7 +38,7 @@ class NameChangeDialog(QDialog):
         self.setWindowTitle(QApplication.translate("GraphWindow", "Новое название"))
         layout = QVBoxLayout(self)
 
-        self.line_edit = QLineEdit(current_name)
+        self.line_edit = QLineEdit(self.original_name)
         layout.addWidget(self.line_edit)
 
         self.reset_button = QPushButton(QApplication.translate("GraphWindow", "Сбросить название"))
@@ -58,10 +58,7 @@ class NameChangeDialog(QDialog):
         self.accept()
 
     def get_results(self):
-        if self.reset_clicked:
-            text = self.original_name
-        else:
-            text = self.line_edit.text()
+        text = self.line_edit.text()
         
         ok = self.result() == QDialog.Accepted
         return text, ok, self.reset_clicked
@@ -109,18 +106,9 @@ class CurveTreeItem(QTreeWidgetItem):
 
         self.add_basic_characteristics()
 
-    def change_name(self, name, reset=False):
-        
-        if not reset:
-            self.curve_data_obj.is_name_curve_customized = True
-
-        else:
-            self.curve_data_obj.is_name_curve_customized = False
-            name = self.curve_data_obj.rel_data.current_name
-
+    def set_name(self, name):
         self.setText(0, QApplication.translate("filters",f"Кривая {name}"))
         self.parameters["name"] = name
-        self.curve_data_obj.set_legend_name(name)
 
     def add_basic_characteristics(self):
 
@@ -651,11 +639,14 @@ class treeWin(QWidget):
         item.curve_data_obj.add_to_graph(graph_compare_field, graph_compare_field.legend, 1)
 
     def change_name_curve(self, item):
-        dialog = NameChangeDialog(self, item.curve_data_obj.name)
+        dialog = NameChangeDialog(self, item.curve_data_obj.curve_name)
         if dialog.exec_() == QDialog.Accepted:
-            text, ok, reset = dialog.get_results()
+            new_name, ok, reset = dialog.get_results()
             if ok:
-                item.change_name(text, reset)
+                if reset:
+                    item.curve_data_obj.reset_name()
+                else:
+                    item.curve_data_obj.change_name(new_name)
 
     def add_note(self, item: CurveTreeItem):
         description = item.get_description()

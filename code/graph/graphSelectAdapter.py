@@ -71,10 +71,15 @@ class graphSelectAdapter:
 		if paramx == curve_data_obj.rel_data.x_root_name:#пространство нужное	
 			y_name = curve_data_obj.rel_data.y_root_name
 			if curve_data_obj.rel_data.is_gen:
-				curve_data_obj.add_to_graph(graph_field  = curve_data_obj.parent_graph_field,
-                                                    legend_field  = curve_data_obj.legend_field,
-                                                    number_axis = curve_data_obj.number_axis
-                                                    )
+				if curve_data_obj.number_axis == 1:
+
+					curve_data_obj.add_to_graph(graph_field  = self.graph.graphView,
+                                                legend_field  = self.graphView.legend,
+                                                number_axis = curve_data_obj.number_axis)
+				else:
+					curve_data_obj.add_to_graph(graph_field  = self.graph.graphView.second_graphView,
+												legend_field  = self.graphView.legend2,
+												number_axis = curve_data_obj.number_axis)
 			else:#кривая из сырых данных
 				#необходимо определить, на какой оси кривая
 				if curve_data_obj.number_axis == 1:
