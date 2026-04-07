@@ -92,6 +92,8 @@ class HDF5Session(BaseHDF5Entity):
         parameters_data_group = data_manager_group['parameters_data']
         
         for data_name, data in session.data_manager.parameter_data.items():
+            if '/' in data_name:
+                data_name = data_name.replace('/', '_')
             if data_name in parameters_data_group:
                 del parameters_data_group[data_name]
             data_entity_group = parameters_data_group.create_group(data_name)
