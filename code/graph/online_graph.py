@@ -38,6 +38,7 @@ from graph.hdf5_io.facade import HDF5Facade
 from graph.select_compare_data import MultiSelectionDialog
 from graph.parameter_alias_manager import ParameterAliasManager
 from graph.compare_sessions_graph import CompareWindowMediator
+from graph.animation_graph.animation_widget import AnimationWindow
 import uuid
 import numpy as np
 from functions import open_log_file
@@ -173,6 +174,9 @@ class GraphSession(QWidget):
 
     def get_compare_graph(self):
         return self.session_controller.get_compare_graph()
+    
+    def animation_start(self, animator):
+        self.session_controller.animation_start(animator)
 
     def initUI(self):
         simple = self._simple_mode
@@ -362,6 +366,10 @@ class sessionController():
     def close_graph_window(self):
         if self.compare_graph is not None:
             self.compare_graph.close()
+
+    def animation_start(self, animator):
+        self.animation_win = AnimationWindow(animator=animator)
+        self.animation_win.show()
             
     def compare_sessions(self):
         data = {}

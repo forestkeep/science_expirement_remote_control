@@ -24,7 +24,7 @@ import copy
 from graph.calc_values_for_graph import ArrayProcessor
 from graph.customize_style_curve import GraphCustomizer
 from graph.dataManager import relationData, measTimeData
-from graph.curve_animation import Animator
+from graph.animation_graph.curve_animation import Animator
 import numexpr as ne
 import numpy as np
 import logging
@@ -642,9 +642,12 @@ class treeWin(QWidget):
 
     def show_animation(self, item):
         self.animator = Animator(item.curve_data_obj)
-        self.animator.set_speed(100)   # 100 точек в секунду
-        self.animator.set_duration(10)
-        self.animator.start(reset=True, apply_filters_after=True, filter_delay_ms=1000)
+        #self.animator.set_speed(100)   # 100 точек в секунду
+        #self.animator.set_duration(10)
+        #self.animator.start(reset=True, apply_filters_after=True, filter_delay_ms=1000)
+
+        self.main_class.animation_start(self.animator)
+    
     def reset_filters(self, item=None):
         if item in self.curves:
             self.curve_reset.emit(item.curve_data_obj)

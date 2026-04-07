@@ -50,16 +50,16 @@ class Animator(QtCore.QObject):
         if self._is_playing and not self._is_paused:
             return
 
-        if reset:
-            self.current_index = 0
-            # Сохраняем текущую историю фильтров и временно отключаем их
-            self.saved_filters = list(self.curve.filters_history)
-            # Сбрасываем данные к сырым (без фильтров)
-            self.curve.filtered_x_data = self.raw_x.copy()
-            self.curve.filtered_y_data = self.raw_y.copy()
-            self.curve.update_all_plots_data()
 
-            self._update_curve_data(0)
+        self.current_index = 0
+        # Сбрасываем данные к сырым (без фильтров)
+        self.curve.filtered_x_data = self.raw_x.copy()
+        self.curve.filtered_y_data = self.raw_y.copy()
+        self.curve.update_all_plots_data()
+
+        self._update_curve_data(0)
+
+        self.saved_filters = list(self.curve.filters_history)
 
         self._apply_filters_after = apply_filters_after
         self._filter_delay_ms = filter_delay_ms
@@ -83,7 +83,7 @@ class Animator(QtCore.QObject):
         if restore_filters and self.saved_filters:
             # Восстанавливаем историю и применяем все фильтры сразу (без анимации)
             self.curve.clear_filters()
-            for f in self.curve.filters_history:
+            for f in self.saved_filters:
                 self.curve.set_filter(f)
             self.saved_filters = []
 
