@@ -24,6 +24,7 @@ import copy
 from graph.calc_values_for_graph import ArrayProcessor
 from graph.customize_style_curve import GraphCustomizer
 from graph.dataManager import relationData, measTimeData
+from graph.curve_animation import Animator
 import numexpr as ne
 import numpy as np
 import logging
@@ -179,6 +180,12 @@ class CurveTreeItem(QTreeWidgetItem):
         for key, value in data.items():
             block_item.addChild(HistoryItem(text = f"{key}: {value}", filter_command = filter_command))
 
+    def clear_history_block(self):
+        block_name = QApplication.translate("GraphWindow", "История изменения")
+        block_item = self.findChild(block_name)
+        if block_item:
+            block_item.takeChildren()
+        
     def delete_block(self, block_name) -> bool:
         block_item = self.findChild(block_name)
         if block_item:
@@ -611,6 +618,7 @@ class treeWin(QWidget):
             add_note_action = QAction( QApplication.translate("GraphWindow","Добавить заметку"), self)
             create_autocorrelation = QAction( QApplication.translate("GraphWindow","Построить автокорреляционную функцию"), self)
             add_in_compare = QAction( QApplication.translate("GraphWindow","Добавить в сравнение"), self)
+            animation_action = QAction( QApplication.translate("GraphWindow","Анимировать"), self)
 
             context_menu.addAction(name_action)
             context_menu.addAction(style_action)
@@ -619,6 +627,7 @@ class treeWin(QWidget):
             context_menu.addAction(add_note_action)
             context_menu.addAction(create_autocorrelation)
             context_menu.addAction(add_in_compare)
+            context_menu.addAction(animation_action)
 
             name_action.triggered.connect(lambda: self.change_name_curve(root_item))
             style_action.triggered.connect(lambda: self.change_curve_style(root_item))
@@ -627,8 +636,15 @@ class treeWin(QWidget):
             add_note_action.triggered.connect(lambda: self.add_note(root_item))
             create_autocorrelation.triggered.connect(lambda: self.create_autocorrelation(root_item))
             add_in_compare.triggered.connect(lambda: self.add_in_compare(root_item))
+            animation_action.triggered.connect(lambda: self.show_animation(root_item))
 
             context_menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
+
+    def show_animation(self, item):
+        self.animator = Animator(item.curve_data_obj)
+        self.animator.set_speed(100)   # 100 точек в секунду
+        self.animator.set_duration(10)
+        self.animator.start(reset=True, apply_filters_after=True, filter_delay_ms=1000)
     def reset_filters(self, item=None):
         if item in self.curves:
             self.curve_reset.emit(item.curve_data_obj)

@@ -222,7 +222,6 @@ class graphData:
         for info in self.plot_items.values():
             info['item'].setData(self.filtered_x_data, self.filtered_y_data)
 
-
     def change_name(self, name):
         """
         Изменяет пользовательское имя кривой и обновляет имя в легенде для всех графиков.
@@ -325,6 +324,12 @@ class graphData:
         self.filters_history.remove(filter_command)
         self.data_reset()
         self.update_filters_after_delete(self.filters_history)
+
+    def clear_filters(self):
+        self.filters_history = []
+        self.data_reset()
+        self.update_filters_after_delete(self.filters_history)
+        self.tree_item.clear_history_block()
 
     def update_filters_after_delete(self, filters: list):
         for filter in filters:
@@ -500,3 +505,4 @@ class hystLoop(graphData):
         if self.data_x is None or self.data_y is None:
              self.data_x, self.data_y = self.calc_loop()   
         return self.data_x, self.data_y
+
