@@ -183,9 +183,8 @@ class graphData:
         Добавляет копию кривой на указанный график.
         Если для этого viewbox уже есть копия, ничего не делает (или обновляет).
         """
-        if self.plot_items.get(graph_field) is not None:
-            logger.info(f"Curve {self.curve_name} already exists on graph {graph_field} skiped")
-            return
+        if self.plot_items.get(graph_field) is not None:  
+            logger.info(f"Curve {self.curve_name} already exists on graph {graph_field} change link")
 
         new_item = self.create_plot_item()
         graph_field.addItem(new_item)
