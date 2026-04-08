@@ -92,8 +92,6 @@ class LineStyle:
 
         #plot_data_item.setData(pxMode=self.px_mode)
 
-
-    
 class graphData:
     def __init__(self, data) -> None:
         """
@@ -276,7 +274,6 @@ class graphData:
             self.update_all_plots_data()
         if not self.data_reset():
             logger.warning(...)
-
 
     def change_style(self, new_style: LineStyle):
         self.saved_style = new_style

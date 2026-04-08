@@ -7,6 +7,7 @@ import logging
 
 import pandas as pd
 import numpy as np
+import copy
 
 from graph.Link_data_import_win import Check_data_import_win, SheetSelectionDialog
 from graph.Message_graph import messageDialog
@@ -60,11 +61,13 @@ class SessionWidget(QWidget):
         self.table.model().dataChanged.connect(self._on_data_changed)
 
     def _on_data_changed(self, top_left, bottom_right):
+        logger.info(f"_on_data_changed {top_left} {bottom_right} list: {self.sessions_data}")
         if top_left.column() <= 1 <= bottom_right.column():
             row = top_left.row()
             session_id_item = self.table.item(row, 0)
             new_name_item = self.table.item(row, 1)
             
+            logger.info(f"session_id_item {session_id_item} new_name_item {new_name_item}")
             if session_id_item and new_name_item:
                 session_id = session_id_item.text()
                 new_name = new_name_item.text()
@@ -77,14 +80,16 @@ class SessionWidget(QWidget):
                 self.session_renamed.emit(session_id, new_name)
 
     def update_sessions(self, sessions):
-        self.sessions_data = sessions
-        self.table.setRowCount(len(sessions))
-        for row, session in enumerate(sessions):
+        logger.info(f"update_sessions {sessions}")
+        self.sessions_data = sessions.copy()
+        self.table.setRowCount(len(self.sessions_data))
+        for row, session in enumerate(self.sessions_data):
             self.table.setItem(row, 0, QTableWidgetItem(session['id']))
             self.table.setItem(row, 1, QTableWidgetItem(session['name']))
             self.table.setItem(row, 2, QTableWidgetItem(session['status']))
 
     def update_session(self, session):
+        logger.info(f"update_session {session}")
         for row in range(self.table.rowCount()):
             item = self.table.item(row, 0)
             if item and item.text() == session['id']:
@@ -119,6 +124,7 @@ class SessionWidget(QWidget):
     def _start_rename_session(self, row):
         if 0 <= row < len(self.sessions_data):
             old_name_item = self.table.item(row, 1)
+            logger.info(f"start_rename_session {old_name_item}")
             self.table.editItem(old_name_item)
 
     def _delete_session(self, row):
@@ -127,11 +133,11 @@ class SessionWidget(QWidget):
             self.session_deleted.emit(session_id)
 
     def add_session_view(self, session):
-        self.sessions_data.append(session)
+        self.sessions_data.append(session.copy())
         self.table.insertRow(self.table.rowCount())
-        self.table.setItem(self.table.rowCount() - 1, 0, QTableWidgetItem(session['id']))
-        self.table.setItem(self.table.rowCount() - 1, 1, QTableWidgetItem(session['name']))
-        self.table.setItem(self.table.rowCount() - 1, 2, QTableWidgetItem(session['status']))
+        self.table.setItem(self.table.rowCount() - 1, 0, QTableWidgetItem(copy.copy(session['id'])))
+        self.table.setItem(self.table.rowCount() - 1, 1, QTableWidgetItem(copy.copy(session['name'])))
+        self.table.setItem(self.table.rowCount() - 1, 2, QTableWidgetItem(copy.copy(session['status'])))
 
     def _add_description(self, row):
         """Открывает модальное окно для редактирования описания сессии"""
@@ -139,10 +145,8 @@ class SessionWidget(QWidget):
             session = self.sessions_data[row]
             session_id = session['id']
             
-            # Получаем текущее описание, если оно есть
             current_description = session.get('description', '')
             
-            # Создаем диалоговое окно
             dialog = QDialog(self)
             dialog.setWindowTitle("Редактирование описания")
             dialog.setModal(True)
@@ -150,26 +154,21 @@ class SessionWidget(QWidget):
             
             layout = QVBoxLayout(dialog)
             
-            # Текстовое поле для описания
             text_edit = QTextEdit()
             text_edit.setPlainText(current_description)
             text_edit.setPlaceholderText("Введите описание сессии...")
             layout.addWidget(text_edit)
             
-            # Кнопки OK и Cancel
             button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
             button_box.accepted.connect(dialog.accept)
             button_box.rejected.connect(dialog.reject)
             layout.addWidget(button_box)
             
-            # Показываем диалог и обрабатываем результат
             if dialog.exec_() == QDialog.Accepted:
                 new_description = text_edit.toPlainText()
                 
-                # Обновляем данные сессии
                 session['description'] = new_description
                 
-                # Испускаем сигнал об обновлении описания
                 self.session_description_updated.emit(session_id, new_description)
 
     def _on_cell_double_click(self, row, col):
@@ -197,6 +196,7 @@ class SessionSelectControl(QObject):
         self.widget.session_description_updated.connect(self._session_description_updated)
 
     def _session_description_updated(self, session_id, new_description):
+        logger.info(f"_session_description_updated {session_id} {new_description}")
         for session in self.sessions:
             if session['id'] == session_id:
                 session['description'] = new_description
@@ -208,18 +208,22 @@ class SessionSelectControl(QObject):
         logger.info(f"update_session_description {session_id=} {new_description}")
         for session in self.sessions:
             if session['id'] == session_id:
-                session['description'] = new_description
-                self.widget.update_session(session)
+                if session.get('description') is not None and session['description'] != new_description:
+                    session['description'] = new_description
+                    self.widget.update_session(session)
                 break
 
     def _session_renamed(self, session_id, new_name):
+        logger.info(f"_session_renamed {session_id} {new_name} list: {self.sessions}")
         for session in self.sessions:
             if session['id'] == session_id:
-                logger.info(f"session_name_changed emitted id:{session_id} last_name:{session['name']} new_name:{new_name}")
-                session['name'] = new_name
-                self.session_name_changed.emit(session_id, str(new_name))
+                if session['name'] != new_name:
+                    logger.info(f"session_name_changed emitted id:{session_id} last_name:{session['name']} new_name:{new_name}")
+                    session['name'] = new_name
+                    self.session_name_changed.emit(session_id, str(new_name))
 
     def update_view(self):
+        logger.info(f"update_view, session list : {self.sessions}")
         self.widget.update_sessions(self.sessions)
 
     def handle_session_selected(self, session_id):
@@ -237,12 +241,14 @@ class SessionSelectControl(QObject):
                 break
 
     def set_session_name(self, session_id, name: str):
+        logger.info(f"set_session_name {session_id} {name} list: {self.sessions}")
         for session in self.sessions:
             if session['id'] == session_id:
                 session['name'] = name
                 self.update_view()
 
     def set_session_status(self, session_id, status: str):
+        logger.info(f"set_session_status {session_id} {status} list: {self.sessions}")
         for session in self.sessions:
             if session['id'] == session_id:
                 session['status'] = status
@@ -251,15 +257,21 @@ class SessionSelectControl(QObject):
 
     def add_session(self, session_data: dict):
         logger.info(f"Adding session {session_data}")
+        logger.info(f"list before add: {self.sessions}")
         self.sessions.append(session_data)
         self.widget.add_session_view(session_data)
         #self.update_view()
 
     def handle_session_deleted(self, session_id):
+        logger.info(f"Deleting session {session_id}")
+        self.sessions[:] = [s for s in self.sessions if s['id'] != session_id]
+        self.update_view()
         self.session_deleted.emit(session_id)
 
     def delete_session(self, session_id):
-        self.sessions = [s for s in self.sessions if s['id'] != session_id]
+        logger.info(f"Deleting session {session_id}")
+        logger.info(f"list before delete: {self.sessions}")
+        self.sessions[:] = [s for s in self.sessions if s['id'] != session_id]
         self.update_view()
 
     def get_all_ids(self):
@@ -267,6 +279,7 @@ class SessionSelectControl(QObject):
     
     def get_free_id(self) -> str:
         all_ids = self.get_all_ids()
+        logger.info(f"all_ids: {all_ids}")
         new_id = str( max( [int(s) for s in self.get_all_ids()], default=0) + 1)
         return new_id
         

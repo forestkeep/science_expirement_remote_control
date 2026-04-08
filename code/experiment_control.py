@@ -249,10 +249,10 @@ class ExperimentBridge(analyse):
             name = self.graph_controller.get_session_name(self.current_session_graph_id)
 
             if self.settings_manager.get_setting('should_prompt_for_session_name')[1]:
-                logger.debug("запрашиваем имя сессии и описание")
+                logger.info("запрашиваем имя сессии и описание")
                 self.meas_session.ask_session_name_description( text = "Эксперимент завершен",def_name = name )
             else:
-                logger.debug("имя сессии и описание устанавливаем дефолтными")
+                logger.info("имя сессии и описание устанавливаем дефолтными")
                 self.meas_session.set_default_session_name_description()
 
             if not self.meas_session.session_name:

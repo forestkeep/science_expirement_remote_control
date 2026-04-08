@@ -578,12 +578,13 @@ class sessionController():
                 self.graph_sessions[session_id].graph_main.destroy_all_curves()
                 self.graph_sessions[session_id].deleteLater()
                 del self.graph_sessions[session_id]
-                self.session_selector.delete_session(session_id)
+                #self.session_selector.delete_session(session_id)
             else:
                 self.graph_sessions[session_id].show_tooltip(QApplication.translate("graph", "Сессию можно удалить только после остановки."))
                 logger.warning(f"Session {session_id} is running. Broke session deletion.")
 
     def _session_renamed(self, session_id: str, new_session_name: str):
+        logger.info(f"_session_renamed {session_id} {new_session_name}")
         if self.graph_sessions.get(session_id) is not None:
             self.graph_sessions[session_id].session_name = new_session_name
         else:
@@ -596,13 +597,16 @@ class sessionController():
             logger.warning(f"Session {session_id} not found")
 
     def update_session_description(self, session_id: str, new_description: str):
+        logger.info(f"update_session_description {session_id} {new_description}")
         if self.graph_sessions.get(session_id) is None:
+            logger.warning(f"Session {session_id} not found")
             return
         else:
             self.graph_sessions[session_id].description = new_description
             self.session_selector.update_session_description(session_id, new_description)
 
     def change_session_name(self, session_id: str, new_session_name: str) -> bool:
+        logger.info(f"change_session_name {session_id} {new_session_name}")
         if self.graph_sessions.get(session_id) is None:
             return False
         self._session_renamed(session_id, new_session_name)
@@ -615,13 +619,16 @@ class sessionController():
         self.graph_sessions[session_id].data_manager.add_measurement_data(data)
 
     def get_session_id(self, session_name: str) -> int:
+        logger.info(f"get_session_id {session_name}")
         for session_id in self.graph_sessions.keys():
             if self.graph_sessions[session_id].session_name == session_name:
                 return session_id
         return None
     
     def get_session_name(self, session_id: str) -> str:
+        logger.info(f"get_session_name {session_id} list: {self.graph_sessions}")
         if self.graph_sessions.get(session_id) is None:
+            logger.warning(f"Session {session_id} not found")
             return None
         return self.graph_sessions[session_id].session_name
     

@@ -49,8 +49,10 @@ class customQListWidget(QListWidget):
                         self.takeItem(index)
                         
     def __manage_selection(self, text: str, checked: bool, is_signal = True):
+        list_selector = []
         for index in range(self.count()):
             if self.item(index):
+                list_selector.append(self.item(index).text())
                 if self.item(index).text() == text:
                     logger.debug(f"parameter  {text} set checked {checked}")
                     self.setCurrentItem(self.item(index))
@@ -59,7 +61,7 @@ class customQListWidget(QListWidget):
                         self.itemClicked.emit(self.item(index))#программно вызываем соответсвующую логику событий, будто кликнули на элемент
                     return
 
-        logger.warning(f"parameter {text} not found in selector")
+        logger.warning(f"parameter {text} not found in selector {self} list {list_selector}")
 
     def clear_selection(self, text: str):
         self.__manage_selection(text, False)
