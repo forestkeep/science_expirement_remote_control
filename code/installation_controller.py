@@ -127,14 +127,26 @@ class instController(QtWidgets.QMainWindow):
         self.ui.retranslateUi(self)
         self.settings_manager.save_settings({"language": lang})
 
-    def open_graph_in_exp(self):
+    def open_graph_in_exp(self, filepath = None):
         if self.graph_controller is None:
             self.graph_controller = sessionController()
 
-        self.graph_controller.graphics_win.show()
-        self.cur_install.stop_scan_thread = True#stop scanning thread
-        self.close()
-        del self
+        status = True
+
+        if filepath is not None:
+            try:
+                self.graph_controller.load_project(filepath)
+            except Exception as e:
+                status = False
+                logger.warning(f"ошибка восстановления файла графиков {filepath=} {e}")
+
+        if status:
+            self.graph_controller.graphics_win.show()
+            self.cur_install.stop_scan_thread = True#stop scanning thread
+            self.close()
+            del self
+
+        return status
 
     def open_test_cmd(self):
         self.test_commands_window = TestCommands()

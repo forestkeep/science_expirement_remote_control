@@ -7,6 +7,7 @@ from logging.handlers import RotatingFileHandler
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QTranslator
 from SettingsManager import SettingsManager
+from open_file_controller import FileTypeChecker
 
 import pyvisa
 
@@ -165,8 +166,24 @@ if __name__ == "__main__":
         def_persistent_sett=persistent_settings
     )
 
+    file_path = os.path.join(os.path.dirname(__file__), "test_data", "testhdf.hdf5")
+
+    logger.info(f"приложение запущена, файл открытия {file_path=}")
+
     start_window = instController( settings_manager, version=VERSION_APP )
-    if not start_window.check_open_type(file_path):
-        #TODO: добавить контроллер открывтия , открываться может установка, сессия обработки данных. Контроллер должен управлять открытием, выдавать сообщения в случае ошибок и т.д.
+
+    checker = FileTypeChecker(file_path)
+    type_file = None
+    if checker.validate()[0]:
+        type_file = checker.get_type()
+        logger.warning(f"Файл открытия {file_path} соответствует типу {type_file}")
+    
+    if type_file == "ns":
+        start_window.check_open_type(file_path)
+    elif type_file == "hdf5":
+        if not start_window.open_graph_in_exp(filepath=file_path):
+            start_window.show()
+    else:
         start_window.show()
+
     sys.exit(app.exec_())

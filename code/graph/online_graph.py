@@ -519,8 +519,11 @@ class sessionController():
             options=options,
         )
         if ans == "Installation(*.hdf5)":
-            HDF5Facade().load_project(fileName, self)
-            self.way_to_save_file = fileName
+            self.load_project(fileName)
+
+    def load_project(self, file_path: str):
+        HDF5Facade().load_project(file_path, self)
+        self.way_to_save_file = file_path
 
     def show(self):
         self.graphics_win.show()
