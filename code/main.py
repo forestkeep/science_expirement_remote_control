@@ -17,7 +17,7 @@ from installation_controller import instController
 
 logger = logging.getLogger(__name__)
 
-VERSION_APP = "1.5.0"
+VERSION_APP = "1.5.1"
 
 def migrate_settings(old_settings: dict[str, any], current_version: str) -> dict[str, any]:
     """
@@ -166,7 +166,7 @@ if __name__ == "__main__":
         def_persistent_sett=persistent_settings
     )
 
-    file_path = os.path.join(os.path.dirname(__file__), "test_data", "testhdf.hdf5")
+    #file_path = os.path.join(os.path.dirname(__file__), "test_data", "testhdf.hdf5")
 
     logger.info(f"приложение запущена, файл открытия {file_path=}")
 
