@@ -329,10 +329,11 @@ class paramController( QObject):
         self.multiple_checked.emit( is_multiple )
 
     def clear_selections(self, x_param: str, y_first_params: list, y_second_params: list):
-        logger.debug(f"clear_selections {x_param=} {y_first_params=} {y_second_params=}")
+        logger.info(f"request to clear_selections before aliases {x_param=} {y_first_params=} {y_second_params=}")
         x_param = self.alias_manager.get_alias(x_param)
         y_first_params = [self.alias_manager.get_alias(param) for param in y_first_params]
         y_second_params = [self.alias_manager.get_alias(param) for param in y_second_params]
+        logger.info(f"request to clear_selections after aliases {x_param=} {y_first_params=} {y_second_params=}")
         self.paramSelector.x_param_selector.clear_selection(x_param)
         for param in y_first_params:
             self.paramSelector.y_first_param_selector.clear_selection(param)

@@ -365,6 +365,7 @@ class linearData(graphData):
         if not self.is_name_curve_customized:
             self.curve_name = self.rel_data.current_name
             self.tree_item.set_name(self.curve_name)
+            self.set_legend_name(self.curve_name)
 
     def stop_session(self):
         super().stop_session()

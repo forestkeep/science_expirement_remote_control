@@ -43,14 +43,16 @@ class graphSelectAdapter:
 		first_parameters = []
 		second_parameters = []
 		y_name = curve_data_obj.rel_data.y_root_name
-		logger.info(f"hide_curve {curve_data_obj.rel_data.root_name=}")
+		logger.info(f"hide_curve {curve_data_obj.rel_data.root_name=} {curve_data_obj.rel_data.y_root_name=}")
 		if y_name == "gen":
 			curve_data_obj.delete_curve_from_graph()
 		else:
 			if curve_data_obj.number_axis == 2:
 				second_parameters = [y_name]
-			if curve_data_obj.number_axis == 1:
+			elif curve_data_obj.number_axis == 1:
 				first_parameters = [y_name]
+			else:
+				logger.error(f"curve_data_obj.number_axis = {curve_data_obj.number_axis} not 1 or 2")
 
 			self.selector.clear_selections("", first_parameters, second_parameters)
 

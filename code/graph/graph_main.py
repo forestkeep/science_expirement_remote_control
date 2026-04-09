@@ -342,6 +342,7 @@ class manageGraph(QObject):
         if curve is None:
             self.create_and_place_curve(data, graph, legend, axis_num)
         elif not curve.is_draw:
+            curve.number_axis = axis_num
             curve.add_to_graph(graph, legend, axis_num)
         elif is_updated:
             self._refresh_curve_data(curve, data)
@@ -414,25 +415,29 @@ class manageGraph(QObject):
             legend_field = self.graphView.legend
         if not number_axis:
             number_axis=1
-        new_data = self.create_curve(data = data)
+        new_data = self.create_curve(data = data) 
         self.main_class.tree_class.add_curve(new_data.tree_item)
         self.__stack_curve[data.root_name] = new_data
             
+        self.__stack_curve[data.root_name].number_axis = number_axis
         self.__stack_curve[data.root_name].add_to_graph(graph_field  = graph_field,
                                                              legend_field  = legend_field,
                                                              number_axis = number_axis
                                                             )
+        
         return True
         
     def add_curve(self, curve_data_obj: linearData, type_axis: str = "left"):
         logger.debug(f"add curve {curve_data_obj.curve_name} root name {curve_data_obj.rel_data.root_name}")
         self.__stack_curve[curve_data_obj.rel_data.root_name] = curve_data_obj
         if type_axis == "left":
+            curve_data_obj.number_axis = 1#костыль на время, пока нет сохранения для всех графиков. данный график главный и именно он назвачает главную ось, она используется в селекторе параметров
             curve_data_obj.add_to_graph(graph_field  = self.graphView,
                                                 legend_field  = self.graphView.legend,
                                                 number_axis = 1
                                                 )
         else:
+            curve_data_obj.number_axis = 2
             curve_data_obj.add_to_graph(graph_field  = self.graphView.second_graphView,
                                                 legend_field  = self.graphView.legend2,
                                                 number_axis = 2
