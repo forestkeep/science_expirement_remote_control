@@ -708,6 +708,7 @@ class treeWin(QWidget):
                 QMessageBox.warning(self, QApplication.translate("GraphWindow","Ошибка"),
                                           QApplication.translate("GraphWindow", "Пожалуйста, выберите элемент для отображения."))
                 return
+        logger.info(f"show_curve {item=} {self.curves=}")
             
         if item in self.curves:
             self.curve_shown.emit(item.curve_data_obj)
@@ -722,7 +723,7 @@ class treeWin(QWidget):
                                           QApplication.translate("GraphWindow", "Пожалуйста, выберите элемент для отображения."))
                 return
         if item in self.curves:
-            item.curve_data_obj.delete_curve_from_graph()
+            #item.curve_data_obj.delete_curve_from_graph() #мы не должны удалять здесь, мы должны отправить сигнал, его перехватит адаптер и разберется, что делать
             self.curve_hide.emit(item.curve_data_obj)
 
     def change_curve_style(self, item:CurveTreeItem):

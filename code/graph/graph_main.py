@@ -321,10 +321,13 @@ class manageGraph(QObject):
     def update_data(self, data_first_axis:list[relationData], data_second_axis:list[relationData], is_updated = False):
         self.hide_second_line_grid()
 
+        logger.info(f"update_data {data_first_axis} {data_second_axis} {is_updated=}")
+        logger.info(f"{self.__stack_curve.items()=}")
         if not is_updated:
             for key, curve in self.__stack_curve.items():    
                 if curve.is_draw:
                     if key not in [data.root_name for data in data_first_axis] and key not in [data.root_name for data in data_second_axis]:
+                            logger.info(f"Удаление кривой {curve.curve_name} из графика")
                             curve.delete_curve_from_graph()
 
         self._process_axis_curves(data_first_axis, self.graphView, self.graphView.legend, 1, is_updated)
@@ -338,7 +341,6 @@ class manageGraph(QObject):
     def _handle_curve(self, data : relationData, graph, legend, axis_num, is_updated):
         """Обработка отдельной кривой"""
         curve = self.__stack_curve.get(data.root_name)
-        
         if curve is None:
             self.create_and_place_curve(data, graph, legend, axis_num)
         elif not curve.is_draw:

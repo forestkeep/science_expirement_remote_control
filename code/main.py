@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QTranslator
 from SettingsManager import SettingsManager
 from open_file_controller import FileTypeChecker
+from PyQt5.QtWidgets import QMessageBox
 
 import pyvisa
 
@@ -167,6 +168,7 @@ if __name__ == "__main__":
     )
 
     #file_path = os.path.join(os.path.dirname(__file__), "test_data", "testhdf.hdf5")
+    #file_path = os.path.join(os.path.dirname(__file__), "test_data", "вода 2толщина_битый.hdf5")
 
     logger.info(f"приложение запущена, файл открытия {file_path=}")
 
@@ -177,13 +179,19 @@ if __name__ == "__main__":
     if checker.validate()[0]:
         type_file = checker.get_type()
         logger.warning(f"Файл открытия {file_path} соответствует типу {type_file}")
-    
+
+    status = False
+    message = ""
+
     if type_file == "ns":
-        start_window.check_open_type(file_path)
+        status, message = start_window.check_open_type(fileName=file_path)
     elif type_file == "hdf5":
-        if not start_window.open_graph_in_exp(filepath=file_path):
-            start_window.show()
-    else:
+        status, message = start_window.open_graph_in_exp(filepath=file_path)
+
+    if not status:
         start_window.show()
+        if file_path:
+            error_text = message if message else "Не удалось открыть файл."
+            QMessageBox.critical(start_window, "Ошибка открытия", error_text)
 
     sys.exit(app.exec_())

@@ -282,6 +282,7 @@ class graphData:
                 self.saved_style.apply_to_curve(curves['item'])
 
     def delete_curve_from_graph(self):
+        logger.info(f"delete_curve_from_graph {self.curve_name}")
         if self.is_draw:
             self.is_draw = False
             for graph_field, data_item in self.plot_items.items():

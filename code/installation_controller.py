@@ -95,6 +95,7 @@ class instController(QtWidgets.QMainWindow):
 
     def check_open_type(self, file_path):
         status = False
+        message = ""
         if os.path.isfile(file_path):
             self.cur_install.reconstruct_installation([], [])
             status, buffer = self.cur_install.open_saved_installation(fileName=file_path)
@@ -112,8 +113,9 @@ class instController(QtWidgets.QMainWindow):
                 self.close()
             else:
                 logger.warning(f"ошибка восстановления установки {file_path=} {buffer=}")
+                message = f"ошибка восстановления установки {file_path=} {buffer=}"
 
-        return status
+        return status, message
 
     def change_language(self, lang):
 
@@ -127,26 +129,29 @@ class instController(QtWidgets.QMainWindow):
         self.ui.retranslateUi(self)
         self.settings_manager.save_settings({"language": lang})
 
-    def open_graph_in_exp(self, filepath = None):
+    def open_graph_in_exp(self, filepath = False):
         if self.graph_controller is None:
             self.graph_controller = sessionController()
 
         status = True
+        message = ""
 
-        if filepath is not None:
+        if filepath:
             try:
                 self.graph_controller.load_project(filepath)
             except Exception as e:
                 status = False
-                logger.warning(f"ошибка восстановления файла графиков {filepath=} {e}")
-
+                message = f"ошибка восстановления файла графиков {filepath=} {e}"
+                logger.warning(message)
+                message =  "Не удалось открыть файл графиков.\n\n Подробности ошибки можно найти в логах:\n" + "Файл → Открыть лог файл\n\n"
+            
         if status:
             self.graph_controller.graphics_win.show()
             self.cur_install.stop_scan_thread = True#stop scanning thread
             self.close()
             del self
 
-        return status
+        return status, message
 
     def open_test_cmd(self):
         self.test_commands_window = TestCommands()

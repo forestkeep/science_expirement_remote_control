@@ -50,6 +50,7 @@ class customQListWidget(QListWidget):
                         
     def __manage_selection(self, text: str, checked: bool, is_signal = True):
         list_selector = []
+        logger.info(f"manage_selection {text=} {checked=} {is_signal=}")
         for index in range(self.count()):
             if self.item(index):
                 list_selector.append(self.item(index).text())
@@ -63,8 +64,8 @@ class customQListWidget(QListWidget):
 
         logger.warning(f"parameter {text} not found in selector {self} list {list_selector}")
 
-    def clear_selection(self, text: str):
-        self.__manage_selection(text, False)
+    def clear_selection(self, text: str, is_signal = True):
+        self.__manage_selection(text, False, is_signal)
 
     def set_selection(self, text: str, is_signal = True):
         self.__manage_selection(text, True, is_signal)
@@ -184,9 +185,9 @@ class paramController( QObject):
         super().__init__()
         self.alias_manager = alias_manager
         self.paramSelector = paramSelector
-        self.paramSelector.x_param_selector.itemClicked.connect(self.x_param_changed)
-        self.paramSelector.y_first_param_selector.itemClicked.connect(self.y_first_param_changed)
-        self.paramSelector.y_second_param_selector.itemClicked.connect(self.y_second_param_changed)
+        self.paramSelector.x_param_selector.itemClicked.connect(self._x_param_changed)
+        self.paramSelector.y_first_param_selector.itemClicked.connect(self._y_first_param_changed)
+        self.paramSelector.y_second_param_selector.itemClicked.connect(self._y_second_param_changed)
         self.paramSelector.check_miltiple.stateChanged.connect(self.update_multiple)
         self.paramSelector.second_check_box.stateChanged.connect(self.second_check_box_changed)
 
@@ -238,35 +239,37 @@ class paramController( QObject):
         self.paramSelector.y_first_param_selector.rename_parameter(old_alias, alias)
         self.paramSelector.y_second_param_selector.rename_parameter(old_alias, alias)
 
-    def x_param_changed(self):
-        logger.debug(f"x_param_changed {self.curent_x_parameter=}")
+    def _x_param_changed(self, item):
+        logger.info(f"x_param_changed {self.curent_x_parameter=}")
         self.curent_x_parameter = self.paramSelector.x_param_selector.currentItem().text()
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
-    def y_first_param_changed(self):
-
+    def _y_first_param_changed(self, item):
+        text= item.text()
+        logger.info(f"y_first_param_changed {text=} {self.curent_y_first_parameters=} {self.previous_y_first_parameter=}")
         self.manage_y_selectors(selector = self.paramSelector.y_first_param_selector,
                                 current_parameters = self.curent_y_first_parameters,
                                 opposite_selector = self.paramSelector.y_second_param_selector,
                                 previous_parameter = self.previous_y_first_parameter)
         
-        logger.debug(f"y_first_param_changed update current parameters {self.curent_y_first_parameters=}")
+        logger.info(f"y_first_param_changed after manage {self.curent_y_first_parameters=} {text=} current text item={self.paramSelector.y_first_param_selector.currentItem().text()}")
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
 
-    def y_second_param_changed(self):
+    def _y_second_param_changed(self, item):
 
         self.manage_y_selectors(selector = self.paramSelector.y_second_param_selector,
                                 current_parameters = self.curent_y_second_parameters,
                                 opposite_selector = self.paramSelector.y_first_param_selector,
                                 previous_parameter = self.previous_y_second_parameter
                                 )
-        logger.debug(f"y_second_param_changed update current parameters {self.curent_y_second_parameters=}")
+        logger.info(f"y_second_param_changed update current parameters {self.curent_y_second_parameters=}")
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
     def manage_y_selectors(self, selector, current_parameters, opposite_selector, previous_parameter):
         if self.paramSelector.check_miltiple.isChecked():
             buf_text = selector.currentItem().text()
+            print(buf_text, current_parameters)
             if buf_text in current_parameters:
                 current_parameters.remove(buf_text)
                 opposite_selector.add_parameters(buf_text)
@@ -328,23 +331,29 @@ class paramController( QObject):
 
         self.multiple_checked.emit( is_multiple )
 
-    def clear_selections(self, x_param: str, y_first_params: list, y_second_params: list):
+    def clear_selections(self, x_param: str, y_first_params: list, y_second_params: list, is_signal = True):
         logger.info(f"request to clear_selections before aliases {x_param=} {y_first_params=} {y_second_params=}")
         x_param = self.alias_manager.get_alias(x_param)
         y_first_params = [self.alias_manager.get_alias(param) for param in y_first_params]
         y_second_params = [self.alias_manager.get_alias(param) for param in y_second_params]
         logger.info(f"request to clear_selections after aliases {x_param=} {y_first_params=} {y_second_params=}")
-        self.paramSelector.x_param_selector.clear_selection(x_param)
+        if x_param:
+            self.paramSelector.x_param_selector.clear_selection(x_param, is_signal)
         for param in y_first_params:
-            self.paramSelector.y_first_param_selector.clear_selection(param)
+            self.paramSelector.y_first_param_selector.clear_selection(param, is_signal)
+            if not is_signal:#если сигнал не испустится. то не обновятся локальные буферы, хранящие параметры, необходимо сделать это вручную
+                self.manage_y_selectors(self.paramSelector.y_first_param_selector, self.curent_y_first_parameters, self.paramSelector.y_second_param_selector, self.previous_y_first_parameter)
         for param in y_second_params:
-            self.paramSelector.y_second_param_selector.clear_selection(param)
+            self.paramSelector.y_second_param_selector.clear_selection(param, is_signal)
+            if not is_signal:#если сигнал не испустится. то не обновятся локальные буферы, хранящие параметры, необходимо сделать это вручную. дурацкая логика, нужно рефакторить..
+                self.manage_y_selectors(self.paramSelector.y_second_param_selector, self.curent_y_second_parameters, self.paramSelector.y_first_param_selector, self.previous_y_second_parameter)
 
     def set_selections(self, x_param: str, y_first_params: list, y_second_params: list, is_signal = True):
         x_param = self.alias_manager.get_alias(x_param)
         y_first_params = [self.alias_manager.get_alias(param) for param in y_first_params]
         y_second_params = [self.alias_manager.get_alias(param) for param in y_second_params]
-        self.paramSelector.x_param_selector.set_selection(x_param, is_signal)
+        if x_param:
+            self.paramSelector.x_param_selector.set_selection(x_param, is_signal)
         for param in y_first_params:
             self.paramSelector.y_first_param_selector.set_selection(param, is_signal)
         for param in y_second_params:

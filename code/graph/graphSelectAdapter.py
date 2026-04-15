@@ -43,9 +43,11 @@ class graphSelectAdapter:
 		first_parameters = []
 		second_parameters = []
 		y_name = curve_data_obj.rel_data.y_root_name
-		logger.info(f"hide_curve {curve_data_obj.rel_data.root_name=} {curve_data_obj.rel_data.y_root_name=}")
+		logger.info(f"hide_curve {curve_data_obj.rel_data.root_name=} {curve_data_obj.rel_data.y_root_name=} not signal about clear selections")
+		curve_data_obj.delete_curve_from_graph()
+
 		if y_name == "gen":
-			curve_data_obj.delete_curve_from_graph()
+			pass#кривая сгенерирована. ничего не делаем больше, в секторах ее нет
 		else:
 			if curve_data_obj.number_axis == 2:
 				second_parameters = [y_name]
@@ -54,7 +56,7 @@ class graphSelectAdapter:
 			else:
 				logger.error(f"curve_data_obj.number_axis = {curve_data_obj.number_axis} not 1 or 2")
 
-			self.selector.clear_selections("", first_parameters, second_parameters)
+			self.selector.clear_selections("", first_parameters, second_parameters, is_signal = False)
 
 	def stop_session(self):
 		self.graph.stop_session()
