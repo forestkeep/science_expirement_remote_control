@@ -362,12 +362,17 @@ class sessionController():
 
         self.graph_sessions = {}
         self.compare_graph = None
+        self.animation_win = None
 
     def close_graph_window(self):
         if self.compare_graph is not None:
             self.compare_graph.close()
 
     def animation_start(self, animator):
+        if self.animation_win is not None:
+            if self.animation_win.animator.is_playing:
+                self.animation_win.animator.stop()
+            self.animation_win.close()
         self.animation_win = AnimationWindow(animator=animator)
         self.animation_win.show()
             

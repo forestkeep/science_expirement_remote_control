@@ -516,15 +516,9 @@ class treeWin(QWidget):
             result = self.evaluate_expression(self.buf_formula, all_curves)
 
             temp_rel_data = copy.deepcopy( curve.curve_data_obj.rel_data )
-            #buf_rel_data.name = self.buf_new_curve_name
-            #buf_rel_data.y_result = result
-
-            #buf_rel_data.y_current_name = "gen"
-
-            #buf_rel_data.update_names(buf_rel_data.x_current_name, buf_rel_data.y_current_name)
 
             x_meas = measTimeData(device=temp_rel_data.x_device, ch=temp_rel_data.x_ch, param=temp_rel_data.x_param, par_val=all_x, num_or_time=np.arange(len(all_x)))
-            y_meas = measTimeData(device=self.buf_new_curve_name, ch=self.buf_new_curve_name, param=self.buf_new_curve_name, par_val=result, num_or_time=np.arange(len(result)))
+            y_meas = measTimeData(device="", ch="", param=self.buf_new_curve_name, par_val=result, num_or_time=np.arange(len(result)))
             buf_rel_data = relationData(x_meas, y_meas, is_gen=True)
 
             self.curve_created.emit(buf_rel_data, self.buf_formula, self.buf_description)
@@ -584,8 +578,7 @@ class treeWin(QWidget):
         curve_item.update_parameters({"id": "CUR" + str(len(self.curves) + 1)})
         self.curves.append(curve_item)
 
-        #self.button = QPushButton("Нажми меня")
-        #self.tree_widget.setItemWidget(curve_item, 1, self.button)
+        self.toggle_visibility()
 
     def show_context_menu(self, position):
         item = self.tree_widget.itemAt(position)
@@ -639,6 +632,8 @@ class treeWin(QWidget):
             animation_action.triggered.connect(lambda: self.show_animation(root_item))
 
             context_menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
+
+        self.toggle_visibility()
 
     def show_animation(self, item):
         self.animator = Animator(item.curve_data_obj)
@@ -699,6 +694,8 @@ class treeWin(QWidget):
             if index != -1:
                 self.tree_widget.takeTopLevelItem(index)
 
+        self.toggle_visibility()
+
     def show_curve(self, item: CurveTreeItem =None):
         if item is None:
             selected_items = self.tree_widget.selectedItems()
@@ -713,6 +710,9 @@ class treeWin(QWidget):
         if item in self.curves:
             self.curve_shown.emit(item.curve_data_obj)
 
+
+        self.toggle_visibility()
+
     def hide_curve(self, item: CurveTreeItem=None):
         if item is None:
             selected_items = self.tree_widget.selectedItems()
@@ -726,6 +726,8 @@ class treeWin(QWidget):
             #item.curve_data_obj.delete_curve_from_graph() #мы не должны удалять здесь, мы должны отправить сигнал, его перехватит адаптер и разберется, что делать
             self.curve_hide.emit(item.curve_data_obj)
 
+        self.toggle_visibility()
+
     def change_curve_style(self, item:CurveTreeItem):
         customizer =  GraphCustomizer(item.curve_data_obj)
         customizer.exec_()
@@ -733,6 +735,8 @@ class treeWin(QWidget):
     def clear_all(self):
         for curve in self.curves:
             self.delete_curve(curve)
+
+        self.toggle_visibility()
 
 def compute_autocorrelation(data, max_lag=None, normalized=True, method='direct'):
     data = np.asarray(data)

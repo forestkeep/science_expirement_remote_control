@@ -22,6 +22,8 @@ class Animator(QtCore.QObject):
         self.raw_y = curve_data.raw_data_y.copy()
         self.total_points = len(self.raw_x)
 
+        self.curve_name = self.curve.curve_name
+
         # Для последовательного применения фильтров
         self.saved_filters = []          # копия истории фильтров на момент старта
         self.current_filter_index = 0
@@ -38,6 +40,9 @@ class Animator(QtCore.QObject):
         self._is_paused = False
         self._apply_filters_after = False
         self._filter_delay_ms = 500
+
+    def get_curve_name(self):
+        return self.curve_name
 
     def start(self, reset=True, apply_filters_after=False, filter_delay_ms=500):
         """
@@ -69,6 +74,10 @@ class Animator(QtCore.QObject):
         self._is_paused = False
         self._start_timer()
 
+    @property
+    def is_playing(self):
+        return self._is_playing
+
     def stop(self, restore_filters=True):
         """
         Остановка анимации.
@@ -79,13 +88,13 @@ class Animator(QtCore.QObject):
         self.filter_timer.stop()
         self._is_playing = False
         self._is_paused = False
+        self._update_curve_data(self.total_points)#восстановление всех точек
 
-        if restore_filters and self.saved_filters:
+        if self.saved_filters:
             # Восстанавливаем историю и применяем все фильтры сразу (без анимации)
             self.curve.clear_filters()
             for f in self.saved_filters:
                 self.curve.set_filter(f)
-            self.saved_filters = []
 
         self.current_index = 0
         self.finished.emit()
@@ -170,9 +179,10 @@ class Animator(QtCore.QObject):
             self.curve.clear_filters()
             self.filter_timer.start(self._filter_delay_ms)
         else:
-            # Восстанавливаем историю фильтров, если нужно (без применения)
-            if self.saved_filters:
-                self.saved_filters = []
+            # Восстанавливаем историю фильтров сразу и завершаем анимацию
+            self.curve.clear_filters()
+            for f in self.saved_filters:
+                self.curve.set_filter(f)
             self.finished.emit()
 
     def _apply_next_filter(self):

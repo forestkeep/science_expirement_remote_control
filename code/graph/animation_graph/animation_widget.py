@@ -7,7 +7,7 @@ class AnimationWindow(QtWidgets.QWidget):
     def __init__(self, animator, parent=None):
         super().__init__(parent)
         self.animator = animator
-        self.setWindowTitle("Управление анимацией")
+        self.setWindowTitle(self.animator.get_curve_name())
         self.setWindowFlags(QtCore.Qt.Window)
         self.setMinimumSize(400, 500)
         self.init_ui()
