@@ -40,6 +40,7 @@ from graph.select_compare_data import MultiSelectionDialog
 from graph.parameter_alias_manager import ParameterAliasManager
 from graph.compare_sessions_graph import CompareWindowMediator
 from graph.animation_graph.animation_widget import AnimationWindow
+from graph.save_excell import ExcelSaver
 import uuid
 import numpy as np
 from functions import open_log_file
@@ -500,7 +501,26 @@ class sessionController():
 
     def push_button_save_graph(self):
         if self.way_to_save_file is not None:
-            HDF5Facade().save_project(self, self.way_to_save_file)
+            if ".hdf5" in self.way_to_save_file:
+                HDF5Facade().save_project(self, self.way_to_save_file)
+            elif ".xlsx" in self.way_to_save_file:
+                self.excel_saver = ExcelSaver()
+
+                for session in self.graph_sessions.values():
+                    sheet_dict = {}
+                    sheet_name = session.session_name
+                    parameters = session.data_manager.get_all_data()
+                    for type_param in parameters.keys():
+                        for param_name in parameters[type_param].data.keys():
+                            alias_param = self.alias_manager.get_alias(param_name)
+                            sheet_dict[alias_param] = parameters[type_param].data[param_name]
+
+                    self.excel_saver.add_sheet(sheet_name, sheet_dict)
+                self.excel_saver.save(self.way_to_save_file)
+
+            else:
+                logger.warning(f"Unknown file extension {self.way_to_save_file=}")
+                self.push_button_save_graph_as()
         else:
             self.push_button_save_graph_as()
     
@@ -511,16 +531,31 @@ class sessionController():
             self.graphics_win,
             "Save File",
             "",
-            "Installation(*.hdf5)",
+            "Installation(*.hdf5);; Книга Excel (*.xlsx)",
             options=options,
         )
+
+        is_save = False
+
         if ans == "Installation(*.hdf5)":
             if ".hdf5" in fileName:
                 self.way_to_save_file = fileName
             else:
                 self.way_to_save_file = fileName + ".hdf5"
-            HDF5Facade().save_project(self, self.way_to_save_file)
+            is_save = True
 
+        elif ans == "Книга Excel (*.xlsx)":
+            if ".xlsx" in fileName:
+                self.way_to_save_file = fileName
+            else:
+                self.way_to_save_file = fileName + ".xlsx"
+            is_save = True
+        else:
+            logger.warning(f"Unknown file extension {ans=}")
+
+        if is_save:
+            self.push_button_save_graph()
+            
     def push_button_open_graph(self):
         logger.debug("нажата кнопка открыть график")
         options = QtWidgets.QFileDialog.Options()
