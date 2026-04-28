@@ -12,6 +12,7 @@
 import sys
 import time
 import random
+import copy
 
 import logging
 from PyQt5 import QtCore, QtWidgets
@@ -165,12 +166,20 @@ class GraphSession(QWidget):
         self.notification = None
         self.session_id = id
         self.session_controller = session_controller
-        self.session_name = name
+        self._session_name = name
         self.description = None
         self.uuid = uuid.uuid4().hex if ses_uuid is None else ses_uuid
         logger.info(f"Session {self.uuid=} created")
         self._simple_mode = simple_mode
         self.initUI()
+
+    @property
+    def session_name(self):
+        return self._session_name
+    
+    @session_name.setter
+    def session_name(self, value):
+        self._session_name = value
 
     def get_compare_graph(self):
         return self.session_controller.get_compare_graph()
@@ -554,10 +563,10 @@ class sessionController():
         return session_id if is_session_created else False
 
     def __create_session(self, session_name: str, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None, uuid = None) -> bool:
-        new_session_graph = GraphSession(session_id, session_name, alias_manager=self.alias_manager, ses_uuid=uuid, session_controller = self)
+        new_session_graph = GraphSession(session_id, copy.copy(session_name), alias_manager=self.alias_manager, ses_uuid=uuid, session_controller = self)
         try:
             new_session_graph.data_manager.start_new_session(session_id, use_timestamps, is_experiment_running, new_data)
-            logger.info(f"Session {session_id} created")
+            logger.info(f"Session {session_id} {new_session_graph.uuid=} {new_session_graph.session_name=} created")
         except Exception as e:
             logger.warning(f"Failed to start session {session_id} {e}")
             return False
@@ -592,9 +601,9 @@ class sessionController():
                 logger.warning(f"Session {session_id} is running. Broke session deletion.")
 
     def _session_renamed(self, session_id: str, new_session_name: str):
-        logger.info(f"_session_renamed {session_id} {new_session_name}")
+        logger.info(f"_session_renamed {session_id=} {new_session_name=}")
         if self.graph_sessions.get(session_id) is not None:
-            self.graph_sessions[session_id].session_name = new_session_name
+            self.graph_sessions[session_id].session_name = copy.copy(new_session_name)
         else:
             logger.warning(f"Session {session_id} not found")
 
@@ -616,6 +625,7 @@ class sessionController():
     def change_session_name(self, session_id: str, new_session_name: str) -> bool:
         logger.info(f"change_session_name {session_id} {new_session_name}")
         if self.graph_sessions.get(session_id) is None:
+            logger.warning(f"change_session_name Session {session_id=} not found skip new name {new_session_name=}")
             return False
         self._session_renamed(session_id, new_session_name)
         self.session_selector.set_session_name(session_id, new_session_name)

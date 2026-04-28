@@ -217,7 +217,6 @@ class SessionSelectControl(QObject):
         logger.info(f"_session_renamed {session_id} {new_name} list: {self.sessions}")
         for session in self.sessions:
             if session['id'] == session_id:
-                if session['name'] != new_name:
                     logger.info(f"session_name_changed emitted id:{session_id} last_name:{session['name']} new_name:{new_name}")
                     session['name'] = new_name
                     self.session_name_changed.emit(session_id, str(new_name))

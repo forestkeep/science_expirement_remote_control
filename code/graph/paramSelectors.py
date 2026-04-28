@@ -251,8 +251,10 @@ class paramController( QObject):
                                 current_parameters = self.curent_y_first_parameters,
                                 opposite_selector = self.paramSelector.y_second_param_selector,
                                 previous_parameter = self.previous_y_first_parameter)
-        
-        logger.info(f"y_first_param_changed after manage {self.curent_y_first_parameters=} {text=} current text item={self.paramSelector.y_first_param_selector.currentItem().text()}")
+        try:
+            logger.info(f"y_first_param_changed after manage {self.curent_y_first_parameters=} {text=} current text item={self.paramSelector.y_first_param_selector.currentItem().text()}")
+        except:
+            pass
         self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
 
 

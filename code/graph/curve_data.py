@@ -270,10 +270,10 @@ class graphData:
 
     # В методе stop_session нужно обновить данные во всех копиях
     def stop_session(self):
-        if self.plot_items:
-            self.update_all_plots_data()
         if not self.data_reset():
             logger.warning(...)
+        if self.plot_items:
+            self.update_all_plots_data()
 
     def change_style(self, new_style: LineStyle):
         self.saved_style = new_style
