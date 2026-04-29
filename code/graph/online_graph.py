@@ -369,6 +369,7 @@ class sessionController():
         self.graphics_win.rename_param_action.triggered.connect(self.show_alias_dialog)
         self.graphics_win.read_all_statistics_action.triggered.connect(self.read_statistics)
         self.way_to_save_file = None
+        self.way_to_save_project = None
 
         self.graph_sessions = {}
         self.compare_graph = None
@@ -500,61 +501,76 @@ class sessionController():
                 print()
 
     def push_button_save_graph(self):
-        if self.way_to_save_file is not None:
-            if ".hdf5" in self.way_to_save_file:
-                HDF5Facade().save_project(self, self.way_to_save_file)
-            elif ".xlsx" in self.way_to_save_file:
-                self.excel_saver = ExcelSaver()
-
-                for session in self.graph_sessions.values():
-                    sheet_dict = {}
-                    sheet_name = session.session_name
-                    parameters = session.data_manager.get_all_data()
-                    for type_param in parameters.keys():
-                        for param_name in parameters[type_param].data.keys():
-                            alias_param = self.alias_manager.get_alias(param_name)
-                            sheet_dict[alias_param] = parameters[type_param].data[param_name]
-
-                    self.excel_saver.add_sheet(sheet_name, sheet_dict)
-                self.excel_saver.save(self.way_to_save_file)
-
-            else:
-                logger.warning(f"Unknown file extension {self.way_to_save_file=}")
-                self.push_button_save_graph_as()
+        """Быстрое сохранение проекта – всегда в HDF5, независимо от последнего Save As."""
+        if self.way_to_save_project is not None:
+            # Сохраняем по известному пути проекта
+            HDF5Facade().save_project(self, self.way_to_save_project)
+            self.graphics_win.setWindowTitle(self.way_to_save_project)
         else:
-            self.push_button_save_graph_as()
-    
+            # Путь проекта ещё не задан – открываем диалог только для HDF5
+            options = QtWidgets.QFileDialog.Options()
+            options |= QtWidgets.QFileDialog.DontUseNativeDialog
+            fileName, _ = QtWidgets.QFileDialog.getSaveFileName(
+                self.graphics_win,
+                "Сохранить проект",
+                "",
+                "Installation (*.hdf5)",
+                options=options,
+            )
+            if fileName:
+                if not fileName.endswith('.hdf5'):
+                    fileName += '.hdf5'
+                self.way_to_save_project = fileName
+                HDF5Facade().save_project(self, fileName)
+                self.graphics_win.setWindowTitle(fileName)
+
     def push_button_save_graph_as(self):
+        """Диалог «Сохранить как…» для выбора формата: HDF5 или Excel."""
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
-        fileName, ans = QtWidgets.QFileDialog.getSaveFileName(
+
+        # Начальная директория – последний сохранённый проект или последний Excel
+        initial_path = self.way_to_save_project or self.way_to_save_excel or ""
+        fileName, selectedFilter = QtWidgets.QFileDialog.getSaveFileName(
             self.graphics_win,
-            "Save File",
-            "",
-            "Installation(*.hdf5);; Книга Excel (*.xlsx)",
+            "Сохранить как",
+            initial_path,
+            "Installation (*.hdf5);; Книга Excel (*.xlsx)",
             options=options,
         )
+        if not fileName:
+            return
 
-        is_save = False
+        if selectedFilter == "Installation (*.hdf5)":
+            if not fileName.endswith('.hdf5'):
+                fileName += '.hdf5'
+            self.way_to_save_project = fileName
+            HDF5Facade().save_project(self, fileName)
+            self.graphics_win.setWindowTitle(fileName)
 
-        if ans == "Installation(*.hdf5)":
-            if ".hdf5" in fileName:
-                self.way_to_save_file = fileName
-            else:
-                self.way_to_save_file = fileName + ".hdf5"
-            is_save = True
+        elif selectedFilter == "Книга Excel (*.xlsx)":
+            if not fileName.endswith('.xlsx'):
+                fileName += '.xlsx'
+            self.way_to_save_excel = fileName
+            self._save_excel(fileName)
 
-        elif ans == "Книга Excel (*.xlsx)":
-            if ".xlsx" in fileName:
-                self.way_to_save_file = fileName
-            else:
-                self.way_to_save_file = fileName + ".xlsx"
-            is_save = True
         else:
-            logger.warning(f"Unknown file extension {ans=}")
+            logger.warning(f"Неизвестный фильтр при сохранении: {selectedFilter}")
 
-        if is_save:
-            self.push_button_save_graph()
+    def _save_excel(self, filepath: str):
+        """Формирует книгу Excel из данных всех сессий и сохраняет её."""
+        excel_saver = ExcelSaver()
+        for session in self.graph_sessions.values():
+            description = session.description
+            sheet_dict = {}
+            parameters = session.data_manager.get_all_data()
+            for type_param in parameters.keys():
+                for param_name in parameters[type_param].data.keys():
+                    alias_param = self.alias_manager.get_alias(param_name)
+                    sheet_dict[alias_param] = parameters[type_param].data[param_name]
+            excel_saver.add_sheet(sheet_name=session.session_name,sheet_data=sheet_dict, description=description)
+        excel_saver.enable_statistics()
+        excel_saver.save(filepath)
             
     def push_button_open_graph(self):
         logger.debug("нажата кнопка открыть график")
@@ -572,7 +588,8 @@ class sessionController():
 
     def load_project(self, file_path: str):
         HDF5Facade().load_project(file_path, self)
-        self.way_to_save_file = file_path
+        self.way_to_save_project = file_path
+        self.graphics_win.setWindowTitle(self.way_to_save_project)
 
     def show(self):
         self.graphics_win.show()

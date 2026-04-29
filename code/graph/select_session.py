@@ -208,10 +208,9 @@ class SessionSelectControl(QObject):
         logger.info(f"update_session_description {session_id=} {new_description}")
         for session in self.sessions:
             if session['id'] == session_id:
-                if session.get('description') is not None and session['description'] != new_description:
                     session['description'] = new_description
                     self.widget.update_session(session)
-                break
+                    break
 
     def _session_renamed(self, session_id, new_name):
         logger.info(f"_session_renamed {session_id} {new_name} list: {self.sessions}")
