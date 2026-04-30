@@ -70,6 +70,204 @@ class HistoryItem(QTreeWidgetItem):
         self.filter_command = filter_command
 
 class CurveTreeItem(QTreeWidgetItem):
+
+    STAT_ORDER = (
+        "count", "mean", "median", "mode",
+        "std", "var", "min", "max",
+        "range", "cv", "skew", "kurtosis",
+        "q25", "q50", "q75", "iqr",
+        "sum", "n_zeros", "n_positive", "n_negative",
+        "missing_ratio"
+    )
+
+    def __init__(self, curve_data_obj=None, parent=None, name=None):
+        super().__init__(parent)
+
+        self.setText(0, f"Кривая {name}")
+        self.font = QFont()
+        self.font.setItalic(True)
+        self.font.setPointSize(10)
+        self.setFont(0, self.font)
+
+        self.setForeground(1, QBrush(QColor("#ff30ea")))
+
+        self.col_font = QFont()
+        self.col_font.setPointSize(15)
+        self.setFont(1, self.col_font)
+
+        self.setText(1, "--●--")
+        self.setForeground(1, QBrush(QColor("#ff30ea")))
+
+        self.curve_data_obj = curve_data_obj
+
+        self.parameters = {
+            "min_x": None, "max_x": None,
+            "min_y": None, "max_y": None,
+            "name": name, "tip": None, "id": None,
+            # Статистики
+            "count": None, "mean": None, "median": None, "mode": None,
+            "std": None, "var": None, "min": None, "max": None,
+            "range": None, "cv": None, "skew": None, "kurtosis": None,
+            "q25": None, "q50": None, "q75": None, "iqr": None,
+            "sum": None, "n_zeros": None, "n_positive": None, "n_negative": None,
+            "missing_ratio": None
+        }
+
+        self.add_basic_characteristics()
+
+    def set_name(self, name):
+        self.setText(0, QApplication.translate("filters", f"Кривая {name}"))
+        self.parameters["name"] = name
+
+    def add_basic_characteristics(self):
+        self.addChild(QTreeWidgetItem([f"ID: {self.parameters['id']}"]))
+        
+        text = QApplication.translate("GraphWindow", "Тип: {tip}")
+        text = text.format(tip=self.parameters["tip"])
+        self.addChild(QTreeWidgetItem([text]))
+
+        text = QApplication.translate("GraphWindow", "Область определения: ({min_x}, {max_x})")
+        text = text.format(min_x=self.parameters["min_x"], max_x=self.parameters["max_x"])
+        self.addChild(QTreeWidgetItem([text]))
+
+        text = QApplication.translate("GraphWindow", "Область значений: ({min_y}, {max_y})")
+        text = text.format(min_y=self.parameters["min_y"], max_y=self.parameters["max_y"])
+        self.addChild(QTreeWidgetItem([text]))
+
+        self._add_statistics_block()
+
+    def _add_statistics_block(self):
+        """Создаёт родительский элемент 'Статистические данные' и дочерние для каждой статистики."""
+        stats_item = self.findChild(QApplication.translate("GraphWindow", "Статистические данные"))
+        if stats_item is None:
+            stats_item = QTreeWidgetItem(self, [QApplication.translate("GraphWindow", "Статистические данные")])
+            stats_item.setFont(0, self.font)
+            stats_item.setExpanded(True)
+
+            for key in self.STAT_ORDER:
+                value = self.parameters.get(key, None)
+                text = f"{key}: {value}"
+                stats_item.addChild(QTreeWidgetItem([text]))
+
+    def add_new_block(self, block_name, data):
+        block_item = self.findChild(block_name)
+        if block_item is None:
+            block_item = QTreeWidgetItem(self, [block_name])
+            block_item.setFont(0, self.font)
+            block_item.setExpanded(True)
+
+        for key, value in data.items():
+            block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
+
+    def update_history_block(self, data, filter_command=None):
+        block_name = QApplication.translate("GraphWindow", "История изменения")
+        block_item = self.findChild(block_name)
+
+        if block_item is None:
+            block_item = QTreeWidgetItem(self, [block_name])
+            block_item.setFont(0, self.font)
+            block_item.setExpanded(True)
+
+        for key, value in data.items():
+            block_item.addChild(HistoryItem(text=f"{key}: {value}", filter_command=filter_command))
+
+    def clear_history_block(self):
+        block_name = QApplication.translate("GraphWindow", "История изменения")
+        block_item = self.findChild(block_name)
+        if block_item:
+            block_item.takeChildren()
+
+    def delete_block(self, block_name) -> bool:
+        block_item = self.findChild(block_name)
+        if block_item:
+            self.takeChild(self.indexOfChild(block_item))
+            return True
+        return False
+
+    def update_block_data(self, block_name, data, is_add_force=False) -> bool:
+        block_item = self.findChild(block_name)
+        if block_item:
+            for key, value in data.items():
+                if is_add_force:
+                    block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
+                else:
+                    exists = False
+                    for i in range(block_item.childCount()):
+                        if block_item.child(i).text(0).startswith(f"{key}:"):
+                            block_item.child(i).setText(0, f"{key}: {value}")
+                            exists = True
+                            break
+                    if not exists:
+                        block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
+            return True
+        return False
+
+    def update_parameters(self, dict_parameters):
+        for parameter_name, new_value in dict_parameters.items():
+            if parameter_name in self.parameters:
+                if isinstance(new_value, (int, float)) and not isinstance(new_value, bool):
+                    val = np.format_float_scientific(new_value, precision=5, unique=True)
+                else:
+                    val = new_value
+                self.parameters[parameter_name] = val
+            else:
+                try:
+                    logger.info(f"ключ {parameter_name} не найден в параметрах отображения кривой")
+                except NameError:
+                    pass
+        self.update_display()
+
+    def get_description(self):
+        block_item = self.findChild(QApplication.translate("GraphWindow", "Разное"))
+        if block_item:
+            for i in range(block_item.childCount()):
+                text = block_item.child(i).text(0)
+                if QApplication.translate("GraphWindow", "Описание") in text:
+                    text = text.replace(QApplication.translate("GraphWindow", "Описание") + ": ", "")
+                    return text
+        return ""
+
+    def this_choise(self):
+        self.curve_data_obj.higlight_curve()
+
+    def deselection(self):
+        self.curve_data_obj.unhiglight_curve()
+
+    def is_draw(self):
+        return self.curve_data_obj.is_draw
+
+    def update_display(self):
+        self.setText(0, f"{self.parameters['name']}")
+        text_id = QApplication.translate("GraphWindow", "ID: {id}")
+        text_id = text_id.format(id=self.parameters["id"])
+        self.child(0).setText(0, text_id)
+
+        text_tip = QApplication.translate("GraphWindow", "Тип: {tip}")
+        text_tip = text_tip.format(tip=self.parameters["tip"])
+        self.child(1).setText(0, text_tip)
+
+        text_domain = QApplication.translate("GraphWindow", "Область определения: ({min_x}, {max_x})")
+        text_domain = text_domain.format(min_x=self.parameters["min_x"], max_x=self.parameters["max_x"])
+        self.child(2).setText(0, text_domain)
+
+        text_range = QApplication.translate("GraphWindow", "Область значений: ({min_y}, {max_y})")
+        text_range = text_range.format(min_y=self.parameters["min_y"], max_y=self.parameters["max_y"])
+        self.child(3).setText(0, text_range)
+
+        stats_item = self.findChild(QApplication.translate("GraphWindow", "Статистические данные"))
+        if stats_item:
+            for idx, key in enumerate(self.STAT_ORDER):
+                if idx < stats_item.childCount():
+                    val = self.parameters.get(key, None)
+                    stats_item.child(idx).setText(0, f"{key}: {val}")
+
+    def findChild(self, title):
+        for i in range(self.childCount()):
+            if self.child(i).text(0) == title:
+                return self.child(i)
+        return None
+
+class CurveTreeItemold(QTreeWidgetItem):
     def __init__(self, curve_data_obj=None, parent=None, name=None):
         super().__init__(parent)
 

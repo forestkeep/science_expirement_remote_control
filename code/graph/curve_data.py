@@ -14,6 +14,8 @@ import pyqtgraph as pg
 from PyQt5.QtWidgets import QApplication
 import logging
 from PyQt5 import QtWidgets, QtCore, QtGui
+from graph.statistics_calc import StatisticsCalculator, STATISTICS_DESCRIPTIONS
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -381,30 +383,25 @@ class linearData(graphData):
             info['legend'].addItem(info['item'], self.legend.current_name)
 
     def recalc_stats_param(self):
-        filtered_data = self.filtered_y_data[~np.isnan(self.filtered_y_data)]
-        if filtered_data.size == 0:
-            mode_value = np.nan
-        else:
-            unique_values, counts = np.unique(filtered_data, return_counts=True)
-            max_count = counts.max()
-            modes = unique_values[counts == max_count]
-            mode_value = modes.min()
-        #------
-        self.tree_item.update_parameters(
-            {
-                "min_x": np.nanmin(self.filtered_x_data),
-                "max_x": np.nanmax(self.filtered_x_data),
-                "min_y": np.nanmin(self.filtered_y_data),
-                "max_y": np.nanmax(self.filtered_y_data),
-                "name": self.curve_name,
-                "tip": "linear",
-                "mean": np.nanmean(self.filtered_y_data),
-                "std": np.nanstd(self.filtered_y_data),
-                "median": np.nanmedian(self.filtered_y_data),
-                "count": np.count_nonzero(~np.isnan(self.filtered_y_data)),
-                "mode": mode_value
-            }
-        )
+        y_series = pd.Series(self.filtered_y_data)
+
+        all_stat_keys = list(STATISTICS_DESCRIPTIONS.keys())
+
+        stats = StatisticsCalculator._compute_column_statistics(y_series, all_stat_keys)
+
+        params = {
+            "min_x": np.nanmin(self.filtered_x_data),
+            "max_x": np.nanmax(self.filtered_x_data),
+            "name": self.curve_name,
+            "tip": "linear",
+        }
+
+        params.update(stats)
+
+        params["min_y"] = stats["min"]
+        params["max_y"] = stats["max"]
+
+        self.tree_item.update_parameters(params)
 
 class oscData(graphData):
     def __init__(self, data: relationData) -> None:
