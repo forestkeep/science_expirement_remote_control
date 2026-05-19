@@ -26,22 +26,22 @@ logger = logging.getLogger(__name__)
 
 class CommandsMNIPI:
     def __init__(self) -> None:
-        self.PUSH_MENU = 1
-        self.PUSH_RIGHT = b''
-        self.PUSH_Z = b''
-        self.PUSH_R = b''
-        self.PUSH_DOWN = b''
-        self.PUSH_ENTER = b''
-        self.PUSH_UP = b''
-        self.PUSH_L = b''
-        self.PUSH_CALL = b''
-        self.PUSH_LEFT = b''
-        self.PUSH_I = b''
-        self.PUSH_C = b''
-        self.CHANGE_SHIFT=b''
-        self.CHANGE_FREQ=  ''
-        self.CHANGE_LEVEL=b''
-        self.CHANGE_RANGE = b''  # = 
+        self.PUSH_MENU    = b'\x00'   # 0x0 – Меню
+        self.PUSH_RIGHT   = b'\x01'   # 0x1 – Вправо
+        self.PUSH_Z       = b'\x02'   # 0x2 – Z/φ
+        self.PUSH_R       = b'\x03'   # 0x3 – режим R
+        self.PUSH_DOWN    = b'\x04'   # 0x4 – Вниз
+        self.PUSH_ENTER   = b'\x05'   # 0x5 – Ввод
+        self.PUSH_UP      = b'\x06'   # 0x6 – Вверх
+        self.PUSH_L       = b'\x07'   # 0x7 – режим L
+        self.PUSH_CALL    = b'\x08'   # 0x8 – калибровка
+        self.PUSH_LEFT    = b'\x09'   # 0x9 – Влево
+        self.PUSH_I       = b'\x0A'   # 0xA – режим I
+        self.PUSH_C       = b'\x0B'   # 0xB – режим С
+        self.CHANGE_SHIFT = b'\x0C'   # 0xC – изменение смещения
+        self.CHANGE_FREQ  = b'\x0D'   # 0xD – изменение частоты
+        self.CHANGE_LEVEL = b'\x0E'   # 0xE – изменение уровня сигнала
+        self.CHANGE_RANGE = b'\x0F'   # 0xF – изменение поддиапазона
 
 class mnipiE720Class(base_device):
     def __init__(self, name, installation_class) -> None:
@@ -297,6 +297,8 @@ class mnipiE720Class(base_device):
                             val = [f"{focus_val}=" + str(param[9])]
                             val2 = [f"{param[7]}=" + str(param[8])]
                             return val, val2, True
+                        else:
+                            logger.warning(f"попытка {i+1}, не получилось выставить на приборе нужный параметр. {focus_val=} != {param[6]}")
                     i+=1
 
                 val = [f"{focus_val}=" + "fail"]
@@ -603,6 +605,69 @@ if __name__ == "__main__":
 #\xaa'b'\x00'b'\x00'b'c'b'\x04'b'\x00'b'\x03'b'\x17'b'\x01'b'\x02'b'\x02'b'\x06'b'\x84'b'C'b'\x00'b'\xfc'b'\t'b'\x00'b'\x00'b'\x08'b'\x04'b'\x0e'b'
 '''
 '''
+Прибор принимает однобайтные команды соответствующие нажатию клавиш управления:
+0х0 – Меню;
+0х1 – Вправо;
+0х2 – Z/;
+0х3 – режим R;
+0х4 – Вниз;
+0х5 – Ввод;
+0х6 – Вверх;
+0х7 – режим L;
+0х8 – калибровка;
+0х9 – Влево;
+0хА – режим I;
+0хВ – режим С;
+0хС – изменение смещения;
+0хD – изменение частоты;
+0xE – изменение уровня сигнала;
+0xF – изменение поддиапазона.
+
+
+Протокол обмена прибора с компьютером
+ Прибор непрерывно находится в режиме передачи. Формат передаваемого кадра: 0xAA,
+Offset, Level, Frequency, Flags, Mode, Limit, ImParam, SecParam, SecParam_Value,
+ImParam_Value, onChange, CS, где;
+ 0xAA – байт синхронизации;
+Offset – младший и старший байт значения смещения;
+Level – байт значения уровня измерительного сигнала;
+Frequency – младший, старший байт значения частоты и байт множителя 10 частоты;
+Flags – байт флагов:
+4-й бит – автовыбор схемы замещения;
+3-й бит – допуск;
+2-й бит – параллельная/последовательная схема замещения;
+1-й бит – автоматический режим переключения поддиапазонов;
+Mode – режим работы прибора: 0х1 – режим измерения;
+Limit – предел измерения;
+22
+УШЯИ.411218.012 РЭ
+ImParam – измеряемый параметр:
+0х0 – Ср;
+0х1 – Lp;
+0x2 – Rp;
+0x3 – Gp;
+0x4 – Bp;
+0x5 – |Y|;
+0x6 – Q;
+0x7 – Cs;
+0x8 – Ls;
+0x9 – Rs;
+0xA – ;
+0xB – Xs;
+0xC – |Z|;
+0xD – D;
+0xE – I;
+SecParam – дополнительный измеряемый параметр;
+SecParam_Value – старший, средний, младший байты и байт множителя 10
+дополнительного измеряемого параметра в дополнительном коде;
+ImParam_Value – старший, средний, младший байты и байт множителя 10 измеряемого
+параметра в дополнительном коде;
+OnChange – байт флагов редактирования:
+3-й бит – изменение поддиапазона;
+2-й бит – изменение частоты;
+1-й бит – изменение смещения;
+0-й бит – изменение уровня;
+CS – контрольная сумма.
 Прибор принимает однобайтные команды соответствующие нажатию клавиш управления:
 0х0 – Меню;
 0х1 – Вправо;

@@ -92,11 +92,12 @@ class Adapter:
     @ensure_client_open
     def write(self, data):
         if self.which_resourse == resourse.serial:
-            try:
-                ans = self.client.write(data)
-            except:
-                ans = self.client.write(data.encode())
-            return ans
+            if isinstance(data, str):
+                data = data.encode()
+            elif isinstance(data, int):
+                data = bytes([data])
+
+            return self.client.write(data)
         elif self.which_resourse == resourse.pyvisa:
 
             if not isinstance(data, (list, tuple, str)):
