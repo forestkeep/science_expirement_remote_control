@@ -22,6 +22,8 @@ from PyQt5 import QtWidgets
 import multiprocessing
 import time
 from PyQt5.QtCore import QTimer
+from openpyxl import Workbook
+from openpyxl.workbook.child import INVALID_TITLE_REGEX
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +57,9 @@ class savingDataClass:
 
         message = ""
         status = True
-
         excel_writer = None
+
+        result_name = INVALID_TITLE_REGEX.sub(' ', result_name)
 
         if os.path.exists(output_file_path):
             mode = "a"
@@ -71,6 +74,7 @@ class savingDataClass:
                 output_file_path = self.get_free_file_name(output_file_path)
 
             except Exception as e:
+                logger.error(f"ошибка создания рабочего класса для сохранения в эксель - {e}")
                 message = f"{type(e).__name__} - {e}"
                 return output_file_path, message, False
 
@@ -89,6 +93,7 @@ class savingDataClass:
 
         except Exception as e:
             message += f"{type(e).__name__} - {e}"
+            logger.error(f"ошибка сохранения в excel после парсинга - {message} {result_name=} {output_file_path=}")
             return output_file_path, message, False
 
         finally:
@@ -118,6 +123,7 @@ class savingDataClass:
                 file.write(self.resul_df.to_string(index=False))
                 status = True
         except Exception as e:
+            logger.error(f"ошибка сохранения в txt после парсинга - {e} {result_name=} {output_file_path=}")
             message = f"{type(e).__name__} - {e}"
 
         return output_file_path, "", status
