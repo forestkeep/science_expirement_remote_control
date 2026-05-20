@@ -369,6 +369,7 @@ class sessionController():
         self.graphics_win.rename_param_action.triggered.connect(self.show_alias_dialog)
         self.graphics_win.read_all_statistics_action.triggered.connect(self.read_statistics)
         self.way_to_save_file = None
+        self.way_to_save_excel = None
         self.way_to_save_project = None
 
         self.graph_sessions = {}
