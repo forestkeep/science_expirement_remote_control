@@ -13,6 +13,7 @@ import copy
 import logging
 import math
 import time
+import random
 
 import serial
 from PyQt5.QtWidgets import QApplication
@@ -42,6 +43,7 @@ class CommandsMNIPI:
         self.CHANGE_FREQ  = b'\x0D'   # 0xD – изменение частоты
         self.CHANGE_LEVEL = b'\x0E'   # 0xE – изменение уровня сигнала
         self.CHANGE_RANGE = b'\x0F'   # 0xF – изменение поддиапазона
+        self.PREFF       = b'\xAA'   # по инфе с форумов на е7-24 необходимо перед командой отправлять этот префикс, может и для е7-20 так
 
 class mnipiE720Class(base_device):
     def __init__(self, name, installation_class) -> None:
@@ -188,6 +190,11 @@ class mnipiE720Class(base_device):
             self.active_channel_meas.dict_buf_parameters["meas C"] = self.setting_window.check_capacitance.isChecked()
             self.active_channel_meas.dict_buf_parameters["meas Z"] = self.setting_window.check_impedance.isChecked()
 
+    def check_connect(self) -> bool: 
+        """проверяет подключение прибора, если прибор отвечает возвращает True, иначе False. 
+        """
+        response = self.read_parameters(self.client, self.is_debug)
+        return True if response else False
 
     def send_signal_ok(self):  # действие при подтверждении настроек, передать парамтры классу инсталляции, проверить и окрасить в цвет окошко, вписать паарметры
         self.add_parameters_from_window()
@@ -288,7 +295,8 @@ class mnipiE720Class(base_device):
                     i = attempts#False
 
                 while i < attempts:
-                    self.client.write(self.dict_meas_param[focus_val])
+                    self.client.rtscts=True
+                    self.client.write(self.commands.PREFF + self.dict_meas_param[focus_val])
                     param = False
                     param = self.read_parameters(self.client, self.is_debug)
                     logger.debug(f"попытка {i+1}, ответ {param}")
@@ -298,6 +306,8 @@ class mnipiE720Class(base_device):
                             val2 = [f"{param[7]}=" + str(param[8])]
                             return val, val2, True
                         else:
+                            if self.is_debug:
+                                return [f"{focus_val}=" + str(param[9])], [f"{param[7]}=" + str(param[8])], True
                             logger.warning(f"попытка {i+1}, не получилось выставить на приборе нужный параметр. {focus_val=} != {param[6]}")
                     i+=1
 
@@ -459,6 +469,26 @@ class mnipiE720Class(base_device):
                     return False
             else:
                 logger.debug(f"строка не принята")
+                if is_debug:
+                    param_names = [
+                        "Ср", "Lp", "Rp", "Gp", "Bp", "|Y|", "Q", "Cs",
+                        "Ls", "Rs", "fi", "Xs", "|Z|", "D", "I"
+                    ]
+                    
+                    return [
+                        round(random.uniform(0.0, 100.0), 2),    # offset (0..100)
+                        random.randint(0, 100),                   # level (мВ)
+                        random.choice([100, 1000, 10000, 100000]),# frequency (Гц)
+                        random.randint(0, 255),                   # flags
+                        random.randint(0, 5),                     # mode
+                        random.randint(0, 10),                    # limit
+                        random.choice(param_names),               # imparam
+                        "fi",               # secparam
+                        round(random.uniform(1e-12, 1e6), 10),   # secparam_value
+                        round(random.uniform(1e-12, 1e6), 10),   # imparam_value
+                        random.randint(0, 255),                   # onchange
+                        random.randint(0, 255)                    # crc
+                    ]
                 return False
             
 class ch_mnipi_class(base_ch):
