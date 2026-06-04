@@ -20,13 +20,13 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QFrame, QHBoxLa
                              QLabel, QLineEdit, QPushButton, QSizePolicy,
                              QSplitter, QVBoxLayout, QWidget)
 
-from graph.colors import GColors
-from graph.curve_data import hystLoop, oscData
-from graph.dataManager import measTimeData
-from graph.dataManager import relationData
-from graph.toolBarWidget import tool_bar_widget
-from graph.custom_inf_line import RemovableInfiniteLine
-from graph.customPlotWidget import PatchedPlotWidget
+from graph.utils.colors import GColors
+from graph.core.curve_data import hystLoop, oscData
+from graph.core.dataManager import measTimeData
+from graph.core.dataManager import relationData
+from graph.ui.toolBarWidget import tool_bar_widget
+from graph.ui.custom_inf_line import RemovableInfiniteLine
+from graph.ui.customPlotWidget import PatchedPlotWidget
 
 logger = logging.getLogger(__name__)
 

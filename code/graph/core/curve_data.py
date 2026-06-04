@@ -11,17 +11,16 @@
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtWidgets import QApplication
 import logging
-from PyQt5 import QtWidgets, QtCore, QtGui
-from graph.statistics_calc import StatisticsCalculator, STATISTICS_DESCRIPTIONS
+from PyQt5 import QtCore
+from graph.core.statistics_calc import StatisticsCalculator, STATISTICS_DESCRIPTIONS
 import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-from graph.tree_curves import CurveTreeItem
-from graph.dataManager import relationData
-from graph.filters_instance_class import FilterCommand
+from graph.ui.tree_curves import CurveTreeItem
+from graph.core.dataManager import relationData
+from graph.core.filters_instance_class import FilterCommand
 from datetime import datetime
 
 class legendName():

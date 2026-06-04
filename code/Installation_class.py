@@ -35,7 +35,7 @@ from meas_session_data import measSession
 from color_manager import ColorManager
 from experiment_control import ExperimentBridge
 from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, create_clients, ExperimentState, open_log_file
-from graph.online_graph import sessionController
+from graph.main.online_graph import sessionController
 from multiprocessing import Process, Pipe, Queue
 
 logger = logging.getLogger(__name__)

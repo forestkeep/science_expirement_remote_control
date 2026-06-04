@@ -8,10 +8,10 @@ from PyQt5 import QtCore, QtGui
 import numpy as np
 from datetime import datetime
 
-from ..dataManager import graphDataManager, relationData, measTimeData
-from ..curve_data import linearData, LineStyle
-from ..customPlotWidget import PatchedPlotWidget, axisController, axisSettings, axisStyle
-from ..filters_instance_class import FilterCommand
+from ..core.dataManager import graphDataManager, relationData, measTimeData
+from ..core.curve_data import linearData, LineStyle
+from ..ui.customPlotWidget import PatchedPlotWidget, axisController, axisSettings, axisStyle
+from ..core.filters_instance_class import FilterCommand
 
 logger = logging.getLogger(__name__)
 

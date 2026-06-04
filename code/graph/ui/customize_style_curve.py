@@ -1,8 +1,6 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
-#from graph.curve_data import LineStyle
-from graph.line_styles import PRESETS_LINE
+from graph.utils.line_styles import PRESETS_LINE
 import pyqtgraph as pg
-import numpy as np
 import copy
 
 class GraphCustomizer(QtWidgets.QDialog):

@@ -22,7 +22,7 @@ from SettingsManager import SettingsManager
 import interface.info_window_dialog
 from device_creator.dev_creator import deviceCreator
 from device_creator.run_commands import TestCommands
-from graph.online_graph import sessionController
+from graph.main.online_graph import sessionController
 from Installation_class import installation_class
 from interface.main_window import Ui_MainWindow
 from controlDevicesJSON import search_devices_json

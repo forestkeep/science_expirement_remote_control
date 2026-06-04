@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSignal
 from dataclasses import dataclass
 from pyqtgraph import AxisItem
-from graph.custom_inf_line import RemovableInfiniteLine
+from graph.ui.custom_inf_line import RemovableInfiniteLine
 
 @dataclass
 class axisStyle:

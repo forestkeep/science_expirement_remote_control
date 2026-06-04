@@ -13,16 +13,14 @@ import time
 
 import pyqtgraph as pg
 import logging
-import numpy as np
 from PyQt5.QtCore import QObject, Qt, pyqtSignal
-from PyQt5.QtGui import QFont, QFontMetrics, QIcon, QColor
-from PyQt5.QtWidgets import QApplication, QHBoxLayout, QSizePolicy, QVBoxLayout, QComboBox, QLineEdit, QMenu, QAction, QColorDialog, QPushButton, QWidget
-from PyQt5 import QtWidgets, QtGui, QtCore
-from graph.colors import GColors
-from graph.curve_data import linearData, LineStyle
-from graph.dataManager import relationData
-from graph.customPlotWidget import PatchedPlotWidget
-from graph.filters_instance_class import FilterCommand
+from PyQt5.QtGui import QFontMetrics
+from PyQt5.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QPushButton, QWidget
+from graph.utils.colors import GColors
+from graph.core.curve_data import linearData, LineStyle
+from graph.core.dataManager import relationData
+from graph.ui.customPlotWidget import PatchedPlotWidget
+from graph.core.filters_instance_class import FilterCommand
 
 logger = logging.getLogger(__name__)
 

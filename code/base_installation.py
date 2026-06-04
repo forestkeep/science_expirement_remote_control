@@ -16,20 +16,18 @@ import webbrowser
 import os
 from datetime import datetime
 
-from pymodbus.client import ModbusSerialClient
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
-from Adapter import Adapter, instrument
+from Adapter import instrument
 from Devices.Classes import (not_ready_style_background,
                              not_ready_style_border, ready_style_border)
-from graph.online_graph import sessionController
 
 from interface.Message import messageDialog
 from saving_data.Parse_data import savingController, type_save_file
 
-from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, clear_pipe, create_clients, ExperimentState
+from functions import get_active_ch_and_device, ExperimentState
 
 logger = logging.getLogger(__name__)
 

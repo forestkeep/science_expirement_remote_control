@@ -21,9 +21,9 @@ from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QDialog,
 
 import copy
 
-from graph.calc_values_for_graph import ArrayProcessor
-from graph.customize_style_curve import GraphCustomizer
-from graph.dataManager import relationData, measTimeData
+from graph.core.calc_values_for_graph import ArrayProcessor
+from graph.ui.customize_style_curve import GraphCustomizer
+from graph.core.dataManager import relationData, measTimeData
 from graph.animation_graph.curve_animation import Animator
 import numexpr as ne
 import numpy as np

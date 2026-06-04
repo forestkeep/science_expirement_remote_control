@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Dict, Optional, List
+from typing import Dict, List
 import numpy as np
 
 COUNT = """

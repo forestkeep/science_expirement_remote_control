@@ -1,11 +1,7 @@
 import logging
-from PyQt5.QtCore import QPoint, QTimer, pyqtSignal
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
-                             QSizePolicy, QSplitter, QTabWidget, QWidget, QDialog, QAction, QVBoxLayout, QStackedWidget, QFileDialog)
-
+from PyQt5.QtWidgets import QMainWindow
+                           
 logger = logging.getLogger(__name__)
-
 
 class CompareWindowMediator:
 

@@ -18,7 +18,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (QApplication, QDoubleSpinBox, QHBoxLayout, QLabel,
                              QPushButton, QSpinBox, QVBoxLayout, QWidget,
                              QCheckBox, QGroupBox, QToolTip, QComboBox)
-from graph.filters_instance_class import FilterCommand
+from graph.core.filters_instance_class import FilterCommand
 import logging
 
 logger = logging.getLogger(__name__)

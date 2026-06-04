@@ -17,7 +17,7 @@ import numpy as np
 import copy
 
 try:
-    from parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
+    from graph.core.parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
 except:
     from .parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
 

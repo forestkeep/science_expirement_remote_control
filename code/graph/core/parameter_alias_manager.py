@@ -1,10 +1,9 @@
 import re
-from dataclasses import dataclass
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, List, Tuple
 from PyQt5.QtCore import pyqtSignal, QObject, Qt
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QTableWidget, 
                             QTableWidgetItem, QPushButton, QHeaderView, QMessageBox,
-                            QLineEdit, QLabel, QStyledItemDelegate)
+                            QLineEdit, QStyledItemDelegate)
 import logging
 
 logger = logging.getLogger(__name__)

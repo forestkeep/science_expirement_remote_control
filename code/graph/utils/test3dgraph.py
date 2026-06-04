@@ -12,7 +12,7 @@
 import sys
 
 import numpy as np
-from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
+from pyqtgraph.Qt import QtCore, QtWidgets
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 

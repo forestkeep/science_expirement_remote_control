@@ -15,42 +15,36 @@ import random
 import copy
 
 import logging
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import QPoint, QTimer, pyqtSignal, Qt
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import QPoint, QTimer, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
-                             QSizePolicy, QSplitter, QTabWidget, QWidget, QDialog, QAction, QVBoxLayout, QStackedWidget, QFileDialog)
+                             QSizePolicy, QSplitter, QTabWidget, QWidget, QAction, QVBoxLayout, QStackedWidget)
 
-from graph.filters_win import filtersClass
-from graph.graph_main import manageGraph
-from graph.notification import NotificationWidget
-from graph.osc_wave_graph import graphOsc
-from graph.tabPage_win import tabPage
+from graph.ui.filters_win import filtersClass
+from graph.main.graph_main import manageGraph
+from graph.ui.notification import NotificationWidget
+from graph.ui.osc_wave_graph import graphOsc
+from graph.ui.tabPage_win import tabPage
 from PyQt5.QtCore import QEvent
-from graph.tree_curves import treeWin
-from graph.dataManager import graphDataManager
-from graph.paramSelectors import paramSelector, paramController
-from graph.graphSelectAdapter import graphSelectAdapter
-from graph.select_session import SessionSelectControl
-from graph.buttons_panel import ButtonsControl
-from graph.osc_selector import OscilloscopeSelector
-from graph.waveSelectAdapter import waveSelectAdapter
+from graph.ui.tree_curves import treeWin
+from graph.core.dataManager import graphDataManager
+from graph.ui.paramSelectors import paramSelector, paramController
+from graph.adapters.graphSelectAdapter import graphSelectAdapter
+from graph.ui.select_session import SessionSelectControl
+from graph.ui.buttons_panel import ButtonsControl
+from graph.ui.osc_selector import OscilloscopeSelector
+from graph.adapters.waveSelectAdapter import waveSelectAdapter
 from graph.hdf5_io.facade import HDF5Facade
-from graph.select_compare_data import MultiSelectionDialog
-from graph.parameter_alias_manager import ParameterAliasManager
-from graph.compare_sessions_graph import CompareWindowMediator
+from graph.core.parameter_alias_manager import ParameterAliasManager
+from graph.comparison.compare_sessions_graph import CompareWindowMediator
 from graph.animation_graph.animation_widget import AnimationWindow
-from graph.save_excell import ExcelSaver
+from graph.export.save_excell import ExcelSaver
 import uuid
 import numpy as np
 from functions import open_log_file
-from graph.filters_instance_class import FilterCommand
-
-try:
-    from parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
-except:
-    from .parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
-#from graph.saving_controller import savingController
+from graph.core.filters_instance_class import FilterCommand
+from graph.core.parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
 
 logger = logging.getLogger(__name__)
 

@@ -2,11 +2,10 @@ import threading
 import numpy as np
 import pandas as pd
 from copy import deepcopy
-from dataclasses import dataclass
 from typing import Dict, Optional, List
-from graph.dataManager import measTimeData
+from graph.core.dataManager import measTimeData
 import logging
-from graph.statistics_calc import StatisticsCalculator
+from graph.core.statistics_calc import StatisticsCalculator
 
 from openpyxl.workbook.child import INVALID_TITLE_REGEX
 
