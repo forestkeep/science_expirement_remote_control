@@ -320,9 +320,9 @@ class manageGraph(QObject):
         self.hide_second_line_grid()
 
         logger.info(f"update_data {data_first_axis} {data_second_axis} {is_updated=}")
-        logger.info(f"{self.__stack_curve.items()=}")
+        #logger.info(f"{self.__stack_curve.items()=}")
         if not is_updated:
-            for key, curve in self.__stack_curve.items():    
+            for key, curve in self.__stack_curve.items():
                 if curve.is_draw:
                     if key not in [data.root_name for data in data_first_axis] and key not in [data.root_name for data in data_second_axis]:
                             logger.info(f"Удаление кривой {curve.curve_name} из графика")
@@ -344,6 +344,7 @@ class manageGraph(QObject):
         elif not curve.is_draw:
             curve.number_axis = axis_num
             curve.add_to_graph(graph, legend, axis_num)
+            self._refresh_curve_data(curve, data)
         elif is_updated:
             self._refresh_curve_data(curve, data)
 

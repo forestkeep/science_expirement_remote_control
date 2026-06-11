@@ -130,6 +130,7 @@ class graphData:
         self.i_am_click_now = False 
 
         self.number_axis = None
+        self.curve_name = None
 
         self.saved_style = None
 
@@ -182,8 +183,9 @@ class graphData:
         Добавляет копию кривой на указанный график.
         Если для этого viewbox уже есть копия, ничего не делает (или обновляет).
         """
-        if self.plot_items.get(graph_field) is not None:  
-            logger.info(f"Curve {self.curve_name} already exists on graph {graph_field} change link")
+        if self.plot_items.get(graph_field) is not None:
+            pass
+            #logger.info(f"Curve {self.curve_name} already exists on graph {graph_field} change link")
 
         new_item = self.create_plot_item()
         graph_field.addItem(new_item)
