@@ -170,7 +170,7 @@ class installation_class( ExperimentBridge, analyse):
     def reconstruct_installation(self, installation_list: list, json_devices: dict = None):
         """Reconstruct installation from list of device names"""
         self.dict_active_device_class = {}
-        self.graph_controller = sessionController()
+        self.graph_controller = sessionController(current_version=self.version_app)
         self.inst_color_manager = ColorManager()
         #self.graph_controller.graphics_win.graph_win_close_signal.connect(self.graph_win_closed)
         self.measurement_parameters = {}

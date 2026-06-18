@@ -241,7 +241,7 @@ class Session(BaseModel):
 
 @dataclass
 class ProjectFile(BaseModel):
-	version: str = "1.3"
+	version_app: str = "undefined"
 	creation_date: datetime = field(default_factory=datetime.now)
 	sessions: Dict[str, Session] = field(default_factory=dict)
 	aliases: Dict[str, str] = field(default_factory=dict)

@@ -13,12 +13,13 @@ from ..core.curve_data import linearData, LineStyle
 from ..ui.customPlotWidget import PatchedPlotWidget, axisController, axisSettings, axisStyle
 from ..core.filters_instance_class import FilterCommand
 
+
 logger = logging.getLogger(__name__)
 
 class ProjectToHDF5Adapter:
 	"""Адаптер для преобразования объектов ядра в модели HDF5."""
 	
-	def convert_project(self, core_project) -> ProjectFile:
+	def convert_project(self, core_project) -> ProjectFile: #sessionController
 		"""
 		Преобразует объект проекта ядра в ProjectFile.
 		
@@ -31,7 +32,7 @@ class ProjectToHDF5Adapter:
 		project_file = ProjectFile(
 			name=None,
 			description=None,
-			version="1.0",
+			version_app=core_project.version_app,
 			creation_date=datetime.now()
 		)
 

@@ -50,6 +50,7 @@ class devFile:
 class instController(QtWidgets.QMainWindow):
     def __init__(self, settings_manager: SettingsManager, version):
         self.settings_manager = settings_manager
+        self.version_app = version
 
         self.graph_controller   = None
         self.device_creator = deviceCreator()
@@ -131,7 +132,7 @@ class instController(QtWidgets.QMainWindow):
 
     def open_graph_in_exp(self, filepath = False):
         if self.graph_controller is None:
-            self.graph_controller = sessionController()
+            self.graph_controller = sessionController(current_version=self.version_app)
 
         status = True
         message = ""

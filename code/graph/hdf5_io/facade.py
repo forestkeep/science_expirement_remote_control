@@ -72,11 +72,13 @@ class HDF5Facade:
             project_file = ProjectFile(
                 name=file_attrs.get('name', ''),
                 description=file_attrs.get('description', ''),
-                version=file_attrs.get('version', '1.0'),
+                version_app=file_attrs.get('version_app', 'undefined'),
                 creation_date=datetime.fromisoformat(file_attrs.get('creation_date', datetime.now().isoformat()))
             )
-            logger.info(f"Project {project_file.name} loaded from {file_path}")
+            logger.info(f"Project {project_file.name} attributes loaded from {file_path} version {project_file.version_app}")
 
+            if project_file.version_app != core_project_class.version_app:
+                logger.warning(f"Project version {project_file.version_app} is different from core version {core_project_class.version_app}")
 
             project_file.aliases = h5_file.read_aliases()
             session_uuids = h5_file.get_session_uuids()

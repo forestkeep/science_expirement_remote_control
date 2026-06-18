@@ -22,7 +22,7 @@ class HDF5File(BaseHDF5Entity):
     def write_file_attributes(self, project_file: ProjectFile):
         """Записывает атрибуты файла."""
         attributes = {
-            'version app': project_file.version,
+            'version_app': project_file.version_app,
             'creation_date': project_file.creation_date.isoformat(),
             #'name': "rtr",
             #'description': "qqqq",

@@ -60,9 +60,9 @@ def time_decorator(func):
 class GraphWindow(QMainWindow):
     graph_win_close_signal = pyqtSignal(int)
 
-    def __init__(self, session_selector, import_buttons=None):
+    def __init__(self, session_selector, import_buttons=None, version = None):
         super().__init__()
-        self.setWindowTitle("Online Graph")
+        self.setWindowTitle(("Online Graph " + version) if version else "Online Graph")
         self.setGeometry(100, 100, 1200, 700)
         self.notification = None
         self.initUI(session_selector = session_selector,import_buttons=import_buttons)
@@ -339,7 +339,8 @@ class running_exp_test(QWidget):
             self.graph_class.stop_session_running( self.id )
 
 class sessionController():
-    def __init__(self):
+    def __init__(self, current_version = None):
+        self.version_app = "1.0.0" if not current_version else str(current_version)
         self.alias_manager = ParameterAliasManager()
         self.session_selector = SessionSelectControl()
         self.buttons_controller = ButtonsControl(self.session_selector)
@@ -354,7 +355,7 @@ class sessionController():
         self.buttons_controller.new_data_imported.connect(self.data_imported)
         self.buttons_controller.compare_sessions_requested.connect(self.compare_sessions)
 
-        self.graphics_win = GraphWindow(self.controll_sessions_win, self.buttons_controller.widget)
+        self.graphics_win = GraphWindow(self.controll_sessions_win, self.buttons_controller.widget, version=self.version_app)
         self.graphics_win.graph_win_close_signal.connect(self.close_graph_window)
         self.graphics_win.save_action.triggered.connect(self.push_button_save_graph)
         self.graphics_win.load_action.triggered.connect(self.push_button_open_graph)
@@ -704,7 +705,7 @@ class sessionController():
     
 def run_graph_process(queue):
     app = QApplication([])
-    controller = sessionController()
+    controller = sessionController(current_version="test")
     controller.controll_sessions_win.show()
     app.exec_()
 
@@ -724,7 +725,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     qdarktheme.setup_theme("dark", corner_shape="sharp", custom_colors={"primary": "#DDBCFF"})
 
-    my_session_class = sessionController()
+    my_session_class = sessionController(current_version="test")
     my_session_class.graphics_win.show()
 
     test_class = running_exp_test(my_session_class, 65, 0.1)
