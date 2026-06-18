@@ -322,16 +322,15 @@ class graphData:
         if filter_command not in self.filters_history:
             return
         self.filters_history.remove(filter_command)
-        self.data_reset()
         self.update_filters_after_delete(self.filters_history)
 
     def clear_filters(self):
         self.filters_history = []
-        self.data_reset()
         self.update_filters_after_delete(self.filters_history)
         self.tree_item.clear_history_block()
 
     def update_filters_after_delete(self, filters: list):
+        self.data_reset()
         for filter in filters:
             self.filtered_x_data, self.filtered_y_data, message = filter.apply(self.filtered_x_data, self.filtered_y_data)
         for curves in self.plot_items.values():

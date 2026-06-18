@@ -453,6 +453,7 @@ class HDF5ToProjectAdapter:
 		new_data.is_draw = plot_model.linear_data.is_draw
 		new_data.is_curve_selected = plot_model.linear_data.is_curve_selected
 
+		new_data.clear_filters()
 		for filter in plot_model.history:
 			filter_temp = FilterCommand(
 				filter_type=filter.filter_type,

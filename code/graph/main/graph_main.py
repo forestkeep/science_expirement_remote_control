@@ -196,21 +196,14 @@ class manageGraph(QObject):
             return
         
         if curve:
-            if not curve.data_reset():
-                self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Все фильтры уже сброшены, сбрасывать больше нечего." ) )
-            for curves in curve.plot_items.values():
-                curves['item'].setData(curve.filtered_x_data, curve.filtered_y_data)
-            curve.recalc_stats_param()
+            curve.clear_filters()
             if hasattr(curve, "tree_item"):
                 name_block = QApplication.translate("GraphWindow","История изменения")
                 curve.tree_item.delete_block(name_block)
         else:
             for curve in self.__stack_curve.values():
                 if curve.is_curve_selected:
-                    curve.data_reset()
-                    for curves in curve.plot_items.values():
-                        curves['item'].setData(curve.filtered_x_data, curve.filtered_y_data)
-                    curve.recalc_stats_param()
+                    curve.clear_filters()
                     if hasattr(curve, "tree_item"):
                         name_block = QApplication.translate("GraphWindow","История изменения")
                         curve.tree_item.delete_block(name_block)
