@@ -344,7 +344,8 @@ class manageGraph(QObject):
         elif not curve.is_draw:
             curve.number_axis = axis_num
             curve.add_to_graph(graph, legend, axis_num)
-            self._refresh_curve_data(curve, data)
+            if self.main_class.data_manager.is_session_running():
+                self._refresh_curve_data(curve, data)#обновляем данные только когда эксперимент идет
         elif is_updated:
             self._refresh_curve_data(curve, data)
 
