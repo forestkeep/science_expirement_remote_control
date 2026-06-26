@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 from graph.ui.tree_curves import CurveTreeItem
 from graph.core.dataManager import relationData
 from graph.core.filters_instance_class import FilterCommand
+from graph.core.compression_data import lttb_downsample
 from datetime import datetime
 
 class legendName():
@@ -153,6 +154,7 @@ class graphData:
         Создаёт новый PlotDataItem на основе текущих данных и стиля.
         Возвращает созданный item.
         """
+        #x, y = lttb_downsample(self.filtered_x_data, self.filtered_y_data)
         x = self.filtered_x_data
         y = self.filtered_y_data
 
@@ -311,6 +313,8 @@ class graphData:
         self.filtered_x_data, self.filtered_y_data, message = filter_command.apply(self.filtered_x_data, self.filtered_y_data)
         for curves in self.plot_items.values():
             curves['item'].setData(self.filtered_x_data, self.filtered_y_data)
+            #x_data, y_data = lttb_downsample(self.filtered_x_data, self.filtered_y_data)
+            #curves['item'].setData(x_data, y_data)
 
         self.recalc_stats_param()
 

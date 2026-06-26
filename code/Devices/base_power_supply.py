@@ -553,23 +553,41 @@ class basePowerSupply(base_device):
             )
 
     # действия перед стартом эксперимента, включить, настроить, подготовить и т.д.
-    def action_before_experiment(self, number_of_channel) -> bool:
-        """устанавливает значения тока и напряжения, включает выход прибора"""
-
+    def action_before_experiment(self, number_of_channel, max_attempts=3, retry_delay=1) -> bool:
+        """Устанавливает значения тока и напряжения, включает выход прибора.
+        При неудаче выполняет несколько попыток с задержкой."""
         self.switch_channel(number_of_channel)
-        is_correct = True
-        if ( self._set_voltage( self.active_channel_act.number, self.active_channel_act.min_step_V ) == False ):
-            logger.warning("ошибка установки тока")
-            is_correct = False
-        if ( self._set_current( self.active_channel_act.number, self.active_channel_act.min_step_A ) == False ):
-            logger.warning("ошибка установки напряжения")
-            is_correct = False
-
-        if is_correct:
-            self._output_switching_on( self.active_channel_act.number )
-            return True
-        else:
-            return False
+        for attempt in range(1, max_attempts + 1):
+            voltage_ok = self._set_voltage(
+                self.active_channel_act.number, self.active_channel_act.min_step_V
+            )
+            current_ok = self._set_current(
+                self.active_channel_act.number, self.active_channel_act.min_step_A
+            )
+            
+            if voltage_ok and current_ok:
+                self._output_switching_on(self.active_channel_act.number)
+                return True
+            
+            if not voltage_ok:
+                logger.warning(
+                    f"Попытка {attempt}: ошибка установки напряжения "
+                    f"(канал {self.active_channel_act.number})"
+                )
+            if not current_ok:
+                logger.warning(
+                    f"Попытка {attempt}: ошибка установки тока "
+                    f"(канал {self.active_channel_act.number})"
+                )
+            
+            if attempt < max_attempts:
+                time.sleep(retry_delay)
+        
+        logger.error(
+            "Не удалось выполнить предэкспериментальную настройку после %d попыток",
+            max_attempts
+        )
+        return False
 
     def action_end_experiment( self, ch ) -> bool:
         """выключение прибора"""
