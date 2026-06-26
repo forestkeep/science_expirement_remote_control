@@ -244,76 +244,65 @@ class mnipiE720Class(base_device):
         self.switch_channel(ch_name=ch.get_name())
 
         start_time = time.perf_counter()
-        parameters = [self.name + " " + str(ch.get_name())]
+        parameters = [f"{self.name} {ch.get_name()}"]
         is_correct = True
+        attempts = 1
 
-        if self.active_channel_meas.dict_settable_parameters["meas L"] == True:
-                val, val2, status = self.meas_focus_parameter(focus_val="Lp", attempts=10)
-                parameters.append(val)
-                parameters.append(val2)
-                self.client.close()
+        meas_map = [
+            ("meas L", "Lp"),
+            ("meas R", "Rp"),
+            ("meas I", "I"),
+            ("meas C", "Ср"),
+            ("meas Z", "|Z|"),
+        ]
 
-        if self.active_channel_meas.dict_settable_parameters["meas R"] == True:
-                val, val2, status = self.meas_focus_parameter(focus_val="Rp", attempts=10)
-                parameters.append(val)
-                parameters.append(val2)
-                self.client.close()
+        any_measurement_attempted = False
 
-        if self.active_channel_meas.dict_settable_parameters["meas I"] == True:
-                val, val2, status = self.meas_focus_parameter(focus_val='I', attempts=10)
-                parameters.append(val)
-                parameters.append(val2)
-                self.client.close()
+        for dict_key, focus_val in meas_map:
+            if self.active_channel_meas.dict_settable_parameters.get(dict_key, False):
+                any_measurement_attempted = True
+                val, val2, status = self.meas_focus_parameter(focus_val=focus_val, attempts=attempts)
+                if not status:
+                    is_correct = False
+                else:
+                    parameters.append(val)
+                    parameters.append(val2)
 
-        if self.active_channel_meas.dict_settable_parameters["meas C"] == True:
-                val, val2, status = self.meas_focus_parameter(focus_val='Ср', attempts=10)
-                parameters.append(val)
-                parameters.append(val2)
-                self.client.close()
-
-        if self.active_channel_meas.dict_settable_parameters["meas Z"] == True:
-                val, val2, status = self.meas_focus_parameter(focus_val='|Z|', attempts=10)
-                parameters.append(val)
-                parameters.append(val2)
-                self.client.close()
+        # Если не было попыток измерений, считаем неудачей
+        if not any_measurement_attempted:
+            is_correct = False
 
         if self.is_debug:
             is_correct = True
 
-        if is_correct:
-            ans = ch_response_to_step.Step_done
-        else:
-            ans = ch_response_to_step.Step_done
-
+        ans = ch_response_to_step.Step_done if is_correct else ch_response_to_step.Step_fail
         return ans, parameters, time.perf_counter() - start_time
 
-
     def meas_focus_parameter(self, focus_val, attempts):
-                logger.debug(f"измеряем {focus_val}")
-                i=0
-                if focus_val not in self.dict_meas_param.keys():
-                    i = attempts#False
+        logger.debug(f"измеряем {focus_val}")
+        i=0
+        if focus_val not in self.dict_meas_param.keys():
+            i = attempts#False
 
-                while i < attempts:
-                    self.client.rtscts=True
-                    self.client.write(self.commands.PREFF + self.dict_meas_param[focus_val])
-                    param = False
-                    param = self.read_parameters(self.client, self.is_debug)
-                    logger.debug(f"попытка {i+1}, ответ {param}")
-                    if param is not False:
-                        if param[6] == focus_val:
-                            val = [f"{focus_val}=" + str(param[9])]
-                            val2 = [f"{param[7]}=" + str(param[8])]
-                            return val, val2, True
-                        else:
-                            if self.is_debug:
-                                return [f"{focus_val}=" + str(param[9])], [f"{param[7]}=" + str(param[8])], True
-                            logger.warning(f"попытка {i+1}, не получилось выставить на приборе нужный параметр. {focus_val=} != {param[6]}")
-                    i+=1
+        while i < attempts:
+            #self.client.rtscts=True
+            #self.client.write(self.commands.PREFF + self.dict_meas_param[focus_val])
+            #self.client.write(self.dict_meas_param[focus_val] + b"\n")
+            self.client.write(self.dict_meas_param[focus_val])
+            time.sleep(0.1)
+            param = False
+            param = self.read_parameters(self.client, self.is_debug)
+            logger.debug(f"попытка {i+1}, ответ {param}")
+            if param is not False:
+                if param[6] == focus_val:
+                    val = [f"{focus_val}=" + str(param[9])]
+                    val2 = [f"{param[7]}=" + str(param[8])]
+                    return val, val2, True
+            i+=1
 
-                val = [f"{focus_val}=" + "fail"]
-                val2 = [f"sec=" + "fail"]
-                return val, val2, False
+        val = [f"{focus_val}=" + "fail"]
+        val2 = [f"sec=" + "fail"]
+        return val, val2, False
                     
     def decode_parameters(self, buffer):
         def process_block_sec_param(BlockIn):
