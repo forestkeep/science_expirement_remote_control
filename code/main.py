@@ -18,7 +18,7 @@ from installation_controller import instController
 
 logger = logging.getLogger(__name__)
 
-VERSION_APP = "1.5.6"
+VERSION_APP = "1.5.7"
 
 def migrate_settings(old_settings: dict[str, any], current_version: str) -> dict[str, any]:
     """
@@ -167,10 +167,7 @@ if __name__ == "__main__":
         def_persistent_sett=persistent_settings
     )
 
-    #file_path = os.path.join(os.path.dirname(__file__), "test_data", "testhdf.hdf5")
-    #file_path = os.path.join(os.path.dirname(__file__), "test_data", "вода 2толщина_битый.hdf5")
-
-    logger.info(f"приложение запущена, файл открытия {file_path=}")
+    logger.info(f"приложение запущено, файл открытия {file_path=}")
 
     start_window = instController( settings_manager, version=VERSION_APP )
 
@@ -184,7 +181,7 @@ if __name__ == "__main__":
     message = ""
 
     if type_file == "ns":
-        status, message = start_window.check_open_type(fileName=file_path)
+        status, message = start_window.check_open_type(filepath=file_path)
     elif type_file == "hdf5":
         status, message = start_window.open_graph_in_exp(filepath=file_path)
 

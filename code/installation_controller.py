@@ -94,12 +94,12 @@ class instController(QtWidgets.QMainWindow):
         #----------------------
 
 
-    def check_open_type(self, file_path):
+    def check_open_type(self, filepath):
         status = False
         message = ""
-        if os.path.isfile(file_path):
+        if os.path.isfile(filepath):
             self.cur_install.reconstruct_installation([], [])
-            status, buffer = self.cur_install.open_saved_installation(fileName=file_path)
+            status, buffer = self.cur_install.open_saved_installation(fileName=filepath)
             if status:
                 self.cur_install.installation_window.installation_close_signal.connect(
                 self.unlock_to_create_new_installation
@@ -113,8 +113,8 @@ class instController(QtWidgets.QMainWindow):
 
                 self.close()
             else:
-                logger.warning(f"ошибка восстановления установки {file_path=} {buffer=}")
-                message = f"ошибка восстановления установки {file_path=} {buffer=}"
+                logger.warning(f"ошибка восстановления установки {filepath=} {buffer=}")
+                message = f"ошибка восстановления установки {filepath=} {buffer=}"
 
         return status, message
 

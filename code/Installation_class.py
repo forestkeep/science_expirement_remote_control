@@ -384,8 +384,8 @@ class installation_class( ExperimentBridge, analyse):
             file.write(str(name_device) + str(text) + "\n\r")
     
     def close_app(self, event):
-        event.accept()
         self.close_other_windows()
+        event.accept()
 
     def close_other_windows(self):
         self.stop_scan_thread = True
@@ -400,6 +400,7 @@ class installation_class( ExperimentBridge, analyse):
                 self.experiment_process.join(timeout=1)
                 
         self.saving_controller.terminate_saving_processes()
+        self.graph_controller.close()
 
     def delete_device(self, device):
         if self.is_experiment_running() is False:
