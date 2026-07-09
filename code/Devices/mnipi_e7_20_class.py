@@ -285,11 +285,8 @@ class mnipiE720Class(base_device):
             i = attempts#False
 
         while i < attempts:
-            #self.client.rtscts=True
-            #self.client.write(self.commands.PREFF + self.dict_meas_param[focus_val])
-            #self.client.write(self.dict_meas_param[focus_val] + b"\n")
             self.client.write(self.dict_meas_param[focus_val])
-            time.sleep(0.1)
+            time.sleep(0.5)
             param = False
             param = self.read_parameters(self.client, self.is_debug)
             logger.debug(f"попытка {i+1}, ответ {param}")

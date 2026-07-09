@@ -383,6 +383,7 @@ class baseInstallation:
                     dev = self.dict_device_class[key](
                             name=key_dev, installation_class=self
                         )
+                    dev.set_debug(self.is_debug)
                     self.dict_active_device_class[key_dev] = (dev)
                     new_added_device[key_dev] = (dev)
 
@@ -397,6 +398,7 @@ class baseInstallation:
                         name=key_dev, installation_class=self
                         )
                     dev.load_json(key.json_data)
+                    dev.set_debug(self.is_debug)
                     self.dict_active_device_class[key_dev] = (dev)
                     new_added_device[key_dev] = (dev)
 
