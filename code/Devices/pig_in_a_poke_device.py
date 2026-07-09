@@ -41,6 +41,8 @@ class pigInAPoke(base_device):
 			which_part_in_ch.only_meas
 		)  # указываем, из каких частей состоиит канал в данном приборе
 
+		self.__num_parse_args = None
+
 		self.ch1_meas = chMeasPigPoke(1, self.name, self.message_broker)
 		self.channels = self.create_channel_array()
 		self.setting_window = pigInAPokeWindow()
@@ -177,12 +179,13 @@ class pigInAPoke(base_device):
 				
 	# действия перед стартом эксперимента, включить, настроить, подготовить и т.д.
 	def action_before_experiment(self, number_of_channel) -> bool:
-
+		self.__num_parse_args = None
 		self.switch_channel(number_of_channel)
 		return True
 
 	def action_end_experiment( self, ch ) -> bool:
 		"""выключение прибора"""
+		self.__num_parse_args = None
 		self.switch_channel(ch_name=ch.get_name())
 		status = True
 		return status
@@ -237,6 +240,14 @@ class pigInAPoke(base_device):
 				ans = ch_response_to_step.Step_done
 			else:
 				ans = ch_response_to_step.Step_fail
+
+			print(f"{len(parameters)=} {self.__num_parse_args=}")
+			if self.__num_parse_args is not None:
+				if self.__num_parse_args != len(parameters):
+					logger.warning(f"несоответствие количества параметров в ответе прибора кот в мешке и количества параметров в команде {self.__num_parse_args=} != {len(parameters)=}")
+					ans = ch_response_to_step.Step_fail
+				else:
+					self.__num_parse_args = len(parameters)
 
 			return ans, parameters, time.perf_counter() - start_time
 
