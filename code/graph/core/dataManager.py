@@ -82,6 +82,11 @@ class relationData:
             self.y_result = data_x_axis.num_or_time
 
         else:
+            '''Создается единая координатная упорядоченная сетка (__base_x), включающая все измерения обоих приборов.
+            После этого значения обоих параметров (par_val) пересчитываются (интерполируются) на эту общую сетку.
+            Благодаря этому в дальнейшем можно математически работать с парами (x_result, y_result)
+            как с точками на плоскости, определенными в одних и тех же координатах X.
+            Там, где данных не хватало, они "достраиваются" линейной интерполяцией.'''
             self.__base_x = np.unique(np.concatenate((data_x_axis.num_or_time, data_y_axis.num_or_time)))
             self.x_result = np.interp(self.__base_x, data_x_axis.num_or_time, data_x_axis.par_val)
             self.y_result = np.interp(self.__base_x, data_y_axis.num_or_time, data_y_axis.par_val)

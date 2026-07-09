@@ -684,28 +684,24 @@ class treeWin(QWidget):
         if dialog.exec_() == QDialog.Accepted:
             self.buf_new_curve_name, self.buf_formula, self.buf_description = dialog.get_curve_data()
 
-            context = {}
             choised_curves = {}
             is_consist_curve = False
             for curve in self.curves:
                 if curve.parameters["id"] in self.buf_formula:
                     is_consist_curve = True
-                    context[curve.parameters["id"]] = curve
                     choised_curves[curve.parameters["id"]] = curve
             if not is_consist_curve:
                 return
             
             names_x_parameters = set()
-            #x_name = ""
             for id, curve in choised_curves.items():
                 if curve.curve_data_obj.rel_data.x_root_name not in names_x_parameters and names_x_parameters:
                     logger.info(f"Выбранные кривые построены в различных пространствах. {names_x_parameters}")
                     self.main_class.show_tooltip( QApplication.translate("GraphWindow","Выбранные кривые находятся в разных пространствах. Построение невозможно."), timeout=3000)
                     return
                 names_x_parameters.add(curve.curve_data_obj.rel_data.x_root_name)
-                #x_name = curve.curve_data_obj.rel_data.x_root_name
 
-            all_curves, all_x, status = self.preparation_arrays(context)
+            all_curves, all_x, status = self.preparation_arrays(choised_curves)
             if not status:
                 logger.info("ошибка в расчете, таймаут, возможно, что-то с исходными данными")
                 self.main_class.show_tooltip( QApplication.translate("GraphWindow","Таймаут при расчете параметров. Возможно, исходные данные содержат некорректные значенияю."), timeout=3000)
@@ -715,8 +711,8 @@ class treeWin(QWidget):
 
             temp_rel_data = copy.deepcopy( curve.curve_data_obj.rel_data )
 
-            x_meas = measTimeData(device=temp_rel_data.x_device, ch=temp_rel_data.x_ch, param=temp_rel_data.x_param, par_val=all_x, num_or_time=np.arange(len(all_x)))
-            y_meas = measTimeData(device="", ch="", param=self.buf_new_curve_name, par_val=result, num_or_time=np.arange(len(result)))
+            x_meas = measTimeData(device=temp_rel_data.x_device, ch=temp_rel_data.x_ch, param=temp_rel_data.x_param, par_val=all_x[0], num_or_time=all_x[0])
+            y_meas = measTimeData(device="", ch="", param=self.buf_new_curve_name, par_val=result, num_or_time=all_x[0])
             buf_rel_data = relationData(x_meas, y_meas, is_gen=True)
 
             self.curve_created.emit(buf_rel_data, self.buf_formula, self.buf_description)
@@ -762,7 +758,7 @@ class treeWin(QWidget):
 
         return tree_curves, all_x, status
 
-    def evaluate_expression(self, expression, context=None):
+    def evaluate_expression(self, expression, context=None) -> np.ndarray:
         result = None
         try:
             result = ne.evaluate(expression, context)
