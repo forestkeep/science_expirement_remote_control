@@ -2,7 +2,9 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from graph.utils.line_styles import PRESETS_LINE
 import pyqtgraph as pg
 import copy
+import logging
 
+logger = logging.getLogger(__name__)
 class GraphCustomizer(QtWidgets.QDialog):
     def __init__(self, graph_item, parent=None):
         super().__init__(parent)

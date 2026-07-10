@@ -89,14 +89,11 @@ class CurveTreeItem(QTreeWidgetItem):
         self.font.setPointSize(10)
         self.setFont(0, self.font)
 
-        self.setForeground(1, QBrush(QColor("#ff30ea")))
-
         self.col_font = QFont()
         self.col_font.setPointSize(15)
         self.setFont(1, self.col_font)
 
         self.setText(1, "--●--")
-        self.setForeground(1, QBrush(QColor("#ff30ea")))
 
         self.curve_data_obj = curve_data_obj
 
@@ -267,236 +264,6 @@ class CurveTreeItem(QTreeWidgetItem):
                 return self.child(i)
         return None
 
-class CurveTreeItemold(QTreeWidgetItem):
-    def __init__(self, curve_data_obj=None, parent=None, name=None):
-        super().__init__(parent)
-
-        self.setText(0, f"Кривая {name}")
-        self.font = QFont()
-        self.font.setItalic(True)
-        self.font.setPointSize(10)
-        self.setFont(0, self.font)
-
-        self.setForeground(1, QBrush(QColor("#ff30ea")))
-
-        self.col_font = QFont()
-        self.col_font.setPointSize(15)
-        self.setFont(1, self.col_font)
-
-        self.setText(1, "--●--")
-        self.setForeground(1, QBrush(QColor("#ff30ea")))
-
-        self.curve_data_obj = curve_data_obj
-
-        self.parameters = {
-            "min_x": None,
-            "max_x": None,
-            "min_y": None,
-            "max_y": None,
-            "name": name,
-            "tip": None,
-            "mean": None,
-            "std": None,
-            "id": None,
-            "mode": None,
-            "median": None,
-            "count": None
-        }
-
-        self.add_basic_characteristics()
-
-    def set_name(self, name):
-        self.setText(0, QApplication.translate("filters",f"Кривая {name}"))
-        self.parameters["name"] = name
-
-    def add_basic_characteristics(self):
-
-        self.addChild(QTreeWidgetItem([f"ID: {self.parameters['id']}"]))
-        
-        text = QApplication.translate("GraphWindow", "Тип: {tip}")
-        text = text.format(tip=self.parameters["tip"])
-        self.addChild(QTreeWidgetItem([text]))
-
-        text = QApplication.translate("GraphWindow", "Область определения: ({min_x}, {max_x})")
-        text = text.format(min_x=self.parameters["min_x"], max_x=self.parameters["max_x"])
-        self.addChild(QTreeWidgetItem([text]))
-
-        text = QApplication.translate("GraphWindow", "Область значений: ({min_y}, {max_y})")
-        text = text.format(min_y=self.parameters["min_y"], max_y=self.parameters["max_y"])
-        self.addChild(QTreeWidgetItem([text]))
-
-        self.add_statistics(self.parameters["mean"], self.parameters["std"], 
-                            self.parameters["mode"], self.parameters["median"], 
-                            self.parameters["count"])
-
-    def add_statistics(self, mean, std_dev, mode, median, count):
-        stats_item = self.findChild( QApplication.translate("GraphWindow","Статистические данные") )
-        if stats_item is None:
-            stats_item = QTreeWidgetItem(self, [ QApplication.translate("GraphWindow","Статистические данные" )])
-            stats_item.setFont(0, self.font)
-            stats_item.setExpanded(True)
-
-            text = QApplication.translate("GraphWindow", "Среднее: {mean}")
-            text = text.format(mean=self.parameters["mean"])
-            stats_item.addChild(QTreeWidgetItem([text]))
-
-            text = QApplication.translate("GraphWindow", "Стандартное отклонение: {std}")
-            text = text.format(std=self.parameters["std"])
-            stats_item.addChild(QTreeWidgetItem([text]))
-
-            text = QApplication.translate("GraphWindow", "Мода: {mode}")
-            text = text.format(mode=self.parameters["mode"])
-            stats_item.addChild(QTreeWidgetItem([text]))
-
-            text = QApplication.translate("GraphWindow", "Медиана: {median}")
-            text = text.format(median=self.parameters["median"])
-            stats_item.addChild(QTreeWidgetItem([text]))
-
-            text = QApplication.translate("GraphWindow", "Число точек: {count}")
-            text = text.format(count=self.parameters["count"])
-            stats_item.addChild(QTreeWidgetItem([text]))
-
-    def add_new_block(self, block_name, data):
-        block_item = self.findChild(block_name)
-        if block_item is None:
-            block_item = QTreeWidgetItem(self, [block_name])
-            block_item.setFont(0, self.font)
-            block_item.setExpanded(True)
-
-        for key, value in data.items():
-            block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
-
-    def update_history_block(self, data, filter_command = None):
-        block_name = QApplication.translate("GraphWindow","История изменения")
-        block_item = self.findChild(block_name)
-
-        if block_item is None:
-            block_item = QTreeWidgetItem(self, [block_name])
-            block_item.setFont(0, self.font)
-            block_item.setExpanded(True)
-
-        for key, value in data.items():
-            block_item.addChild(HistoryItem(text = f"{key}: {value}", filter_command = filter_command))
-
-    def clear_history_block(self):
-        block_name = QApplication.translate("GraphWindow", "История изменения")
-        block_item = self.findChild(block_name)
-        if block_item:
-            block_item.takeChildren()
-        
-    def delete_block(self, block_name) -> bool:
-        block_item = self.findChild(block_name)
-        if block_item:
-            self.takeChild(self.indexOfChild(block_item))
-            return True
-        return False
-
-    def update_block_data(self, block_name, data, is_add_force=False) -> bool:
-        
-        """
-        Обновляет данные блока block_name
-
-        :param block_name: имя блока
-        :param data: словарь с данными для обновления
-        :param is_add_force: если True, то добавляет новые элементы без проверки,
-            если False, то обновляет существующие
-        :return: True, если блок найден, False - если нет
-        """
-        block_item = self.findChild(block_name)
-        if block_item:
-            for key, value in data.items():
-                if is_add_force:
-                    block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
-                else:
-                    exists = False
-                    for i in range(block_item.childCount()):
-                        if block_item.child(i).text(0).startswith(f"{key}:"):
-                            block_item.child(i).setText(0, f"{key}: {value}")
-                            exists = True
-                            break
-                    
-                    if not exists:
-                        block_item.addChild(QTreeWidgetItem([f"{key}: {value}"]))
-            return True
-        return False
-
-    def update_parameters(self, dict_parameters):
-        for parameter_name, new_value in dict_parameters.items():
-            if self.parameters.get(parameter_name, False) is not False:
-                if isinstance(new_value, (int, float)):
-                    val = np.format_float_scientific(new_value, precision=5, unique=True)
-                else:
-                    val = new_value
-                self.parameters[parameter_name] = val
-            else:
-                logger.info(f"ключ {parameter_name} не найден в параметрах отображения кривой")
-        self.update_display()
-    
-    def get_description(self):
-        block_item = self.findChild( QApplication.translate("GraphWindow","Разное") )
-        if block_item:
-            for i in range(block_item.childCount()):
-                text = block_item.child(i).text(0)
-                if QApplication.translate("GraphWindow","Описание") in text:
-                    text = text.replace(QApplication.translate("GraphWindow","Описание") + ": ", "")
-                    return text
-        return ""
-
-    def this_choise(self):
-        self.curve_data_obj.higlight_curve()
-
-    def deselection(self):
-        self.curve_data_obj.unhiglight_curve()
-
-    def is_draw(self):
-        return self.curve_data_obj.is_draw
-
-    def update_display(self):
-        self.setText(0, f"{self.parameters['name']}")
-        text = QApplication.translate("GraphWindow", "ID: {id}")
-        text = text.format(id=self.parameters["id"])
-        self.child(0).setText(0, text)
-
-        text = QApplication.translate("GraphWindow", "Тип: {tip}")
-        text = text.format(tip=self.parameters["tip"])
-        self.child(1).setText(0, text)
-
-        text = QApplication.translate("GraphWindow", "Область определения: ({min_x}, {max_x})")
-        text = text.format(min_x=self.parameters["min_x"], max_x=self.parameters["max_x"])
-        self.child(2).setText(0, text)
-
-        text = QApplication.translate("GraphWindow", "Область значений: ({min_y}, {max_y})")
-        text = text.format(min_y=self.parameters["min_y"], max_y=self.parameters["max_y"])
-        self.child(3).setText(0, text)
-
-        stats_item = self.findChild( QApplication.translate("GraphWindow","Статистические данные") )
-        if stats_item:
-            text = QApplication.translate("GraphWindow", "Среднее: {mean}")
-            text = text.format(mean=self.parameters["mean"])
-            stats_item.child(0).setText(0, text)
-
-            text = QApplication.translate("GraphWindow", "Стандартное отклонение: {std}")
-            text = text.format(std=self.parameters["std"])
-            stats_item.child(1).setText(0, text)
-
-            text = QApplication.translate("GraphWindow", "Мода: {mode}")
-            text = text.format(mode=self.parameters["mode"])
-            stats_item.child(2).setText(0, text)
-
-            text = QApplication.translate("GraphWindow", "Медиана: {median}")
-            text = text.format(median=self.parameters["median"])
-            stats_item.child(3).setText(0, text)
-
-            text = QApplication.translate("GraphWindow", "Число точек: {count}")
-            text = text.format(count=self.parameters["count"])
-            stats_item.child(4).setText(0, text)
-
-    def findChild(self, title):
-        for i in range(self.childCount()):
-            if self.child(i).text(0) == title:
-                return self.child(i)
-        return None
-
 class CurveDialog(QDialog):
     def __init__(self, parent=None, description=None, formula=None, name=None):
         super().__init__(parent)
@@ -549,7 +316,6 @@ class customTreeWidget(QTreeWidget):
         super().__init__()
         self.par_class = par_class
         self.setMouseTracking(True)
-        #self.setStyleSheet("QTreeWidget::item:selected { background-color: transparent; }")#отключение подсветки фона
     def mouseMoveEvent(self, event):
         item = self.itemAt(event.pos())
         if not item:

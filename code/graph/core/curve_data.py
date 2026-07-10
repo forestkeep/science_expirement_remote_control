@@ -49,7 +49,6 @@ class LineStyle:
     
     def to_pen(self):
         """Создать QPen из стиля"""
-        #print(f"color: {self.color}, line_style: {self.line_style}, line_width: {self.line_width}")
         return pg.mkPen(
             color=self.color,
             width=self.line_width,
@@ -179,6 +178,15 @@ class graphData:
         plot_item.sigClicked.connect(self.on_plot_clicked)
 
         return plot_item
+    
+    def add_error_bars(self, target_plot_item):
+        error_item = pg.ErrorBarItem(
+            x=self.filtered_x_data,
+            y=self.filtered_y_data,
+            height=15,
+            pen=pg.mkPen(color='w', width=2)
+        )
+        target_plot_item.addItem(error_item)
 
     def add_to_graph(self, graph_field, legend_field, number_axis):
         """
@@ -191,6 +199,7 @@ class graphData:
 
         new_item = self.create_plot_item()
         graph_field.addItem(new_item)
+        #self.add_error_bars(graph_field)
         if legend_field.getLabel(new_item) is None:
             legend_field.addItem(new_item, self.legend.current_name)
 
@@ -202,8 +211,12 @@ class graphData:
 
         if self.is_curve_selected:
             self.clicked_style.apply_to_curve(new_item)
+            brushcolor = self.clicked_style.to_pen().color().name()
+            self.tree_item.setForeground( 1, pg.mkBrush(color=brushcolor) )
         else:
             self.saved_style.apply_to_curve(new_item)
+            brushcolor = self.saved_style.to_pen().color().name()
+            self.tree_item.setForeground( 1, pg.mkBrush(color=brushcolor) )
 
         self.is_draw = True
 
@@ -246,6 +259,8 @@ class graphData:
         """Применяет стиль (например, LineStyle) ко всем копиям."""
         for info in self.plot_items.values():
             style.apply_to_curve(info['item'])
+        brushcolor = style.to_pen().color().name()
+        self.tree_item.setForeground( 1, pg.mkBrush(color=brushcolor) )
 
     def on_plot_clicked(self, obj):
         """Обработчик клика по любой копии кривой."""
@@ -266,6 +281,8 @@ class graphData:
             info['item'].setPen(pg.mkPen(color=(150,150,150,90), width=5))
             info['item'].setSymbolBrush(color=(150,150,150,90))
             info['item'].setSymbolPen(pg.mkPen(color=(150,150,150,90)))
+        brushcolor = self.preselection_style.to_brush().color().name()
+        self.tree_item.setForeground( 1, pg.mkBrush(color=brushcolor) )
 
     def unhiglight_curve(self):
         if not self.higlighted_flag:
@@ -284,7 +301,9 @@ class graphData:
         self.saved_style = new_style
 
         for curves in self.plot_items.values():
-                self.saved_style.apply_to_curve(curves['item'])
+            self.saved_style.apply_to_curve(curves['item'])
+        brushcolor = self.saved_style.to_pen().color().name()
+        self.tree_item.setForeground( 1, pg.mkBrush(color=brushcolor) )
 
     def delete_curve_from_graph(self):
         logger.info(f"delete_curve_from_graph {self.curve_name}")

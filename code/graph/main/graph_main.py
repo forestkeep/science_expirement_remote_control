@@ -392,7 +392,7 @@ class manageGraph(QObject):
         if new_data.saved_style is None:
             style = LineStyle(color=buf_color, line_style=Qt.SolidLine, line_width=1,
                             symbol="o", symbol_size=3, symbol_color=buf_color, fill_color=buf_color)
-            new_data.saved_style = style
+            new_data.change_style(style)
         else:
             pass
         return new_data
