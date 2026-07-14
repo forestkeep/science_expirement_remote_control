@@ -187,7 +187,7 @@ class experimentControl( ):
 						for device, ch in get_active_ch_and_device( self.device_classes ):
 
 							if not device.get_steps_number(ch) :
-								if not ch.do_last_step:
+								if ch.do_last_step:
 									number_device_which_act_while += 1
 
 							if ch.am_i_active_in_experiment:
@@ -203,10 +203,7 @@ class experimentControl( ):
 							self.first_queue.put(("set_state_text", {"text": text}))
 
 							self.__stop_experiment = True
-						if (
-							number_device_which_act_while == number_active_device
-							and number_active_device == 1
-						):
+						if (number_device_which_act_while == number_active_device and number_active_device == 1):
 							"""если активный прибор один и он работает, пока работают другие, и у него не стоит флаг последнего шага то стоп"""
 							self.__stop_experiment = True
 
@@ -245,6 +242,11 @@ class experimentControl( ):
 
 							if device.get_steps_number(ch) is not False:
 								if (ch.number_meas >= device.get_steps_number(ch) ):
+									ch.am_i_active_in_experiment = False
+							else:
+								#если канал вернул количество шагов = False, значит их у него бесконечно - это условие работы пока работают другие
+								#если других нет, то стоп
+								if number_active_device == 1:
 									ch.am_i_active_in_experiment = False
 
 							if ch.do_last_step:#был сделан последний шаг

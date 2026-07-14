@@ -246,7 +246,7 @@ class mnipiE720Class(base_device):
         start_time = time.perf_counter()
         parameters = [f"{self.name} {ch.get_name()}"]
         is_correct = True
-        attempts = 1
+        attempts = 5
 
         meas_map = [
             ("meas L", "Lp"),
@@ -287,6 +287,7 @@ class mnipiE720Class(base_device):
         while i < attempts:
             self.client.write(self.dict_meas_param[focus_val])
             time.sleep(0.5)
+            client.clear_input_buffer()
             param = False
             param = self.read_parameters(self.client, self.is_debug)
             logger.debug(f"попытка {i+1}, ответ {param}")
@@ -417,11 +418,11 @@ class mnipiE720Class(base_device):
     
     def read_parameters(self, client, is_debug):
             is_reading = True
-            timeout = 1#sec
-            timestamp = time.perf_counter()
+            timeout = 2#sec
             parameters =[]
             first_read_byte = False
             status_read = False
+            timestamp = time.perf_counter()
             while is_reading:
                 data = client.read(1)
                 if data:

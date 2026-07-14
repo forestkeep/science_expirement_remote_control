@@ -143,7 +143,7 @@ class GraphFieldSettings:
 	"""Комплексные настройки графика (сериализуемые в HDF5)"""
 	
 	title: str = ""
-	background_color: str = "#FFFFFF"
+	background_color: str = "#070707"
 	grid_enabled: bool = True
 	grid_color: str = "#CCCCCC"
 	grid_alpha: float = 0.5
@@ -153,7 +153,7 @@ class GraphFieldSettings:
 	axes: Dict[str, AxisSettings] = field(default_factory=dict)
 	
 	legend_enabled: bool = True
-	legend_text_color: str = "#000000"
+	legend_text_color: str = "#DD1010"
 	legend_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
 	
 	antialiasing: bool = True
@@ -174,9 +174,9 @@ class OscilloscopeFieldSettings(BaseModel):
 	"""Комплексные настройки графика (сериализуемые в HDF5)"""
 	
 	title: str = ""
-	background_color: str = "#FFFFFF"
+	background_color: str = "#000000"
 	grid_enabled: bool = True
-	grid_color: str = "#CCCCCC"
+	grid_color: str = "#FFFFFF"
 	grid_alpha: float = 0.5
 	
 	common_axis_style: AxisStyle = field(default_factory=AxisStyle)
@@ -184,7 +184,7 @@ class OscilloscopeFieldSettings(BaseModel):
 	axes: Dict[str, AxisSettings] = field(default_factory=dict)
 	
 	legend_enabled: bool = True
-	legend_text_color: str = "#000000"
+	legend_text_color: str = "#F00B0B"
 	legend_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
 	
 	antialiasing: bool = True
