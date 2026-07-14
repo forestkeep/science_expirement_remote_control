@@ -17,6 +17,7 @@ import pyvisa
 import serial
 from serial import Serial
 from serial.tools import list_ports
+from pyvisa.constants import BufferOperation
 #from profilehooks import profile
 
 logger = logging.getLogger(__name__)
@@ -109,13 +110,32 @@ class Adapter:
             return ans
         else:
             raise AdapterException("unknown resource")
+    
+    def clear_input_buffer(self):
+        """
+        Очищает входной буфер данных.
+        Поддерживает:
+        - PyVISA Resource (через flush с BufferOperation.discard_read_buffer)
+        - PySerial (через reset_input_buffer)
+        """
+
+        if self.which_resourse == resourse.serial:
+            try:
+                self.client.reset_input_buffer()
+            except serial.SerialException as e:
+                logger.error(f"SerialException reset_input_buffer: {e}")
+        elif self.which_resourse == resourse.pyvisa:
+            try:
+                self.client.flush(BufferOperation.discard_read_buffer)
+            except pyvisa.VisaIOError as e:
+                logger.error(f"VisaIOError flush: {e}")
         
     def open(self):
         if self.which_resourse == resourse.serial:
             try:
                 self.client.open()
             except serial.SerialException as e:
-                pass
+                logger.error(f"SerialException open: {e}")
             self.is_open = self.client.is_open
         elif self.which_resourse == resourse.pyvisa:
             self.client.open()
