@@ -32,14 +32,17 @@ class ExcelSaver:
             "columns": None
         }
 
-     # ------------------- Новые методы для работы с описаниями листов -------------------
+        self._progress_total = 0
+        self._progress_processed = 0
+        self._progress_status = ""
+        self._progress_callback = None
+
     def set_sheet_description(self, sheet_name: str, description: Optional[str]) -> None:
         """
         Устанавливает текстовое описание для указанного листа.
         :param sheet_name: имя листа
         :param description: описание (строка). Если None или пустая строка, описание удаляется.
         """
-        # Очищаем имя листа от недопустимых символов
         title = INVALID_TITLE_REGEX.sub(' ', sheet_name)
         if title != sheet_name:
             logger.info(f"sheet name changed from {sheet_name} to {title} because of invalid characters in the name")
@@ -152,9 +155,36 @@ class ExcelSaver:
                 if pd.notna(val):
                     sheet.cell(row=startrow + 2 + row_idx, column=startcol + 2 + col_idx, value=val)
 
+    def set_progress_callback(self, callback):
+        """Устанавливает функцию, вызываемую при каждом обновлении прогресса.
+           callback(processed, total, status)"""
+        self._progress_callback = callback
+
+    def get_progress(self):
+        """Возвращает (обработано, всего, текст_статуса)."""
+        with self._lock:  # защищаем доступ из разных потоков
+            return (self._progress_processed, self._progress_total, self._progress_status)
+
+    def _update_progress(self, processed, total, status):
+        """Внутренний метод для обновления прогресса и вызова callback."""
+        with self._lock:
+            self._progress_processed = processed
+            self._progress_total = total
+            self._progress_status = status
+        if self._progress_callback is not None:
+            self._progress_callback(processed, total, status)
+
     def _save_worker(self, filepath: str, sheets: Dict[str, Dict[str, measTimeData]],
                      descriptions: Dict[str, str]) -> None:
         try:
+            total_sheets = len(sheets)
+            # Добавляем шаги: статистика (если включена) и запись файла – как дополнительные этапы
+            extra_steps = 1 if self._statistics_config["enabled"] else 0  # статистика
+            extra_steps += 1  # сохранение файла
+            total_steps = total_sheets + extra_steps
+            processed = 0
+
+            self._update_progress(processed, total_steps, f"Сохранение (0/{total_sheets})")
             with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
                 for sheet_name, params in sheets.items():
                     # Обработка описания листа
@@ -219,6 +249,7 @@ class ExcelSaver:
                         param_names = list(group_params.keys())
                         df = df[['device', 'channel', 'Index'] + param_names]
 
+
                         # Запись DataFrame в лист
                         df.to_excel(
                             writer,
@@ -228,6 +259,7 @@ class ExcelSaver:
                             index=False,
                             header=True,
                         )
+
 
                         # Статистика (если включена)
                         if stats_enabled and requested_stats:
@@ -255,6 +287,9 @@ class ExcelSaver:
                                 )
 
                         current_col += df.shape[1] + 1  # +1 для разделительного пустого столбца
+                processed += 1
+                self._update_progress(processed, total_steps,
+                                    f"Сохранение({processed}/{total_sheets})")
 
         except Exception as e:
             logger.error(f"Ошибка при сохранении Excel: {e}")

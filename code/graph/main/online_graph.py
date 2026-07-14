@@ -13,6 +13,7 @@ import sys
 import time
 import random
 import copy
+import traceback
 
 import logging
 from PyQt5 import QtWidgets
@@ -22,6 +23,7 @@ from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
                              QSizePolicy, QSplitter, QTabWidget, QWidget, QAction, QVBoxLayout, QStackedWidget)
 
 from graph.ui.filters_win import filtersClass
+from graph.ui.status_line import StatusBar
 from graph.main.graph_main import manageGraph
 from graph.ui.notification import NotificationWidget
 from graph.ui.osc_wave_graph import graphOsc
@@ -344,6 +346,7 @@ class sessionController():
         self.alias_manager = ParameterAliasManager()
         self.session_selector = SessionSelectControl()
         self.buttons_controller = ButtonsControl(self.session_selector)
+        self.status_bar = StatusBar()
         self.button_ctrl_win = self.buttons_controller.widget
         self.controll_sessions_win = self.session_selector.widget
 
@@ -356,6 +359,7 @@ class sessionController():
         self.buttons_controller.compare_sessions_requested.connect(self.compare_sessions)
 
         self.graphics_win = GraphWindow(self.controll_sessions_win, self.buttons_controller.widget, version=self.version_app)
+        self.graphics_win.setStatusBar(self.status_bar)
         self.graphics_win.graph_win_close_signal.connect(self.close_graph_window)
         self.graphics_win.save_action.triggered.connect(self.push_button_save_graph)
         self.graphics_win.load_action.triggered.connect(self.push_button_open_graph)
@@ -370,6 +374,9 @@ class sessionController():
         self.graph_sessions = {}
         self.compare_graph = None
         self.animation_win = None
+        self.dot_counter = 0  # счётчик для анимации точек
+
+        self.status_bar.set_permanent("Готово")
 
     def close_graph_window(self):
         if self.compare_graph is not None:
@@ -554,24 +561,68 @@ class sessionController():
                 fileName += '.xlsx'
             self.way_to_save_excel = fileName
             self._save_excel(fileName)
+            try:
+                self._save_excel(fileName)
+            except Exception as e:
+                self.status_bar.set_status(f"Ошибка сохранения: {e}", timeout=5000)
+                logger.error(f"Ошибка при сохранении Excel файла: {e} {traceback.format_exc()}")
+            finally:
+                self.status_bar.hide_progress()
 
         else:
             logger.warning(f"Неизвестный фильтр при сохранении: {selectedFilter}")
 
     def _save_excel(self, filepath: str):
-        """Формирует книгу Excel из данных всех сессий и сохраняет её."""
-        excel_saver = ExcelSaver()
-        for session in self.graph_sessions.values():
-            description = session.description
+        self.temp_excell_file_path = filepath
+        self.excel_saver = ExcelSaver()
+        sessions = list(self.graph_sessions.values())
+        if not sessions:
+            self.status_bar.set_status("Нет данных для сохранения.", timeout=3000)
+            return
+
+        for session in sessions:
             sheet_dict = {}
             parameters = session.data_manager.get_all_data()
             for type_param in parameters.keys():
                 for param_name in parameters[type_param].data.keys():
                     alias_param = self.alias_manager.get_alias(param_name)
                     sheet_dict[alias_param] = parameters[type_param].data[param_name]
-            excel_saver.add_sheet(sheet_name=session.session_name,sheet_data=sheet_dict, description=description)
-        excel_saver.enable_statistics()
-        excel_saver.save(filepath)
+            self.excel_saver.add_sheet(
+                sheet_name=session.session_name,
+                sheet_data=sheet_dict,
+                description=session.description
+            )
+
+        self.excel_saver.enable_statistics()
+
+        self.progress_save_excell = self.status_bar.show_progress(0, 100)
+        self.status_bar.set_status("Сохранение...")
+
+        self.excel_saver.save(filepath)
+
+        self.saving_excell_timer = QTimer()
+        self.saving_excell_timer.setInterval(1000)
+
+        self.saving_excell_timer.timeout.connect(self.update_progress_saver)
+        self.saving_excell_timer.start()
+
+    def update_progress_saver(self):
+        processed, total, status = self.excel_saver.get_progress()
+        if total > 0:
+            percent = int((processed / total) * 100)
+            self.progress_save_excell.setValue(percent)
+
+            self.dot_counter = (self.dot_counter + 1) % 4
+            dots = '.' * (self.dot_counter + 1)
+            base_status = status.rstrip('.')
+            self.status_bar.set_status(base_status + dots)
+        else:
+            self.status_bar.set_status("Подготовка...")
+
+        if not self.excel_saver.is_saving:
+            self.saving_excell_timer.stop()
+            self.status_bar.hide_progress()
+            self.status_bar.set_permanent(f"Файл эксель сохранён: {self.temp_excell_file_path}")
             
     def push_button_open_graph(self):
         logger.debug("нажата кнопка открыть график")
@@ -640,6 +691,7 @@ class sessionController():
         if status:
             self.graph_sessions[session_id].data_manager.stop_session_running()
             self.session_selector.add_session({'id': session_id, 'name': session_name, 'status': 'imported'})
+            self.status_bar.set_status(QApplication.translate("graph", "Данные импортированы"), 10000)
 
     def delete_session(self, session_id: str):
         if self.graph_sessions.get(session_id) is not None:
