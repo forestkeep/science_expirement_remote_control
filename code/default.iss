@@ -6,8 +6,8 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{2C15D3A9-D9EA-4BF6-97E5-3CAF33D0C0CC}
 AppName=Installation Controller
-AppVersion=1.5.7
-;AppVerName=Installation Controller 1.5.9
+AppVersion=1.6.1
+;AppVerName=Installation Controller 1.6.1
 AppPublisher=Publisher
 DefaultDirName={autopf}\Installation Controller
 ; "ArchitecturesAllowed=x64compatible" specifies that Setup cannot run
@@ -60,4 +60,3 @@ Name: "{autodesktop}\Installation Controller"; Filename: "{app}\main.exe"; Tasks
 
 [Run]
 Filename: "{app}\main.exe"; Description: "{cm:LaunchProgram,Installation Controller}"; Flags: nowait postinstall skipifsilent
-

@@ -18,7 +18,7 @@ from installation_controller import instController
 
 logger = logging.getLogger(__name__)
 
-VERSION_APP = "1.6.0"
+VERSION_APP = "1.6.1"
 
 def migrate_settings(old_settings: dict[str, any], current_version: str) -> dict[str, any]:
     """

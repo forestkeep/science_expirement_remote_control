@@ -7,5 +7,4 @@ installation_controller/
 myenv/
 testmeasvoltage
 test_data/
-
-
+env/

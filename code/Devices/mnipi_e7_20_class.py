@@ -287,7 +287,7 @@ class mnipiE720Class(base_device):
         while i < attempts:
             self.client.write(self.dict_meas_param[focus_val])
             time.sleep(0.5)
-            client.clear_input_buffer()
+            self.client.clear_input_buffer()
             param = False
             param = self.read_parameters(self.client, self.is_debug)
             logger.debug(f"попытка {i+1}, ответ {param}")
