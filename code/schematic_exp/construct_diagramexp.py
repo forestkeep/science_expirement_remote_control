@@ -15,7 +15,7 @@ from enum import Enum
 
 import qdarktheme
 from PyQt5.QtCore import QPoint, QRect, Qt
-from PyQt5.QtGui import QBrush, QColor, QFont, QPainter, QPen
+from PyQt5.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen, QPolygon, QRegion
 from PyQt5.QtWidgets import (QApplication, QFrame, QLabel, QSizePolicy,
                              QVBoxLayout, QWidget)
 from functions import get_active_ch_and_device
@@ -31,23 +31,6 @@ class Position(Enum):
     RIGHT_BOTTOM = 8
     SAME = 9
     
-    
-unique_colors= [
-    "rgba(186, 0, 0, 1)",       
-    "rgba(0, 128, 0, 1)",        
-    "rgba(0, 0, 255, 1)",        
-    "rgba(0, 160, 240, 1)",      
-    "rgba(128, 0, 128, 1)",      
-    "rgba(255, 165, 0, 1)",      
-    "rgba(255, 20, 147, 1)",     
-    "rgba(255, 105, 180, 1)",    
-    "rgba(255, 80, 0, 1)",      
-    "rgba(0, 255, 127, 1)",       
-    "rgba(0, 120, 120, 1)",       
-    "rgba(75, 0, 130, 1)",        
-    "rgba(200, 160, 150, 1)"     
-]
-
 class connectionType(Enum):
     SINGLE = 1
     DOUBLE = 2
@@ -331,47 +314,45 @@ class blockDevice(QWidget):
     def __init__(self, ch_name, dev_name, parent=None):
         super().__init__(parent)
         self.parent_wid = parent
-        self.base_color = "background-color: rgba(250, 250, 250, 50);"
         self.setObjectName("device")
         self.is_ctrl_pressed = False
         self.setMouseTracking(True)
-        self.dragging        = False
-        self.last_pos        = None
-        self.type_trigger    = None
-        self.value_trigger   = None
-        self.number_meas     = None
-        self.master          = None
-        self.slave           = []
+        self.dragging = False
+        self.last_pos = None
+        self.type_trigger = None
+        self.value_trigger = None
+        self.number_meas = None
+        self.master = None
+        self.slave = []
 
-        #координаты для автоасстановки, показывают смещение виджета внутри блока
         self.x_offset = 0
         self.y_offset = 0
-        
+
+        self.ch_name = ch_name
+        self.dev_name = dev_name
+
+        self.shape_color = QColor(250, 100, 100, 50)
+        self.is_check = False
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(1, 0, 0, 0)
 
-        self.ch_name  = ch_name
-        self.dev_name = dev_name
-
         self.label_ch = QLabel(self.ch_name)
         self.label_ch.setMaximumHeight(20)
-        
         self.label_dev = QLabel(self.dev_name)
         self.label_dev.setMaximumHeight(20)
-
 
         layout.addWidget(self.label_dev)
         layout.addWidget(self.label_ch)
 
         self.frame = QFrame(self)
-        self.frame.setFrameShape(QFrame.Panel)
+        self.frame.setFrameShape(QFrame.NoFrame)
+        self.frame.setStyleSheet("background: transparent; border: none;")
         self.frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
         self.frame.setLayout(layout)
 
         outer_layout = QVBoxLayout(self)
         outer_layout.addWidget(self.frame)
-
         self.setLayout(outer_layout)
 
         self.setMaximumHeight(3 * self.label_ch.height())
@@ -379,58 +360,96 @@ class blockDevice(QWidget):
 
         self.label_ch.raise_()
         self.label_dev.raise_()
-        self.is_check = False
+
+    def set_shape_color(self, color_str: str):
+        """Принять цвет в формате 'rgba(r,g,b,a)' и сохранить как QColor."""
+        color = QColor()
+        if color_str.startswith("rgba("):
+            parts = color_str[5:-1].split(",")
+            if len(parts) == 4:
+                r, g, b, a = [int(p.strip()) for p in parts]
+                a = 255
+                color = QColor(r, g, b, a)
+        self.shape_color = color
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        name_lower = self.ch_name.lower()
+        w, h = self.width(), self.height()
+
+        if w == 0 or h == 0:
+            return
+
+        base_color = self.shape_color
+        if self.is_check:
+            overlay = QColor(200, 128, 128, 1)
+        else:
+            overlay = None
+
+        if 'meas' in name_lower:
+            path = QPainterPath()
+            path.addEllipse(0, 0, w, h)
+        elif 'act' in name_lower:
+            path = QPainterPath()
+            path.addRect(0, 0, w, h)
+        else:
+            poly = QPolygon([
+                QPoint(w // 2, 0),
+                QPoint(w, h // 2),
+                QPoint(w // 2, h),
+                QPoint(0, h // 2)
+            ])
+            path = QPainterPath()
+            path.addPolygon(poly)
+
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QBrush(base_color))
+        painter.drawPath(path)
+
+        if self.is_check:
+            painter.setBrush(QBrush(overlay))
+            painter.drawPath(path)
 
     def mousePressEvent(self, event):
-        if self.parentWidget().is_ctrl_pressed and event.button() == Qt.LeftButton:  # Ctrl + Левый клик
+        if self.parentWidget().is_ctrl_pressed and event.button() == Qt.LeftButton:
             self.toggle_selection()
-        elif event.button() == Qt.LeftButton:  # Левый клик
+        elif event.button() == Qt.LeftButton:
             self.drag_start_position = event.pos()
             self.dragging = True
         elif event.button() == Qt.RightButton:
             pass
-            #self.create_copy()
 
     def mouseMoveEvent(self, event):
         if self.dragging and event.buttons() == Qt.LeftButton:
             new_coord = self.pos() + event.pos() - self.drag_start_position
-            y = max( [new_coord.y(), 0] )
-            x = max( [new_coord.x(), 0] )
-            y = min( [y, self.parent_wid.height() - self.height() ] )
-            x = min( [x, self.parent_wid.width() - self.width() ] )
+            y = max([new_coord.y(), 0])
+            x = max([new_coord.x(), 0])
+            y = min([y, self.parent_wid.height() - self.height()])
+            x = min([x, self.parent_wid.width() - self.width()])
             new_coord = QPoint(x, y)
-            
             self.move(new_coord)
             self.parentWidget().update()
 
     def mouseReleaseEvent(self, event):
         self.dragging = False
 
-    def toggle_selection(self, set_check = None):
-        if set_check == True:
-            self.frame.setStyleSheet(self.base_color)
+    def toggle_selection(self, set_check=None):
+        if set_check is True:
             self.is_check = True
-            
-        elif set_check   == False:
+        elif set_check is False:
             self.is_check = False
-            self.set_default_style()
         else:
-            if self.is_check:
-                self.is_check = False
-                self.set_default_style()
-            else:
-                self.frame.setStyleSheet("background-color: rgba(128, 128, 128, 0.5);")
-                self.is_check = True
+            self.is_check = not self.is_check
+        self.update()
 
     def create_copy(self):
-        new_device = blockDevice(self.ch_name + "(copy)", self.ch_name + "(copy)",self.parentWidget())
-        new_device.frame.setStyleSheet(self.frame.styleSheet())
+        new_device = blockDevice(self.ch_name + "(copy)", self.ch_name + "(copy)", self.parentWidget())
+        new_device.shape_color = self.shape_color
         new_device.move(self.pos() + QPoint(20, 20))
         new_device.show()
-
-    def set_default_style(self):
-        pass
-        #self.frame.setStyleSheet(self.base_color)
 
 class expDiagram(QWidget):
     def __init__(self, color_manager):
@@ -439,6 +458,7 @@ class expDiagram(QWidget):
         self.is_ctrl_pressed = False
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.connections = []
+        self.labels = [] 
 
     def mousePressEvent(self, event):
         if event.buttons() == Qt.LeftButton:
@@ -460,44 +480,6 @@ class expDiagram(QWidget):
                     widget.hide()
                     widget.setParent(None)
                     
-    def set_content(self, objects: list):
-        self.objects = objects
-        self.labels = []
-        for obj in objects:
-            lb = blockDevice(obj.ch_name, obj.dev_name, self)
-            lb.type_trigger = obj.type_trigger
-            lb.value_trigger = obj.value_trigger
-            lb.number_meas = obj.number_meas
-            lb.frame.setStyleSheet(f"background-color: {obj.color};")
-            lb.base_color = f"background-color: {obj.color};"
-            self.labels.append(lb)
-
-        self.connections = []
-        for index, obj in enumerate(objects):
-
-            if obj.type_trigger == QApplication.translate("construct","Таймер"):
-                con = connection(self, str(obj.value_trigger) + "сек")
-                con.set_units(self.labels[index], self.labels[index])
-                self.connections.append(con)
-                continue
-
-            try:
-                components = obj.value_trigger.split()
-            except:
-                continue
-
-            for label in self.labels:
-                if components[1] ==label.ch_name and  components[0] == label.dev_name:
-                    con = connection(self, "do action")
-                    con.set_units(label, self.labels[index])
-                    self.connections.append(con)
-
-                    #перекрестные ссылки ведущий ведомый
-
-                    label.slave.append( self.labels[index] )
-                    self.labels[index].master = label
-        self.auto_place(self.labels)
-
     def auto_place(self, components: list):
         '''
         группа 1: компоненты работают по таймеру и от них не зависит ни один другой компонент
@@ -643,33 +625,113 @@ class expDiagram(QWidget):
             widget.hide()
             widget.setParent(None)
 
+    def _get_current_state(self):
+        """
+        Возвращает текущее состояние диаграммы в виде:
+        (
+            frozenset( (dev_name, ch_name, type_trigger, value_trigger, number_meas) ),
+            frozenset( (src_dev, src_ch, dst_dev, dst_ch, conn_label) )
+        )
+        """
+        devices = frozenset(
+            (lb.dev_name, lb.ch_name, lb.type_trigger,
+            lb.value_trigger, lb.number_meas)
+            for lb in self.labels if lb.isVisible()
+        )
+        connections = frozenset(
+            (con.first_unit.dev_name, con.first_unit.ch_name,
+            con.second_unit.dev_name, con.second_unit.ch_name,
+            con.name)
+            for con in self.connections
+        )
+        return (devices, connections)
+
+    def _get_target_state(self, install_class):
+        """
+        Вычисляет состояние, которое должно получиться из install_class,
+        без создания виджетов.
+        Возвращает такой же кортеж, как _get_current_state.
+        """
+        devices_set = set()
+        connections_set = set()
+
+        label_list = []
+        for dev, ch in get_active_ch_and_device(install_class.dict_active_device_class):
+            dev_name = dev.get_name()
+            ch_name = ch.get_name()
+            type_trigger = dev.get_trigger(ch)
+            value_trigger = dev.get_trigger_value(ch)
+            number_meas = dev.get_steps_number(ch)
+
+            devices_set.add((dev_name, ch_name, type_trigger, value_trigger, number_meas))
+            label_list.append({
+                'dev_name': dev_name,
+                'ch_name': ch_name,
+                'type_trigger': type_trigger,
+                'value_trigger': value_trigger,
+                'number_meas': number_meas,
+                'slave': []
+            })
+
+        index = -1
+        for dev, ch in get_active_ch_and_device(install_class.dict_active_device_class):
+            index += 1
+            if dev.get_trigger(ch) == QApplication.translate("construct", "Таймер"):
+                src = label_list[index]
+                connections_set.add(
+                    (src['dev_name'], src['ch_name'],
+                     src['dev_name'], src['ch_name'],
+                     str(dev.get_trigger_value(ch)) + "s")
+                )
+                continue
+
+            try:
+                components = dev.get_trigger_value(ch).split()
+            except:
+                continue
+
+            for lbl in label_list:
+                if len(components) >= 2:
+                    if components[1] == lbl['ch_name'] and components[0] == lbl['dev_name']:
+                        connections_set.add(
+                            (lbl['dev_name'], lbl['ch_name'],
+                             label_list[index]['dev_name'], label_list[index]['ch_name'],
+                             "do action")
+                        )
+
+        return (frozenset(devices_set), frozenset(connections_set))
+
     def rebuild_schematic(self, install_class, components: dict):
+        target_state = self._get_target_state(install_class)
+        current_state = self._get_current_state()
+
+        if target_state == current_state:
+            return
 
         self.delete_old_draw()
         self.labels = []
         color_map = {}
-        
-        for dev, ch in get_active_ch_and_device( install_class.dict_active_device_class ):
-            y = install_class.message_broker.get_subscribers(publisher = ch, name_subscribe = ch.do_operation_trigger)
+
+        for dev, ch in get_active_ch_and_device(install_class.dict_active_device_class):
+            y = install_class.message_broker.get_subscribers(publisher=ch, name_subscribe=ch.do_operation_trigger)
             name_dev = dev.get_name()
             if name_dev not in color_map:
                 color_map[name_dev] = self.color_manager.get_color(name_dev)
-            
+
             color = color_map[name_dev]
-            
             lb = blockDevice(ch.get_name(), dev.get_name(), self)
             lb.type_trigger = dev.get_trigger(ch)
             lb.value_trigger = dev.get_trigger_value(ch)
             lb.number_meas = dev.get_steps_number(ch)
             lb.show()
-            lb.setStyleSheet(f"background-color: {color};")
+            lb.set_shape_color(color)
             self.labels.append(lb)
 
         self.connections = []
         index = -1
-        for dev, ch in get_active_ch_and_device( install_class.dict_active_device_class ):
+        for dev, ch in get_active_ch_and_device(install_class.dict_active_device_class):
             index += 1
-            if dev.get_trigger(ch) == QApplication.translate("construct","Таймер"):
+            if dev.get_trigger(ch) == QApplication.translate("construct", "Таймер"):
                 con = connection(self, str(dev.get_trigger_value(ch)) + "s")
                 con.set_units(self.labels[index], self.labels[index])
                 self.connections.append(con)
@@ -685,12 +747,11 @@ class expDiagram(QWidget):
                     if components[1] == label.ch_name and components[0] == label.dev_name:
                         con = connection(self, "do action")
                         con.set_units(label, self.labels[index])
-                        label.slave.append( self.labels[index] )
+                        label.slave.append(self.labels[index])
                         self.labels[index].master = label
                         self.connections.append(con)
 
-
-        self.auto_place(self.labels)  
+        self.auto_place(self.labels)
         self.update()
 
     def paintEvent(self, event):
@@ -836,11 +897,3 @@ main_dict2 = {
     },
 }
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    qdarktheme.setup_theme(corner_shape="sharp")
-    objects_list = create_objects(main_dict1)
-    ex = expDiagram()
-    ex.set_content(objects_list)
-    ex.show()
-    sys.exit(app.exec_())

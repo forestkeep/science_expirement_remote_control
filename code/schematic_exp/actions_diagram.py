@@ -276,6 +276,9 @@ class actDiagram:
         self._arrow_color_index += 1
         return color
 
+    def reset_color_index(self) -> None:
+        self._arrow_color_index = 0
+
     def _rebuild_layouts(self) -> None:
         """Перестраивает панель имён и поле действий."""
         names_layout = self.diagram.names_layout
@@ -446,7 +449,6 @@ class actDiagram:
 
         if trigger_info:
             target_idx = len(self.actor_actions[actor_name]) - 1
-            # Определяем пару акторов (без учёта направления)
             pair = tuple(sorted((trigger_info[0], actor_name)))
             if pair not in self._pair_colors:
                 self._pair_colors[pair] = self._get_next_arrow_color()
@@ -502,6 +504,7 @@ class actDiagram:
         # Назначенные цвета пар акторов сохраняются, счётчик палитры не сбрасывается
         self.diagram.action_field.max_column = 0
         self.current_number = 0
+        self._arrow_color_index = 0
         self._stop_rebuild = False
         self._rebuild_layouts()
 
