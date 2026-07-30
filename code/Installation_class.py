@@ -125,6 +125,7 @@ class installation_class( ExperimentBridge, analyse):
         self.message_broker = (
             messageBroker()
         )
+        self.count_exp_call_stack = 0
 
         self.current_state = ExperimentState.PREPARATION
 
@@ -533,6 +534,13 @@ class installation_class( ExperimentBridge, analyse):
 
                     self.exp_call_stack.clear_action_field()
                     self.exp_call_stack.remove_all_actors()
+                    self.count_exp_call_stack = 0
+                    self.max_actors = 0
+
+                    for device in self.dict_active_device_class.values():
+                        for channel in device.channels:
+                            if channel.is_ch_active():
+                                self.max_actors += 1
 
                     self.exp_start_time = time.perf_counter()
                     self.adjusted_start_time = time.perf_counter()
@@ -643,9 +651,13 @@ class installation_class( ExperimentBridge, analyse):
         self.meta_data_exp.queue_info.append(info)
 
         if not self.exp_call_stack.actors.get(name):
+            self.count_exp_call_stack += 1
             self.exp_call_stack.add_actor(name)
 
         self.exp_call_stack.add_action(actor_name=name, action_info=info, status=status, trigger=trigger)
+
+        if self.count_exp_call_stack == self.max_actors:
+            self.exp_call_stack.finalize_layout()
                 
     def update_remaining_time(self, remaining_time: float):
         logger.debug(f"update_remaining_time {remaining_time}")
