@@ -12,14 +12,13 @@
 import sys
 import math
 import logging
-import copy
 import colorsys
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Union
 
 import qdarktheme
 from PyQt5.QtCore import Qt, QPoint, QTimer
-from PyQt5.QtGui import QPainter, QColor, QPen, QPolygon
+from PyQt5.QtGui import QPainter, QColor, QPen, QPolygon, QIcon
 from PyQt5.QtWidgets import (
     QApplication, QHBoxLayout, QGridLayout, QLabel,
     QScrollArea, QSizePolicy, QVBoxLayout, QWidget, QSplitter
@@ -168,6 +167,38 @@ class actionField(QWidget):
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
         self.overlay.setGeometry(self.rect())
+class ActorLabel(QWidget):
+    """Виджет для отображения имени актора с иконкой в левой панели."""
+
+    def __init__(self, name: str, color: str, icon: Optional[QIcon] = None):
+        super().__init__()
+        self.setFixedHeight(30)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setContentsMargins(0, 0, 0, 0)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setSpacing(4)
+
+        if icon is not None:
+            icon_label = QLabel()
+            icon_label.setPixmap(icon.pixmap(30, 30))
+            #icon_label.setFixedSize(20, 20)
+            icon_label.setScaledContents(False)
+            layout.addWidget(icon_label)
+
+        self.text_label = QLabel(name)
+        self.text_label.setStyleSheet("color: white;")  # цвет текста по умолчанию
+        layout.addWidget(self.text_label)
+
+        self.base_color = color
+        #self.setStyleSheet(f"background-color: {color};")
+        self.setToolTip(name)
+
+    def set_actor_style(self, background: str, text_color: str = "white", decoration: str = "none") -> None:
+        """Применить стиль к виджету и текстовой метке."""
+        #self.setStyleSheet(f"background-color: {background};")
+        self.text_label.setStyleSheet(f"color: {text_color}; text-decoration: {decoration};")
 
 
 class actDiagramWin(QWidget):
@@ -223,9 +254,9 @@ class actorInfo:
     actor_name: str
     number_row: int
     color: str
-    label: deviceAction
+    label: ActorLabel          # теперь ActorLabel, а не deviceAction
     trigger: Optional[str] = None
-
+    icon: Optional[QIcon] = None
 
 class actDiagram:
     """Управляет диаграммой действий: акторы, блоки, стрелки."""
@@ -251,7 +282,11 @@ class actDiagram:
         # Словарь для постоянных цветов пар акторов: ключ – кортеж (actor1, actor2) в алфавитном порядке
         self._pair_colors: Dict[Tuple[str, str], QColor] = {}
 
-        self.diagram.names_layout.addWidget(deviceAction("Actors"), 0, 0)
+        # Заголовок "Actors" можно оставить простой QLabel
+        header = QLabel("Actors")
+        header.setFixedHeight(30)
+        header.setStyleSheet("font-weight: bold;")
+        self.diagram.names_layout.addWidget(header, 0, 0)
 
     def _get_next_color(self, actor_name: str) -> str:
         """Возвращает цвет для нового актора, используя color_manager или серый по умолчанию."""
@@ -264,8 +299,6 @@ class actDiagram:
         colors = []
         for i in range(n):
             hue = i / n
-            # saturation=0.9, value=0.55 даёт насыщенные цвета средней яркости,
-            # контрастные и на светлом, и на тёмном фоне
             r, g, b = colorsys.hsv_to_rgb(hue, 0.9, 0.55)
             colors.append(QColor(int(r * 255), int(g * 255), int(b * 255)))
         return colors
@@ -282,11 +315,11 @@ class actDiagram:
     def _rebuild_layouts(self) -> None:
         """Перестраивает панель имён и поле действий."""
         names_layout = self.diagram.names_layout
+        # Удаляем все виджеты, кроме заголовка (0,0)
         for i in reversed(range(names_layout.count())):
             widget = names_layout.itemAt(i).widget()
-            if widget:
+            if widget and i != names_layout.indexOf(names_layout.itemAtPosition(0, 0).widget()):
                 names_layout.removeWidget(widget)
-        names_layout.addWidget(deviceAction("Actors"), 0, 0)
 
         sorted_actors = sorted(self.actors.values(), key=lambda a: a.number_row)
         for actor in sorted_actors:
@@ -378,35 +411,13 @@ class actDiagram:
 
         self._rebuild_layouts()
 
-        '''
-        print("\n" + "=" * 70)
-        print(" ОПТИМИЗИРОВАННЫЙ ПОРЯДОК АКТОРОВ ".center(70, "="))
-        print(f"{'Актор':<15} {'Строка':<8} {'Триггер':<15} {'Исх.связи':<12} {'Вх.связи':<12} {'Триггерит':<20}")
-        print("-" * 70)
-        for actor in sorted(self.actors.values(), key=lambda a: a.number_row):
-            out = out_deg[actor.actor_name]
-            inc = in_deg[actor.actor_name]
-            targets = [dst for src, _, dst, _, _ in self.arrows if src == actor.actor_name]
-            triggers_str = ", ".join(sorted(set(targets))) if targets else "-"
-            trig_field = actor.trigger if actor.trigger is not None else "-"
-            print(f"{actor.actor_name:<15} {actor.number_row:<8} {trig_field:<15} {out:<12} {inc:<12} {triggers_str:<20}")
-        print("-" * 70)
-        print("Стрелки:")
-        if self.arrows:
-            for src, src_idx, dst, dst_idx, color in self.arrows:
-                print(f"  {src}[{src_idx}] -> {dst}[{dst_idx}] (цвет: {color.name() if hasattr(color, 'name') else '?'})")
-        else:
-            print("  (нет стрелок)")
-        print("=" * 70 + "\n")
-        '''
-
-    def add_actor(self, actor_name: str) -> None:
-        """Добавляет нового актора с пустым блоком."""
+    def add_actor(self, actor_name: str, icon: Optional[QIcon] = None) -> None:
+        """Добавляет нового актора с пустым блоком. Принимает иконку для отображения."""
         new_color = self._get_next_color(actor_name)
         max_row = max((a.number_row for a in self.actors.values()), default=0)
         number_row = max_row + 1
-        lb = deviceAction(actor_name, actor_name, new_color)
-        self.actors[actor_name] = actorInfo(actor_name, number_row, new_color, lb)
+        lb = ActorLabel(actor_name, new_color, icon)
+        self.actors[actor_name] = actorInfo(actor_name, number_row, new_color, lb, icon=icon)
         self.diagram.names_layout.addWidget(lb, number_row, 0)
 
         empty_block = deviceAction("")
@@ -465,17 +476,13 @@ class actDiagram:
         actor = self.actors.get(actor_name)
         if not actor:
             return False
-        actor.label.setStyleSheet(
-            "background-color: #808080;"
-            "color: #FFFFFF;"
-            "text-decoration: line-through;"
-        )
+        actor.label.set_actor_style("#808080", "#FFFFFF", "line-through")
         return True
 
     def activate_all_actors(self) -> None:
         """Возвращает всем акторам активный вид."""
         for actor in self.actors.values():
-            actor.label.setStyleSheet(f"background-color: {actor.color};")
+            actor.label.set_actor_style(actor.color, "white", "none")
 
     def finalize_layout(self) -> None:
         if not self._stop_rebuild:

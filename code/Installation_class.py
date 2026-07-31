@@ -33,6 +33,7 @@ from saving_data.Parse_data import type_save_file
 from available_devices import dict_device_class, JSON_dict_device_class
 from meas_session_data import measSession
 from color_manager import ColorManager
+from icon_manager import IconGenerator
 from experiment_control import ExperimentBridge
 from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, create_clients, ExperimentState, open_log_file
 from graph.main.online_graph import sessionController
@@ -98,6 +99,7 @@ class installation_class( ExperimentBridge, analyse):
         self.device_selector = None
 
         self.inst_color_manager = ColorManager()
+        self.inst_icon_manager = IconGenerator(self.inst_color_manager)
 
         self.dict_device_class  = dict_device_class
         self.JSON_dict_device_class = JSON_dict_device_class
@@ -173,6 +175,7 @@ class installation_class( ExperimentBridge, analyse):
         self.dict_active_device_class = {}
         self.graph_controller = sessionController(current_version=self.version_app)
         self.inst_color_manager = ColorManager()
+        self.inst_icon_manager = IconGenerator(self.inst_color_manager)
         #self.graph_controller.graphics_win.graph_win_close_signal.connect(self.graph_win_closed)
         self.measurement_parameters = {}
         i = 0
@@ -204,7 +207,7 @@ class installation_class( ExperimentBridge, analyse):
             color = self.inst_color_manager.register_color(dev, identifiers)
             dev.set_color(color)
 
-        self.exp_diagram = expDiagram(color_manager=self.inst_color_manager)
+        self.exp_diagram = expDiagram(icon_manager=self.inst_icon_manager)
         self.exp_call_stack = actDiagram(color_manager=self.inst_color_manager)
         
         self.installation_window = Ui_Installation()
@@ -652,7 +655,8 @@ class installation_class( ExperimentBridge, analyse):
 
         if not self.exp_call_stack.actors.get(name):
             self.count_exp_call_stack += 1
-            self.exp_call_stack.add_actor(name)
+            icon = self.inst_icon_manager.get_icon(name)
+            self.exp_call_stack.add_actor(name, icon)
 
         self.exp_call_stack.add_action(actor_name=name, action_info=info, status=status, trigger=trigger)
 

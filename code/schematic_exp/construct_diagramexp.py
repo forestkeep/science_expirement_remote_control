@@ -15,7 +15,7 @@ from enum import Enum
 
 import qdarktheme
 from PyQt5.QtCore import QPoint, QRect, Qt
-from PyQt5.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen, QPolygon, QRegion
+from PyQt5.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen, QPolygon, QRegion, QIcon
 from PyQt5.QtWidgets import (QApplication, QFrame, QLabel, QSizePolicy,
                              QVBoxLayout, QWidget)
 from functions import get_active_ch_and_device
@@ -324,6 +324,7 @@ class blockDevice(QWidget):
         self.number_meas = None
         self.master = None
         self.slave = []
+        self._icon = None
 
         self.x_offset = 0
         self.y_offset = 0
@@ -361,6 +362,10 @@ class blockDevice(QWidget):
         self.label_ch.raise_()
         self.label_dev.raise_()
 
+    def set_icon(self, icon: QIcon):
+        self._icon = icon
+        self.update()
+
     def set_shape_color(self, color_str: str):
         """Принять цвет в формате 'rgba(r,g,b,a)' и сохранить как QColor."""
         color = QColor()
@@ -379,16 +384,13 @@ class blockDevice(QWidget):
 
         name_lower = self.ch_name.lower()
         w, h = self.width(), self.height()
-
         if w == 0 or h == 0:
             return
 
         base_color = self.shape_color
-        if self.is_check:
-            overlay = QColor(200, 128, 128, 1)
-        else:
-            overlay = None
+        overlay = QColor(200, 128, 128, 1) if self.is_check else None
 
+        # Ваша логика выбора фигуры
         if 'meas' in name_lower:
             path = QPainterPath()
             path.addEllipse(0, 0, w, h)
@@ -412,6 +414,14 @@ class blockDevice(QWidget):
         if self.is_check:
             painter.setBrush(QBrush(overlay))
             painter.drawPath(path)
+
+        # ---- Рисуем иконку по центру ----
+        if self._icon is not None:
+            icon_size = int(min(w, h) * 0.6)  # можно задать фиксированный размер, например 32
+            pixmap = self._icon.pixmap(icon_size, icon_size)
+            x = (w - pixmap.width()) // 2
+            y = (h - pixmap.height()) // 2
+            painter.drawPixmap(x, y, pixmap)
 
     def mousePressEvent(self, event):
         if self.parentWidget().is_ctrl_pressed and event.button() == Qt.LeftButton:
@@ -452,9 +462,10 @@ class blockDevice(QWidget):
         new_device.show()
 
 class expDiagram(QWidget):
-    def __init__(self, color_manager):
+    def __init__(self, icon_manager):
         super().__init__()
-        self.color_manager = color_manager
+        self.color_manager = icon_manager.color_manager
+        self.icon_manager = icon_manager
         self.is_ctrl_pressed = False
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.connections = []
@@ -710,19 +721,18 @@ class expDiagram(QWidget):
 
         self.delete_old_draw()
         self.labels = []
-        color_map = {}
 
         for dev, ch in get_active_ch_and_device(install_class.dict_active_device_class):
             y = install_class.message_broker.get_subscribers(publisher=ch, name_subscribe=ch.do_operation_trigger)
             name_dev = dev.get_name()
-            if name_dev not in color_map:
-                color_map[name_dev] = self.color_manager.get_color(name_dev)
+            color = self.color_manager.get_color(name_dev)
+            icon = self.icon_manager.get_icon(name_dev, ch.ch_type, ch.number)
 
-            color = color_map[name_dev]
             lb = blockDevice(ch.get_name(), dev.get_name(), self)
             lb.type_trigger = dev.get_trigger(ch)
             lb.value_trigger = dev.get_trigger_value(ch)
             lb.number_meas = dev.get_steps_number(ch)
+            lb.set_icon(icon)
             lb.show()
             lb.set_shape_color(color)
             self.labels.append(lb)

@@ -411,6 +411,14 @@ class baseInstallation:
 
             self.installation_window.add_new_devices(new_added_device)
 
+            for dev in new_added_device.values():
+                identifiers = [dev.get_name()]
+                for ch in dev.channels:
+                    identifiers.append( f"{dev.get_name()} {ch.get_name()}")
+    
+                color = self.inst_color_manager.register_color(dev, identifiers)
+                dev.set_color(color)
+
     def change_check_debug(self):
         if not self.is_experiment_running():
             if not self.is_debug:
