@@ -879,7 +879,6 @@ class installation_class( ExperimentBridge, analyse):
         """
 
         for key, data in buffer.items():
-
             if key not in self.dict_active_device_class:
                 logger.warning(f"При открытии установки {fileName} Устройство с ключом {key} не найдено в dict_active_device_class. ")
                 continue
@@ -889,7 +888,6 @@ class installation_class( ExperimentBridge, analyse):
             device.set_parameters(settings_dev)
 
             for ch in device.channels:
-
                 ch_name = ch.get_name()
 
                 if "channels" not in data or ch_name not in data["channels"]:
@@ -908,7 +906,7 @@ class installation_class( ExperimentBridge, analyse):
                     is_open = ch_data.get("state") != "not active"
                     self.get_device_widget(device.get_name()).set_state_ch_widget(ch.number, is_open)
                     try:
-                        device.set_parameters_ch(ch_name, ch_data)
+                        device.set_parameters_ch(channel_name=ch_name, parameters=ch_data, is_preparation_experiment=False)
                     except Exception as e:
                         log_message = QApplication.translate(
                                                             'main install',
@@ -919,6 +917,7 @@ class installation_class( ExperimentBridge, analyse):
                         logger.warning(f"Ошибка при установке параметров канала. после открытия сохраненной установки.файл: {fileName} устройство: {device.get_name()}, канал {ch_name} data:{ch_data}: {e}")
 
             self.get_device_widget(device.get_name()).update_widgets()
+        self.preparation_experiment()
 
     def convert_buf_file(self):
         default_path_buf = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")

@@ -778,7 +778,7 @@ class base_device():
     def set_parameters(self, parameters):
         self.dict_settable_parameters = parameters
 
-    def set_parameters_ch(self, channel_name, parameters):
+    def set_parameters_ch(self, channel_name, parameters, is_preparation_experiment = True):
         """функция необходима для настройки параметров канала в установке при добавлении прибора извне или при открытии сохраненной установки, передаваемый словарь гарантированно должен содержать параметры именно для данного канала"""
         self.switch_channel(ch_name = channel_name)
         status = False
@@ -816,7 +816,8 @@ class base_device():
                 status_parameters = status,
                 list_parameters_device = self.dict_settable_parameters,
                 list_parameters_act = self.active_channel_act.dict_settable_parameters,
-                list_parameters_meas = self.active_channel_meas.dict_settable_parameters
+                list_parameters_meas = self.active_channel_meas.dict_settable_parameters,
+                is_preparation_experiment = is_preparation_experiment
             )
         elif self.part_ch == which_part_in_ch.only_meas:
             self.installation_class.message_from_device_settings(
@@ -824,7 +825,10 @@ class base_device():
                 num_channel = self.active_channel.number,
                 status_parameters = status,
                 list_parameters_device = self.dict_settable_parameters,
-                list_parameters_meas = self.active_channel_meas.dict_settable_parameters
+                list_parameters_meas = self.active_channel_meas.dict_settable_parameters,
+                is_preparation_experiment = is_preparation_experiment
+
+
             )
         elif self.part_ch == which_part_in_ch.only_act:
             self.installation_class.message_from_device_settings(
@@ -833,6 +837,7 @@ class base_device():
                 status_parameters = status,
                 list_parameters_device = self.dict_settable_parameters,
                 list_parameters_act = self.active_channel_act.dict_settable_parameters,
+                is_preparation_experiment = is_preparation_experiment
             )
         else:
             logger.warning("Неопределенный тип канала устройства" + self.get_name())

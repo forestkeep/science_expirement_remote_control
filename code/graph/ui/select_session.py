@@ -2,12 +2,25 @@ from PyQt5.QtWidgets import (QWidget, QTableWidget, QTableWidgetItem, QHeaderVie
                              QHBoxLayout, QVBoxLayout, QPushButton, QMenu, QAbstractItemView,
                              QAction, QApplication, QDialog, QTextEdit, QDialogButtonBox)
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QPoint
+from PyQt5.QtCore import Qt, pyqtSignal, QObject, QPoint, QTimer   # +QTimer
+from PyQt5.QtGui import QColor, QBrush  
 
 import logging
 
 import copy
 
 logger = logging.getLogger(__name__)
+
+STATUS_COLORS = {
+    "running":       QColor("#4aa3f8"),   # активная — синяя
+    "downloaded":    QColor("#c8c8c8"),
+    "imported":      QColor("#c8c8c8"),
+    "ok":            QColor("#7ad07a"),
+    "Exp completed": QColor("#7ad07a"),   # завершённая — зелёная
+}
+ROW_BG = {
+    "running": QColor(40, 90, 160, 90),   # подсветка строки активной сессии
+}
 
 class ButtonsWidget(QWidget):
     def __init__(self, parent=None):
@@ -31,10 +44,14 @@ class SessionWidget(QWidget):
     session_renamed = pyqtSignal(str, str)  # session_id, new_name
     session_description_updated = pyqtSignal(str, str)  # session_id, new_description
 
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.sessions_data = []
+        self._anim_dot = 0
+        self._anim_timer = QTimer(self)
+        self._anim_timer.setInterval(400)             # период мигания
+        self._anim_timer.timeout.connect(self._animate_running)
+        self._anim_timer.start()
         self.init_ui()
         
     def init_ui(self):
@@ -54,6 +71,54 @@ class SessionWidget(QWidget):
         self.table.cellDoubleClicked.connect(self._on_cell_double_click)
         self.table.cellClicked.connect(self._on_cell_clicked)
         self.table.model().dataChanged.connect(self._on_data_changed)
+
+    def _status_for(self, session_id):
+        for s in self.sessions_data:
+            if s['id'] == session_id:
+                return s.get('status', '')
+        return ''
+
+    def _apply_row_style(self, row):
+        id_item = self.table.item(row, 0)
+        if id_item is None:
+            return
+        status = self._status_for(id_item.text())
+        color = STATUS_COLORS.get(status, QColor("#ffffff"))
+
+        status_item = self.table.item(row, 2)
+        if status_item is not None:
+            status_item.setForeground(QBrush(color))
+
+        bg = ROW_BG.get(status)
+        for col in range(self.table.columnCount()):
+            cell = self.table.item(row, col)
+            if cell is None:
+                continue
+            if bg is not None:
+                cell.setBackground(QBrush(bg))
+            else:
+                cell.setBackground(QBrush(Qt.transparent))
+
+    def _animate_running(self):
+        """Раз в 400 мс обновляет текст статуса активных сессий: running, running., running.., running..."""
+        self._anim_dot = (self._anim_dot + 1) % 4
+        dots = "." * self._anim_dot
+        for row in range(self.table.rowCount()):
+            id_item = self.table.item(row, 0)
+            if id_item is None:
+                continue
+            if self._status_for(id_item.text()) == "running":
+                status_item = self.table.item(row, 2)
+                if status_item is None:
+                    status_item = QTableWidgetItem()
+                    self.table.setItem(row, 2, status_item)
+                status_item.setText(f"running{dots}")
+                status_item.setForeground(QBrush(STATUS_COLORS["running"]))
+                bg = ROW_BG["running"]
+                for col in range(self.table.columnCount()):
+                    cell = self.table.item(row, col)
+                    if cell is not None:
+                        cell.setBackground(QBrush(bg))
 
     def _on_data_changed(self, top_left, bottom_right):
         logger.info(f"_on_data_changed {top_left} {bottom_right} list: {self.sessions_data}")
@@ -82,6 +147,7 @@ class SessionWidget(QWidget):
             self.table.setItem(row, 0, QTableWidgetItem(session['id']))
             self.table.setItem(row, 1, QTableWidgetItem(session['name']))
             self.table.setItem(row, 2, QTableWidgetItem(session['status']))
+            self._apply_row_style(row)  
 
     def update_session(self, session):
         logger.info(f"update_session {session}")
@@ -93,6 +159,7 @@ class SessionWidget(QWidget):
                 # Если нужно обновить и внутренний список сессий:
                 if 0 <= row < len(self.sessions_data):
                     self.sessions_data[row] = session
+                    self._apply_row_style(row)  
                 break
 
     def show_context_menu(self, pos: QPoint):
@@ -133,6 +200,7 @@ class SessionWidget(QWidget):
         self.table.setItem(self.table.rowCount() - 1, 0, QTableWidgetItem(copy.copy(session['id'])))
         self.table.setItem(self.table.rowCount() - 1, 1, QTableWidgetItem(copy.copy(session['name'])))
         self.table.setItem(self.table.rowCount() - 1, 2, QTableWidgetItem(copy.copy(session['status'])))
+        self._apply_row_style(self.table.rowCount() - 1)
 
     def _add_description(self, row):
         """Открывает модальное окно для редактирования описания сессии"""

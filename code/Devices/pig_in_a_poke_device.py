@@ -190,7 +190,7 @@ class pigInAPoke(base_device):
 		status = True
 		return status
 
-	def do_meas( self, ch ):
+	def do_meas(self, ch):
 		"""выполнить команды"""
 		start_time = time.perf_counter()
 		parameters = [self.name + " " + str(ch.get_name())]
@@ -198,21 +198,19 @@ class pigInAPoke(base_device):
 
 			is_correct = True
 			timeout = ch.dict_settable_parameters["timeout_connect"]
+
 			if ch.dict_settable_parameters["is_not_command"]:
 				answer = self.client.query("", timeout)
-				
+
 				if answer:
-						val = [f"{''}raw=" + str(answer)]
-						parameters.append(val)
-						number_pattern = r'-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?'
-						numbers = re.findall(number_pattern, str(answer))
-						for index,nm in enumerate(numbers):
-							try:
-								nm = float(nm)
-							except:
-								logger.info(f"не удалось преобразовать {nm} в float при ответе pig_in_a_poke_device")
-							val = [f"{''}{index}=" + str(nm)]
-							parameters.append(val)
+					val = [f"{''}raw=" + str(answer)]
+					parameters.append(val)
+					# Парсим ответ: с названиями или с индексами
+					parameters.extend(
+						self._extract_parameters_from_answer(
+							answer, command_prefix=""
+						)
+					)
 				else:
 					is_correct = False
 
@@ -222,16 +220,12 @@ class pigInAPoke(base_device):
 					if answer:
 						val = [f"{command}raw=" + str(answer)]
 						parameters.append(val)
-						number_pattern = r'-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?'
-						numbers = re.findall(number_pattern, str(answer))
-						logger
-						for index,nm in enumerate(numbers):
-							try:
-								nm = float(nm)
-							except:
-								logger.info(f"не удалось преобразовать {nm} в float при ответе pig_in_a_poke_device")
-							val = [f"{command}{index}=" + str(nm)]
-							parameters.append(val)
+						# Парсим ответ: с названиями или с индексами
+						parameters.extend(
+							self._extract_parameters_from_answer(
+								answer, command_prefix=command
+							)
+						)
 					else:
 						val = [f"{command}=" + "fail"]
 						parameters.append(val)
@@ -244,7 +238,11 @@ class pigInAPoke(base_device):
 			print(f"{len(parameters)=} {self.__num_parse_args=}")
 			if self.__num_parse_args is not None:
 				if self.__num_parse_args != len(parameters):
-					logger.warning(f"несоответствие количества параметров в ответе прибора кот в мешке и количества параметров в команде {self.__num_parse_args=} != {len(parameters)=}")
+					logger.warning(
+						f"несоответствие количества параметров в ответе "
+						f"прибора кот в мешке и количества параметров в команде "
+						f"{self.__num_parse_args=} != {len(parameters)=}"
+					)
 					ans = ch_response_to_step.Step_fail
 				else:
 					self.__num_parse_args = len(parameters)
@@ -252,6 +250,54 @@ class pigInAPoke(base_device):
 			return ans, parameters, time.perf_counter() - start_time
 
 		return ch_response_to_step.Incorrect_ch, parameters, time.perf_counter() - start_time
+
+	@staticmethod
+	def _extract_parameters_from_answer(answer, command_prefix=""):
+		"""
+		Парсит ответ прибора.
+		Извлекает числа, и если перед числом есть название параметра
+		(например 'temp 25.5', 'temp=25.5', 'temp:25.5', 'temp-25.5',
+		'temp : 25.5' и т.п.) — использует это название как имя параметра.
+		Иначе формирует имя вида '{command_prefix}{index}'.
+		"""
+		number_pattern = r'-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?'
+
+		# Имя параметра (буквы/цифры/подчёркивания, начинается с буквы или _),
+		# затем разделитель: ':', '=', '-' (с возможными пробелами) или
+		# хотя бы один пробел. Всё это — опционально.
+		pattern = re.compile(
+			r'(?:(?P<name>[A-Za-z_][A-Za-z0-9_]*)'
+			r'(?:\s*[:=\-]\s*|\s+))?'
+			r'(?P<num>' + number_pattern + r')'
+		)
+
+		parameters = []
+		unnamed_index = 0
+
+		for m in pattern.finditer(str(answer)):
+			num_str = m.group('num')
+			name = m.group('name')
+
+			try:
+				nm = float(num_str)
+			except Exception:
+				logger.info(
+					f"не удалось преобразовать {num_str} в float "
+					f"при ответе pig_in_a_poke_device"
+				)
+				nm = num_str
+
+			if name:
+				# Название найдено — используем его вместо command+index
+				val = [f"{name}=" + str(nm)]
+			else:
+				# Название не найдено — сохраняем прежнее поведение
+				val = [f"{command_prefix}{unnamed_index}=" + str(nm)]
+				unnamed_index += 1
+
+			parameters.append(val)
+
+		return parameters
 
 	def set_test_mode( self ):
 		"""переводит прибор в режим теста, выдаются сырые данные от функций передачи и приема"""

@@ -491,6 +491,7 @@ class baseInstallation:
         list_parameters_device,
         list_parameters_act=None,
         list_parameters_meas=None,
+        is_preparation_experiment=True,
     ):
         logger.debug(
             f"Настройки канала {num_channel}  прибора "
@@ -548,6 +549,6 @@ class baseInstallation:
         self.dict_active_device_class[name_device].set_status_settings_ch(
             num_channel, status_parameters
         )
-
-        self.preparation_experiment()
+        if is_preparation_experiment is True:
+            self.preparation_experiment()
         logger.debug("передали настройки прибора установке")
