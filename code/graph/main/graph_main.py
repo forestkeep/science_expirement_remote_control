@@ -52,9 +52,10 @@ class CustomComboBox(QComboBox):
 class manageGraph(QObject):
     new_curve_selected = pyqtSignal()
 
-    def __init__(self, tablet_page, main_class, select_data_wid, alias_manager):
+    def __init__(self, tablet_page, main_class, select_data_wid, alias_manager, selection_model=None):
         super().__init__()
         self.alias_manager = alias_manager
+        self.selection_model = selection_model
         self.page = tablet_page
 
         self.select_win = select_data_wid
@@ -276,8 +277,11 @@ class manageGraph(QObject):
         if is_click_plot:
             for curve in focus_objects:
                 if curve.is_curve_selected:
-                        curve.change_style(curve.saved_style)
-                        curve.is_curve_selected = False
+                    curve.change_style(curve.saved_style)
+                    curve.is_curve_selected = False
+                    curve.notify_selection_changed(False)
+            if self.selection_model is not None:
+                self.selection_model.clear()
 
     def delete_key_press(self):
         curv_for_del = []
@@ -362,6 +366,8 @@ class manageGraph(QObject):
     def destroy_curve(self, curve_data_obj):
         curve_data_obj.delete_curve_from_graph()
         curve_data_obj.is_draw = False
+        if self.selection_model is not None:
+            self.selection_model.remove(curve_data_obj)
         key = curve_data_obj.curve_name
         if self.__stack_curve.get(key) is not None:
             self.__stack_curve.pop(key)
@@ -372,6 +378,8 @@ class manageGraph(QObject):
             curve.is_draw = False
 
         self.__stack_curve.clear()
+        if self.selection_model is not None:
+            self.selection_model.clear()
 
     def stop_session(self):
         for curve in self.__stack_curve.values():
@@ -383,11 +391,20 @@ class manageGraph(QObject):
     def set_multiple_mode(self, is_multiple):
         self.__is_multiple = is_multiple
 
+    def _on_curve_selection_changed(self, curve_obj, selected: bool):
+        if self.selection_model is None:
+            return
+        if selected:
+            self.selection_model.add(curve_obj)
+        else:
+            self.selection_model.remove(curve_obj)
+
     def get_curve(self, name):
         return self.__stack_curve.get(name)
 
     def create_curve(self, data: relationData) -> linearData:
         new_data = linearData(data=data, alias_manager=self.alias_manager)
+        new_data.set_selection_callback(self._on_curve_selection_changed)
         buf_color = next(self.color_warm_gen)
 
         if new_data.saved_style is None:

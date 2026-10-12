@@ -48,6 +48,11 @@ from graph.core.filters_instance_class import FilterCommand
 from graph.core.parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
 from graph.core.session_mode import SessionMode
 from graph.api.experiment_port import ExperimentPort
+from graph.core.selection_model import SelectionModel
+from graph.ui.action_registry import ActionRegistry
+from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.QtCore import pyqtSignal, QRect
+from PyQt5.QtGui import QGuiApplication
 
 logger = logging.getLogger(__name__)
 
@@ -63,12 +68,51 @@ def time_decorator(func):
 class GraphWindow(QMainWindow):
     graph_win_close_signal = pyqtSignal(int)
 
-    def __init__(self, session_selector, import_buttons=None, version = None):
+    def __init__(self, session_selector, import_buttons=None, version=None):
         super().__init__()
         self.setWindowTitle(("Online Graph " + version) if version else "Online Graph")
-        self.setGeometry(100, 100, 1200, 700)
+
+        # --- адаптивная геометрия ---
+        self._apply_adaptive_geometry()
+
         self.notification = None
-        self.initUI(session_selector = session_selector,import_buttons=import_buttons)
+        self.initUI(session_selector=session_selector, import_buttons=import_buttons)
+
+    def _apply_adaptive_geometry(self):
+        """Подгоняем окно под текущий экран: 90% от доступной области,
+        с ограничениями по минимуму/максимуму и центрированием."""
+
+        screen = self.screen() or QGuiApplication.primaryScreen()
+        if screen is None:
+            self.resize(1280, 720)
+            return
+
+        avail: QRect = screen.availableGeometry()
+        avail_w, avail_h = avail.width(), avail.height()
+
+        target_w = int(avail_w * 0.90)
+        target_h = int(avail_h * 0.90)
+
+        MIN_W, MIN_H = 800, 500
+        MAX_W, MAX_H = 1900, 1100
+
+        target_w = max(MIN_W, min(target_w, MAX_W, avail_w))
+        target_h = max(MIN_H, min(target_h, MAX_H, avail_h))
+
+        self.setMinimumSize(MIN_W, MIN_H)
+
+        x = avail.x() + (avail_w - target_w) // 2
+        y = avail.y() + (avail_h - target_h) // 2
+
+        self.setGeometry(x, y, target_w, target_h)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        scr = self.screen()
+        if scr is not None:
+            avail = scr.availableGeometry()
+            if self.width() > avail.width() or self.height() > avail.height():
+                self._apply_adaptive_geometry()
 
     def initUI(self, session_selector, import_buttons):
         self.__add_menu()
@@ -169,6 +213,7 @@ class GraphSession(QWidget):
         self.uuid = uuid.uuid4().hex if ses_uuid is None else ses_uuid
         logger.info(f"Session {self.uuid=} created")
         self._simple_mode = simple_mode
+        self.selection_model = SelectionModel(parent=self)
         self.initUI()
 
     @property
@@ -209,7 +254,10 @@ class GraphSession(QWidget):
 
         if not simple:
             self.filter_class = filtersClass()
-            self.tree_class = treeWin(main_class=self)
+            self.tree_class = treeWin(
+                main_class=self,
+                action_registry=getattr(self.session_controller, "action_registry", None),
+            )
 
         self.tabWidget = QTabWidget()
 
@@ -253,7 +301,8 @@ class GraphSession(QWidget):
             tablet_page=self.tab1,
             main_class=self,
             select_data_wid=self.select_win,
-            alias_manager=self.alias_manager
+            alias_manager=self.alias_manager,
+            selection_model=self.selection_model,
         )
         self.graph_wave = graphOsc(
             self.tab2,
@@ -364,6 +413,7 @@ class sessionController():
         self.version_app = "1.0.0" if not current_version else str(current_version)
         self.experiment_port = ExperimentPort(self)
         self.alias_manager = ParameterAliasManager()
+        self.action_registry = ActionRegistry(parent=self.alias_manager)
         self.session_selector = SessionSelectControl()
         self.buttons_controller = ButtonsControl(self.session_selector)
         self.status_bar = StatusBar()
@@ -395,6 +445,15 @@ class sessionController():
         self.compare_graph = None
         self.animation_win = None
         self.dot_counter = 0  # счётчик для анимации точек
+
+
+        # --- Реестр действий: демонстрационная регистрация ---
+        self.action_registry.register(
+            "curve.reset_name",
+            QApplication.translate("GraphWindow", "Сбросить название выделенных кривых"),
+            self._action_reset_curve_name,
+            context="curve",
+        )
 
         self.status_bar.set_permanent("Готово")
 
@@ -486,6 +545,25 @@ class sessionController():
         #available_params = self.get_name_params()
         dialog = ParameterAliasDialog(self.alias_manager,  self.graphics_win)
         dialog.exec_()
+
+    def _current_session(self):
+        """Активная GraphSession или None."""
+        current_widget = self.graphics_win.stack.currentWidget()
+        for session in self.graph_sessions.values():
+            if session is current_widget:
+                return session
+        return None
+
+    def _action_reset_curve_name(self):
+        """Сбросить пользовательские имена у выделенных кривых в текущей сессии."""
+        session = self._current_session()
+        if session is None or not hasattr(session, "selection_model"):
+            return
+        for curve in session.selection_model.current():
+            try:
+                curve.reset_name()
+            except Exception as e:
+                logger.warning(f"_action_reset_curve_name failed for {curve}: {e}")
 
     def read_statistics(self, group_by_param=True):
         if False:

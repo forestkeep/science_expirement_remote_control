@@ -103,6 +103,8 @@ class graphData:
             raw_x: The raw data for the x-axis.
             raw_y: The raw data for the y-axis.
         """
+
+        self._on_selection_changed = None 
         raw_x = data.x_result
         raw_y = data.y_result
 
@@ -265,12 +267,21 @@ class graphData:
     def on_plot_clicked(self, obj):
         """Обработчик клика по любой копии кривой."""
         self.i_am_click_now = True
-        if self.is_curve_selected:
-            self.is_curve_selected = False
-            self.apply_style_to_all(self.saved_style)
-        else:
-            self.is_curve_selected = True
+        new_state = not self.is_curve_selected
+        self.is_curve_selected = new_state
+        if new_state:
             self.apply_style_to_all(self.clicked_style)
+        else:
+            self.apply_style_to_all(self.saved_style)
+        self.notify_selection_changed(new_state)
+
+    def set_selection_callback(self, callback):
+        """callback(curve_obj, selected: bool) — вызывается при клике по кривой."""
+        self._on_selection_changed = callback
+
+    def notify_selection_changed(self, selected: bool):
+        if self._on_selection_changed is not None:
+            self._on_selection_changed(self, selected)
 
     def higlight_curve(self):
         if self.higlighted_flag:

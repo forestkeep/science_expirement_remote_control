@@ -332,9 +332,10 @@ class treeWin(QWidget):
     curve_hide = pyqtSignal( object )
     curve_reset = pyqtSignal( object )
     curve_created = pyqtSignal( object, str, str )
-    def __init__(self, main_class = None):
+    def __init__(self, main_class = None, action_registry = None):
         super().__init__()
         self.setMinimumSize(0,0)
+        self.action_registry = action_registry
         self.curves = []
         left_layout = QVBoxLayout()
         button_layout = QHBoxLayout()
@@ -590,6 +591,13 @@ class treeWin(QWidget):
             create_autocorrelation.triggered.connect(lambda: self.create_autocorrelation(root_item))
             add_in_compare.triggered.connect(lambda: self.add_in_compare(root_item))
             animation_action.triggered.connect(lambda: self.show_animation(root_item))
+
+            if self.action_registry is not None:
+                registry_actions = self.action_registry.get_actions_for_context("curve")
+                if registry_actions:
+                    context_menu.addSeparator()
+                    for action in registry_actions:
+                        context_menu.addAction(action)
 
             context_menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
 
