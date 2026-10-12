@@ -15,7 +15,7 @@ from enum import Enum
 
 import qdarktheme
 from PyQt5.QtCore import QPoint, QRect, Qt
-from PyQt5.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen, QPolygon, QRegion, QIcon
+from PyQt5.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen, QPolygon, QIcon
 from PyQt5.QtWidgets import (QApplication, QFrame, QLabel, QSizePolicy,
                              QVBoxLayout, QWidget)
 from functions import get_active_ch_and_device

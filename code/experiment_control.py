@@ -16,7 +16,6 @@ import time
 from datetime import datetime
 
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QElapsedTimer, QEventLoop
 from PyQt5.QtCore import QTimer
 
 from Analyse_in_installation import analyse

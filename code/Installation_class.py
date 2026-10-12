@@ -429,6 +429,14 @@ class installation_class( ExperimentBridge, analyse):
 
             self.installation_window.devices_lay = buf_wid
             self.dict_active_device_class = buf_dev
+            self.inst_color_manager.release_all()
+            for dev in self.dict_active_device_class.values():
+                identifiers = [dev.get_name()]
+                for ch in dev.channels:
+                    identifiers.append( f"{dev.get_name()} {ch.get_name()}")
+    
+                color = self.inst_color_manager.register_color(dev, identifiers)
+                dev.set_color(color)
             self.preparation_experiment()
             logger.debug("выход из функции удаления прибора")
         else:

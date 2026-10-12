@@ -13,7 +13,6 @@ import sys
 import time
 import random
 import copy
-import traceback
 
 import logging
 from PyQt5 import QtWidgets
@@ -47,6 +46,8 @@ import numpy as np
 from functions import open_log_file
 from graph.core.filters_instance_class import FilterCommand
 from graph.core.parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
+from graph.core.session_mode import SessionMode
+from graph.api.experiment_port import ExperimentPort
 
 logger = logging.getLogger(__name__)
 
@@ -171,6 +172,24 @@ class GraphSession(QWidget):
         self.initUI()
 
     @property
+    def mode(self) -> SessionMode:
+        """Режим сессии: LIVE — эксперимент идёт, REVIEW — остановлен/импорт."""
+        if not hasattr(self, "data_manager") or self.data_manager is None:
+            return SessionMode.REVIEW
+        if self.data_manager.is_session_running():
+            return SessionMode.LIVE
+        return SessionMode.REVIEW
+
+    def is_live(self) -> bool:
+        return self.mode == SessionMode.LIVE
+
+    def can(self, modify: bool = False) -> bool:
+        """Можно ли что-то менять. В LIVE тяжёлые операции запрещены."""
+        if modify:
+            return self.mode != SessionMode.LIVE
+        return True
+
+    @property
     def session_name(self):
         return self._session_name
     
@@ -282,7 +301,7 @@ class GraphSession(QWidget):
 
         is_apply = True
         if self.data_manager is not None:
-            if self.data_manager.is_session_running():
+            if not self.can(modify=True):
                 is_apply = False
 
         if is_apply:
@@ -343,6 +362,7 @@ class running_exp_test(QWidget):
 class sessionController():
     def __init__(self, current_version = None):
         self.version_app = "1.0.0" if not current_version else str(current_version)
+        self.experiment_port = ExperimentPort(self)
         self.alias_manager = ParameterAliasManager()
         self.session_selector = SessionSelectControl()
         self.buttons_controller = ButtonsControl(self.session_selector)
@@ -565,7 +585,7 @@ class sessionController():
                 self._save_excel(fileName)
             except Exception as e:
                 self.status_bar.set_status(f"Ошибка сохранения: {e}", timeout=5000)
-                logger.error(f"Ошибка при сохранении Excel файла: {e} {traceback.format_exc()}")
+                logger.error(f"Ошибка при сохранении Excel файла: {e} ")
             finally:
                 self.status_bar.hide_progress()
 
@@ -694,16 +714,17 @@ class sessionController():
             self.status_bar.set_status(QApplication.translate("graph", "Данные импортированы"), 10000)
 
     def delete_session(self, session_id: str):
-        if self.graph_sessions.get(session_id) is not None:
-            if not self.graph_sessions[session_id].data_manager.is_session_running():   
-                self.graphics_win.stack.removeWidget(self.graph_sessions[session_id])
-                self.graph_sessions[session_id].graph_main.destroy_all_curves()
-                self.graph_sessions[session_id].deleteLater()
-                del self.graph_sessions[session_id]
-                #self.session_selector.delete_session(session_id)
-            else:
-                self.graph_sessions[session_id].show_tooltip(QApplication.translate("graph", "Сессию можно удалить только после остановки."))
-                logger.warning(f"Session {session_id} is running. Broke session deletion.")
+        session = self.graph_sessions.get(session_id)
+        if session is None:
+            return
+        if session.can(modify=True):
+            self.graphics_win.stack.removeWidget(session)
+            session.graph_main.destroy_all_curves()
+            session.deleteLater()
+            del self.graph_sessions[session_id]
+        else:
+            session.show_tooltip(QApplication.translate("graph", "Сессию можно удалить только после остановки."))
+            logger.warning(f"Session {session_id} is running. Broke session deletion.")
 
     def _session_renamed(self, session_id: str, new_session_name: str):
         logger.info(f"_session_renamed {session_id=} {new_session_name=}")
@@ -766,28 +787,3 @@ def run_graph_process(queue):
     controller.controll_sessions_win.show()
     app.exec_()
 
-if __name__ == "__main__":
-    import os
-    logger = logging.getLogger(__name__)
-    FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
-
-    console = logging.StreamHandler()
-    console.setLevel(logging.DEBUG)
-    console.setFormatter(logging.Formatter(FORMAT))
-
-    logging.basicConfig(handlers=[console], level=logging.DEBUG)
-
-    import qdarktheme
-    from test_main_graph import test_graph
-    app = QApplication(sys.argv)
-    qdarktheme.setup_theme("dark", corner_shape="sharp", custom_colors={"primary": "#DDBCFF"})
-
-    my_session_class = sessionController(current_version="test")
-    my_session_class.graphics_win.show()
-
-    test_class = running_exp_test(my_session_class, 65, 0.1)
-    test_class.run()
-
-    sys.exit(app.exec_())
-
-    # py-spy record --native -o profile.svg -- python C:\Users\zahidovds\Desktop\virtual_for_uswindsens\main\graph\online_graph.py

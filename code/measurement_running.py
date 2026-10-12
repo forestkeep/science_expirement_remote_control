@@ -16,7 +16,6 @@ from datetime import datetime
 from PyQt5.QtWidgets import QApplication
 from Devices.Classes import ch_response_to_step, response_to_bool
 from Handler_manager import messageBroker
-#from profilehooks import profile
 
 from multiprocessing import Queue
 from shared_buffer_manager import SharedBufferManager

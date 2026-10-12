@@ -12,8 +12,8 @@
 import sys
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QBrush, QColor, QFont, QIcon, QPixmap
-from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QDialog,
+from PyQt5.QtGui import  QFont, QIcon, QPixmap
+from PyQt5.QtWidgets import (QAction, QApplication,  QDialog,
                              QHBoxLayout, QHeaderView, QLineEdit, QMainWindow,
                              QMenu, QMessageBox, QPushButton, QTextEdit,
                              QTreeWidget, QTreeWidgetItem, QVBoxLayout,

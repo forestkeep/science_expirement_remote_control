@@ -20,7 +20,6 @@ class axisSettings:
     is_inverted: bool
     is_visible: bool
 
-
 class axisController():
     def __init__(self, axis_object: AxisItem, axis_settings: axisSettings, axis_style: axisStyle):
         self.axis = axis_object
@@ -135,7 +134,6 @@ class PatchedPlotWidget(pg.PlotWidget):
 
         #self.tooltip.setPos(50, 50)
 
-
     def add_inf_line(self, line):
         self.inf_lines.append(line)
         self.addItem(line)
@@ -150,7 +148,6 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.set_legend_color(style["legend"])
         self.toggleGrid(True)
         
-
     def remove_inf_line(self, line):
         self.removeItem(line)
         self.inf_lines.remove(line)
@@ -166,7 +163,6 @@ class PatchedPlotWidget(pg.PlotWidget):
             x, y = mouse_point.x(), mouse_point.y()
             self.tooltip.setText(f"X: {x:.2f}, Y: {y:.2f}")
             
-
     def set_second_axis(self, state: bool):
         """Включение/выключение второй оси"""
         self.is_second_axis = state

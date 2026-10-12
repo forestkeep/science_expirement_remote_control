@@ -11,7 +11,7 @@
 
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
-from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtCore import pyqtSignal, QObject, QTimer
 import logging
 import numpy as np
 import copy
@@ -138,6 +138,7 @@ class relationData:
         self.current_name = f"{y_name}/{x_name}"
 
 class graphDataManager(QObject):
+    BATCH_INTERVAL_MS = 1000
     list_parameters_updated = pyqtSignal(dict)
     val_parameters_added = pyqtSignal(dict)
     stop_current_session = pyqtSignal()
@@ -158,6 +159,12 @@ class graphDataManager(QObject):
             "main": [],
             "osc": []
         }
+
+        # --- Батчинг обновлений---
+        self._pending_batch = {"main": {}, "osc": {}}
+        self._batch_timer = QTimer(self)
+        self._batch_timer.setInterval(self.BATCH_INTERVAL_MS)
+        self._batch_timer.timeout.connect(self._flush_batch)
 
     def get_relation_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> list[relationData]:
         # Конвертируем псевдонимы обратно в оригинальные имена
@@ -277,6 +284,7 @@ class graphDataManager(QObject):
     def stop_session_running(self, session_id: str = None):
         if not session_id:
             session_id = self.name
+        self.force_flush()
         self.__sessions_data['osc'].is_running = False
         self.stop_current_session.emit()
 
@@ -315,10 +323,10 @@ class graphDataManager(QObject):
         handler = depth_handlers.get(depth)
 
         is_new_param_added = False
-        is_old_param_udated = False
+        is_old_param_updated = False
 
         if handler:
-            status, is_new_param_added, is_old_param_udated = handler(new_param, type_data)
+            status, is_new_param_added, is_old_param_updated = handler(new_param, type_data)
         else:
             logger.warning(f"Слишком глубокая структура данных {new_param=} не знаем, как с ней работать")
             status = False
@@ -326,8 +334,10 @@ class graphDataManager(QObject):
         if is_new_param_added:
             self.list_parameters_updated.emit(self.all_parameters)
 
-        if is_old_param_udated:
-            self.val_parameters_added.emit(self.updated_params)
+        if is_old_param_updated:
+            self._enqueue_batch(self.updated_params)
+
+        return status
 
         return status
     
@@ -483,6 +493,28 @@ class graphDataManager(QObject):
             data[device][channel][name][0].append(value)
             data[device][channel][name][1].append(time)
         return self.add_measurement_data(data)
+
+    def _enqueue_batch(self, updated: dict):
+        """Добавляет параметры в буфер. Таймер сам флашит их раз в ~33 мс."""
+        for t in ("main", "osc"):
+            chunk = updated.get(t)
+            if isinstance(chunk, dict) and chunk:
+                self._pending_batch[t].update(chunk)
+        if not self._batch_timer.isActive():
+            self._batch_timer.start()
+
+    def _flush_batch(self):
+        """Эмитит накопленный батч. Останавливает таймер, если буфер пуст."""
+        if not self._pending_batch["main"] and not self._pending_batch["osc"]:
+            self._batch_timer.stop()
+            return
+        batch = self._pending_batch
+        self._pending_batch = {"main": {}, "osc": {}}
+        self.val_parameters_added.emit(batch)
+
+    def force_flush(self):
+        """Принудительно отправить буфер сейчас (при остановке сессии, экспорте и т.п.)."""
+        self._flush_batch()
     
 def get_dict_depth(d):
     if not isinstance(d, dict) or not d:

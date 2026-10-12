@@ -21,6 +21,7 @@ from graph.core.curve_data import linearData, LineStyle
 from graph.core.dataManager import relationData
 from graph.ui.customPlotWidget import PatchedPlotWidget
 from graph.core.filters_instance_class import FilterCommand
+from graph.core.session_mode import SessionMode
 
 logger = logging.getLogger(__name__)
 
@@ -191,7 +192,7 @@ class manageGraph(QObject):
                 curve.set_filter(filter_comand)
 
     def reset_filters(self, curve = None):
-        if self.main_class.data_manager.is_session_running():
+        if not self.main_class.can(modify=True):
             self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Дождитесь окончания эксперимента" ) )
             return
         
@@ -337,8 +338,8 @@ class manageGraph(QObject):
         elif not curve.is_draw:
             curve.number_axis = axis_num
             curve.add_to_graph(graph, legend, axis_num)
-            if self.main_class.data_manager.is_session_running():
-                self._refresh_curve_data(curve, data)#обновляем данные только когда эксперимент идет
+            if self.main_class.is_live():
+                self._refresh_curve_data(curve, data)
         elif is_updated:
             self._refresh_curve_data(curve, data)
 

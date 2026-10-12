@@ -18,7 +18,6 @@ import serial
 from serial import Serial
 from serial.tools import list_ports
 from pyvisa.constants import BufferOperation
-#from profilehooks import profile
 
 logger = logging.getLogger(__name__)
 
