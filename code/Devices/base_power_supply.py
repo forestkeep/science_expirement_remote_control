@@ -66,8 +66,8 @@ class chMeasPowerSupply(base_ch):
     def __init__(self, number, device_class_name, message_broker) -> None:
         super().__init__(number, ch_type="meas", device_class_name=device_class_name, message_broker=message_broker)
         self.base_duration_step = 10  # у каждого канала каждого прибора есть свое время. необходимое для выполнения шага
-        self.dict_buf_parameters["meas_cur"] = False
-        self.dict_buf_parameters["meas_vol"] = False
+        self.dict_buf_parameters["meas_cur"] = True
+        self.dict_buf_parameters["meas_vol"] = True
         self.dict_buf_parameters["meas_set_cur"] = False
         self.dict_buf_parameters["meas_set_vol"] = False
 
@@ -109,6 +109,7 @@ class basePowerSupply(base_device):
         )
         self.setting_window.num_act_label.setParent(None)
         self.setting_window.num_act_enter.setParent(None)
+
 
     @base_device.base_show_window
     def show_setting_window(self, number_of_channel):

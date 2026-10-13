@@ -21,53 +21,53 @@ logger = logging.getLogger(__name__)
 class customQListWidget(QListWidget):
     def __init__(self):
         super().__init__()
-        
-    def add_parameters(self, parameters: str|list):
+
+    # ---------- работа с элементами ----------
+    def add_parameters(self, parameters):
         if isinstance(parameters, str):
             parameters = [parameters]
+        existing = {self.item(i).text() for i in range(self.count()) if self.item(i)}
+        for p in parameters:
+            if p not in existing:
+                self.addItem(p)
+                existing.add(p)
 
-        for parameter in parameters:
-            if not any(self.item(i).text() == parameter for i in range(self.count())):
-                self.addItem(parameter)
+    def rename_parameter(self, old, new):
+        for i in range(self.count()):
+            item = self.item(i)
+            if item and item.text() == old:
+                item.setText(new)
 
-    def rename_parameter(self, parameter, new_parameter):
-        for index in range(self.count()):
-            if self.item(index):
-                if self.item(index).text() == parameter:
-                    self.item(index).setText(new_parameter)
-
-    def remove_parameters(self, parameters: str|list):
-
+    def remove_parameters(self, parameters):
         if isinstance(parameters, str):
             parameters = [parameters]
+        kill = set(parameters)
+        for i in range(self.count() - 1, -1, -1):
+            item = self.item(i)
+            if item and item.text() in kill:
+                self.takeItem(i)
 
-        for parameter in parameters:
-            for index in range(self.count()):
-                if self.item(index):
-                    if self.item(index).text() == parameter:
-                        self.takeItem(index)
-                        
-    def __manage_selection(self, text: str, checked: bool, is_signal = True):
-        list_selector = []
-        logger.info(f"manage_selection {text=} {checked=} {is_signal=}")
-        for index in range(self.count()):
-            if self.item(index):
-                list_selector.append(self.item(index).text())
-                if self.item(index).text() == text:
-                    logger.debug(f"parameter  {text} set checked {checked}")
-                    self.setCurrentItem(self.item(index))
-                    self.item(index).setSelected(checked)
-                    if is_signal:
-                        self.itemClicked.emit(self.item(index))#программно вызываем соответсвующую логику событий, будто кликнули на элемент
-                    return
+    def get_selected_texts(self) -> list:
+        return [item.text() for item in self.selectedItems()]
 
-        logger.warning(f"parameter {text} not found in selector {self} list {list_selector}")
+    def _manage_selection(self, text, checked, is_signal=True):
+        for i in range(self.count()):
+            item = self.item(i)
+            if item and item.text() == text:
+                if checked:
+                    self.setCurrentItem(item)
+                item.setSelected(checked)
+                if is_signal:
+                    self.itemClicked.emit(item)
+                return True
+        logger.warning(f"parameter {text!r} not found in selector {self}")
+        return False
 
-    def clear_selection(self, text: str, is_signal = True):
-        self.__manage_selection(text, False, is_signal)
+    def clear_selection(self, text, is_signal=True):
+        return self._manage_selection(text, False, is_signal)
 
-    def set_selection(self, text: str, is_signal = True):
-        self.__manage_selection(text, True, is_signal)
+    def set_selection(self, text, is_signal=True):
+        return self._manage_selection(text, True, is_signal)
 
 class paramSelector(QWidget):
 
@@ -172,213 +172,291 @@ class paramSelector(QWidget):
     def set_multiple_mode(self, state: bool):
         self.check_miltiple.setChecked(state)
 
-class paramController( QObject):
-    parameters_updated = pyqtSignal(str, list, list)
-    multiple_checked = pyqtSignal(bool)
-    state_second_axis_changed = pyqtSignal(bool)
-
-    numPointsChanged = pyqtSignal(int)
-    showingAllPoints = pyqtSignal(bool)
+class paramController(QObject):
+    parameters_updated       = pyqtSignal(str, list, list)
+    multiple_checked         = pyqtSignal(bool)
+    state_second_axis_changed= pyqtSignal(bool)
+    numPointsChanged         = pyqtSignal(int)
+    showingAllPoints         = pyqtSignal(bool)
 
     def __init__(self, paramSelector: paramSelector, alias_manager) -> None:
         super().__init__()
         self.alias_manager = alias_manager
-        self.paramSelector = paramSelector
-        self.paramSelector.x_param_selector.itemClicked.connect(self._x_param_changed)
-        self.paramSelector.y_first_param_selector.itemClicked.connect(self._y_first_param_changed)
-        self.paramSelector.y_second_param_selector.itemClicked.connect(self._y_second_param_changed)
-        self.paramSelector.check_miltiple.stateChanged.connect(self.update_multiple)
-        self.paramSelector.second_check_box.stateChanged.connect(self.second_check_box_changed)
+        self.paramSelector  = paramSelector
 
+        # пользовательские клики
+        self.paramSelector.x_param_selector.itemClicked.connect(
+            lambda item: self._on_x_clicked(item))
+        self.paramSelector.y_first_param_selector.itemClicked.connect(
+            lambda item: self._on_y_clicked(item, "first"))
+        self.paramSelector.y_second_param_selector.itemClicked.connect(
+            lambda item: self._on_y_clicked(item, "second"))
+
+        # переключатели режимов
+        self.paramSelector.check_miltiple.stateChanged.connect(self._on_multiple_changed)
+        self.paramSelector.second_check_box.stateChanged.connect(self._on_second_axis_changed)
+
+        # число точек и пр.
         self.paramSelector.numPointsselector.numPointsChanged.connect(self.numPointsChanged)
         self.paramSelector.numPointsselector.showingAllPoints.connect(self.showingAllPoints)
 
-        self.alias_manager.aliases_updated.connect(self.alias_changed)
+        self.alias_manager.aliases_updated.connect(self._on_alias_changed)
 
+        # Состояние
+        self.curent_x_parameter: Optional[str] = None
+        self.curent_y_first_parameters: list[str]  = []
+        self.curent_y_second_parameters: list[str] = []
 
-        self.curent_x_parameter = None
-        self.curent_y_first_parameters = []
-        self.curent_y_second_parameters = []
+        # «Доступные» параметры (алиасы) — из чего собираются оба списка
+        self.__x_parameters      : set[str] = set()
+        self.__y_first_parameters: set[str] = set()
+        self.__y_second_parameters: set[str] = set()
 
-        self.previous_x_parameter = [None]
-        self.previous_y_first_parameter = [None]
-        self.previous_y_second_parameter = [None]
+        # защита от рекурсии при программных изменениях
+        self._suppress_user_action = False
+        self._last_emitted_state   = None
 
-        self.__x_parameters = set()
-        self.__y_first_parameters = set()
-        self.__y_second_parameters = set()
+    # ================================================================
+    # Публичный API
+    # ================================================================
+    def get_parameters(self):
+        x  = self.alias_manager.get_original_name(self.curent_x_parameter) if self.curent_x_parameter else ""
+        y1 = [self.alias_manager.get_original_name(p) for p in self.curent_y_first_parameters]
+        y2 = [self.alias_manager.get_original_name(p) for p in self.curent_y_second_parameters]
+        return x, y1, y2
 
-    def alias_changed(self, original_name, old_alias, alias):
-        #++++++++++++++previous+++++++++++++++++
-        for index, name in enumerate(self.previous_x_parameter):
-            if name == old_alias:
-                self.previous_x_parameter[index] = alias
-
-        for index, name in enumerate(self.previous_y_first_parameter):
-            if name == old_alias:
-                self.previous_y_first_parameter[index] = alias
-
-        for index, name in enumerate(self.previous_y_second_parameter):
-            if name == old_alias:
-                self.previous_y_second_parameter[index] = alias
-
-        #++++++++++++++curent+++++++++++++++++
-        if self.curent_x_parameter == old_alias:
-            self.curent_x_parameter = alias
-
-        for index, name in enumerate(self.curent_y_first_parameters):
-            if name == old_alias:
-                self.curent_y_first_parameters[index] = alias
-
-        for index, name in enumerate(self.curent_y_second_parameters):
-            if name == old_alias:
-                self.curent_y_second_parameters[index] = alias
-
-        self.paramSelector.x_param_selector.rename_parameter(old_alias, alias)
-        self.paramSelector.y_first_param_selector.rename_parameter(old_alias, alias)
-        self.paramSelector.y_second_param_selector.rename_parameter(old_alias, alias)
-
-    def _x_param_changed(self, item):
-        logger.info(f"x_param_changed {self.curent_x_parameter=}")
-        self.curent_x_parameter = self.paramSelector.x_param_selector.currentItem().text()
-        self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
-
-    def _y_first_param_changed(self, item):
-        text= item.text()
-        logger.info(f"y_first_param_changed {text=} {self.curent_y_first_parameters=} {self.previous_y_first_parameter=}")
-        self.manage_y_selectors(selector = self.paramSelector.y_first_param_selector,
-                                current_parameters = self.curent_y_first_parameters,
-                                opposite_selector = self.paramSelector.y_second_param_selector,
-                                previous_parameter = self.previous_y_first_parameter)
-        try:
-            logger.info(f"y_first_param_changed after manage {self.curent_y_first_parameters=} {text=} current text item={self.paramSelector.y_first_param_selector.currentItem().text()}")
-        except:
-            pass
-        self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
-
-
-    def _y_second_param_changed(self, item):
-
-        self.manage_y_selectors(selector = self.paramSelector.y_second_param_selector,
-                                current_parameters = self.curent_y_second_parameters,
-                                opposite_selector = self.paramSelector.y_first_param_selector,
-                                previous_parameter = self.previous_y_second_parameter
-                                )
-        logger.info(f"y_second_param_changed update current parameters {self.curent_y_second_parameters=}")
-        self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
-
-    def manage_y_selectors(self, selector, current_parameters, opposite_selector, previous_parameter):
-        if self.paramSelector.check_miltiple.isChecked():
-            buf_text = selector.currentItem().text()
-            print(buf_text, current_parameters)
-            if buf_text in current_parameters:
-                current_parameters.remove(buf_text)
-                opposite_selector.add_parameters(buf_text)
-            else:
-                current_parameters.append(buf_text)
-                opposite_selector.remove_parameters(buf_text)
-        else:
-            opposite_selector.add_parameters(current_parameters)
-            current_parameters.clear()
-            buf_item = selector.currentItem()
-            if buf_item is not None:
-                buf_text = buf_item.text()
-                if buf_text == previous_parameter[0]:
-                    buf_item.setSelected(False)
-                    selector.setCurrentItem(None)
-                    previous_parameter[0] = None
-                    opposite_selector.add_parameters(buf_text)
-                else:
-                    previous_parameter[0] = buf_text
-                    current_parameters.append(buf_text)
-                    opposite_selector.remove_parameters(buf_text)
-
-    def second_check_box_changed(self):
-        self.curent_y_second_parameters.clear()
-
-        state = self.paramSelector.second_check_box.isChecked()
-        if not state:
-            self.paramSelector.y_first_param_selector.add_parameters(self.__y_first_parameters)
-        self.previous_y_second_parameter[0] = None
-        self.paramSelector.y_second_param_selector.clearSelection()
-        self.state_second_axis_changed.emit( state )
-            
     def add_parameters(self, new_parameters: list):
-        new_parameters = [self.alias_manager.get_alias(name) for name in new_parameters]
-        self.__x_parameters.update(new_parameters)
-        self.__y_first_parameters.update(new_parameters)
-        self.__y_second_parameters.update(new_parameters)
+        aliases = [self.alias_manager.get_alias(p) for p in new_parameters]
+        self.__x_parameters.update(aliases)
+        self.__y_first_parameters.update(aliases)
+        self.__y_second_parameters.update(aliases)
 
-        self.paramSelector.y_first_param_selector.add_parameters(new_parameters)
-        self.paramSelector.y_second_param_selector.add_parameters(new_parameters)
-        self.paramSelector.x_param_selector.add_parameters(new_parameters)
+        self.paramSelector.x_param_selector.add_parameters(aliases)
+        # y-списки пересобираем, чтобы сохранить инвариант «не показываем
+        # в одном списке то, что выбрано в другом»
+        self._rebuild_y_lists()
 
-    def clear_y_axis(self):
-        self.paramSelector.y_second_param_selector.clearSelection()
-        self.paramSelector.y_first_param_selector.clearSelection()
-        self.curent_y_first_parameters = []
-        self.curent_y_second_parameters = []
-   
-    def update_multiple(self):
-        is_multiple = True
-        if not self.paramSelector.check_miltiple.isChecked():
-            self.clear_y_axis()
-            is_multiple = False
-            self.paramSelector.y_second_param_selector.add_parameters(self.__y_first_parameters)
-            self.paramSelector.y_first_param_selector.add_parameters(self.__y_second_parameters)
-            self.previous_x_parameter = [None]
-            self.previous_y_first_parameter = [None]
-            self.previous_y_second_parameter = [None]
+    def set_selections(self, x_param: str, y_first_params: list, y_second_params: list, is_signal=True):
+        """Программно ДОБАВИТЬ параметры в выделение."""
+        x_alias = self.alias_manager.get_alias(x_param) if x_param else None
+        y1 = [self.alias_manager.get_alias(p) for p in y_first_params]
+        y2 = [self.alias_manager.get_alias(p) for p in y_second_params]
 
-        self.multiple_checked.emit( is_multiple )
+        if x_alias:
+            self.curent_x_parameter = x_alias
+        for p in y1:
+            if p not in self.curent_y_first_parameters:
+                self.curent_y_first_parameters.append(p)
+        for p in y2:
+            if p not in self.curent_y_second_parameters:
+                self.curent_y_second_parameters.append(p)
 
-    def clear_selections(self, x_param: str, y_first_params: list, y_second_params: list, is_signal = True):
-        logger.info(f"request to clear_selections before aliases {x_param=} {y_first_params=} {y_second_params=}")
-        x_param = self.alias_manager.get_alias(x_param)
-        y_first_params = [self.alias_manager.get_alias(param) for param in y_first_params]
-        y_second_params = [self.alias_manager.get_alias(param) for param in y_second_params]
-        logger.info(f"request to clear_selections after aliases {x_param=} {y_first_params=} {y_second_params=}")
-        if x_param:
-            self.paramSelector.x_param_selector.clear_selection(x_param, is_signal)
-        for param in y_first_params:
-            self.paramSelector.y_first_param_selector.clear_selection(param, is_signal)
-            if not is_signal:#если сигнал не испустится. то не обновятся локальные буферы, хранящие параметры, необходимо сделать это вручную
-                self.manage_y_selectors(self.paramSelector.y_first_param_selector, self.curent_y_first_parameters, self.paramSelector.y_second_param_selector, self.previous_y_first_parameter)
-        for param in y_second_params:
-            self.paramSelector.y_second_param_selector.clear_selection(param, is_signal)
-            if not is_signal:#если сигнал не испустится. то не обновятся локальные буферы, хранящие параметры, необходимо сделать это вручную. дурацкая логика, нужно рефакторить..
-                self.manage_y_selectors(self.paramSelector.y_second_param_selector, self.curent_y_second_parameters, self.paramSelector.y_first_param_selector, self.previous_y_second_parameter)
+        self._enforce_invariants()
+        self._rebuild_y_lists()
+        if is_signal:
+            self._emit_parameters_updated()
 
-    def set_selections(self, x_param: str, y_first_params: list, y_second_params: list, is_signal = True):
-        x_param = self.alias_manager.get_alias(x_param)
-        y_first_params = [self.alias_manager.get_alias(param) for param in y_first_params]
-        y_second_params = [self.alias_manager.get_alias(param) for param in y_second_params]
-        if x_param:
-            self.paramSelector.x_param_selector.set_selection(x_param, is_signal)
-        for param in y_first_params:
-            self.paramSelector.y_first_param_selector.set_selection(param, is_signal)
-        for param in y_second_params:
-            self.paramSelector.y_second_param_selector.set_selection(param, is_signal)
+    def clear_selections(self, x_param: str, y_first_params: list, y_second_params: list, is_signal=True):
+        """Программно СНЯТЬ выделение с указанных параметров."""
+        x_alias = self.alias_manager.get_alias(x_param) if x_param else None
+        y1 = [self.alias_manager.get_alias(p) for p in y_first_params]
+        y2 = [self.alias_manager.get_alias(p) for p in y_second_params]
+
+        if x_alias and self.curent_x_parameter == x_alias:
+            self.curent_x_parameter = None
+        self.curent_y_first_parameters  = [p for p in self.curent_y_first_parameters  if p not in y1]
+        self.curent_y_second_parameters = [p for p in self.curent_y_second_parameters if p not in y2]
+
+        self._enforce_invariants()
+        self._rebuild_y_lists()
+        if is_signal:
+            self._emit_parameters_updated()
 
     def set_default(self):
         self.curent_x_parameter = None
         self.curent_y_first_parameters = []
         self.curent_y_second_parameters = []
-        
-        self.paramSelector.x_param_selector.clear()
-        self.paramSelector.y_first_param_selector.clear()
-        self.paramSelector.y_second_param_selector.clear()
+        self.__x_parameters.clear()
+        self.__y_first_parameters.clear()
+        self.__y_second_parameters.clear()
 
-        self.parameters_updated.emit(self.curent_x_parameter, self.curent_y_first_parameters, self.curent_y_second_parameters)
+        for w in (self.paramSelector.x_param_selector,
+                  self.paramSelector.y_first_param_selector,
+                  self.paramSelector.y_second_param_selector):
+            w.clear()
+        self._last_emitted_state = None
+        self._emit_parameters_updated()
 
-    def get_parameters(self):
-        returned_x = self.alias_manager.get_original_name(self.curent_x_parameter)
-        returned_y1 = [self.alias_manager.get_original_name(param) for param in self.curent_y_first_parameters]
-        returned_y2 = [self.alias_manager.get_original_name(param) for param in self.curent_y_second_parameters]
-        return returned_x, returned_y1, returned_y2
-    
     def stop_session(self):
         self.paramSelector.numPointsselector.hide()
+
+    # ================================================================
+    # Обработчики пользователя
+    # ================================================================
+    def _on_x_clicked(self, item):
+        if self._suppress_user_action:
+            return
+        # toggle-off при клике на уже выбранный
+        if item.text() == self.curent_x_parameter:
+            self.curent_x_parameter = None
+            self._suppress_user_action = True
+            try:
+                self.paramSelector.x_param_selector.clearSelection()
+            finally:
+                self._suppress_user_action = False
+        else:
+            self.curent_x_parameter = item.text()
+        self._emit_parameters_updated()
+
+    # ================================================================
+    # Пользовательский клик по Y-селектору
+    # ================================================================
+    def _on_y_clicked(self, item, which: str):
+        if self._suppress_user_action:
+            return
+        text = item.text()
+        is_multiple = self.paramSelector.check_miltiple.isChecked()
+
+        if which == "first":
+            lst = self.curent_y_first_parameters
+        else:
+            lst = self.curent_y_second_parameters
+
+        if is_multiple:
+            # multi: обычный toggle
+            if text in lst:
+                lst.remove(text)
+            else:
+                lst.append(text)
+        else:
+            # single: замена или снятие
+            if text in lst:
+                # повторный клик по выбранному → скрыть
+                lst.clear()
+            else:
+                # новый клик → заменить единственный
+                lst.clear()
+                lst.append(text)
+
+        self._enforce_invariants()
+        self._rebuild_y_lists()
+        self._emit_parameters_updated()
+
+    # ================================================================
+    # Переключение multiple
+    # ================================================================
+    def _on_multiple_changed(self):
+        is_multiple = self.paramSelector.check_miltiple.isChecked()
+        self._suppress_user_action = True
+        try:
+            if not is_multiple:
+                # при выключении multiple оставляем по одному последнему
+                self.curent_y_first_parameters  = self.curent_y_first_parameters[-1:]
+                self.curent_y_second_parameters = self.curent_y_second_parameters[-1:]
+        finally:
+            self._suppress_user_action = False
+
+        self._enforce_invariants()
+        self._rebuild_y_lists()
+        self.multiple_checked.emit(is_multiple)
+        self._emit_parameters_updated()
+
+    def _on_second_axis_changed(self):
+        state = self.paramSelector.second_check_box.isChecked()
+        if not state:
+            self.curent_y_second_parameters = []
+        self._enforce_invariants()
+        self._rebuild_y_lists()
+        self.state_second_axis_changed.emit(state)
+        self._emit_parameters_updated()          # ← БАГ 5 исправлен
+
+    def _on_alias_changed(self, original_name, old_alias, alias):
+        # переименовать в виджетах
+        for w in (self.paramSelector.x_param_selector,
+                  self.paramSelector.y_first_param_selector,
+                  self.paramSelector.y_second_param_selector):
+            w.rename_parameter(old_alias, alias)
+
+        # и в нашем наборе «доступных»
+        for s in (self.__x_parameters, self.__y_first_parameters, self.__y_second_parameters):
+            if old_alias in s:
+                s.discard(old_alias)
+                s.add(alias)
+
+        # и в состоянии
+        if self.curent_x_parameter == old_alias:
+            self.curent_x_parameter = alias
+        self.curent_y_first_parameters  = [alias if p == old_alias else p for p in self.curent_y_first_parameters]
+        self.curent_y_second_parameters = [alias if p == old_alias else p for p in self.curent_y_second_parameters]
+        # списки пересобирать не нужно — элементы уже переименованы на месте
+
+    # ================================================================
+    # Инварианты
+    # ================================================================
+    def _enforce_invariants(self):
+        changed = False
+
+        # 1. Вторая ось выключена → нет выделений на ней
+        if not self.paramSelector.second_check_box.isChecked():
+            if self.curent_y_second_parameters:
+                self.curent_y_second_parameters = []
+                changed = True
+
+        # 2. Single-mode: не более 1 элемента на каждой оси
+        if not self.paramSelector.check_miltiple.isChecked():
+            if len(self.curent_y_first_parameters) > 1:
+                # оставляем последний добавленный
+                self.curent_y_first_parameters = self.curent_y_first_parameters[-1:]
+                changed = True
+            if len(self.curent_y_second_parameters) > 1:
+                self.curent_y_second_parameters = self.curent_y_second_parameters[-1:]
+                changed = True
+
+        return changed
+
+    def _rebuild_y_lists(self):
+        """Пересобрать оба y-списка: показать все доступные, кроме выбранных в соседнем."""
+        first_selected  = set(self.curent_y_first_parameters)
+        second_selected = set(self.curent_y_second_parameters)
+        all_y = sorted(self.__y_first_parameters | self.__y_second_parameters)
+
+        first_items  = [p for p in all_y if p not in second_selected]
+        second_items = [p for p in all_y if p not in first_selected]
+
+        self._populate_list(self.paramSelector.y_first_param_selector,  first_items,  first_selected)
+        self._populate_list(self.paramSelector.y_second_param_selector, second_items, second_selected)
+
+    @staticmethod
+    def _populate_list(widget, items, selected):
+        widget.blockSignals(True)
+        try:
+            widget.clear()
+            widget.addItems(items)
+            for i in range(widget.count()):
+                item = widget.item(i)
+                if item.text() in selected:
+                    item.setSelected(True)
+                    widget.setCurrentItem(item)
+        finally:
+            widget.blockSignals(False)
+
+    # ================================================================
+    # Emit
+    # ================================================================
+    def _emit_parameters_updated(self):
+        state = (
+            self.curent_x_parameter,
+            tuple(self.curent_y_first_parameters),
+            tuple(self.curent_y_second_parameters),
+        )
+        if state == self._last_emitted_state:
+            return
+        self._last_emitted_state = state
+        self.parameters_updated.emit(
+            self.curent_x_parameter or "",
+            list(self.curent_y_first_parameters),
+            list(self.curent_y_second_parameters),
+        )
 
 if __name__ == '__main__':
     import sys
