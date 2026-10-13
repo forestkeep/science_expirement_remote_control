@@ -9,529 +9,435 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-import numpy as np
-import pyqtgraph as pg
+# graph/core/curve_data.py
+"""Facade classes for curves.
+
+``linearData`` and ``oscData`` compose a ``CurveDataStore`` (pure data)
+with a ``CurvePresenter`` (visuals) and expose the historical public API.
+"""
+from __future__ import annotations
+
 import logging
-from PyQt5 import QtCore
-from graph.core.statistics_calc import StatisticsCalculator, STATISTICS_DESCRIPTIONS
+from datetime import datetime
+from typing import Optional
+
+import numpy as np
 import pandas as pd
+
+from graph.core.curve_data_store import CurveDataStore, legendName
+from graph.core.curve_presenter import CurvePresenter, LineStyle
+from graph.core.dataManager import relationData
+from graph.core.filters_instance_class import FilterCommand
+from graph.core.selection_model import SelectionModel
+from graph.core.statistics_calc import StatisticsCalculator, STATISTICS_DESCRIPTIONS
+from graph.ui.tree_curves import CurveTreeItem
 
 logger = logging.getLogger(__name__)
 
-from graph.ui.tree_curves import CurveTreeItem
-from graph.core.dataManager import relationData
-from graph.core.filters_instance_class import FilterCommand
-from graph.core.compression_data import lttb_downsample
-from datetime import datetime
+__all__ = ["linearData", "oscData", "hystLoop", "LineStyle", "legendName"]
 
-class legendName():
-    def __init__(self, name) -> None:
-        self.__name = name
-        self.current_name = self.__name
-        self.previous_name = ""
 
-    def set_custom(self, name: str):
-        self.previous_name = self.__name
-        self.__name = name
-        self.current_name = self.__name
+# ====================================================================
+# Facade: linearData
+# ====================================================================
+class linearData:
+    """Backwards-compatible curve object composed of store + presenter."""
 
-class LineStyle:
-    def __init__(self, color='w', line_style=QtCore.Qt.SolidLine, line_width=1, 
-                 symbol=None, symbol_size=5, symbol_color='w', fill_color='w'):
-        self.color = color
-        self.line_style = line_style
-        self.line_width = line_width
-        self.symbol = symbol
-        self.symbol_size = symbol_size
-        self.symbol_color = symbol_color
-        self.fill_color = fill_color
-        self.px_mode = True
-    
-    def to_pen(self):
-        """Создать QPen из стиля"""
-        return pg.mkPen(
-            color=self.color,
-            width=self.line_width,
-            style=self.line_style
-        )
-    
-    def to_symbol_pen(self):
-        """Создать QPen для символа"""
-        return pg.mkPen(color=self.symbol_color)
-    
-    
-    def to_brush(self):
-        """Создать QBrush для заливки"""
-        return pg.mkBrush(color=self.fill_color)
-    
-    def copy(self):
-        """Создать копию стиля"""
-        return LineStyle(
-            color=self.color,
-            line_style=self.line_style,
-            line_width=self.line_width,
-            symbol=self.symbol,
-            symbol_size=self.symbol_size,
-            symbol_color=self.symbol_color,
-            fill_color=self.fill_color
-        )
-    
-    def apply_to_curve(self, plot_data_item):
-        """Применить стиль к кривой (PlotDataItem)"""
-        plot_data_item.setPen(self.to_pen())
-        
-        if self.symbol is not None:
-            plot_data_item.setSymbol(self.symbol)
-            plot_data_item.setSymbolSize(self.symbol_size)
-            plot_data_item.setSymbolPen(self.to_symbol_pen())
-            plot_data_item.setSymbolBrush(self.to_brush())
-        else:
-            plot_data_item.setSymbol(None)
+    def __init__(self, data: relationData, alias_manager,
+                 selection_model: Optional[SelectionModel] = None) -> None:
+        self.alias_manager = alias_manager
+        self.store = CurveDataStore(data)
+        self.presenter = CurvePresenter(self.store, selection_model=selection_model)
 
-        plot_data_item.opts['pxMode'] = self.px_mode
-        plot_data_item.updateItems()
+        # alias initial
+        x_alias = alias_manager.get_alias(data.x_root_name)
+        y_alias = alias_manager.get_alias(data.y_root_name)
+        self.store.update_aliases(x_alias, y_alias)
 
-        #plot_data_item.setData(pxMode=self.px_mode)
+        alias_manager.aliases_updated.connect(self._alias_changed)
 
-class graphData:
-    def __init__(self, data) -> None:
-        """
-        Initializes the graphData object with raw data for x and y axes.
-        The length of arrays is cut to the minimum
+        # tree_item belongs to the facade (needs the facade as curve_data_obj)
+        self.presenter.tree_item = CurveTreeItem(curve_data_obj=self)
+        self.presenter.tree_item.set_name(self.store.curve_name)
 
-        Parameters:
-            raw_x: The raw data for the x-axis.
-            raw_y: The raw data for the y-axis.
-        """
+        # now that tree_item exists, hook stats recalculation
+        self.store.on_changed(self._on_store_changed)
+        self.recalc_stats_param()
 
-        self._on_selection_changed = None 
-        raw_x = data.x_result
-        raw_y = data.y_result
+    # ------------------------------------------------------------------
+    # Data delegation
+    # ------------------------------------------------------------------
+    @property
+    def rel_data(self): return self.store.rel_data
 
-        min_len = min(len(data.x_result), len(data.y_result))
-        raw_x = raw_x[:min_len]
-        raw_y = raw_y[:min_len]
+    @property
+    def raw_data_x(self): return self.store.raw_data_x
 
-        self.raw_data_x = np.array(raw_x)
-        self.raw_data_y = np.array(raw_y)
+    @property
+    def raw_data_y(self): return self.store.raw_data_y
 
-        self.filtered_x_data = np.array(raw_x)
-        self.filtered_y_data = np.array(raw_y)
+    @property
+    def filtered_x_data(self): return self.store.filtered_x_data
 
-        self.plot_items = {}
-        self.data_x = None
-        self.data_y = None
+    @filtered_x_data.setter
+    def filtered_x_data(self, value): self.store.filtered_x_data = value
 
-        self.device = None
-        self.ch = None
-        self.name = None
-        self.number = None
+    @property
+    def filtered_y_data(self): return self.store.filtered_y_data
 
-        self.is_curve_selected = False
+    @filtered_y_data.setter
+    def filtered_y_data(self, value): self.store.filtered_y_data = value
 
-        self.i_am_click_now = False 
+    @property
+    def filters_history(self): return self.store.filters_history
 
-        self.number_axis = None
-        self.curve_name = None
+    @property
+    def curve_name(self): return self.store.curve_name
 
-        self.saved_style = None
+    @property
+    def legend(self): return self.store.legend
 
-        self.is_draw = False
+    @property
+    def is_name_curve_customized(self): return self.store.is_name_curve_customized
 
-        self.main_plot_obj = None
+    @property
+    def device(self): return self.store.device
+    @device.setter
+    def device(self, v): self.store.device = v
 
-        self.tree_item = CurveTreeItem(curve_data_obj=self)
+    @property
+    def ch(self): return self.store.ch
+    @ch.setter
+    def ch(self, v): self.store.ch = v
 
-        self.is_curve_selected = False
-        self.preselection_style = None
-        self.higlighted_flag = False
+    @property
+    def channel(self): return self.store.ch
+    @channel.setter
+    def channel(self, v): self.store.ch = v
 
-        self.filters_history = []
+    @property
+    def number(self): return self.store.number
+    @number.setter
+    def number(self, v): self.store.number = v
 
-        self.clicked_style = LineStyle(color=(180, 150, 150), line_style=QtCore.Qt.DashLine, line_width=4, symbol="+", symbol_size=10, symbol_color=(150, 150, 150), fill_color='w')
+    # ------------------------------------------------------------------
+    # Presentation delegation
+    # ------------------------------------------------------------------
+    @property
+    def plot_items(self): return self.presenter.plot_items
 
-    def create_plot_item(self):
-        """
-        Создаёт новый PlotDataItem на основе текущих данных и стиля.
-        Возвращает созданный item.
-        """
-        #x, y = lttb_downsample(self.filtered_x_data, self.filtered_y_data)
-        x = self.filtered_x_data
-        y = self.filtered_y_data
+    @property
+    def tree_item(self): return self.presenter.tree_item
+    @tree_item.setter
+    def tree_item(self, v): self.presenter.tree_item = v
 
-        pen = self.saved_style.to_pen()
-        symbol = self.saved_style.symbol
-        symbol_pen = self.saved_style.to_symbol_pen()
-        symbol_brush = self.saved_style.to_brush()
+    @property
+    def is_draw(self): return self.presenter.is_draw
+    @is_draw.setter
+    def is_draw(self, v): self.presenter.is_draw = v
 
-        plot_item = pg.PlotDataItem(
-            x, y,
-            pen=pen,
-            name=self.legend.current_name,
-            symbol=symbol,
-            symbolPen=symbol_pen,
-            symbolBrush=symbol_brush,
-        )
-        plot_item.setClipToView(True)
-        plot_item.setDownsampling(auto=True, method='peak')
-        plot_item.setFocus()
-        plot_item.setZValue(100)
-        plot_item.setCurveClickable(state=True, width=10)
-        plot_item.sigClicked.connect(self.on_plot_clicked)
+    @property
+    def is_curve_selected(self): return self.presenter.is_curve_selected
+    @is_curve_selected.setter
+    def is_curve_selected(self, v): self.presenter.is_curve_selected = v
 
-        return plot_item
-    
-    def add_error_bars(self, target_plot_item):
-        error_item = pg.ErrorBarItem(
-            x=self.filtered_x_data,
-            y=self.filtered_y_data,
-            height=15,
-            pen=pg.mkPen(color='w', width=2)
-        )
-        target_plot_item.addItem(error_item)
+    @property
+    def number_axis(self): return self.presenter.number_axis
+    @number_axis.setter
+    def number_axis(self, v): self.presenter.number_axis = v
 
+    @property
+    def i_am_click_now(self): return self.presenter.i_am_click_now
+    @i_am_click_now.setter
+    def i_am_click_now(self, v): self.presenter.i_am_click_now = v
+
+    @property
+    def saved_style(self): return self.presenter.saved_style
+    @saved_style.setter
+    def saved_style(self, v): self.presenter.saved_style = v
+
+    @property
+    def clicked_style(self): return self.presenter.clicked_style
+
+    @property
+    def higlighted_flag(self): return self.presenter.higlighted_flag
+
+    # ------------------------------------------------------------------
+    # Actions: presentation
+    # ------------------------------------------------------------------
     def add_to_graph(self, graph_field, legend_field, number_axis):
-        """
-        Добавляет копию кривой на указанный график.
-        Если для этого viewbox уже есть копия, ничего не делает (или обновляет).
-        """
-        if self.plot_items.get(graph_field) is not None:
-            pass
-            #logger.info(f"Curve {self.curve_name} already exists on graph {graph_field} change link")
-
-        new_item = self.create_plot_item()
-        graph_field.addItem(new_item)
-        #self.add_error_bars(graph_field)
-        if legend_field.getLabel(new_item) is None:
-            legend_field.addItem(new_item, self.legend.current_name)
-
-        self.plot_items[graph_field] = {
-            'item': new_item,
-            'legend': legend_field,
-            'axis': number_axis
-        }
-
-        if self.is_curve_selected:
-            self.clicked_style.apply_to_curve(new_item)
-            brushcolor = self.clicked_style.to_pen().color().name()
-            self.tree_item.setForeground( 1, pg.mkBrush(color=brushcolor) )
-        else:
-            self.saved_style.apply_to_curve(new_item)
-            brushcolor = self.saved_style.to_pen().color().name()
-            self.tree_item.setForeground( 1, pg.mkBrush(color=brushcolor) )
-
-        self.is_draw = True
+        self.presenter.add_to_graph(graph_field, legend_field, number_axis)
 
     def remove_from_graph(self, viewbox):
-        """Удаляет копию кривой с конкретного графика."""
-        if viewbox in self.plot_items:
-            info = self.plot_items.pop(viewbox)
-            viewbox.removeItem(info['item'])
-            info['legend'].removeItem(self.legend.current_name)
+        self.presenter.remove_from_graph(viewbox)
 
     def remove_all_from_graphs(self):
-        """Удаляет со всех графиков."""
-        for viewbox in list(self.plot_items.keys()):
-            self.remove_from_graph(viewbox)
-
-    def update_all_plots_data(self):
-        """Обновляет данные во всех копиях PlotDataItem."""
-        for info in self.plot_items.values():
-            info['item'].setData(self.filtered_x_data, self.filtered_y_data)
-
-    def change_name(self, name):
-        """
-        Изменяет пользовательское имя кривой и обновляет имя в легенде для всех графиков.
-        :param name: Новое имя кривой
-        :type name: str
-        """
-        
-        self.is_name_curve_customized = True
-        self.curve_name = name
-        self.set_legend_name(self.curve_name)
-        self.tree_item.set_name(self.curve_name)
-    
-    def reset_name(self):
-        self.is_name_curve_customized = False
-        self.curve_name = self.rel_data.current_name
-        self.set_legend_name(self.curve_name)
-        self.tree_item.set_name(self.curve_name)
-
-    def apply_style_to_all(self, style):
-        """Применяет стиль (например, LineStyle) ко всем копиям."""
-        for info in self.plot_items.values():
-            style.apply_to_curve(info['item'])
-        brushcolor = style.to_pen().color().name()
-        self.tree_item.setForeground( 1, pg.mkBrush(color=brushcolor) )
-
-    def on_plot_clicked(self, obj):
-        """Обработчик клика по любой копии кривой."""
-        self.i_am_click_now = True
-        new_state = not self.is_curve_selected
-        self.is_curve_selected = new_state
-        if new_state:
-            self.apply_style_to_all(self.clicked_style)
-        else:
-            self.apply_style_to_all(self.saved_style)
-        self.notify_selection_changed(new_state)
-
-    def set_selection_callback(self, callback):
-        """callback(curve_obj, selected: bool) — вызывается при клике по кривой."""
-        self._on_selection_changed = callback
-
-    def notify_selection_changed(self, selected: bool):
-        if self._on_selection_changed is not None:
-            self._on_selection_changed(self, selected)
-
-    def higlight_curve(self):
-        if self.higlighted_flag:
-            return
-        self.higlighted_flag = True
-        self.preselection_style = self.clicked_style if self.is_curve_selected else self.saved_style
-        for info in self.plot_items.values():
-            info['item'].setPen(pg.mkPen(color=(150,150,150,90), width=5))
-            info['item'].setSymbolBrush(color=(150,150,150,90))
-            info['item'].setSymbolPen(pg.mkPen(color=(150,150,150,90)))
-        brushcolor = self.preselection_style.to_brush().color().name()
-        self.tree_item.setForeground( 1, pg.mkBrush(color=brushcolor) )
-
-    def unhiglight_curve(self):
-        if not self.higlighted_flag:
-            return
-        self.higlighted_flag = False
-        self.apply_style_to_all(self.preselection_style)
-
-    # В методе stop_session нужно обновить данные во всех копиях
-    def stop_session(self):
-        if not self.data_reset():
-            logger.warning(...)
-        if self.plot_items:
-            self.update_all_plots_data()
-
-    def change_style(self, new_style: LineStyle):
-        self.saved_style = new_style
-
-        for curves in self.plot_items.values():
-            self.saved_style.apply_to_curve(curves['item'])
-        brushcolor = self.saved_style.to_pen().color().name()
-        self.tree_item.setForeground( 1, pg.mkBrush(color=brushcolor) )
+        self.presenter.remove_all_from_graphs()
 
     def delete_curve_from_graph(self):
-        logger.info(f"delete_curve_from_graph {self.curve_name}")
-        if self.is_draw:
-            self.is_draw = False
-            for graph_field, data_item in self.plot_items.items():
-                graph_field.removeItem(data_item['item'])
-                data_item['legend'].removeItem(self.legend.current_name)
-    
-    def data_reset(self) -> bool:
-        if self.filtered_x_data is self.raw_data_x:
-            return False
-        self.filtered_x_data = self.raw_data_x
-        self.filtered_y_data = self.raw_data_y
-        return True
-    
-    def setData(self, data):
-        old_x = self.rel_data.x_current_name
-        old_y = self.rel_data.y_current_name
-        self.rel_data = data
-        self.rel_data.update_names(old_x, old_y)
-        self.raw_data_x = np.array(data.x_result)
-        self.raw_data_y = np.array(data.y_result)
+        self.presenter.delete_curve_from_graph()
 
-    def set_filter(self, filter_command: FilterCommand):
-        self.filtered_x_data, self.filtered_y_data, message = filter_command.apply(self.filtered_x_data, self.filtered_y_data)
-        for curves in self.plot_items.values():
-            curves['item'].setData(self.filtered_x_data, self.filtered_y_data)
-            #x_data, y_data = lttb_downsample(self.filtered_x_data, self.filtered_y_data)
-            #curves['item'].setData(x_data, y_data)
+    def update_all_plots_data(self):
+        self.presenter.refresh()
 
-        self.recalc_stats_param()
+    def change_style(self, new_style: LineStyle):
+        self.presenter.change_style(new_style)
 
-        self.filters_history.append(filter_command)
+    def apply_style_to_all(self, style: LineStyle):
+        self.presenter.apply_style_to_all(style)
 
-        self.tree_item.update_history_block(data={str(datetime.now().strftime("%H:%M:%S")): message,},
-                                            filter_command = filter_command,)
-    def delete_filter(self, filter_command: FilterCommand):
-        if filter_command not in self.filters_history:
-            return
-        self.filters_history.remove(filter_command)
-        self.update_filters_after_delete(self.filters_history)
+    def on_plot_clicked(self, obj=None):
+        self.presenter.on_plot_clicked(obj)
+
+    def higlight_curve(self):
+        self.presenter.higlight_curve()
+
+    def unhiglight_curve(self):
+        self.presenter.unhiglight_curve()
+
+    def set_selection_callback(self, callback):
+        """Legacy API; kept for compatibility. Model is now authoritative."""
+        # do nothing: selection flows through SelectionModel
+
+    def set_legend_name(self, name: str):
+        self.presenter.set_legend_name(name)
+
+    def attach_selection_model(self, model):
+        self.presenter.attach_selection_model(model)
+
+    def detach(self):
+        try:
+            self.alias_manager.aliases_updated.disconnect(self._alias_changed)
+        except (TypeError, RuntimeError):
+            pass
+        self.presenter.detach()
+
+    # ------------------------------------------------------------------
+    # Actions: data
+    # ------------------------------------------------------------------
+    def change_name(self, name: str):
+        self.store.change_name(name)
+
+    def reset_name(self):
+        self.store.reset_name()
+
+    def setData(self, data: relationData):
+        self.store.set_data(data)
+
+    def set_filter(self, fc: FilterCommand):
+        message = self.store.set_filter(fc)
+        self._append_history_entry(fc, message)
+
+    def delete_filter(self, fc: FilterCommand):
+        self.store.delete_filter(fc)
+        self._rebuild_history_block()
 
     def clear_filters(self):
-        self.filters_history = []
-        self.update_filters_after_delete(self.filters_history)
-        self.tree_item.clear_history_block()
+        self.store.clear_filters()
+        if self.tree_item is not None:
+            self.tree_item.clear_history_block()
 
-    def update_filters_after_delete(self, filters: list):
-        self.data_reset()
-        for filter in filters:
-            self.filtered_x_data, self.filtered_y_data, message = filter.apply(self.filtered_x_data, self.filtered_y_data)
-        for curves in self.plot_items.values():
-            curves['item'].setData(self.filtered_x_data, self.filtered_y_data)
-        self.recalc_stats_param()
-
-class linearData(graphData):
-    def __init__(self, data: relationData, alias_manager) -> None:
-        super().__init__(data)
-        self.alias_manager = alias_manager
-        self.rel_data = data
-
-        x_name = self.alias_manager.get_alias(self.rel_data.x_root_name)
-        y_name = self.alias_manager.get_alias(self.rel_data.y_root_name)
-        self.rel_data.update_names(x_name,
-                                   y_name)
-
-        self.curve_name = self.rel_data.current_name
-        self.legend = legendName(self.curve_name)
-        self.alias_manager.aliases_updated.connect(self.alias_changed)
-        self.is_name_curve_customized = False#флаг, указывающий на то, что название кривой было изменено пользователем
-
-        self.tree_item.set_name(self.curve_name)
-        self.recalc_stats_param()
-
-    def alias_changed(self, original_name, old_alias, alias):
-        new_x_name = self.rel_data.x_current_name
-        new_y_name = self.rel_data.y_current_name
-        if original_name == self.rel_data.x_root_name:
-            new_x_name = alias
-        if original_name == self.rel_data.y_root_name:
-            new_y_name = alias
-        self.rel_data.update_names(new_x_name, new_y_name)
-
-        if not self.is_name_curve_customized:
-            self.curve_name = self.rel_data.current_name
-            self.tree_item.set_name(self.curve_name)
-            self.set_legend_name(self.curve_name)
+    def data_reset(self) -> bool:
+        return self.store.data_reset()
 
     def stop_session(self):
-        super().stop_session()
+        self.store.stop_session()
         self.recalc_stats_param()
 
-    def set_legend_name(self, name):
-        """Изменяет имя в легенде для всех графиков."""
-        self.legend.set_custom(name)
-        for info in self.plot_items.values():
-            # Удаляем старую запись в легенде и добавляем новую
-            info['legend'].removeItem(self.legend.previous_name)  # нужно хранить предыдущее имя
-            info['legend'].addItem(info['item'], self.legend.current_name)
-
+    # ------------------------------------------------------------------
+    # Stats
+    # ------------------------------------------------------------------
     def recalc_stats_param(self):
-        y_series = pd.Series(self.filtered_y_data)
-
-        all_stat_keys = list(STATISTICS_DESCRIPTIONS.keys())
-
-        stats = StatisticsCalculator._compute_column_statistics(y_series, all_stat_keys)
-
+        if len(self.store.filtered_y_data) == 0:
+            return
+        y_series = pd.Series(self.store.filtered_y_data)
+        stats = StatisticsCalculator._compute_column_statistics(
+            y_series, list(STATISTICS_DESCRIPTIONS.keys())
+        )
         params = {
-            "min_x": np.nanmin(self.filtered_x_data),
-            "max_x": np.nanmax(self.filtered_x_data),
-            "name": self.curve_name,
+            "min_x": np.nanmin(self.store.filtered_x_data) if len(self.store.filtered_x_data) else None,
+            "max_x": np.nanmax(self.store.filtered_x_data) if len(self.store.filtered_x_data) else None,
+            "name": self.store.curve_name,
             "tip": "linear",
         }
-
         params.update(stats)
-
         params["min_y"] = stats["min"]
         params["max_y"] = stats["max"]
 
-        self.tree_item.update_parameters(params)
+        if self.tree_item is not None:
+            self.tree_item.update_parameters(params)
 
-class oscData(graphData):
+    # ------------------------------------------------------------------
+    # Internal
+    # ------------------------------------------------------------------
+    def _on_store_changed(self):
+        try:
+            self.recalc_stats_param()
+        except Exception:
+            logger.exception("linearData: stats recalculation failed")
+
+    def _alias_changed(self, original_name, old_alias, alias):
+        new_x = self.store.rel_data.x_current_name
+        new_y = self.store.rel_data.y_current_name
+        if original_name == self.store.rel_data.x_root_name:
+            new_x = alias
+        if original_name == self.store.rel_data.y_root_name:
+            new_y = alias
+        self.store.update_aliases(new_x, new_y)
+
+    def _append_history_entry(self, fc: FilterCommand, message: str):
+        if self.tree_item is None:
+            return
+        self.tree_item.update_history_block(
+            data={datetime.now().strftime("%H:%M:%S"): message},
+            filter_command=fc,
+        )
+
+    def _rebuild_history_block(self):
+        if self.tree_item is None:
+            return
+        self.tree_item.clear_history_block()
+        for f in self.store.filters_history:
+            self.tree_item.update_history_block(
+                data={f.filter_type: str(f.params)},
+                filter_command=f,
+            )
+
+
+# ====================================================================
+# Facade: oscData (used by graphOsc — a different, simpler pattern)
+# ====================================================================
+class oscData:
+    """Facade for oscillogram curves used in graphOsc."""
+
     def __init__(self, data: relationData) -> None:
-        super().__init__(data)
-        self.rel_data = data
-        self.curve_name = self.rel_data.root_name
-        self.legend = legendName(self.curve_name)
+        self.store = CurveDataStore(data)
+        self.presenter = CurvePresenter(self.store, selection_model=None)
+        self.store.curve_name = data.root_name
+        self.store.legend.set_custom(self.store.curve_name)
 
-class hystLoop(graphData):
-    '''хранит данные о петле и ее исходных параметрах, содержит методы расчета петли'''
-    def __init__(self, raw_x, raw_y, time_scale, resistance, wire_square) -> None:
-        super().__init__(raw_x, raw_y)
-        self.time_raw_data = [i*time_scale for i in range(len(raw_x))]
+        # attributes expected by graphOsc
+        self.plot_obj = None
+        self.saved_pen = None
+        self.current_highlight = False
+
+    # Data delegation
+    @property
+    def rel_data(self): return self.store.rel_data
+    @property
+    def raw_data_x(self): return self.store.raw_data_x
+    @property
+    def raw_data_y(self): return self.store.raw_data_y
+    @property
+    def filtered_x_data(self): return self.store.filtered_x_data
+    @filtered_x_data.setter
+    def filtered_x_data(self, v): self.store.filtered_x_data = v
+    @property
+    def filtered_y_data(self): return self.store.filtered_y_data
+    @filtered_y_data.setter
+    def filtered_y_data(self, v): self.store.filtered_y_data = v
+    @property
+    def curve_name(self): return self.store.curve_name
+    @property
+    def legend(self): return self.store.legend
+
+    # Presentation delegation (only what graphOsc uses)
+    @property
+    def is_draw(self): return self.presenter.is_draw
+    @is_draw.setter
+    def is_draw(self, v): self.presenter.is_draw = v
+
+    @property
+    def plot_items(self): return self.presenter.plot_items
+
+    @property
+    def saved_style(self): return self.presenter.saved_style
+    @saved_style.setter
+    def saved_style(self, v): self.presenter.saved_style = v
+
+    # graphOsc API
+    def set_plot_obj(self, plot_obj, pen):
+        self.plot_obj = plot_obj
+        self.saved_pen = pen
+
+
+# ====================================================================
+# hystLoop — standalone, no longer inherits from graphData
+# ====================================================================
+class hystLoop:
+    """Hysteresis loop. Independent of the curve/presenter architecture."""
+
+    Q2 = 1.67
+
+    def __init__(self, raw_x, raw_y, time_scale, resistance, wire_square):
+        self.raw_data_x = np.asarray(raw_x)
+        self.raw_data_y = np.asarray(raw_y)
+        self.filtered_x_data = self.raw_data_x.copy()
+        self.filtered_y_data = self.raw_data_y.copy()
+
+        self.time_raw_data = [i * time_scale for i in range(len(self.raw_data_x))]
         self.time_scale = time_scale
-        #отфильтрованные данные петли
-        self.filtered_time_data = [i*time_scale for i in range(len(raw_x))]
-        self.Q2 = 1.67  # сильно влияет на форму петли. уточнить влияние, для чего она введена?
-        
+        self.filtered_time_data = list(self.time_raw_data)
+
         self.resistance = resistance
         self.wire_square = wire_square
-            
+
+        self.data_x = None
+        self.data_y = None
+
+        # compatibility with old UI usage
+        self.current_highlight = False
+        self.saved_pen = None
+        self.plot_obj = None
+
     def calc_loop(self):
-        arr1 = self.filtered_x_data
-        arr2 = self.filtered_y_data
-
-        arr1 = np.array(arr1)
-        arr2 = np.array(arr2)
-
+        arr1 = np.asarray(self.filtered_x_data)
+        arr2 = np.asarray(self.filtered_y_data)
         R = 100 + self.resistance
-        # d = 14.2
-        d = self.wire_square / 2 * (10 ** (-6))
+        d = self.wire_square / 2 * (10 ** -6)
         A = R * (3.1415 * 2 * d * 2)
         C = 16
         X = arr2 / A + C
-        Y = self.calculate_results( arr1 )
-
-        size1 = len(X)
-        size2 = len(Y)
-
-        if size1 > size2:
-            X = X[:size2]
-        elif size2 > size1:
-            Y = Y[:size1]
-
-        return X, Y
+        Y = self.calculate_results(arr1)
+        n = min(len(X), len(Y))
+        return X[:n], Y[:n]
 
     def calculate_results(self, C):
-
-        noise_level1 = self.threshold_mean_std(C)
-        noise_level2 = self.threshold_median(C)
-        noise_level = noise_level2
-        #TODO: сделать выбор порога ПОЛЬЗОВАТЕЛЕМ
-
-        n = len(C)
-
-        # Вычисление средних значений и сдвигов
+        noise = self.threshold_median(C)
         D2 = np.mean(C)
         E2 = C - D2
-        F2 = np.where(np.abs(E2) > noise_level, 1, 0)
-
+        F2 = np.where(np.abs(E2) > noise, 1, 0)
         G2 = E2 * F2
         H2 = np.mean(G2)
-
-        # Интегрирование
         I2 = G2 - H2
         J2 = np.cumsum(I2)
         K2 = J2 - np.max(J2) / 2
         L2 = K2 + self.Q2
-
-        # Нормировка
-        M = np.where(L2 <= 0, L2 / np.nanmin(L2), L2 / -np.nanmax(L2))
-
-        return M
+        return np.where(L2 <= 0, L2 / np.nanmin(L2), L2 / -np.nanmax(L2))
 
     def threshold_mean_std(self, data):
-        """Вычисляет порог на основе среднего значения и стандартного отклонения."""
-        mean = np.mean(data)
-        std_dev = np.std(data)
-        k = 2  # Можно настроить коэффициент
-        threshold = mean + k * std_dev
-        return threshold
+        return np.mean(data) + 2 * np.std(data)
 
     def threshold_median(self, data):
-        """Вычисляет порог на основе медианы и интерквартильного размаха."""
         Q1 = np.percentile(data, 40)
         Q3 = np.percentile(data, 60)
-        IQR = Q3 - Q1
-        threshold = Q3 + 1.5 * IQR  # Порог устанавливается на уровне Q3 + 1.5 * IQR
-        return threshold
-    
+        return Q3 + 1.5 * (Q3 - Q1)
+
     def recalc_data(self):
-        self.data_x, self.data_y = self.calc_loop()   
-        return self.data_x, self.data_y
-    
-    def get_xy_data(self):
-        if self.data_x is None or self.data_y is None:
-             self.data_x, self.data_y = self.calc_loop()   
+        self.data_x, self.data_y = self.calc_loop()
         return self.data_x, self.data_y
 
+    def get_xy_data(self):
+        if self.data_x is None or self.data_y is None:
+            self.data_x, self.data_y = self.calc_loop()
+        return self.data_x, self.data_y
+
+    # graphOsc API
+    def set_plot_obj(self, plot_obj, pen, highlight=False):
+        self.plot_obj = plot_obj
+        self.saved_pen = pen
+        self.current_highlight = highlight
+
+    def clear_filters(self):
+        self.filtered_x_data = self.raw_data_x.copy()
+        self.filtered_y_data = self.raw_data_y.copy()

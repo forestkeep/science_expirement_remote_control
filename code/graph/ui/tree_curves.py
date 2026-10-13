@@ -316,14 +316,14 @@ class customTreeWidget(QTreeWidget):
         super().__init__()
         self.par_class = par_class
         self.setMouseTracking(True)
+
     def mouseMoveEvent(self, event):
         item = self.itemAt(event.pos())
-        if not item:
-            item = None
         self.par_class.on_item_entered(item)
         super().mouseMoveEvent(event)
+
     def leaveEvent(self, event):
-        self.par_class.on_item_entered(item = None)
+        self.par_class.on_item_entered(None)
         super().leaveEvent(event)
 
 class treeWin(QWidget):
@@ -341,6 +341,7 @@ class treeWin(QWidget):
         button_layout = QHBoxLayout()
 
         self.main_class = main_class
+        self._curve_id_counter = 0  # счётчик уникальных ID
 
         self.buttons = []
         button = QPushButton("+")
@@ -402,8 +403,8 @@ class treeWin(QWidget):
             if isinstance(root_item, CurveTreeItem):
                 root_item.curve_data_obj.delete_filter(item.filter_command)
                 del item.filter_command
-                item.parent().removeChild(item)
-                
+                if item.parent() is not None:
+                    item.parent().removeChild(item)
 
     def on_item_entered(self, item):
         root_item = None
@@ -535,10 +536,10 @@ class treeWin(QWidget):
         return result
 
     def add_curve(self, curve_item: CurveTreeItem):
+        self._curve_id_counter += 1
         self.tree_widget.addTopLevelItem(curve_item)
-        curve_item.update_parameters({"id": "CUR" + str(len(self.curves) + 1)})
+        curve_item.update_parameters({"id": f"CUR{self._curve_id_counter}"})
         self.curves.append(curve_item)
-
         self.toggle_visibility()
 
     def show_context_menu(self, position):

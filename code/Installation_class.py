@@ -160,16 +160,6 @@ class installation_class( ExperimentBridge, analyse):
                     pass
         return value
 
-    def time_decorator(func):
-        def wrapper(*args, **kwargs):
-            start_time = time.perf_counter()
-            result = func(*args, **kwargs)
-            end_time = time.perf_counter()
-            print(f"Метод {func.__name__} - {end_time - start_time} с")
-            return result
-
-        return wrapper
-
     def reconstruct_installation(self, installation_list: list, json_devices: dict = None):
         """Reconstruct installation from list of device names"""
         self.dict_active_device_class = {}

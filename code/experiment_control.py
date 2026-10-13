@@ -32,16 +32,28 @@ class message_status(enum.Enum):
     critical = 3
 
 
+from graph.api.experiment_port import ExperimentPort
+
 class ExperimentBridge(analyse):
     def __init__(self) -> None:
         super().__init__()
-        self.pause_start_time  = 0
+        self.pause_start_time = 0
         self.ui_lag_time = 0
         self.max_time_for_event = 0
         self.ui_max_lag_time = 0
 
         self.current_butch = 1
         self.MAX_BUTCHES = 100
+
+        self._experiment_port = None
+
+    @property
+    def experiment_port(self) -> ExperimentPort:
+        if self._experiment_port is None:
+            if not hasattr(self, "graph_controller") or self.graph_controller is None:
+                raise RuntimeError("graph_controller is not set for ExperimentBridge")
+            self._experiment_port = ExperimentPort(self.graph_controller)
+        return self._experiment_port
         
     def is_experiment_running(self) -> bool:
         answer = False
@@ -82,21 +94,22 @@ class ExperimentBridge(analyse):
             return 1
     
     def receive_data_exp(self):
-
         self.measure_ui_responsiveness()
         self.current_batch = self.calculate_batch_size()
 
         if self.is_experiment_running():
             for i in range(self.current_batch):
-                
                 if self.data_from_exp.poll():
                     received = self.data_from_exp.recv()
                     if isinstance(received, tuple) and len(received) == 2:
                         data = _process_received_data(self.data_from_exp, *received)
-                        #logger.warning(f"received data : {data}")
                         if data:
                             val = [data[0], data[1]]
-                            status_update = self.graph_controller.decode_add_exp_parameters(session_id = self.current_session_graph_id, entry      = val,time       = data[2])
+                            status_update = self.experiment_port.push_measurement(
+                                session_id=self.current_session_graph_id,
+                                entry=val,
+                                time=data[2],
+                            )
                             if not status_update:
                                 logger.warning(f"Error updating parameters: {val}")
                         else:
@@ -207,78 +220,90 @@ class ExperimentBridge(analyse):
             self.installation_window.pause_button.setStyleSheet(style)
 
     def finalize_experiment(self, error=False, error_start_exp=False):
-        self.current_state = ExperimentState.COMPLETED
+            self.current_state = ExperimentState.COMPLETED
 
-        self.timer_second_thread_tasks.stop()
-        self.timer_for_receive_data_exp.stop()
-        self.graph_controller.stop_session_running( self.current_session_graph_id )
+            self.timer_second_thread_tasks.stop()
+            self.timer_for_receive_data_exp.stop()
 
-        clear_pipe(self.pipe_exp)
-        clear_queue(self.exp_second_queue)
-        clear_queue(self.exp_third_queue)
+            # было: self.graph_controller.stop_session_running(...)
+            self.experiment_port.stop_session(self.current_session_graph_id)
 
-        while not self.exp_first_queue.empty() or not self.important_exp_queue.empty():
-            self.set_state_text(text = QApplication.translate('exp_flow',"Обработка мета данных..."))
-            self.second_thread_tasks()
+            clear_pipe(self.pipe_exp)
+            clear_queue(self.exp_second_queue)
+            clear_queue(self.exp_third_queue)
 
-        if error:
-            if error_start_exp :
-                text = QApplication.translate('exp_flow',"Эксперимент прерван из-за ошибки при настройке прибора")
+            while not self.exp_first_queue.empty() or not self.important_exp_queue.empty():
+                self.set_state_text(text=QApplication.translate('exp_flow', "Обработка мета данных..."))
+                self.second_thread_tasks()
+
+            if error:
+                if error_start_exp:
+                    text = QApplication.translate('exp_flow', "Эксперимент прерван из-за ошибки при настройке прибора")
+                else:
+                    text = QApplication.translate('exp_flow', "Эксперимент прерван из-за ошибки при опросе прибора")
+                self.add_text_to_log(text, "err")
+                self.show_critical_window(text)
             else:
-                text = QApplication.translate('exp_flow',"Эксперимент прерван из-за ошибки при опросе прибора")
-            self.add_text_to_log( text, "err")
-            self.show_critical_window( text )
+                text = QApplication.translate('exp_flow', "Эксперимент завершен")
+                self.add_text_to_log(text)
+                self.show_information_window(text)
 
-        else:
-            text = QApplication.translate('exp_flow',"Эксперимент завершен")
-            self.add_text_to_log( text )
-            self.show_information_window( text )
+            if self.has_unsaved_data:
+                end_time = time.perf_counter()
+                duration = end_time - self.exp_start_time
+                start_time_local = time.localtime(time.time() - duration)
 
-        if self.has_unsaved_data:
-            end_time = time.perf_counter()
-            duration = end_time - self.exp_start_time
-            start_time_local = time.localtime(time.time() - duration)
+                self.meas_session.meas_session_data.session_end_time = time.strftime("%H:%M:%S", time.localtime())
+                self.meas_session.meas_session_data.session_start_time = time.strftime("%H:%M:%S", start_time_local)
+                self.meas_session.meas_session_data.session_duration = f"{round(duration, 3)} sek"
 
-            self.meas_session.meas_session_data.session_end_time = time.strftime("%H:%M:%S", time.localtime())
-            self.meas_session.meas_session_data.session_start_time = time.strftime("%H:%M:%S", start_time_local)
-            self.meas_session.meas_session_data.session_duration = f"{round(duration, 3)} sek"
+                self.set_state_text(text=QApplication.translate('exp_flow', "Сохранение результатов"))
 
-            self.set_state_text(text = QApplication.translate('exp_flow',"Сохранение результатов"))
+                # было: self.graph_controller.get_session_name(...)
+                name = self.experiment_port.get_session_name(self.current_session_graph_id)
 
-            name = self.graph_controller.get_session_name(self.current_session_graph_id)
+                if self.settings_manager.get_setting('should_prompt_for_session_name')[1]:
+                    logger.info("запрашиваем имя сессии и описание")
+                    self.meas_session.ask_session_name_description(
+                        text="Эксперимент завершен",
+                        def_name=name,
+                    )
+                else:
+                    logger.info("имя сессии и описание устанавливаем дефолтными")
+                    self.meas_session.set_default_session_name_description()
 
-            if self.settings_manager.get_setting('should_prompt_for_session_name')[1]:
-                logger.info("запрашиваем имя сессии и описание")
-                self.meas_session.ask_session_name_description( text = "Эксперимент завершен",def_name = name )
-            else:
-                logger.info("имя сессии и описание устанавливаем дефолтными")
-                self.meas_session.set_default_session_name_description()
+                if not self.meas_session.session_name:
+                    name = self.experiment_port.get_session_name(self.current_session_graph_id)
+                    if not name:
+                        name = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    self.meas_session.session_name = name
 
-            if not self.meas_session.session_name:
-                name = self.graph_controller.get_session_name(self.current_session_graph_id)
-                if not name:
-                    name = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                self.meas_session.session_name = name
+                # было: self.graph_controller.change_session_name(...)
+                self.experiment_port.change_session_name(
+                    self.current_session_graph_id,
+                    self.meas_session.session_name,
+                )
 
-            self.graph_controller.change_session_name(self.current_session_graph_id, self.meas_session.session_name)
+                if not self.settings_manager.get_setting('way_to_save')[1]:
+                    self.set_way_save()
 
-            if not self.settings_manager.get_setting('way_to_save')[1]:
-                self.set_way_save()
+                if not error_start_exp:
+                    try:
+                        self.save_results()
+                    except Exception as e:
+                        logger.warning(
+                            f"не удалось сохранить результаты по окончании эксперимента {str(e)}",
+                            self.buf_file,
+                        )
 
-            if not error_start_exp :
-                try:
-                    self.save_results()
-                except Exception as e:
-                    logger.warning(f"не удалось сохранить результаты по окончании эксперимента {str(e)}", self.buf_file)
+            self.exp_call_stack.activate_all_actors()
 
-        self.exp_call_stack.activate_all_actors()
-        
-        self.pipe_exp.close()
-        self.exp_second_queue.close()
-        self.exp_third_queue.close()
+            self.pipe_exp.close()
+            self.exp_second_queue.close()
+            self.exp_third_queue.close()
 
-        self.prepare_for_reexperiment()
-
+            self.prepare_for_reexperiment()
+            
     def prepare_for_reexperiment(self):
             # ------------------подготовка к повторному началу эксперимента---------------------
             self.set_state_text(text = QApplication.translate('exp_flow',"Подготовка к эксперименту"))

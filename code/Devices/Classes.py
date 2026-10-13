@@ -894,12 +894,3 @@ class base_ch(control_in_experiment):
     def get_type(self):
         return self.ch_type
     
-
-def time_decorator(func):
-    def wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        result = func(*args, **kwargs)
-        end_time = time.perf_counter()
-        logger.info(f"Метод {func.__name__} выполнялся {end_time - start_time} с")
-        return result
-    return wrapper

@@ -284,7 +284,7 @@ class graphDataManager(QObject):
     def stop_session_running(self, session_id: str = None):
         if not session_id:
             session_id = self.name
-        self.force_flush()
+        self.force_flush()  # гарантируем, что последние точки дошли до подписчиков
         self.__sessions_data['osc'].is_running = False
         self.stop_current_session.emit()
 

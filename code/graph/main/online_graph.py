@@ -53,17 +53,10 @@ from graph.ui.action_registry import ActionRegistry
 from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5.QtCore import pyqtSignal, QRect
 from PyQt5.QtGui import QGuiApplication
+from graph.utils.decorators import time_decorator
 
 logger = logging.getLogger(__name__)
 
-def time_decorator(func):
-    def wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        result = func(*args, **kwargs)
-        end_time = time.perf_counter()
-        logger.info(f"Метод {func.__name__} выполнялся {end_time - start_time} с")
-        return result
-    return wrapper
 
 class GraphWindow(QMainWindow):
     graph_win_close_signal = pyqtSignal(int)
@@ -460,6 +453,8 @@ class sessionController():
     def close_graph_window(self):
         if self.compare_graph is not None:
             self.compare_graph.close()
+            self.compare_graph = None
+        self.graphics_win.close()
 
     def close(self):
         if self.compare_graph is not None:
@@ -566,46 +561,36 @@ class sessionController():
                 logger.warning(f"_action_reset_curve_name failed for {curve}: {e}")
 
     def read_statistics(self, group_by_param=True):
-        if False:
-            for session in self.graph_sessions.values():
-                session_data = session.data_manager.get_all_data()
-                main_data = session_data['main'].data
-                print(session.session_name)
-                print("mean, std, median, max, min")
-                for name, value_data in main_data.items():
-                    values = value_data.par_val
-                    if values is not None:
-                        print(self.alias_manager.get_alias(name), np.mean(values), np.std(values), np.median(values))
-        else:
-            param_data = {}
-            
-            for session in self.graph_sessions.values():
-                session_data = session.data_manager.get_all_data()
-                main_data = session_data['main'].data
-                
-                for name, value_data in main_data.items():
-                    values = value_data.par_val
-                    if values is not None:
-                        alias = self.alias_manager.get_alias(name)
-                        if alias not in param_data:
-                            param_data[alias] = []
-                        
-                        param_data[alias].append({
-                            'session_name': session.session_name,
-                            'mean': np.mean(values),
-                            'std': np.std(values),
-                            'median': np.median(values)
-                        })
-            
-            for param_name, sessions_data in param_data.items():
-                print(f"Parameter: {param_name}")
+        param_data = {}
+        for session in self.graph_sessions.values():
+            session_data = session.data_manager.get_all_data()
+            main_data = session_data['main'].data
+            for name, value_data in main_data.items():
+                values = value_data.par_val
+                if values is None:
+                    continue
+                alias = self.alias_manager.get_alias(name)
+                param_data.setdefault(alias, []).append({
+                    'session_name': session.session_name,
+                    'mean': float(np.mean(values)),
+                    'std': float(np.std(values)),
+                    'median': float(np.median(values)),
+                })
 
-                sorted_sessions_data = sorted(sessions_data, 
-                                            key=lambda x: tuple(map(int, x['session_name'].split())))
-                for data in sorted_sessions_data:
-                    print(f"{data['session_name']}, {data['mean']}, {data['std']}")
-                print()
+        def sort_key(item):
+            name = item['session_name']
+            parts = name.split()
+            # пробуем числовую сортировку, иначе — строковую
+            try:
+                return (0, tuple(int(p) for p in parts))
+            except (ValueError, TypeError):
+                return (1, name)
 
+        for param_name, sessions_data in param_data.items():
+            print(f"Parameter: {param_name}")
+            for data in sorted(sessions_data, key=sort_key):
+                print(f"{data['session_name']}, {data['mean']}, {data['std']}")
+            print()
     def push_button_save_graph(self):
         """Быстрое сохранение проекта – всегда в HDF5, независимо от последнего Save As."""
         if self.way_to_save_project is not None:
@@ -631,16 +616,12 @@ class sessionController():
                 self.graphics_win.setWindowTitle(fileName)
 
     def push_button_save_graph_as(self):
-        """Диалог «Сохранить как…» для выбора формата: HDF5 или Excel."""
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
 
-        # Начальная директория – последний сохранённый проект или последний Excel
         initial_path = self.way_to_save_project or self.way_to_save_excel or ""
         fileName, selectedFilter = QtWidgets.QFileDialog.getSaveFileName(
-            self.graphics_win,
-            "Сохранить как",
-            initial_path,
+            self.graphics_win, "Сохранить как", initial_path,
             "Installation (*.hdf5);; Книга Excel (*.xlsx)",
             options=options,
         )
@@ -653,20 +634,17 @@ class sessionController():
             self.way_to_save_project = fileName
             HDF5Facade().save_project(self, fileName)
             self.graphics_win.setWindowTitle(fileName)
-
         elif selectedFilter == "Книга Excel (*.xlsx)":
             if not fileName.endswith('.xlsx'):
                 fileName += '.xlsx'
             self.way_to_save_excel = fileName
-            self._save_excel(fileName)
             try:
                 self._save_excel(fileName)
             except Exception as e:
                 self.status_bar.set_status(f"Ошибка сохранения: {e}", timeout=5000)
-                logger.error(f"Ошибка при сохранении Excel файла: {e} ")
+                logger.error(f"Ошибка при сохранении Excel файла: {e}")
             finally:
                 self.status_bar.hide_progress()
-
         else:
             logger.warning(f"Неизвестный фильтр при сохранении: {selectedFilter}")
 
@@ -836,9 +814,15 @@ class sessionController():
         return True
     
     def update_session_data(self, session_id: str, data: dict) -> bool:
-        if self.graph_sessions.get(session_id) is None:
+        session = self.graph_sessions.get(session_id)
+        if session is None:
             return False
-        self.graph_sessions[session_id].data_manager.add_measurement_data(data)
+        try:
+            session.data_manager.add_measurement_data(data)
+            return True
+        except Exception as e:
+            logger.exception(f"update_session_data failed for {session_id}: {e}")
+            return False
 
     def get_session_id(self, session_name: str) -> int:
         logger.info(f"get_session_id {session_name}")

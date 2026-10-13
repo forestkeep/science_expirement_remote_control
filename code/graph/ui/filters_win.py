@@ -370,7 +370,7 @@ class filtersClass():
 
         self.filt_window.median_button.clicked.connect( lambda: self.prepare_filters('median') )
         self.filt_window.average_button.clicked.connect( lambda: self.prepare_filters('average') )      
-        self.filt_window.calman_button.clicked.connect( lambda: self.prepare_filters(self.calman_filt) )
+        #self.filt_window.calman_button.clicked.connect( lambda: self.prepare_filters(self.calman_filt) )
         self.filt_window.exp_mean_button.clicked.connect( lambda: self.prepare_filters('exp_mean') )
         self.filt_window.thinning_button.clicked.connect( lambda: self.prepare_filters('thinning') )
         self.filt_window.normalize_button.clicked.connect( lambda: self.prepare_filters('normalize') )

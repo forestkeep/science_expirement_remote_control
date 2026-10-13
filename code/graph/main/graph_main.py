@@ -22,17 +22,9 @@ from graph.core.dataManager import relationData
 from graph.ui.customPlotWidget import PatchedPlotWidget
 from graph.core.filters_instance_class import FilterCommand
 from graph.core.session_mode import SessionMode
+from graph.utils.decorators import time_decorator
 
 logger = logging.getLogger(__name__)
-
-def time_decorator(func):
-    def wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        result = func(*args, **kwargs)
-        end_time = time.perf_counter()
-        logger.debug(f"Метод  {func.__name__} выполнялся {end_time - start_time} с")
-        return result
-    return wrapper
 
 class CustomComboBox(QComboBox):
     def __init__(self, parent=None):
@@ -174,18 +166,43 @@ class manageGraph(QObject):
     def set_second_axis(self, state: bool):
         self.graphView.set_second_axis(state)
 
-    def set_default(self):
-        self.x = []
-        self.old_params = []
-        self.y.clear()
-        self.y2.clear()
-        for item in self.graphView.items():
-            if isinstance(item, pg.PlotDataItem):
-                self.graphView.removeItem(item)
-        self.graphView.second_graphView.clear()
-
     def get_list_curves(self):
         return list(self.__stack_curve.values())
+
+    def set_default(self):
+        self.graphView.clear()
+        self.graphView.second_graphView.clear()
+        self.__stack_curve.clear()
+        if self.selection_model is not None:
+            self.selection_model.clear()
+
+    def destroy_curve(self, curve_data_obj):
+        curve_data_obj.delete_curve_from_graph()
+        curve_data_obj.is_draw = False
+        try:
+            curve_data_obj.detach()
+        except Exception:
+            logger.exception("destroy_curve: detach failed")
+        if self.selection_model is not None:
+            self.selection_model.remove(curve_data_obj)
+        root_name = curve_data_obj.rel_data.root_name
+        self.__stack_curve.pop(root_name, None)
+
+    def destroy_all_curves(self):
+        for curve in list(self.__stack_curve.values()):
+            curve.delete_curve_from_graph()
+            curve.is_draw = False
+            try:
+                curve.detach()
+            except Exception:
+                logger.exception("destroy_all_curves: detach failed")
+        self.__stack_curve.clear()
+        if self.selection_model is not None:
+            self.selection_model.clear()
+
+    def closeEvent(self, event):
+        # Нет собственного сигнала; закрытие окна сессии обрабатывается её владельцем.
+        event.accept()
 
     def set_filters(self, filter_comand: FilterCommand):
         for curve in self.__stack_curve.values():
@@ -268,20 +285,21 @@ class manageGraph(QObject):
         return self.__stack_curve
 
     def __callback_click_scene(self, focus_objects: list):
-        is_click_plot = True
+        clicked_any = False
         for curve in focus_objects:
             if curve.i_am_click_now:
                 curve.i_am_click_now = False
-                is_click_plot = False
+                clicked_any = True
 
-        if is_click_plot:
+        if clicked_any:
+            return
+
+        if self.selection_model is not None:
+            self.selection_model.clear()
+        else:
             for curve in focus_objects:
                 if curve.is_curve_selected:
-                    curve.change_style(curve.saved_style)
                     curve.is_curve_selected = False
-                    curve.notify_selection_changed(False)
-            if self.selection_model is not None:
-                self.selection_model.clear()
 
     def delete_key_press(self):
         curv_for_del = []
@@ -313,7 +331,6 @@ class manageGraph(QObject):
     def hide_second_line_grid(self):
         self.graphView.hide_second_line_grid()
 
-    #@time_decorator
     def update_data(self, data_first_axis:list[relationData], data_second_axis:list[relationData], is_updated = False):
         self.hide_second_line_grid()
 
@@ -363,24 +380,6 @@ class manageGraph(QObject):
             data.y_result[-self.num_showing_points:]
         )
 
-    def destroy_curve(self, curve_data_obj):
-        curve_data_obj.delete_curve_from_graph()
-        curve_data_obj.is_draw = False
-        if self.selection_model is not None:
-            self.selection_model.remove(curve_data_obj)
-        key = curve_data_obj.curve_name
-        if self.__stack_curve.get(key) is not None:
-            self.__stack_curve.pop(key)
-
-    def destroy_all_curves(self):
-        for curve in self.__stack_curve.values():
-            curve.delete_curve_from_graph()
-            curve.is_draw = False
-
-        self.__stack_curve.clear()
-        if self.selection_model is not None:
-            self.selection_model.clear()
-
     def stop_session(self):
         for curve in self.__stack_curve.values():
             curve.stop_session()
@@ -403,16 +402,19 @@ class manageGraph(QObject):
         return self.__stack_curve.get(name)
 
     def create_curve(self, data: relationData) -> linearData:
-        new_data = linearData(data=data, alias_manager=self.alias_manager)
-        new_data.set_selection_callback(self._on_curve_selection_changed)
+        new_data = linearData(
+            data=data,
+            alias_manager=self.alias_manager,
+            selection_model=self.selection_model,
+        )
         buf_color = next(self.color_warm_gen)
-
         if new_data.saved_style is None:
-            style = LineStyle(color=buf_color, line_style=Qt.SolidLine, line_width=1,
-                            symbol="o", symbol_size=3, symbol_color=buf_color, fill_color=buf_color)
+            style = LineStyle(
+                color=buf_color, line_style=Qt.SolidLine, line_width=1,
+                symbol="o", symbol_size=3,
+                symbol_color=buf_color, fill_color=buf_color,
+            )
             new_data.change_style(style)
-        else:
-            pass
         return new_data
 
     def create_and_place_curve(self, data: relationData,
@@ -441,24 +443,28 @@ class manageGraph(QObject):
         return True
         
     def add_curve(self, curve_data_obj: linearData, type_axis: str = "left"):
-        logger.debug(f"add curve {curve_data_obj.curve_name} root name {curve_data_obj.rel_data.root_name}")
+        # HDF5 restore path: attach model post-construction
+        if self.selection_model is not None:
+            curve_data_obj.attach_selection_model(self.selection_model)
+
+        logger.debug(f"add curve {curve_data_obj.curve_name} root {curve_data_obj.rel_data.root_name}")
         self.__stack_curve[curve_data_obj.rel_data.root_name] = curve_data_obj
+
         if type_axis == "left":
-            curve_data_obj.number_axis = 1#костыль на время, пока нет сохранения для всех графиков. данный график главный и именно он назвачает главную ось, она используется в селекторе параметров
-            curve_data_obj.add_to_graph(graph_field  = self.graphView,
-                                                legend_field  = self.graphView.legend,
-                                                number_axis = 1
-                                                )
+            curve_data_obj.number_axis = 1
+            curve_data_obj.add_to_graph(
+                graph_field=self.graphView,
+                legend_field=self.graphView.legend,
+                number_axis=1,
+            )
         else:
             curve_data_obj.number_axis = 2
-            curve_data_obj.add_to_graph(graph_field  = self.graphView.second_graphView,
-                                                legend_field  = self.graphView.legend2,
-                                                number_axis = 2
-                                                )
+            curve_data_obj.add_to_graph(
+                graph_field=self.graphView.second_graphView,
+                legend_field=self.graphView.legend2,
+                number_axis=2,
+            )
         self.main_class.tree_class.add_curve(curve_data_obj.tree_item)
-
-    def closeEvent(self, event):  # эта функция вызывается при закрытии окна
-        self.graph_win_close_signal.emit(1)
 
     def retranslateUi(self, GraphWindow):
         _translate = QApplication.translate

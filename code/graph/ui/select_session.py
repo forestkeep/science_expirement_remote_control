@@ -121,7 +121,6 @@ class SessionWidget(QWidget):
                         cell.setBackground(QBrush(bg))
 
     def _on_data_changed(self, top_left, bottom_right):
-        logger.info(f"_on_data_changed {top_left} {bottom_right} list: {self.sessions_data}")
         if top_left.column() <= 1 <= bottom_right.column():
             row = top_left.row()
             session_id_item = self.table.item(row, 0)

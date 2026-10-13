@@ -110,16 +110,6 @@ class basePowerSupply(base_device):
         self.setting_window.num_act_label.setParent(None)
         self.setting_window.num_act_enter.setParent(None)
 
-    def time_decorator(func):
-        def wrapper(*args, **kwargs):
-            start_time = time.perf_counter()
-            result = func(*args, **kwargs)
-            end_time = time.perf_counter()
-            logger.info(f"Метод {func.__name__} выполнялся {end_time - start_time} с")
-            return result
-
-        return wrapper
-
     @base_device.base_show_window
     def show_setting_window(self, number_of_channel):
         self.switch_channel(number=number_of_channel)

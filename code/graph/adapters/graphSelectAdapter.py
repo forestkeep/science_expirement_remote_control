@@ -12,163 +12,148 @@ from graph.core.curve_data import linearData
 from graph.core.dataManager import relationData
 from PyQt5.QtWidgets import QApplication
 import logging
+
 logger = logging.getLogger(__name__)
 
+
 class graphSelectAdapter:
-	def __init__(self, graph, selector, data_manager, tree_class, type_data, main_class):
-		self.graph = graph
-		self.selector = selector
-		self.data_manager = data_manager
-		self.tree_class = tree_class
-		self.type_data = type_data
-		self.main_class = main_class
+    def __init__(self, graph, selector, data_manager, tree_class, type_data, main_class):
+        self.graph = graph
+        self.selector = selector
+        self.data_manager = data_manager
+        self.tree_class = tree_class
+        self.type_data = type_data
+        self.main_class = main_class
 
-		self.selector.parameters_updated.connect(self.parameters_choised)
-		self.selector.multiple_checked.connect(self.multiple_changed)
-		self.selector.state_second_axis_changed.connect(self.state_second_axis_changed)
-		self.selector.numPointsChanged.connect(self.numPointsChanged)
-		self.selector.showingAllPoints.connect(self.showingAllPoints)
+        self.selector.parameters_updated.connect(self.parameters_choised)
+        self.selector.multiple_checked.connect(self.multiple_changed)
+        self.selector.state_second_axis_changed.connect(self.state_second_axis_changed)
+        self.selector.numPointsChanged.connect(self.numPointsChanged)
+        self.selector.showingAllPoints.connect(self.showingAllPoints)
 
-		self.data_manager.list_parameters_updated.connect(self.update_params)
-		self.data_manager.val_parameters_added.connect(self.data_updated)
-		self.data_manager.stop_current_session.connect(self.stop_session)
+        self.data_manager.list_parameters_updated.connect(self.update_params)
+        self.data_manager.val_parameters_added.connect(self.data_updated)
+        self.data_manager.stop_current_session.connect(self.stop_session)
 
-		self.tree_class.curve_deleted.connect(self.destroy_curve)
-		self.tree_class.curve_shown.connect(self.show_curve)
-		self.tree_class.curve_hide.connect(self.hide_curve)
-		self.tree_class.curve_reset.connect(self.reset_filters)
-		self.tree_class.curve_created.connect(self.curve_created)
+        self.tree_class.curve_deleted.connect(self.destroy_curve)
+        self.tree_class.curve_shown.connect(self.show_curve)
+        self.tree_class.curve_hide.connect(self.hide_curve)
+        self.tree_class.curve_reset.connect(self.reset_filters)
+        self.tree_class.curve_created.connect(self.curve_created)
 
-	def hide_curve(self, curve_data_obj: linearData):
-		first_parameters = []
-		second_parameters = []
-		y_name = curve_data_obj.rel_data.y_root_name
-		logger.info(f"hide_curve {curve_data_obj.rel_data.root_name=} {curve_data_obj.rel_data.y_root_name=} not signal about clear selections")
-		curve_data_obj.delete_curve_from_graph()
+    def hide_curve(self, curve_data_obj: linearData):
+        y_name = curve_data_obj.rel_data.y_root_name
+        curve_data_obj.delete_curve_from_graph()
+        if y_name == "gen":
+            return
+        first_parameters, second_parameters = [], []
+        if curve_data_obj.number_axis == 2:
+            second_parameters = [y_name]
+        elif curve_data_obj.number_axis == 1:
+            first_parameters = [y_name]
+        else:
+            logger.error(f"curve_data_obj.number_axis = {curve_data_obj.number_axis} not 1 or 2")
+            return
+        self.selector.clear_selections("", first_parameters, second_parameters, is_signal=False)
 
-		if y_name == "gen":
-			pass#кривая сгенерирована. ничего не делаем больше, в секторах ее нет
-		else:
-			if curve_data_obj.number_axis == 2:
-				second_parameters = [y_name]
-			elif curve_data_obj.number_axis == 1:
-				first_parameters = [y_name]
-			else:
-				logger.error(f"curve_data_obj.number_axis = {curve_data_obj.number_axis} not 1 or 2")
+    def stop_session(self):
+        self.graph.stop_session()
+        self.selector.stop_session()
 
-			self.selector.clear_selections("", first_parameters, second_parameters, is_signal = False)
+    def destroy_curve(self, curve_data_obj: linearData):
+        if curve_data_obj.is_draw:
+            self.hide_curve(curve_data_obj)
+        self.graph.destroy_curve(curve_data_obj)
 
-	def stop_session(self):
-		self.graph.stop_session()
-		self.selector.stop_session()
+    def show_curve(self, curve_data_obj: linearData):
+        paramx, paramy1, paramy2 = self.selector.get_parameters()
+        if paramx != curve_data_obj.rel_data.x_root_name:
+            self.main_class.show_tooltip(
+                message=QApplication.translate("GraphWindow", "Кривая принадлежит другому пространству")
+            )
+            return
 
-	def destroy_curve(self, curve_data_obj: linearData):
-		if curve_data_obj.is_draw:
-			self.hide_curve(curve_data_obj)
-		logger.info(f"destroy_curve {curve_data_obj.rel_data.root_name=}")
-		self.graph.destroy_curve(curve_data_obj)
+        y_name = curve_data_obj.rel_data.y_root_name
+        if curve_data_obj.rel_data.is_gen:
+            if curve_data_obj.number_axis == 1:
+                curve_data_obj.add_to_graph(
+                    graph_field=self.graph.graphView,
+                    legend_field=self.graph.graphView.legend,
+                    number_axis=curve_data_obj.number_axis,
+                )
+            else:
+                curve_data_obj.add_to_graph(
+                    graph_field=self.graph.graphView.second_graphView,
+                    legend_field=self.graph.graphView.legend2,
+                    number_axis=curve_data_obj.number_axis,
+                )
+        else:
+            if curve_data_obj.number_axis == 1:
+                self.selector.set_selections("", [y_name], [])
+            else:
+                self.selector.set_selections("", [], [y_name])
 
-	def show_curve(self, curve_data_obj: linearData):
-		#возможны два случая, когда кривая сгенерирована из сырых данных и когда кривая посчитана по формуле. Когда кривая посчитана по формуле, мы просто проверяем пространства и напрямую отображаем ее
-		logger.info(f"show_curve {curve_data_obj.rel_data.root_name=}")
-		paramx, paramy1, paramy2 = self.selector.get_parameters()
-		if paramx == curve_data_obj.rel_data.x_root_name:#пространство нужное	
-			y_name = curve_data_obj.rel_data.y_root_name
-			if curve_data_obj.rel_data.is_gen:
-				if curve_data_obj.number_axis == 1:
+    def reset_filters(self, curve_data_obj: linearData):
+        self.graph.reset_filters(curve_data_obj)
 
-					curve_data_obj.add_to_graph(graph_field  = self.graph.graphView,
-                                                legend_field  = self.graph.graphView.legend,
-                                                number_axis = curve_data_obj.number_axis)
-				else:
-					curve_data_obj.add_to_graph(graph_field  = self.graph.graphView.second_graphView,
-												legend_field  = self.graph.graphView.legend2,
-												number_axis = curve_data_obj.number_axis)
-			else:#кривая из сырых данных
-				#необходимо определить, на какой оси кривая
-				if curve_data_obj.number_axis == 1:
-					self.selector.set_selections("", [y_name], [])
-				else:
-					self.selector.set_selections("", [], [y_name])
-		else:
-			self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Кривая принадлежит другому пространству") )
+    def curve_created(self, data: relationData, formula: str = None, description: str = None):
+        status = self.graph.create_and_place_curve(data=data)
+        if not status:
+            logger.warning(f"Кривая {data.root_name=} уже существует")
+            return
+        curve = self.graph.get_curve(data.root_name)
+        if curve is None:
+            return
+        blocks = {}
+        if formula:
+            blocks[QApplication.translate("GraphWindow", "Формула")] = formula
+        if description:
+            blocks[QApplication.translate("GraphWindow", "Описание")] = description
+        if blocks:
+            curve.tree_item.add_new_block(
+                QApplication.translate("GraphWindow", "Разное"), blocks
+            )
 
-	def reset_filters(self, curve_data_obj: linearData):
-		self.graph.reset_filters(curve_data_obj)
+    def numPointsChanged(self, value):
+        self.graph.set_num_points(value)
 
-	def curve_created(self, data: relationData, formula:str = None, description:str = None):
-		status = self.graph.create_and_place_curve(data = data)
-		if not status:
-			logger.warning(f"Кривая с именем {data.root_name=} {data.current_name=} уже существует в системе")
-		else:
-			curve = self.graph.get_curve(data.root_name)
-			if curve:
-				blocks = {}
-				if formula:
-					blocks[QApplication.translate("GraphWindow","Формула")] = formula
-				if description:
-					blocks[QApplication.translate("GraphWindow","Описание")] = description
+    def showingAllPoints(self, state):
+        self.graph.show_all_points(state)
 
-				if blocks:
-					curve.tree_item.add_new_block( QApplication.translate("GraphWindow","Разное"), blocks)
+    def state_second_axis_changed(self, state):
+        self.graph.set_second_axis(state)
 
-	def numPointsChanged(self, value):
-		self.graph.set_num_points(value)
-		
-	def showingAllPoints(self, state):
-		self.graph.show_all_points(state)
+    def multiple_changed(self, state):
+        self.graph.set_multiple_mode(state)
 
-	def state_second_axis_changed(self, state):
-		self.graph.set_second_axis( state )
-		
-	def multiple_changed(self, state):
-		self.graph.set_multiple_mode( state )
+    def update_params(self, parameters):
+        list_parameters = parameters[self.type_data]
+        self.selector.add_parameters(list_parameters)
 
-	def update_params(self, parameters):
-		'''
-			этот метод вызывается менеджером данных в момент, когда набор данных изменился. Были импортированы новые, или дополнены старые.
-		'''
-		list_parameters = parameters[self.type_data]
+    def data_updated(self, parameters):
+        paramx, paramy1, paramy2 = self.selector.get_parameters()
+        datax = ''
+        datay1, datay2 = {}, {}
+        if parameters[self.type_data].get(paramx):
+            datax = paramx
+        for param in paramy1:
+            if parameters[self.type_data].get(param):
+                datay1[param] = parameters[self.type_data][param]
+        for param in paramy2:
+            if parameters[self.type_data].get(param):
+                datay2[param] = parameters[self.type_data][param]
+        data_first_axis, data_second_axis = self.data_manager.get_relation_data(
+            datax, datay1, datay2, self.type_data
+        )
+        self.graph.update_data(data_first_axis, data_second_axis, is_updated=True)
 
-		self.selector.add_parameters(list_parameters)
-
-	def data_updated(self, parameters):
-		'''вызывается контроллером данных в момент, когда какие-то из ранее добавленных данных были обновлены.
-		  Например, поступило новое значение'''
-		paramx, paramy1, paramy2 = self.selector.get_parameters()
-
-		datax = ''
-		datay1 = {}
-		datay2 = {}
-
-		buf = parameters[self.type_data].get(paramx)
-		if buf:
-			datax = paramx
-
-		for param in paramy1:
-			buf = parameters[self.type_data].get(param)
-			if buf:
-				datay1[param] = parameters[self.type_data][param]
-		for param in paramy2:
-			buf = parameters[self.type_data].get(param)
-			if buf:
-				datay2[param] = parameters[self.type_data][param]
-
-		data_first_axis, data_second_axis = self.data_manager.get_relation_data(datax, datay1, datay2, self.type_data)
-
-		self.graph.update_data(data_first_axis, data_second_axis, is_updated = True)
-
-	def parameters_choised(self, param_x, param_y1, param_y2):
-		'''метод вызывается селектором в моменты, когда пользователь выбрал новые параметры или снял выделение со старых'''
-		logger.info(f"parameters_choised {param_x} {param_y1} {param_y2}")
-		if param_x == "numbers":
-			for key in param_y1:
-				if key == "numbers":
-					param_y1.remove(key)
-			for key in param_y2:
-				if key == "numbers":
-					param_y2.remove(key)
-					
-		if param_x and (param_y1 or param_y2):
-			data_first_axis, data_second_axis = self.data_manager.get_relation_data(param_x, param_y1, param_y2, self.type_data)
-			self.graph.update_data(data_first_axis, data_second_axis)
+    def parameters_choised(self, param_x, param_y1, param_y2):
+        logger.info(f"parameters_choised {param_x} {param_y1} {param_y2}")
+        if param_x == "numbers":
+            param_y1 = [p for p in param_y1 if p != "numbers"]
+            param_y2 = [p for p in param_y2 if p != "numbers"]
+        if param_x and (param_y1 or param_y2):
+            data_first_axis, data_second_axis = self.data_manager.get_relation_data(
+                param_x, param_y1, param_y2, self.type_data
+            )
+            self.graph.update_data(data_first_axis, data_second_axis)

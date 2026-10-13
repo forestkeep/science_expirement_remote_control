@@ -10,82 +10,104 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import logging
+
 logger = logging.getLogger(__name__)
 
+
 class waveSelectAdapter:
-	def __init__(self, graph, selector, data_manager, type_data, main_class):
-		self.graph = graph
-		self.selector = selector
-		self.data_manager = data_manager
-		self.type_data = type_data
-		self.main_class = main_class
-				
-		self.current_device = None
-		self.active_channels = []
+    def __init__(self, graph, selector, data_manager, type_data, main_class):
+        self.graph = graph
+        self.selector = selector
+        self.data_manager = data_manager
+        self.type_data = type_data
+        self.main_class = main_class
 
-		self.selector.device_selected.connect(self._handle_device_selected)
-		self.selector.channel_selected.connect(self._handle_channel_selected)
-		self.selector.waveform_selected.connect(self._handle_waveform_selected)
-	
-		self.data_manager.list_parameters_updated.connect(self.update_params)
-		self.data_manager.val_parameters_added.connect(self.data_added)
+        self.current_device = None
+        self.active_channels = set()
 
-	def _handle_device_selected(self, device_name: str = None):
-		if device_name != self.current_device:
-			self.current_device = device_name
-		
-	def _handle_channel_selected(self, device_name: str, channel_name: str, number_osc: str, checked: bool):
-		if self.current_device == device_name:
-			if checked:
-				self.active_channels.append(channel_name)
-				if number_osc:
-					self._handle_waveform_selected(device_name, channel_name, number_osc)
-			else:
-				self.active_channels.remove(channel_name)
-				self.graph.clear_data(device_name, channel_name)
+        self.selector.device_selected.connect(self._handle_device_selected)
+        self.selector.channel_selected.connect(self._handle_channel_selected)
+        self.selector.waveform_selected.connect(self._handle_waveform_selected)
 
-	def _handle_waveform_selected(self, device_name: str = None, channel_name: str = None, waveform_name: str = None):
-		if device_name == self.current_device:
-			if channel_name in self.active_channels:
-				'''запросить у менеджера данных параметры по этой кривой'''
-				list_data = self.data_manager.get_filtered_data(self.type_data, device=device_name, channel=channel_name)
-				step_data = self.data_manager.get_filtered_data('main', device=device_name, channel=channel_name, param='step')
+        self.data_manager.list_parameters_updated.connect(self.update_params)
+        self.data_manager.val_parameters_added.connect(self.data_added)
 
-				#в эксперименте мы ожидаем, что в списке будет всего один элемент с заданным прибором и каналом
-				if len(list_data) == 1 and len(step_data) == 1:
-					data = list_data[0]
-					index = int(waveform_name)-1
-					self.graph.set_data(data, step_data[0], index)
+    def _handle_device_selected(self, device_name: str = None):
+        if device_name != self.current_device:
+            self.current_device = device_name
 
-				else:
-					logger.warning(f'ошибка в получении списка данных по прибору {device_name} и каналу {channel_name}, ожидается только один набор осциллограмм')
+    def _handle_channel_selected(self, device_name: str, channel_name: str,
+                                 number_osc: str, checked: bool):
+        if self.current_device != device_name:
+            return
+        if checked:
+            self.active_channels.add(channel_name)
+            if number_osc not in (None, ""):
+                try:
+                    idx = int(number_osc)
+                except (TypeError, ValueError):
+                    idx = None
+                if idx is not None:
+                    self._handle_waveform_selected(device_name, channel_name, idx)
+        else:
+            self.active_channels.discard(channel_name)
+            self.graph.clear_data(device_name, channel_name)
 
-	def update_params(self, parameters):
-		'''
-			этот метод вызывается менеджером данных в момент, когда набор данных изменился. Были импортированы новые.
-		'''
-		list_parameters = parameters[self.type_data]
-		#обновились какие-то параметры, нам нуэно запросить эти данные, выудить оттуда список каналов и количество осциллограмм
-		for param in list_parameters:
-			meastimedata, _, _ = self.data_manager.get_session_data( param, [], [], self.type_data)
-			device = meastimedata.device
-			channel = meastimedata.ch
-			num_wave = len(meastimedata.par_val)
-			self.selector.add_device(device)
-			self.selector.add_channel(device, channel)
-			self.selector.update_waveforms_count(device, channel, num_wave)
+    def _handle_waveform_selected(self, device_name: str = None,
+                                  channel_name: str = None,
+                                  waveform_name=None):
+        if device_name != self.current_device:
+            return
+        if channel_name not in self.active_channels:
+            return
 
-	def data_added(self, parameters):
-		'''вызывается контроллером данных в момент, когда какие-то из ранее добавленных данных были обновлены.
-		  Например, поступило новое значение'''
-		list_parameters = parameters[self.type_data]
-		for param in list_parameters.keys():
-			if 'wavech' in param:
-				meastimedata = list_parameters[param]
-				device = meastimedata.device
-				channel = meastimedata.ch
-				num_wave = len(meastimedata.par_val)
-				#self.selector.add_device(device)
-				#self.selector.add_channel(device, channel)
-				self.selector.update_waveforms_count(device, channel, num_wave)
+        list_data = self.data_manager.get_filtered_data(
+            self.type_data, device=device_name, channel=channel_name
+        )
+        step_data = self.data_manager.get_filtered_data(
+            'main', device=device_name, channel=channel_name, param='step'
+        )
+        if len(list_data) == 1 and len(step_data) == 1:
+            data = list_data[0]
+            try:
+                index = int(waveform_name) - 1
+            except (TypeError, ValueError):
+                logger.warning(
+                    f"неверный номер осциллограммы {waveform_name!r} "
+                    f"для {device_name}/{channel_name}"
+                )
+                return
+            if index < 0:
+                return
+            self.graph.set_data(data, step_data[0], index)
+        else:
+            logger.warning(
+                f'ошибка в получении списка данных по прибору {device_name} '
+                f'и каналу {channel_name}, ожидается только один набор осциллограмм'
+            )
+
+    def update_params(self, parameters):
+        list_parameters = parameters[self.type_data]
+        for param in list_parameters:
+            meastimedata, _, _ = self.data_manager.get_session_data(
+                param, [], [], self.type_data
+            )
+            if meastimedata is None:
+                continue
+            device = meastimedata.device
+            channel = meastimedata.ch
+            num_wave = len(meastimedata.par_val) if meastimedata.par_val is not None else 0
+            self.selector.add_device(device)
+            self.selector.add_channel(device, channel)
+            self.selector.update_waveforms_count(device, channel, num_wave)
+
+    def data_added(self, parameters):
+        list_parameters = parameters[self.type_data]
+        for param in list_parameters.keys():
+            if 'wavech' in param:
+                meastimedata = list_parameters[param]
+                device = meastimedata.device
+                channel = meastimedata.ch
+                num_wave = len(meastimedata.par_val) if meastimedata.par_val is not None else 0
+                self.selector.update_waveforms_count(device, channel, num_wave)
 				

@@ -3,20 +3,21 @@ from PyQt5.QtCore import QObject, pyqtSignal
 
 class SelectionModel(QObject):
     """
-    Единый источник правды о выделенных кривых.
-    Пока работает параллельно со старым флагом graphData.is_curve_selected:
-    новые фичи (инспектор, контекстные действия) слушают selection_changed,
-    существующий код продолжает читать is_curve_selected как раньше.
+    Single source of truth for curve selection.
+
+    Curves (CurvePresenter) subscribe to selection_changed and update
+    their visuals. The model itself knows nothing about widgets — it
+    stores opaque objects.
     """
 
-    selection_changed = pyqtSignal(list)  # список выделенных curve_data_obj
+    selection_changed = pyqtSignal(list)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._selected = []
+        self._selected_set = set()
 
     def select(self, items, additive: bool = False) -> bool:
-        """Выделить items. additive=False — сбросить предыдущее выделение."""
         if not isinstance(items, (list, tuple)):
             items = [items]
         items = [it for it in items if it is not None]
@@ -26,7 +27,7 @@ class SelectionModel(QObject):
         if additive:
             new_selection = list(self._selected)
             for it in items:
-                if it not in new_selection:
+                if it not in self._selected_set:
                     new_selection.append(it)
         else:
             seen, new_selection = set(), []
@@ -40,8 +41,13 @@ class SelectionModel(QObject):
     def add(self, item) -> bool:
         return self.select([item], additive=True)
 
+    def toggle(self, item) -> bool:
+        if item in self._selected_set:
+            return self.remove(item)
+        return self.add(item)
+
     def remove(self, item) -> bool:
-        if item not in self._selected:
+        if item not in self._selected_set:
             return False
         return self._set_selection([it for it in self._selected if it is not item])
 
@@ -54,11 +60,12 @@ class SelectionModel(QObject):
         return list(self._selected)
 
     def is_selected(self, item) -> bool:
-        return item in self._selected
+        return item in self._selected_set
 
     def _set_selection(self, new_selection: list) -> bool:
         if new_selection == self._selected:
             return False
         self._selected = new_selection
+        self._selected_set = set(new_selection)
         self.selection_changed.emit(list(self._selected))
         return True

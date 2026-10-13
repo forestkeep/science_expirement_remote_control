@@ -30,14 +30,6 @@ from graph.ui.customPlotWidget import PatchedPlotWidget
 
 logger = logging.getLogger(__name__)
 
-def time_decorator(func):
-    def wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        result = func(*args, **kwargs)
-        end_time = time.perf_counter()
-        return result
-    return wrapper
-
 class graphOsc:
     def __init__(self, tablet_page, selector_wave, main_class, alias_manager):
         self.alias_manager = alias_manager
@@ -544,11 +536,11 @@ class graphOsc:
         self.update_draw()
 
     def set_default(self):
-        """привести класс к исходному состоянию"""
-        self.graphView.plotItem.clear()
-        self.graphView_loop.plotItem.clear()
-        self.choice_device.clear()
-        self.choice_device.addItems([self.choice_device_default_text])
+        """Привести класс к исходному состоянию."""
+        self.graphView.clear()
+        self.graphView_loop.clear()
+        self.loops_stack.clear()
+        self.stack_osc.clear()
 
     def update_draw(self):
 
@@ -936,30 +928,23 @@ class graphOsc:
         else:
             pass
 
-    def set_filters(self, filter_func):
+    def set_filters(self, filter_command):
+        """Применить фильтр (FilterCommand) к выделенным петлям и осциллограммам."""
         for loop in self.loops_stack:
             if loop.current_highlight:
-                loop.filtered_x_data, _ = filter_func(loop.filtered_x_data)
-                loop.filtered_y_data, _ = filter_func(loop.filtered_y_data)
-
-                self.graphView_loop.removeItem(loop.plot_obj)
-
-                x, y = loop.recalc_data()
-
-                plot_obj = self.graphView_loop.plot(
-                    x,
-                    y,
-                    pen=loop.saved_pen,
+                loop.filtered_x_data, loop.filtered_y_data, _ = filter_command.apply(
+                    loop.filtered_x_data, loop.filtered_y_data
                 )
-
-                loop.set_plot_obj( plot_obj, loop.saved_pen)
+                self.graphView_loop.removeItem(loop.plot_obj)
+                x, y = loop.recalc_data()
+                plot_obj = self.graphView_loop.plot(x, y, pen=loop.saved_pen)
+                loop.set_plot_obj(plot_obj, loop.saved_pen)
 
         for osc in self.stack_osc.values():
             if osc.current_highlight:
-
-                osc.filtered_y_data, _ = filter_func(osc.filtered_y_data)
-                osc.filtered_x_data = osc.filtered_x_data[-len(osc.filtered_y_data):]
-
+                osc.filtered_x_data, osc.filtered_y_data, _ = filter_command.apply(
+                    osc.filtered_x_data, osc.filtered_y_data
+                )
                 osc.plot_obj.setData(osc.filtered_x_data, osc.filtered_y_data)
 
     def retranslateUI(self, GraphWindow):
