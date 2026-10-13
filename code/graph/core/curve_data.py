@@ -276,6 +276,15 @@ class linearData:
         except Exception:
             logger.exception("linearData: stats recalculation failed")
 
+    # ------------------------------------------------------------------
+    # Visible window delegation
+    # ------------------------------------------------------------------
+    def set_num_points(self, value: int) -> None:
+        self.presenter.set_num_points(value)
+
+    def show_all_points(self, state: bool) -> None:
+        self.presenter.show_all_points(state)
+
     def _alias_changed(self, original_name, old_alias, alias):
         new_x = self.store.rel_data.x_current_name
         new_y = self.store.rel_data.y_current_name

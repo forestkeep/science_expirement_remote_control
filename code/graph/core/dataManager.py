@@ -338,8 +338,6 @@ class graphDataManager(QObject):
             self._enqueue_batch(self.updated_params)
 
         return status
-
-        return status
     
     def _handle_three_level_data(self, data: Dict[str, Dict[str, dict[str, Any]]], type_data: str = None) -> tuple[bool, bool, bool]:
         is_new_param_added = False

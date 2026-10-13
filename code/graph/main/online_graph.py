@@ -43,6 +43,7 @@ from graph.animation_graph.animation_widget import AnimationWindow
 from graph.export.save_excell import ExcelSaver
 import uuid
 import numpy as np
+import os
 from functions import open_log_file
 from graph.core.filters_instance_class import FilterCommand
 from graph.core.parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
@@ -53,7 +54,10 @@ from graph.ui.action_registry import ActionRegistry
 from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5.QtCore import pyqtSignal, QRect
 from PyQt5.QtGui import QGuiApplication
-from graph.utils.decorators import time_decorator
+from graph.hdf5_io.adapters import HDF5ToProjectAdapter
+from graph.hdf5_io.models import FieldSettings
+from graph.hdf5_io.utils import extract_plot_widget_settings
+from graph.main.test_main_graph import test_graph
 
 logger = logging.getLogger(__name__)
 
@@ -369,7 +373,25 @@ class GraphSession(QWidget):
     def closeEvent(self, event):
         self.graph_win_close_signal.emit(1)
 
+    def get_field_settings(self) -> FieldSettings:
+        """Возвращает настройки графика и осциллограмм для сохранения."""
+        fs = FieldSettings()
+        fs.graph_field = extract_plot_widget_settings(self.graph_main.graphView)
+        fs.oscilloscope_field = extract_plot_widget_settings(self.graph_wave.graphView)
+        fs.graph_field.is_second_axis_enabled = self.select_win.second_check_box.isChecked()
+        fs.graph_field.is_multiple_selection_enabled = self.select_win.check_miltiple.isChecked()
+        return fs
+
+    def apply_field_settings(self, settings: FieldSettings) -> None:
+        """Применяет настройки к UI."""
+        adapter = HDF5ToProjectAdapter()
+        adapter.apply_graph_settings(self.graph_main.graphView, settings)
+        # аналогично для осциллограмм, если нужно
+        self.select_win.set_second_check_box(settings.graph_field.is_second_axis_enabled)
+        self.select_win.set_multiple_mode(settings.graph_field.is_multiple_selection_enabled)
+
 class running_exp_test(QWidget):
+    
     def __init__(self,graph_class, max_points, periodsec):
         super().__init__()
         self.test1 = test_graph(is_sine_wave=True)

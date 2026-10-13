@@ -44,6 +44,9 @@ class CustomComboBox(QComboBox):
 class manageGraph(QObject):
     new_curve_selected = pyqtSignal()
 
+    DEFAULT_NUM_POINTS   = 10
+    DEFAULT_SHOW_ALL     = True
+
     def __init__(self, tablet_page, main_class, select_data_wid, alias_manager, selection_model=None):
         super().__init__()
         self.alias_manager = alias_manager
@@ -51,10 +54,10 @@ class manageGraph(QObject):
         self.page = tablet_page
 
         self.select_win = select_data_wid
-
-        self.__is_multiple = False
-    
         self.main_class = main_class
+
+        self._num_showing_points: int  = self.DEFAULT_NUM_POINTS
+        self._is_all_points_showing: bool = self.DEFAULT_SHOW_ALL
 
         self.axislabel_line_edit = QLineEdit()
         self.axislabel_line_edit.setVisible( False )
@@ -63,9 +66,6 @@ class manageGraph(QObject):
 
         self.legends_main = []
         self.legends_second = []
-
-        self.num_showing_points = 10
-        self.is_all_points_showing = True
 
         self.__stack_curve = {}
 
@@ -82,11 +82,20 @@ class manageGraph(QObject):
     def alias_changed(self, original_name, old_alias, alias):
         pass
 
-    def set_num_points(self, value):
-        self.num_showing_points = value
+    def set_num_points(self, value: int) -> None:
+        self._num_showing_points = max(1, int(value))
+        for curve in self.__stack_curve.values():
+            curve.set_num_points(self._num_showing_points)
 
-    def show_all_points(self, state):
-        self.is_all_points_showing = state
+    def show_all_points(self, state: bool) -> None:
+        self._is_all_points_showing = bool(state)
+        for curve in self.__stack_curve.values():
+            curve.show_all_points(self._is_all_points_showing)
+
+    def _apply_window_state_to_curve(self, curve) -> None:
+        """Применить текущее окно к только что созданной/восстановленной кривой."""
+        curve.set_num_points(self._num_showing_points)
+        curve.show_all_points(self._is_all_points_showing)
 
     def initUI(self):
         self.tab1Layout = QVBoxLayout()
@@ -173,6 +182,8 @@ class manageGraph(QObject):
         self.graphView.clear()
         self.graphView.second_graphView.clear()
         self.__stack_curve.clear()
+        self._num_showing_points    = self.DEFAULT_NUM_POINTS
+        self._is_all_points_showing = self.DEFAULT_SHOW_ALL
         if self.selection_model is not None:
             self.selection_model.clear()
 
@@ -351,8 +362,8 @@ class manageGraph(QObject):
         for data in data_list:
             self._handle_curve(data, graph, legend, axis_num, is_updated)
 
-    def _handle_curve(self, data : relationData, graph, legend, axis_num, is_updated):
-        """Обработка отдельной кривой"""
+    def _handle_curve(self, data: relationData, graph, legend, axis_num, is_updated):
+        """Обработка отдельной кривой."""
         curve = self.__stack_curve.get(data.root_name)
         if curve is None:
             self.create_and_place_curve(data, graph, legend, axis_num)
@@ -360,25 +371,9 @@ class manageGraph(QObject):
             curve.number_axis = axis_num
             curve.add_to_graph(graph, legend, axis_num)
             if self.main_class.is_live():
-                self._refresh_curve_data(curve, data)
+                curve.setData(data)
         elif is_updated:
-            self._refresh_curve_data(curve, data)
-
-    def _refresh_curve_data(self, curve, data):
-        """Обновление данных существующей кривой"""
-        x_data, y_data = self._get_visible_data(data)
-        for curves in curve.plot_items.values():
-                curves['item'].setData(x_data, y_data)
-        curve.setData(data)
-
-    def _get_visible_data(self, data):
-        """Получение данных для отображения с учетом настроек видимости"""
-        if self.is_all_points_showing:
-            return data.x_result, data.y_result
-        return (
-            data.x_result[-self.num_showing_points:],
-            data.y_result[-self.num_showing_points:]
-        )
+            curve.setData(data)
 
     def stop_session(self):
         for curve in self.__stack_curve.values():
@@ -417,33 +412,32 @@ class manageGraph(QObject):
             new_data.change_style(style)
         return new_data
 
-    def create_and_place_curve(self, data: relationData,
-                                    graph_field = None,
-                                    legend_field = None,
-                                    number_axis = None):
+    # ------------------------------------------------------------------
+    # Создание / добавление кривой
+    # ------------------------------------------------------------------
+    def create_and_place_curve(self, data, graph_field=None, legend_field=None, number_axis=None):
         if self.__stack_curve.get(data.root_name):
             return False
-        
+
         if not graph_field:
             graph_field = self.graphView
         if not legend_field:
             legend_field = self.graphView.legend
         if not number_axis:
-            number_axis=1
-        new_data = self.create_curve(data = data) 
+            number_axis = 1
+
+        new_data = self.create_curve(data=data)
         self.main_class.tree_class.add_curve(new_data.tree_item)
         self.__stack_curve[data.root_name] = new_data
-            
-        self.__stack_curve[data.root_name].number_axis = number_axis
-        self.__stack_curve[data.root_name].add_to_graph(graph_field  = graph_field,
-                                                             legend_field  = legend_field,
-                                                             number_axis = number_axis
-                                                            )
-        
+        new_data.number_axis = number_axis
+        new_data.add_to_graph(graph_field=graph_field,
+                              legend_field=legend_field,
+                              number_axis=number_axis)
+
+        self._apply_window_state_to_curve(new_data)
         return True
-        
+
     def add_curve(self, curve_data_obj: linearData, type_axis: str = "left"):
-        # HDF5 restore path: attach model post-construction
         if self.selection_model is not None:
             curve_data_obj.attach_selection_model(self.selection_model)
 
@@ -465,6 +459,8 @@ class manageGraph(QObject):
                 number_axis=2,
             )
         self.main_class.tree_class.add_curve(curve_data_obj.tree_item)
+
+        self._apply_window_state_to_curve(curve_data_obj)
 
     def retranslateUi(self, GraphWindow):
         _translate = QApplication.translate

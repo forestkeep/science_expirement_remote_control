@@ -173,16 +173,16 @@ class paramSelector(QWidget):
         self.check_miltiple.setChecked(state)
 
 class paramController(QObject):
-    parameters_updated       = pyqtSignal(str, list, list)
-    multiple_checked         = pyqtSignal(bool)
-    state_second_axis_changed= pyqtSignal(bool)
-    numPointsChanged         = pyqtSignal(int)
-    showingAllPoints         = pyqtSignal(bool)
+    parameters_updated        = pyqtSignal(str, list, list)
+    multiple_checked          = pyqtSignal(bool)
+    state_second_axis_changed = pyqtSignal(bool)
+    numPointsChanged          = pyqtSignal(int)
+    showingAllPoints          = pyqtSignal(bool)
 
-    def __init__(self, paramSelector: paramSelector, alias_manager) -> None:
+    def __init__(self, paramSelector: "paramSelector", alias_manager) -> None:
         super().__init__()
         self.alias_manager = alias_manager
-        self.paramSelector  = paramSelector
+        self.paramSelector = paramSelector
 
         # пользовательские клики
         self.paramSelector.x_param_selector.itemClicked.connect(
@@ -196,29 +196,37 @@ class paramController(QObject):
         self.paramSelector.check_miltiple.stateChanged.connect(self._on_multiple_changed)
         self.paramSelector.second_check_box.stateChanged.connect(self._on_second_axis_changed)
 
-        # число точек и пр.
-        self.paramSelector.numPointsselector.numPointsChanged.connect(self.numPointsChanged)
-        self.paramSelector.numPointsselector.showingAllPoints.connect(self.showingAllPoints)
+        # --- видимое окно: ЯВНАЯ трансляция вместо signal→signal ---
+        num_widget = self.paramSelector.numPointsselector
+        num_widget.numPointsChanged.connect(self._forward_num_points)
+        num_widget.showingAllPoints.connect(self._forward_showing_all)
 
         self.alias_manager.aliases_updated.connect(self._on_alias_changed)
 
         # Состояние
-        self.curent_x_parameter: Optional[str] = None
+        self.curent_x_parameter: str | None = None
         self.curent_y_first_parameters: list[str]  = []
         self.curent_y_second_parameters: list[str] = []
 
-        # «Доступные» параметры (алиасы) — из чего собираются оба списка
-        self.__x_parameters      : set[str] = set()
+        # «Доступные» параметры (алиасы)
+        self.__x_parameters: set[str]       = set()
         self.__y_first_parameters: set[str] = set()
         self.__y_second_parameters: set[str] = set()
 
-        # защита от рекурсии при программных изменениях
+        # защита от рекурсии
         self._suppress_user_action = False
         self._last_emitted_state   = None
 
-    # ================================================================
-    # Публичный API
-    # ================================================================
+    # ------------------------------------------------------------------
+    # Слоты-трансляторы видимого окна
+    # ------------------------------------------------------------------
+    def _forward_num_points(self, value: int) -> None:
+        self.numPointsChanged.emit(int(value))
+
+    def _forward_showing_all(self, state: bool) -> None:
+        self.showingAllPoints.emit(bool(state))
+
+
     def get_parameters(self):
         x  = self.alias_manager.get_original_name(self.curent_x_parameter) if self.curent_x_parameter else ""
         y1 = [self.alias_manager.get_original_name(p) for p in self.curent_y_first_parameters]
@@ -287,8 +295,16 @@ class paramController(QObject):
         self._last_emitted_state = None
         self._emit_parameters_updated()
 
-    def stop_session(self):
-        self.paramSelector.numPointsselector.hide()
+    def stop_session(self) -> None:
+        """Остановка эксперимента.
+
+        Скрываем селектор точек и принудительно переключаем в режим
+        «все точки» — после эксперимента данные не растут.
+        """
+        widget = self.paramSelector.numPointsselector
+        widget.hide()
+        if not widget.checkbox.isChecked():
+            widget.checkbox.setChecked(True)   # → showingAllPoints(True)
 
     # ================================================================
     # Обработчики пользователя

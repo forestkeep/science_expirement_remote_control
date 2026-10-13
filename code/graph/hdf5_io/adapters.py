@@ -68,16 +68,8 @@ class ProjectToHDF5Adapter:
             comment=None
         )
 
-        graph_settings = extract_plot_widget_settings(core_session.graph_main.graphView)
-        oscilloscope_settings = extract_plot_widget_settings(core_session.graph_wave.graphView)
-        is_second_axis_enabled = core_session.select_win.second_check_box.isChecked()
-        is_multiple_selection_enabled = core_session.select_win.check_miltiple.isChecked()
-        
         field_settings = FieldSettings(name="test")
-        field_settings.graph_field = graph_settings
-        field_settings.oscilloscope_field =oscilloscope_settings
-        field_settings.graph_field.is_second_axis_enabled = is_second_axis_enabled
-        field_settings.graph_field.is_multiple_selection_enabled = is_multiple_selection_enabled
+        field_settings = core_session.get_field_settings()
             
         plots = {}
         
@@ -248,9 +240,6 @@ class HDF5ToProjectAdapter:
         self._convert_data_manager(core_manager, session.data_manager)
         core_manager.stop_session_running()
 
-        core_session.graph_sessions[session_id].select_win.set_second_check_box(state = session.field_settings.graph_field.is_second_axis_enabled)
-        core_session.graph_sessions[session_id].select_win.set_multiple_mode(state = session.field_settings.graph_field.is_multiple_selection_enabled)
-
         selection_x_param = None
         selection_y_first_params = []
         selection_y_second_params = []
@@ -290,7 +279,7 @@ class HDF5ToProjectAdapter:
         
         graphView = core_session.graph_sessions[session_id].graph_main.graphView
 
-        self.apply_graph_settings(graphView, session.field_settings)
+        core_session.graph_sessions[session_id].apply_field_settings(session.field_settings)
 
     def apply_graph_settings(self, graph_widget: PatchedPlotWidget, settings: FieldSettings) -> None:
         """

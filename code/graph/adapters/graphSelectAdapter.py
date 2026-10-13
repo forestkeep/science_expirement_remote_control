@@ -28,8 +28,8 @@ class graphSelectAdapter:
         self.selector.parameters_updated.connect(self.parameters_choised)
         self.selector.multiple_checked.connect(self.multiple_changed)
         self.selector.state_second_axis_changed.connect(self.state_second_axis_changed)
-        self.selector.numPointsChanged.connect(self.numPointsChanged)
-        self.selector.showingAllPoints.connect(self.showingAllPoints)
+        self.selector.numPointsChanged.connect(self._on_num_points_changed)
+        self.selector.showingAllPoints.connect(self._on_showing_all_points)
 
         self.data_manager.list_parameters_updated.connect(self.update_params)
         self.data_manager.val_parameters_added.connect(self.data_updated)
@@ -40,6 +40,13 @@ class graphSelectAdapter:
         self.tree_class.curve_hide.connect(self.hide_curve)
         self.tree_class.curve_reset.connect(self.reset_filters)
         self.tree_class.curve_created.connect(self.curve_created)
+
+    # --- видимое окно ---
+    def _on_num_points_changed(self, value: int) -> None:
+        self.graph.set_num_points(int(value))
+
+    def _on_showing_all_points(self, state: bool) -> None:
+        self.graph.show_all_points(bool(state))
 
     def hide_curve(self, curve_data_obj: linearData):
         y_name = curve_data_obj.rel_data.y_root_name
@@ -67,10 +74,15 @@ class graphSelectAdapter:
         (включая скрытые), чтобы при последующем их отображении в REVIEW-режиме
         на графике появились актуальные данные, а не срез на момент скрытия.
         Состав отображаемого при этом не меняется.
+
+        После остановки принудительно включаем показ всех точек: в REVIEW
+        видимое окно не нужно, данные уже не растут.
         """
         self._refresh_all_curves_data()
         self.graph.stop_session()
         self.selector.stop_session()
+        # Гарантированный сброс видимого окна независимо от UI-сигналов.
+        self.graph.show_all_points(True)
 
     def _refresh_all_curves_data(self):
         """

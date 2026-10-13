@@ -1,7 +1,6 @@
 """
 Visual representation of a curve on one or more pyqtgraph viewboxes.
-
-Owns plot_items, styles and (optionally) the tree_item reference.
+Owns plot_items, styles and visible window settings.
 Selection state comes from a SelectionModel — this class only reads
 and requests changes.
 """
@@ -61,7 +60,7 @@ class LineStyle:
 
 
 class CurvePresenter:
-    """Visual layer: plot items, styles, and selection feedback."""
+    """Visual layer: plot items, styles, selection feedback, visible window."""
 
     def __init__(self, store: CurveDataStore,
                  selection_model: Optional[SelectionModel] = None) -> None:
@@ -84,13 +83,34 @@ class CurvePresenter:
         self.higlighted_flag = False
         self.preselection_style: Optional[LineStyle] = None
 
+        # --- видимое окно точек ---
+        self.num_showing_points = 10
+        self.is_all_points_showing = True
+
         # store → refresh plot data
         self.store.on_changed(self.refresh)
 
         if self._selection_model is not None:
             self._selection_model.selection_changed.connect(self._on_model_selection_changed)
 
-    # -- selection plumbing ------------------------------------------
+    # -- visible window -------------------------------------------------
+    def set_num_points(self, value: int) -> None:
+        value = max(1, int(value))
+        if value == self.num_showing_points:
+            return
+        self.num_showing_points = value
+        # Всегда перерисовываем — если показываем все точки, refresh() просто
+        # выставит полный массив (no-op), если окно — обрежет хвост.
+        self.refresh()
+
+    def show_all_points(self, state: bool) -> None:
+        state = bool(state)
+        if state == self.is_all_points_showing:
+            return
+        self.is_all_points_showing = state
+        self.refresh()
+
+    # -- selection plumbing ---------------------------------------------
     def attach_selection_model(self, model: Optional[SelectionModel]) -> None:
         if self._selection_model is model:
             return
@@ -141,7 +161,7 @@ class CurvePresenter:
             return
         self._apply_style_to_all(style)
 
-    # -- plots -------------------------------------------------------
+    # -- plots ----------------------------------------------------------
     def create_plot_item(self):
         style = self.saved_style or LineStyle()
         item = pg.PlotDataItem(
@@ -174,6 +194,7 @@ class CurvePresenter:
             self.clicked_style if self.is_curve_selected else (self.saved_style or LineStyle())
         )
         self.is_draw = True
+        self.refresh()  # применить видимое окно
 
     def remove_from_graph(self, viewbox) -> None:
         info = self.plot_items.pop(viewbox, None)
@@ -201,11 +222,16 @@ class CurvePresenter:
         self.plot_items.clear()
 
     def refresh(self) -> None:
-        """Sync plot data with store."""
+        """Sync plot data with store, applying visible window if needed."""
+        x = self.store.filtered_x_data
+        y = self.store.filtered_y_data
+        if not self.is_all_points_showing and len(x) > self.num_showing_points:
+            x = x[-self.num_showing_points:]
+            y = y[-self.num_showing_points:]
         for info in self.plot_items.values():
-            info['item'].setData(self.store.filtered_x_data, self.store.filtered_y_data)
+            info['item'].setData(x, y)
 
-    # -- style -------------------------------------------------------
+    # -- style ----------------------------------------------------------
     def _apply_style_to_all(self, style: LineStyle) -> None:
         for info in self.plot_items.values():
             style.apply_to_curve(info['item'])
@@ -221,7 +247,7 @@ class CurvePresenter:
         if not self.is_curve_selected:
             self._apply_style_to_all(new_style)
 
-    # -- mouse / highlight ------------------------------------------
+    # -- mouse / highlight ----------------------------------------------
     def on_plot_clicked(self, obj=None) -> None:
         self.i_am_click_now = True
         if self._selection_model is None:
@@ -251,7 +277,7 @@ class CurvePresenter:
         if self.preselection_style is not None:
             self._apply_style_to_all(self.preselection_style)
 
-    # -- legend ------------------------------------------------------
+    # -- legend ---------------------------------------------------------
     def set_legend_name(self, name: str) -> None:
         self.store.legend.set_custom(name)
         for info in self.plot_items.values():

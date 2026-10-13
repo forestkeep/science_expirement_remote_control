@@ -104,10 +104,11 @@ class waveSelectAdapter:
     def data_added(self, parameters):
         list_parameters = parameters[self.type_data]
         for param in list_parameters.keys():
-            if 'wavech' in param:
-                meastimedata = list_parameters[param]
-                device = meastimedata.device
-                channel = meastimedata.ch
-                num_wave = len(meastimedata.par_val) if meastimedata.par_val is not None else 0
-                self.selector.update_waveforms_count(device, channel, num_wave)
+            if 'wavech' not in param:
+                continue
+            meastimedata = list_parameters[param]
+            device  = meastimedata.device
+            channel = meastimedata.ch
+            num_wave = len(meastimedata.par_val) if meastimedata.par_val is not None else 0
+            self.selector.update_waveforms_count(device, channel, num_wave)
 				
