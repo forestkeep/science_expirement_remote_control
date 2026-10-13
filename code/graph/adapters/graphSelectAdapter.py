@@ -49,11 +49,13 @@ class graphSelectAdapter:
         self.graph.show_all_points(bool(state))
 
     def hide_curve(self, curve_data_obj: linearData):
-        y_name = curve_data_obj.rel_data.y_root_name
         curve_data_obj.delete_curve_from_graph()
-        if y_name == "gen":
+
+        if curve_data_obj.rel_data.is_gen:
+            # генерируемые кривые не участвуют в селекторе — снимать выделение не с чего
             return
 
+        y_name = curve_data_obj.rel_data.y_root_name
         axis = curve_data_obj.number_axis
         if axis == 2:
             first, second = [], [y_name]
@@ -63,7 +65,6 @@ class graphSelectAdapter:
             logger.warning(f"hide_curve: unknown axis {axis} for {y_name}")
             return
 
-        # is_signal=True — граф узнаёт об изменении селектора и синхронизуется
         self.selector.clear_selections("", first, second, is_signal=True)
 
     def stop_session(self):

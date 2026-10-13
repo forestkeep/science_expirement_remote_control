@@ -342,17 +342,24 @@ class manageGraph(QObject):
     def hide_second_line_grid(self):
         self.graphView.hide_second_line_grid()
 
-    def update_data(self, data_first_axis:list[relationData], data_second_axis:list[relationData], is_updated = False):
+    def update_data(self, data_first_axis: list[relationData],
+                data_second_axis: list[relationData], is_updated=False):
         self.hide_second_line_grid()
-
         logger.info(f"update_data {data_first_axis} {data_second_axis} {is_updated=}")
-        #logger.info(f"{self.__stack_curve.items()=}")
+
         if not is_updated:
+            first_roots  = {d.root_name for d in data_first_axis}
+            second_roots = {d.root_name for d in data_second_axis}
             for key, curve in self.__stack_curve.items():
-                if curve.is_draw:
-                    if key not in [data.root_name for data in data_first_axis] and key not in [data.root_name for data in data_second_axis]:
-                            logger.info(f"Удаление кривой {curve.curve_name} из графика")
-                            curve.delete_curve_from_graph()
+                if not curve.is_draw:
+                    continue
+                # Генерируемые кривые (автокорреляция, формулы) не приходят из data_manager,
+                # поэтому их нельзя снимать по «отсутствию в новом списке».
+                if getattr(curve.rel_data, "is_gen", False):
+                    continue
+                if key not in first_roots and key not in second_roots:
+                    logger.info(f"Удаление кривой {curve.curve_name} из графика")
+                    curve.delete_curve_from_graph()
 
         self._process_axis_curves(data_first_axis, self.graphView, self.graphView.legend, 1, is_updated)
         self._process_axis_curves(data_second_axis, self.graphView.second_graphView, self.graphView.legend2, 2, is_updated)

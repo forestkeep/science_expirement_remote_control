@@ -491,21 +491,48 @@ class treeWin(QWidget):
             self.buf_new_curve_name = None
 
     def create_autocorrelation(self, item: CurveTreeItem):
-        if item:
-            curve = item.curve_data_obj
-            curve_rel_data = copy.deepcopy(curve.rel_data)
-            y_values = curve.filtered_y_data
-            x_values = curve.filtered_x_data
+        if not item:
+            return
 
-            curve_rel_data.y_result = compute_autocorrelation(y_values)
-            curve_rel_data.x_result = x_values
+        curve = item.curve_data_obj
+        y_values = curve.filtered_y_data
+        x_values = curve.filtered_x_data
 
-            curve_rel_data.y_name = "gen"
-            
-            curve_rel_data.current_name+=("(autocorr)")
-            desc = QApplication.translate("GraphWindow", "Автокорреляционная функция от {data}" )
-            desc = desc.format(data = curve.rel_data.current_name)
-            self.curve_created.emit(curve_rel_data, None, desc )
+        if len(x_values) == 0 or len(y_values) == 0:
+            logger.warning("create_autocorrelation: пустые данные, построение отменено")
+            return
+
+        autocorr = compute_autocorrelation(y_values)
+
+        orig = curve.rel_data
+
+        # Уникальный y-параметр гарантирует уникальный root_name
+        # (root_name = f"{y_original}/{x_original}"). Без этого manageGraph
+        # посчитает кривую дубликатом исходной и вернёт False.
+        autocorr_y_param = f"{orig.y_param}_autocorr"
+
+        x_meas = measTimeData(
+            device=orig.x_device,
+            ch=orig.x_ch,
+            param=orig.x_param,
+            par_val=x_values,
+            num_or_time=x_values,
+        )
+        y_meas = measTimeData(
+            device="",
+            ch="",
+            param=autocorr_y_param,
+            par_val=autocorr,
+            num_or_time=x_values,
+        )
+
+        # is_gen=True: кривая не имеет источника в graphDataManager,
+        # адаптеры (show_curve / _refresh_all_curves_data) уже умеют её распознавать.
+        new_rel_data = relationData(x_meas, y_meas, is_gen=True)
+
+        desc = QApplication.translate("GraphWindow", "Автокорреляционная функция от {data}")
+        desc = desc.format(data=curve.rel_data.current_name)
+        self.curve_created.emit(new_rel_data, None, desc)
 
     def preparation_arrays(self, tree_curves: dict):
         keys = list(tree_curves.keys())
