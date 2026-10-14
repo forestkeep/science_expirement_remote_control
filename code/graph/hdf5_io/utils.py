@@ -16,13 +16,46 @@ def extract_plot_widget_settings(plot_widget) -> GraphFieldSettings:
     if bg_brush and bg_brush.color():
         settings.background_color = color_to_string(bg_brush.color())
 
-    settings.grid_enabled = plot_widget.is_grid_shown
-    # Цвет сетки (берем цвет первой видимой оси)
-    for axis_name in ['bottom', 'left']:
-        axis = plot_widget.plotItem.getAxis(axis_name)
-        if axis and axis.isVisible():
-            settings.grid_color = color_to_string(axis.pen().color())
-            break
+    # Сетка: читаем фактическое состояние осей (AxisItem.grid — это alpha 0..255
+    # либо False). Интенсивность берём как максимум по X/Y (они должны совпадать,
+    # но безопасно использовать max).
+    def _grid_state(axis):
+        if axis is None:
+            return False, 0
+        g = getattr(axis, "grid", False)
+        if g is False or g is None:
+            return False, 0
+        try:
+            gi = int(g)
+        except (TypeError, ValueError):
+            return False, 0
+        return gi > 0, gi
+
+    bottom_axis = plot_widget.plotItem.getAxis("bottom")
+    left_axis = plot_widget.plotItem.getAxis("left")
+
+    x_on, x_alpha = _grid_state(bottom_axis)
+    y_on, y_alpha = _grid_state(left_axis)
+
+    settings.x_grid_enabled = x_on
+    settings.y_grid_enabled = y_on
+    settings.grid_enabled = bool(x_on or y_on)
+    alpha = max(x_alpha, y_alpha)
+    settings.grid_alpha = alpha / 255.0 if alpha > 0 else 0.0
+
+    # Цвет сетки — с оси, где она включена (или с нижней по умолчанию)
+    grid_src = None
+    if x_on:
+        grid_src = bottom_axis
+    elif y_on:
+        grid_src = left_axis
+    else:
+        grid_src = bottom_axis or left_axis
+    try:
+        if grid_src is not None:
+            settings.grid_color = color_to_string(grid_src.pen().color())
+    except Exception:
+        pass
     
     # Общий стиль осей
     if hasattr(plot_widget, 'common_style'):
@@ -105,6 +138,8 @@ def settings_to_dict(settings: GraphFieldSettings) -> Dict[str, Any]:
         'title': settings.title,
         'background_color': settings.background_color,
         'grid_enabled': settings.grid_enabled,
+        'x_grid_enabled': getattr(settings, 'x_grid_enabled', settings.grid_enabled),
+        'y_grid_enabled': getattr(settings, 'y_grid_enabled', settings.grid_enabled),
         'grid_color': settings.grid_color,
         'grid_alpha': settings.grid_alpha,
         'common_axis_style': {
@@ -222,6 +257,8 @@ def dict_to_graph_field_settings(data_dict: Dict[str, Any]) -> GraphFieldSetting
     settings.title = data_dict.get('title', '')
     settings.background_color = data_dict.get('background_color', '#FFFFFF')
     settings.grid_enabled = data_dict.get('grid_enabled', True)
+    settings.x_grid_enabled = bool(data_dict.get('x_grid_enabled', settings.grid_enabled))
+    settings.y_grid_enabled = bool(data_dict.get('y_grid_enabled', settings.grid_enabled))
     settings.grid_color = data_dict.get('grid_color', '#CCCCCC')
     settings.grid_alpha = data_dict.get('grid_alpha', 0.5)
     settings.legend_enabled = data_dict.get('legend_enabled', True)

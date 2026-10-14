@@ -1,16 +1,16 @@
 from .models import (ProjectFile, Session, SessionParameters, FieldSettings, DataManager,Plot, OscillogramData,
                     ParameterData, GraphStyle, Statistics, CurveTreeItemData, GraphData, LinearData, FilterEntry)
 from .utils import extract_plot_widget_settings, string_to_qfont, string_to_color
-import pyqtgraph as pg
 import logging
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtWidgets import QApplication
 
 import numpy as np
 from datetime import datetime
 
 from ..core.dataManager import graphDataManager, relationData, measTimeData
 from ..core.curve_data import linearData, LineStyle
-from ..ui.customPlotWidget import PatchedPlotWidget, axisController, axisSettings, axisStyle
+from ..ui.customPlotWidget import PatchedPlotWidget, axisStyle
 from ..core.filters_instance_class import FilterCommand
 
 
@@ -135,11 +135,17 @@ class ProjectToHDF5Adapter:
             std_dev=core_plot.tree_item.parameters.get('std', 0.0)
         )
         
+        try:
+            note_description = core_plot.tree_item.get_description() or ""
+        except Exception:
+            note_description = ""
+
         tree_item_data = CurveTreeItemData(
             parameters=core_plot.tree_item.parameters.copy(),
             font_info=f"Italic,{core_plot.tree_item.font.pointSize()}" if hasattr(core_plot.tree_item, 'font') else "Italic,10",
             color_info=core_plot.tree_item.foreground(1).color().name() if core_plot.tree_item.foreground(1) else "#ff30ea",
-            col_font_info=f"{core_plot.tree_item.col_font.pointSize()}" if hasattr(core_plot.tree_item, 'col_font') else "15"
+            col_font_info=f"{core_plot.tree_item.col_font.pointSize()}" if hasattr(core_plot.tree_item, 'col_font') else "15",
+            description=note_description,
         )
         
         graph_data = GraphData(
@@ -294,9 +300,30 @@ class HDF5ToProjectAdapter:
         graph_widget.setTitle(graph_settings.title)
         graph_widget.setCustomBackgroundColor(color = QtGui.QColor(graph_settings.background_color))
         
-        graph_widget.toggleGrid(graph_settings.grid_enabled)
-        if hasattr(graph_widget, 'set_grid_color'):
-            graph_widget.set_grid_color(graph_settings.grid_color)
+        # --- Сетка: X / Y независимо, alpha отдельно от цвета ---
+        try:
+            bottom_axis = graph_widget.plotItem.getAxis("bottom")
+            left_axis = graph_widget.plotItem.getAxis("left")
+            grid_color = QtGui.QColor(graph_settings.grid_color)
+            try:
+                grid_alpha = int(round(float(graph_settings.grid_alpha) * 255))
+            except (TypeError, ValueError):
+                grid_alpha = 128
+
+            bottom_axis.setPen(grid_color)
+            left_axis.setPen(grid_color)
+
+            x_on = bool(getattr(graph_settings, "x_grid_enabled",
+                                graph_settings.grid_enabled))
+            y_on = bool(getattr(graph_settings, "y_grid_enabled",
+                                graph_settings.grid_enabled))
+
+            bottom_axis.setGrid(grid_alpha if x_on else False)
+            left_axis.setGrid(grid_alpha if y_on else False)
+
+            graph_widget.is_grid_shown = bool(x_on or y_on)
+        except Exception:
+            logger.exception("apply_graph_settings: grid apply failed")
         
         common_style = axisStyle(
             text_font=string_to_qfont(graph_settings.common_axis_style.text_font),
@@ -336,10 +363,20 @@ class HDF5ToProjectAdapter:
                     axis_controller.set_custom_style(custom_style)
                 else:
                     axis_controller.set_common_style(common_style)
-                
-                if hasattr(axis_controller, 'setLogMode'):
-                    axis_controller.setLogMode(axis_settings.log_mode)
-                
+
+                # Лог-шкала применяется к PlotItem, не к AxisItem
+                log_x = False
+                log_y = False
+                for axis_name, axis_settings in graph_settings.axes.items():
+                    if axis_name == "bottom":
+                        log_x = bool(axis_settings.log_mode)
+                    elif axis_name == "left":
+                        log_y = bool(axis_settings.log_mode)
+                try:
+                    graph_widget.plotItem.setLogMode(x=log_x, y=log_y)
+                except Exception:
+                    logger.exception("apply_graph_settings: setLogMode failed")
+
                 if not axis_settings.auto_range and axis_settings.range:
                     axis_controller.setRange(*axis_settings.range)
         
@@ -446,6 +483,17 @@ class HDF5ToProjectAdapter:
             new_data.change_name(plot_model.linear_data.curve_name)
         else:
             new_data.reset_name()
+
+        # Восстановить пользовательскую заметку (блок «Разное» → «Описание»).
+        try:
+            desc = plot_model.linear_data.tree_item_data.description or ""
+        except Exception:
+            desc = ""
+        if desc:
+            block_name = QApplication.translate("GraphWindow", "Разное")
+            key = QApplication.translate("GraphWindow", "Описание")
+            if not new_data.tree_item.update_block_data(block_name, {key: desc}):
+                new_data.tree_item.add_new_block(block_name, {key: desc})
 
         return new_data
     

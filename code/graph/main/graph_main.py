@@ -221,7 +221,7 @@ class manageGraph(QObject):
         from graph.core.undo_commands import RemoveInfiniteLineCommand
         session.undo_manager.push(RemoveInfiniteLineCommand(self.graphView, line))
 
-    def _on_appearance_changed(self, before_settings, after_settings):
+    def _on_appearance_changed(self, widget, before_settings, after_settings):
         session = self.main_class
         if session is None or not hasattr(session, "undo_manager"):
             return
@@ -229,7 +229,7 @@ class manageGraph(QObject):
             return
         from graph.core.undo_commands import GraphAppearanceCommand
         session.undo_manager.push(
-            GraphAppearanceCommand(self.graphView, before_settings, after_settings)
+            GraphAppearanceCommand(widget, before_settings, after_settings)
         )
 
     def set_default(self):

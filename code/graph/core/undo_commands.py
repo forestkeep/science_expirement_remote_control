@@ -452,3 +452,25 @@ class GraphAppearanceCommand(UndoCommand):
     def undo(self):
         if self.before is not None:
             self._apply(self.before)
+
+# =====================================================================
+# Редактирование одной точки кривой (локально, без data_manager)
+# =====================================================================
+class EditPointCommand(UndoCommand):
+    def __init__(self, curve, index: int, old_x: float, old_y: float,
+                 new_x: float, new_y: float):
+        self.curve = curve
+        self.index = int(index)
+        self.old_x = float(old_x)
+        self.old_y = float(old_y)
+        self.new_x = float(new_x)
+        self.new_y = float(new_y)
+
+    def text(self):
+        return "Изменение точки"
+
+    def redo(self):
+        self.curve.set_raw_point(self.index, x=self.new_x, y=self.new_y)
+
+    def undo(self):
+        self.curve.set_raw_point(self.index, x=self.old_x, y=self.old_y)

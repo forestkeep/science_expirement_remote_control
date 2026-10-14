@@ -223,7 +223,10 @@ class HDF5Plot(BaseHDF5Entity):
                 tree_item_group = linear_data_group['tree_item_data']
                 tree_item_data = CurveTreeItemData()
                 tree_item_data.name = tree_item_group.attrs.get('name', '')
-                tree_item_data.description = tree_item_group.attrs.get('description', '')
+                _desc = tree_item_group.attrs.get('description', '')
+                if isinstance(_desc, bytes):
+                    _desc = _desc.decode('utf-8', errors='replace')
+                tree_item_data.description = _desc or ''
                 tree_item_data.font_info = tree_item_group.attrs.get('font_info', 'Italic,10')
                 tree_item_data.color_info = tree_item_group.attrs.get('color_info', '#ff30ea')
                 tree_item_data.col_font_info = tree_item_group.attrs.get('col_font_info', '15')

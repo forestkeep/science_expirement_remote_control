@@ -71,6 +71,7 @@ from graph.ui.select_session import SessionSelectControl
 from graph.ui.status_line import StatusBar
 from graph.ui.tabPage_win import tabPage
 from graph.ui.tree_curves import treeWin
+from graph.ui.inspector import Inspector
 
 logger = logging.getLogger(__name__)
 
@@ -310,7 +311,7 @@ class GraphSession(QWidget):
             self.select_controller = paramController(self.select_win, alias_manager=self.alias_manager)
             self.filter_class.set_filter_slot(self.filters_callback)
 
-        self.up_lay.addWidget(splitter)
+        self.data_manager.stop_current_session.connect(self._on_session_stopped)
 
         self.tab1 = tabPage(1)
         self.tab2 = tabPage(2)
@@ -350,6 +351,20 @@ class GraphSession(QWidget):
                 'osc',
                 self
             )
+
+        # Горизонтальный сплиттер: слева — графики, справа — инспектор
+        self.main_splitter = QSplitter(Qt.Horizontal)
+        self.main_splitter.addWidget(splitter)
+
+        self.inspector = Inspector(self)
+        self.main_splitter.addWidget(self.inspector)
+
+        self.main_splitter.setSizes([self.width() - 320, 320])
+        self.main_splitter.setStretchFactor(0, 1)
+        self.main_splitter.setStretchFactor(1, 0)
+
+        self.up_lay.addWidget(self.main_splitter)
+
 
         # подключение undo для инфинитных линий обеих вкладок
         for gv in (self.graph_main.graphView,
@@ -397,6 +412,10 @@ class GraphSession(QWidget):
             return
         self.undo_manager.push(AddInfiniteLineCommand(target, line))
 
+    def _on_session_stopped(self):
+        """При остановке эксперимента показываем инспектор (режим REVIEW)."""
+        self.inspector.setVisible(True)
+
     def _on_inf_line_removed(self, line):
         if self.undo_manager.is_applying:
             return
@@ -406,14 +425,13 @@ class GraphSession(QWidget):
             return
         self.undo_manager.push(RemoveInfiniteLineCommand(sender, line))
 
-    def _on_appearance_changed(self, before_settings, after_settings):
+    def _on_appearance_changed(self, widget, before_settings, after_settings):
         if self.undo_manager.is_applying:
             return
         from graph.core.undo_commands import GraphAppearanceCommand
-        sender = self.sender()
-        if sender is None:
-            return
-        self.undo_manager.push(GraphAppearanceCommand(sender, before_settings, after_settings))
+        self.undo_manager.push(
+            GraphAppearanceCommand(widget, before_settings, after_settings)
+        )
 
     # ------------------------------------------------------------------
     # Фильтры
@@ -943,6 +961,11 @@ class sessionController():
         except Exception as e:
             logger.warning(f"Failed to start session {session_id} {e}")
             return False
+
+        if is_experiment_running:
+            new_session_graph.inspector.setVisible(False)
+        else:
+            new_session_graph.inspector.setVisible(True)
 
         self.graph_sessions[session_id] = new_session_graph
         self.graphics_win.stack.addWidget(new_session_graph)

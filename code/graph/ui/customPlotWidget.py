@@ -616,8 +616,9 @@ class PatchedPlotWidget(pg.PlotWidget):
         Выполнить мутацию внешнего вида и — если что-то изменилось —
         эмитировать запрос на регистрацию undo-команды.
 
-        Требует, чтобы у виджета был установлен атрибут
-        `appearance_undo_callback` (callable(before_settings, after_settings)).
+        Колбэк `appearance_undo_callback` вызывается с самим виджетом:
+        `cb(widget, before_settings, after_settings)` — так обработчик
+        знает, для какого графа регистрировать команду.
         """
         from graph.hdf5_io.utils import extract_plot_widget_settings
         before = extract_plot_widget_settings(self)
@@ -625,7 +626,11 @@ class PatchedPlotWidget(pg.PlotWidget):
         after = extract_plot_widget_settings(self)
         cb = getattr(self, "appearance_undo_callback", None)
         if cb is not None and before != after:
-            cb(before, after)
+            try:
+                cb(self, before, after)
+            except TypeError:
+                # обратная совместимость со старым 2-аргументным колбэком
+                cb(before, after)
     
     def add_vertical_line(self):
         """Добавляет вертикальную линию в центр видимой области"""

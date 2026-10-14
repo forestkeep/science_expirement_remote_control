@@ -224,6 +224,9 @@ class linearData:
     def setData(self, data: relationData):
         self.store.set_data(data)
 
+    def set_raw_point(self, index: int, x=None, y=None):
+        return self.store.set_raw_point(index, x=x, y=y)
+
     def set_filter(self, fc: FilterCommand):
         message = self.store.set_filter(fc)
         self._append_history_entry(fc, message)

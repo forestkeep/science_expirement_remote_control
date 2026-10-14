@@ -42,8 +42,9 @@ class CurveDataStore:
         raw_x = np.asarray(data.x_result)
         raw_y = np.asarray(data.y_result)
         n = min(len(raw_x), len(raw_y))
-        self.raw_data_x = raw_x[:n]
-        self.raw_data_y = raw_y[:n]
+        # Копии — чтобы правки из инспектора не утекали в graphDataManager
+        self.raw_data_x = np.array(raw_x[:n], copy=True)
+        self.raw_data_y = np.array(raw_y[:n], copy=True)
         self.filtered_x_data = self.raw_data_x.copy()
         self.filtered_y_data = self.raw_data_y.copy()
         self.filters_history: List[FilterCommand] = []
@@ -107,10 +108,33 @@ class CurveDataStore:
         raw_x = np.asarray(new_rel_data.x_result)
         raw_y = np.asarray(new_rel_data.y_result)
         n = min(len(raw_x), len(raw_y))
-        self.raw_data_x = raw_x[:n]
-        self.raw_data_y = raw_y[:n]
+        self.raw_data_x = np.array(raw_x[:n], copy=True)
+        self.raw_data_y = np.array(raw_y[:n], copy=True)
         self._rebuild_filtered()
         self._notify_changed()
+        self._rebuild_filtered()
+        self._notify_changed()
+
+    def set_raw_point(self, index: int, x=None, y=None):
+        """
+        Изменить одну точку (raw) локально.
+        Возвращает (old_x, old_y, new_x, new_y) или None, если индекс невалиден.
+        Пересобирает filtered_* через filters_history и уведомляет подписчиков
+        (CurvePresenter.refresh обновит график, recalc_stats пересчитает статистику).
+        graphDataManager НЕ затрагивается — raw_* хранится как копия.
+        """
+        n = len(self.raw_data_x)
+        if index < 0 or index >= n:
+            return None
+        old_x = float(self.raw_data_x[index])
+        old_y = float(self.raw_data_y[index])
+        new_x = old_x if x is None else float(x)
+        new_y = old_y if y is None else float(y)
+        self.raw_data_x[index] = new_x
+        self.raw_data_y[index] = new_y
+        self._rebuild_filtered()
+        self._notify_changed()
+        return old_x, old_y, new_x, new_y
 
     def data_reset(self) -> bool:
         same = (
