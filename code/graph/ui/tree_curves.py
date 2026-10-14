@@ -390,21 +390,34 @@ class treeWin(QWidget):
         self.tree_widget.itemDoubleClicked.connect(self.on_history_item_double_clicked)
 
     def on_history_item_double_clicked(self, item, column):
+        if not isinstance(item, HistoryItem):
+            return
 
-        if isinstance(item, HistoryItem):
+        parent = item
+        while True:
+            root_item = parent
+            parent = parent.parent()
+            if parent is None:
+                break
 
-            parent = item
-            while True:
-                root_item = parent
-                parent = parent.parent()
-                if parent  is None:
-                    break
+        if not isinstance(root_item, CurveTreeItem):
+            return
 
-            if isinstance(root_item, CurveTreeItem):
-                root_item.curve_data_obj.delete_filter(item.filter_command)
-                del item.filter_command
-                if item.parent() is not None:
-                    item.parent().removeChild(item)
+        curve = root_item.curve_data_obj
+        fc = item.filter_command
+
+        session = self.main_class
+        cmd = None
+        if session is not None and hasattr(session, "undo_manager"):
+            from graph.core.undo_commands import RemoveFilterCommand
+            cmd = RemoveFilterCommand(curve=curve, filter_command=fc)
+
+        curve.delete_filter(fc)
+        if item.parent() is not None:
+            item.parent().removeChild(item)
+
+        if cmd is not None and not session.undo_manager.is_applying:
+            session.undo_manager.push(cmd)
 
     def on_item_entered(self, item):
         root_item = None
@@ -423,29 +436,35 @@ class treeWin(QWidget):
                 cur.deselection()
 
     def update_visible(self):
-        if self.visibility_button.isChecked():
-            if self.curves:
-                for curve in self.curves:
-                    if not curve.is_draw():
-                        curve.setHidden(True)
-                    else:
-                        curve.setHidden(False)
+        """Применить текущий режим видимости ко всем элементам дерева.
+
+        Вызывается:
+          * из toggle_visibility() при клике по кнопке;
+          * автоматически из add_curve / delete_curve / show_curve /
+            hide_curve / clear_all и из undo/redo-команд.
+        """
+        show_only_active = self.visibility_button.isChecked()
+        for curve in self.curves:
+            hidden = bool(show_only_active and not curve.is_draw())
+            curve.setHidden(hidden)
 
     def toggle_visibility(self):
-        if self.visibility_button.isChecked():
+        """Обработчик клика по кнопке.
 
+        Меняет иконку/тултип (визуальная индикация режима) и применяет
+        фильтр через update_visible().
+        """
+        if self.visibility_button.isChecked():
             self.visibility_button.setIcon(QIcon("picture/open_eye_light.png"))
-            self.visibility_button.setToolTip( QApplication.translate("GraphWindow","Показать активные кривые"))
-            if self.curves:
-                for curve in self.curves:
-                    if not curve.is_draw():
-                        curve.setHidden(True)
+            self.visibility_button.setToolTip(
+                QApplication.translate("GraphWindow", "Показать активные кривые")
+            )
         else:
             self.visibility_button.setIcon(QIcon("picture/close_eye_light.png"))
-            self.visibility_button.setToolTip( QApplication.translate("GraphWindow","Показать все кривые"))
-            if self.curves:
-                for curve in self.curves:
-                    curve.setHidden(False)
+            self.visibility_button.setToolTip(
+                QApplication.translate("GraphWindow", "Показать все кривые")
+            )
+        self.update_visible()
 
     def open_curve_dialog(self):
         dialog = CurveDialog(self, self.buf_description, self.buf_formula, self.buf_new_curve_name)
@@ -567,7 +586,7 @@ class treeWin(QWidget):
         self.tree_widget.addTopLevelItem(curve_item)
         curve_item.update_parameters({"id": f"CUR{self._curve_id_counter}"})
         self.curves.append(curve_item)
-        self.toggle_visibility()
+        self.update_visible()
 
     def show_context_menu(self, position):
         item = self.tree_widget.itemAt(position)
@@ -629,7 +648,7 @@ class treeWin(QWidget):
 
             context_menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
 
-        self.toggle_visibility()
+        self.update_visible()
 
     def show_animation(self, item):
         self.animator = Animator(item.curve_data_obj)
@@ -650,23 +669,49 @@ class treeWin(QWidget):
 
     def change_name_curve(self, item):
         dialog = NameChangeDialog(self, item.curve_data_obj.curve_name)
-        if dialog.exec_() == QDialog.Accepted:
-            new_name, ok, reset = dialog.get_results()
-            if ok:
-                if reset:
-                    item.curve_data_obj.reset_name()
-                else:
-                    item.curve_data_obj.change_name(new_name)
+        if dialog.exec_() != QDialog.Accepted:
+            return
+        new_name, ok, reset = dialog.get_results()
+        if not ok:
+            return
+
+        session = self.main_class
+        curve = item.curve_data_obj
+
+        if reset:
+            from graph.core.undo_commands import ResetCurveNameCommand
+            cmd = ResetCurveNameCommand(curve=curve)
+            if session is not None and hasattr(session, "undo_manager") \
+                    and not session.undo_manager.is_applying:
+                session.undo_manager.push(cmd)
+                return
+            curve.reset
 
     def add_note(self, item: CurveTreeItem):
         description = item.get_description()
-        text, ok = QInputDialog().getText(self, QApplication.translate("GraphWindow","Описание"),
-                                     QApplication.translate("GraphWindow","Описание"), QLineEdit.Normal, description)
-        if ok and text:
-            if not item.update_block_data(  QApplication.translate("GraphWindow","Разное"),
-                                {QApplication.translate("GraphWindow","Описание"): text} ):
-                item.add_new_block( QApplication.translate("GraphWindow","Разное"),
-                                {QApplication.translate("GraphWindow","Описание"): text} )
+        text, ok = QInputDialog().getText(
+            self,
+            QApplication.translate("GraphWindow", "Описание"),
+            QApplication.translate("GraphWindow", "Описание"),
+            QLineEdit.Normal,
+            description,
+        )
+        if not ok:
+            return
+
+        block_name = QApplication.translate("GraphWindow", "Разное")
+        session = self.main_class
+        from graph.core.undo_commands import AddNoteCommand
+        cmd = AddNoteCommand(tree_item=item,
+                             block_name=block_name,
+                             old_text=description,
+                             new_text=text)
+
+        if session is not None and hasattr(session, "undo_manager") \
+                and not session.undo_manager.is_applying:
+            session.undo_manager.push(cmd)
+        else:
+            cmd.redo()
 
     def delete_curve(self, item: CurveTreeItem = None):
         if item is None:
@@ -674,13 +719,26 @@ class treeWin(QWidget):
             if selected_items:
                 item = selected_items[0]
             else:
-                QMessageBox.warning(self, QApplication.translate("GraphWindow","Ошибка"),
-                                          QApplication.translate("GraphWindow","Пожалуйста, выберите элемент для удаления."))
+                QMessageBox.warning(
+                    self,
+                    QApplication.translate("GraphWindow", "Ошибка"),
+                    QApplication.translate("GraphWindow",
+                                           "Пожалуйста, выберите элемент для удаления."),
+                )
                 return
-            
-        if item in self.curves:
-            self.curve_deleted.emit(item.curve_data_obj)
-            self.curves.remove(item)
+
+        if item not in self.curves:
+            return
+
+        session = self.main_class
+        cmd = None
+        if session is not None and hasattr(session, "undo_manager"):
+            from graph.core.undo_commands import DeleteCurveCommand
+            cmd = DeleteCurveCommand(session=session, tree_win=self, tree_item=item)
+
+        # существующий поток удаления
+        self.curve_deleted.emit(item.curve_data_obj)
+        self.curves.remove(item)
 
         parent = item.parent()
         if parent:
@@ -690,7 +748,10 @@ class treeWin(QWidget):
             if index != -1:
                 self.tree_widget.takeTopLevelItem(index)
 
-        self.toggle_visibility()
+        self.update_visible()
+
+        if cmd is not None and not session.undo_manager.is_applying:
+            session.undo_manager.push(cmd)
 
     def show_curve(self, item: CurveTreeItem =None):
         if item is None:
@@ -707,7 +768,7 @@ class treeWin(QWidget):
             self.curve_shown.emit(item.curve_data_obj)
 
 
-        self.toggle_visibility()
+        self.update_visible()
 
     def hide_curve(self, item: CurveTreeItem=None):
         if item is None:
@@ -722,17 +783,58 @@ class treeWin(QWidget):
             #item.curve_data_obj.delete_curve_from_graph() #мы не должны удалять здесь, мы должны отправить сигнал, его перехватит адаптер и разберется, что делать
             self.curve_hide.emit(item.curve_data_obj)
 
-        self.toggle_visibility()
+        self.update_visible()
 
-    def change_curve_style(self, item:CurveTreeItem):
-        customizer =  GraphCustomizer(item.curve_data_obj)
-        customizer.exec_()
+    def change_curve_style(self, item: CurveTreeItem):
+        session = self.main_class
+        before_style = None
+        try:
+            before_style = copy.deepcopy(item.curve_data_obj.saved_style)
+        except Exception:
+            before_style = None
+
+        customizer = GraphCustomizer(item.curve_data_obj)
+        result = customizer.exec_()
+
+        if session is None or not hasattr(session, "undo_manager"):
+            return
+        if session.undo_manager.is_applying:
+            return
+
+        # Записываем финальный стиль (даже если пользователь отменил — он
+        # восстановил исходный, но нам нужен только случай фактического
+        # изменения). Поэтому сравним до и после.
+        after_style = copy.deepcopy(item.curve_data_obj.saved_style)
+        if before_style is None or after_style is None:
+            return
+        same = (
+            before_style.color == after_style.color
+            and before_style.line_style == after_style.line_style
+            and before_style.line_width == after_style.line_width
+            and before_style.symbol == after_style.symbol
+            and before_style.symbol_size == after_style.symbol_size
+            and before_style.symbol_color == after_style.symbol_color
+            and before_style.fill_color == after_style.fill_color
+        )
+        if same:
+            return
+
+        from graph.core.undo_commands import ChangeCurveStyleCommand
+        # Стиль уже применён — фиксируем команду, чтобы undo вернул старый.
+        cmd = ChangeCurveStyleCommand(item.curve_data_obj, before_style)
+        # обнуляем "новый" стиль — на самом деле в change_style мы уже
+        # установили текущий, поэтому пересоберём команду так, чтобы
+        # redo применял именно after_style:
+        cmd.new_style = after_style
+        cmd.old_style = before_style
+        # Записываем как «уже выполненную»
+        session.undo_manager.push(cmd)
 
     def clear_all(self):
         for curve in self.curves:
             self.delete_curve(curve)
 
-        self.toggle_visibility()
+        self.update_visible()
 
 def compute_autocorrelation(data, max_lag=None, normalized=True, method='direct'):
     data = np.asarray(data)

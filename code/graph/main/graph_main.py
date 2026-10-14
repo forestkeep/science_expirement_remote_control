@@ -105,6 +105,11 @@ class manageGraph(QObject):
         #self.graphView.setAntialiasing(False)
         self.graphView.scene().sigMouseClicked.connect(self.click_scene_main_graph)
 
+        self.graphView.inf_line_added.connect(self._on_inf_line_added)
+        self.graphView.inf_line_removed.connect(self._on_inf_line_removed)
+
+        self.graphView.appearance_undo_callback = self._on_appearance_changed
+
         #--------------------------------------------------------TESTS
         '''
         self.inf2 = pg.InfiniteLine(movable=True, angle=0, pen=(0, 0, 200), bounds = [-20, 20], hoverPen=(0,200,0), label='y={value:0.2f}mm', 
@@ -151,11 +156,11 @@ class manageGraph(QObject):
         self.buttons_layout = QHBoxLayout()
         
         self.add_vertical_line_btn = QPushButton("Добавить вертикальную линию")
-        self.add_vertical_line_btn.clicked.connect(self.graphView.add_vertical_line)
+        self.add_vertical_line_btn.clicked.connect(self._add_vertical_line_undoable)
         self.buttons_layout.addWidget(self.add_vertical_line_btn)
         
         self.add_horizontal_line_btn = QPushButton("Добавить горизонтальную линию")
-        self.add_horizontal_line_btn.clicked.connect(self.graphView.add_horizontal_line)
+        self.add_horizontal_line_btn.clicked.connect(self._add_horizontal_line_undoable)
         self.buttons_layout.addWidget(self.add_horizontal_line_btn)
         
         self.buttons_widget = QWidget()
@@ -175,8 +180,57 @@ class manageGraph(QObject):
     def set_second_axis(self, state: bool):
         self.graphView.set_second_axis(state)
 
+    def _add_vertical_line_undoable(self):
+        self.graphView.apply_appearance_change(self.graphView.add_vertical_line)
+
+    def _add_horizontal_line_undoable(self):
+        self.graphView.apply_appearance_change(self.graphView.add_horizontal_line)
+
     def get_list_curves(self):
         return list(self.__stack_curve.values())
+
+    def _refresh_tree_visibility(self) -> None:
+        """Переприменить режим видимости дерева после смены is_draw().
+
+        Вызывается в конце операций, которые меняют состав нарисованного
+        (создание/показ/скрытие/удаление кривых), — иначе в режиме
+        «только активные» дерево останется несинхронизированным.
+        """
+        tree = getattr(self.main_class, "tree_class", None)
+        if tree is not None:
+            try:
+                tree.update_visible()
+            except Exception:
+                logger.exception("_refresh_tree_visibility failed")
+
+    def _on_inf_line_added(self, line):
+        session = self.main_class
+        if session is None or not hasattr(session, "undo_manager"):
+            return
+        if session.undo_manager.is_applying:
+            return
+        from graph.core.undo_commands import AddInfiniteLineCommand
+        session.undo_manager.push(AddInfiniteLineCommand(self.graphView, line))
+
+    def _on_inf_line_removed(self, line):
+        session = self.main_class
+        if session is None or not hasattr(session, "undo_manager"):
+            return
+        if session.undo_manager.is_applying:
+            return
+        from graph.core.undo_commands import RemoveInfiniteLineCommand
+        session.undo_manager.push(RemoveInfiniteLineCommand(self.graphView, line))
+
+    def _on_appearance_changed(self, before_settings, after_settings):
+        session = self.main_class
+        if session is None or not hasattr(session, "undo_manager"):
+            return
+        if session.undo_manager.is_applying:
+            return
+        from graph.core.undo_commands import GraphAppearanceCommand
+        session.undo_manager.push(
+            GraphAppearanceCommand(self.graphView, before_settings, after_settings)
+        )
 
     def set_default(self):
         self.graphView.clear()
@@ -188,12 +242,12 @@ class manageGraph(QObject):
             self.selection_model.clear()
 
     def destroy_curve(self, curve_data_obj):
+        """
+        Удаление кривой из графа БЕЗ detach() — чтобы её можно было
+        вернуть по undo. Реальный detach делается в destroy_all_curves().
+        """
         curve_data_obj.delete_curve_from_graph()
         curve_data_obj.is_draw = False
-        try:
-            curve_data_obj.detach()
-        except Exception:
-            logger.exception("destroy_curve: detach failed")
         if self.selection_model is not None:
             self.selection_model.remove(curve_data_obj)
         root_name = curve_data_obj.rel_data.root_name
@@ -215,28 +269,44 @@ class manageGraph(QObject):
         # Нет собственного сигнала; закрытие окна сессии обрабатывается её владельцем.
         event.accept()
 
-    def set_filters(self, filter_comand: FilterCommand):
+    def set_filters(self, filter_comand: FilterCommand) -> list:
+        """Применить фильтр ко всем выделенным кривым. Возвращает список затронутых."""
+        affected = []
         for curve in self.__stack_curve.values():
             if curve.is_curve_selected:
                 curve.set_filter(filter_comand)
+                affected.append(curve)
+        return affected
 
-    def reset_filters(self, curve = None):
+    def reset_filters(self, curve=None):
         if not self.main_class.can(modify=True):
-            self.main_class.show_tooltip(message = QApplication.translate( "GraphWindow", "Дождитесь окончания эксперимента" ) )
+            self.main_class.show_tooltip(
+                message=QApplication.translate("GraphWindow", "Дождитесь окончания эксперимента")
+            )
             return
-        
+
         if curve:
-            curve.clear_filters()
-            if hasattr(curve, "tree_item"):
-                name_block = QApplication.translate("GraphWindow","История изменения")
-                curve.tree_item.delete_block(name_block)
+            targets = [curve]
         else:
-            for curve in self.__stack_curve.values():
-                if curve.is_curve_selected:
-                    curve.clear_filters()
-                    if hasattr(curve, "tree_item"):
-                        name_block = QApplication.translate("GraphWindow","История изменения")
-                        curve.tree_item.delete_block(name_block)
+            targets = [c for c in self.__stack_curve.values() if c.is_curve_selected]
+
+        if not targets:
+            return
+
+        session = self.main_class
+        cmd = None
+        if session is not None and hasattr(session, "undo_manager"):
+            from graph.core.undo_commands import ResetFiltersCommand
+            cmd = ResetFiltersCommand(targets)
+
+        name_block = QApplication.translate("GraphWindow", "История изменения")
+        for c in targets:
+            c.clear_filters()
+            if hasattr(c, "tree_item"):
+                c.tree_item.delete_block(name_block)
+
+        if cmd is not None and not session.undo_manager.is_applying:
+            session.undo_manager.push(cmd)
 
     def click_enter_key(self):
 
@@ -363,6 +433,7 @@ class manageGraph(QObject):
 
         self._process_axis_curves(data_first_axis, self.graphView, self.graphView.legend, 1, is_updated)
         self._process_axis_curves(data_second_axis, self.graphView.second_graphView, self.graphView.legend2, 2, is_updated)
+        self._refresh_tree_visibility()
 
     def _process_axis_curves(self, data_list: list[relationData], graph, legend, axis_num, is_updated):
         """Обработка кривых для конкретной оси"""
@@ -442,6 +513,7 @@ class manageGraph(QObject):
                               number_axis=number_axis)
 
         self._apply_window_state_to_curve(new_data)
+        self._refresh_tree_visibility()
         return True
 
     def add_curve(self, curve_data_obj: linearData, type_axis: str = "left"):

@@ -179,15 +179,17 @@ class graphOsc:
             hoverPen=(0, 200, 0),
             label=f'#{line_number}: {{value:0.9f}}',
             labelOpts={
-                'color': (200, 0, 0), 
-                'movable': True, 
-                'fill': (0, 0, 200, 100)
+                'color': (200, 0, 0),
+                'movable': True,
+                'fill': (0, 0, 200, 100),
             },
-            pos=pos
+            pos=pos,
         )
 
-        self.graphView.addItem(inf_line)
-        inf_line.removeRequested.connect(lambda line: self.graphView.removeItem(line))
+        # маршрутизируем удаление через виджетный метод — так сработает
+        # сигнал inf_line_removed и мы зарегистрируем undo-команду
+        inf_line.removeRequested.connect(self.graphView.remove_inf_line)
+        self.graphView.add_inf_line(inf_line)
 
     def click_scene_main_graph(self, event):
         self.__callback_click_scene(self.stack_osc.values())

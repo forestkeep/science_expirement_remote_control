@@ -188,6 +188,7 @@ class graphSelectAdapter:
         curve = self.graph.get_curve(data.root_name)
         if curve is None:
             return
+
         blocks = {}
         if formula:
             blocks[QApplication.translate("GraphWindow", "Формула")] = formula
@@ -197,6 +198,17 @@ class graphSelectAdapter:
             curve.tree_item.add_new_block(
                 QApplication.translate("GraphWindow", "Разное"), blocks
             )
+
+        session = self.main_class
+        if session is None or not hasattr(session, "undo_manager"):
+            return
+        if session.undo_manager.is_applying:
+            return
+
+        from graph.core.undo_commands import AddCurveCommand
+        cmd = AddCurveCommand(session=session, root_name=data.root_name)
+        if cmd.bind_after_creation():
+            session.undo_manager.push(cmd)
 
     def numPointsChanged(self, value):
         self.graph.set_num_points(value)

@@ -4,7 +4,10 @@ from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSignal
 from dataclasses import dataclass
 from pyqtgraph import AxisItem
+import logging
 from graph.ui.custom_inf_line import RemovableInfiniteLine
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class axisStyle:
@@ -60,6 +63,8 @@ class axisController():
     
 class PatchedPlotWidget(pg.PlotWidget):
     new_curve_selected = pyqtSignal()
+    inf_line_added   = pyqtSignal(object)
+    inf_line_removed = pyqtSignal(object)
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -137,6 +142,19 @@ class PatchedPlotWidget(pg.PlotWidget):
     def add_inf_line(self, line):
         self.inf_lines.append(line)
         self.addItem(line)
+        try:
+            self.inf_line_added.emit(line)
+        except Exception:
+            logger.exception("add_inf_line emit failed")
+
+    def remove_inf_line(self, line):
+        if line in self.inf_lines:
+            self.inf_lines.remove(line)
+        self.removeItem(line)
+        try:
+            self.inf_line_removed.emit(line)
+        except Exception:
+            logger.exception("remove_inf_line emit failed")
 
     def apply_preset_style(self, style):
         self.common_style.color = style["text"]
@@ -148,9 +166,6 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.set_legend_color(style["legend"])
         self.toggleGrid(True)
         
-    def remove_inf_line(self, line):
-        self.removeItem(line)
-        self.inf_lines.remove(line)
 
     def updateViews(self):
         """Обновление вьюшек при изменении размера"""
@@ -595,6 +610,22 @@ class PatchedPlotWidget(pg.PlotWidget):
         luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
 
         return QtGui.QColor(0, 0, 0) if luminance > 0.179 else QtGui.QColor(255, 255, 255)
+
+    def apply_appearance_change(self, mutate_callable):
+        """
+        Выполнить мутацию внешнего вида и — если что-то изменилось —
+        эмитировать запрос на регистрацию undo-команды.
+
+        Требует, чтобы у виджета был установлен атрибут
+        `appearance_undo_callback` (callable(before_settings, after_settings)).
+        """
+        from graph.hdf5_io.utils import extract_plot_widget_settings
+        before = extract_plot_widget_settings(self)
+        mutate_callable()
+        after = extract_plot_widget_settings(self)
+        cb = getattr(self, "appearance_undo_callback", None)
+        if cb is not None and before != after:
+            cb(before, after)
     
     def add_vertical_line(self):
         """Добавляет вертикальную линию в центр видимой области"""

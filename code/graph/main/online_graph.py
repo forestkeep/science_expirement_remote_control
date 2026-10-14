@@ -1,63 +1,76 @@
 # Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
 # following information to ensure the GNU General Public License version 3.0
 # requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-# 
+#
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-import sys
-import time
-import random
+# --- Стандартная библиотека ---
 import copy
-
 import logging
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import QPoint, QTimer, pyqtSignal
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QMainWindow,
-                             QSizePolicy, QSplitter, QTabWidget, QWidget, QAction, QVBoxLayout, QStackedWidget)
-
-from graph.ui.filters_win import filtersClass
-from graph.ui.status_line import StatusBar
-from graph.main.graph_main import manageGraph
-from graph.ui.notification import NotificationWidget
-from graph.ui.osc_wave_graph import graphOsc
-from graph.ui.tabPage_win import tabPage
-from PyQt5.QtCore import QEvent
-from graph.ui.tree_curves import treeWin
-from graph.core.dataManager import graphDataManager
-from graph.ui.paramSelectors import paramSelector, paramController
-from graph.adapters.graphSelectAdapter import graphSelectAdapter
-from graph.ui.select_session import SessionSelectControl
-from graph.ui.buttons_panel import ButtonsControl
-from graph.ui.osc_selector import OscilloscopeSelector
-from graph.adapters.waveSelectAdapter import waveSelectAdapter
-from graph.hdf5_io.facade import HDF5Facade
-from graph.core.parameter_alias_manager import ParameterAliasManager
-from graph.comparison.compare_sessions_graph import CompareWindowMediator
-from graph.animation_graph.animation_widget import AnimationWindow
-from graph.export.save_excell import ExcelSaver
-import uuid
-import numpy as np
 import os
+import random
+import uuid
+
+# --- Сторонние библиотеки ---
+import numpy as np
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import QEvent, QPoint, QRect, QSize, Qt, QTimer, pyqtSignal
+from PyQt5.QtGui import QGuiApplication, QIcon
+from PyQt5.QtWidgets import (
+    QAction,
+    QApplication,
+    QHBoxLayout,
+    QMainWindow,
+    QSizePolicy,
+    QSplitter,
+    QStackedWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
+
+# --- Локальные модули проекта ---
 from functions import open_log_file
-from graph.core.filters_instance_class import FilterCommand
-from graph.core.parameter_alias_manager import ParameterAliasManager, ParameterAliasDialog
-from graph.core.session_mode import SessionMode
+
+from graph.adapters.graphSelectAdapter import graphSelectAdapter
+from graph.adapters.waveSelectAdapter import waveSelectAdapter
+from graph.animation_graph.animation_widget import AnimationWindow
 from graph.api.experiment_port import ExperimentPort
+from graph.comparison.compare_sessions_graph import CompareWindowMediator
+from graph.core.dataManager import graphDataManager
+from graph.core.filters_instance_class import FilterCommand
+from graph.core.parameter_alias_manager import ParameterAliasDialog, ParameterAliasManager
 from graph.core.selection_model import SelectionModel
-from graph.ui.action_registry import ActionRegistry
-from PyQt5.QtWidgets import QMainWindow, QApplication
-from PyQt5.QtCore import pyqtSignal, QRect
-from PyQt5.QtGui import QGuiApplication
+from graph.core.session_mode import SessionMode
+from graph.core.undo_commands import (
+    ApplyFilterCommand,
+    ChangeDescriptionCommand,
+    RenameSessionCommand,
+)
+from graph.core.undo_manager import SessionUndoManager
+from graph.export.save_excell import ExcelSaver
 from graph.hdf5_io.adapters import HDF5ToProjectAdapter
+from graph.hdf5_io.facade import HDF5Facade
 from graph.hdf5_io.models import FieldSettings
 from graph.hdf5_io.utils import extract_plot_widget_settings
+from graph.main.graph_main import manageGraph
 from graph.main.test_main_graph import test_graph
+from graph.ui.action_registry import ActionRegistry
+from graph.ui.buttons_panel import ButtonsControl
+from graph.ui.filters_win import filtersClass
+from graph.ui.notification import NotificationWidget
+from graph.ui.osc_selector import OscilloscopeSelector
+from graph.ui.osc_wave_graph import graphOsc
+from graph.ui.paramSelectors import paramController, paramSelector
+from graph.ui.select_session import SessionSelectControl
+from graph.ui.status_line import StatusBar
+from graph.ui.tabPage_win import tabPage
+from graph.ui.tree_curves import treeWin
 
 logger = logging.getLogger(__name__)
 
@@ -65,13 +78,13 @@ logger = logging.getLogger(__name__)
 class GraphWindow(QMainWindow):
     graph_win_close_signal = pyqtSignal(int)
 
-    def __init__(self, session_selector, import_buttons=None, version=None):
+    def __init__(self, session_selector, import_buttons=None, version=None,
+                 action_registry=None):
         super().__init__()
         self.setWindowTitle(("Online Graph " + version) if version else "Online Graph")
+        self.action_registry = action_registry
 
-        # --- адаптивная геометрия ---
         self._apply_adaptive_geometry()
-
         self.notification = None
         self.initUI(session_selector=session_selector, import_buttons=import_buttons)
 
@@ -142,29 +155,37 @@ class GraphWindow(QMainWindow):
 
     def __add_menu(self):
         menubar = self.menuBar()
-        
-        file_menu = menubar.addMenu(QApplication.translate('graph',"Файл") )
 
-        data_menu = menubar.addMenu(QApplication.translate('graph',"Данные") )
-        self.rename_param_action = QAction(QApplication.translate('graph',"Изменить имена параметров"), self)
-        self.read_all_statistics_action = QAction(QApplication.translate('graph',"Показать статистику"), self)
+        file_menu = menubar.addMenu(QApplication.translate('graph', "Файл"))
+        # меню «Правка» создаём сразу и наполняем из реестра
+        self.edit_menu = menubar.addMenu(QApplication.translate('graph', "Правка"))
+        data_menu = menubar.addMenu(QApplication.translate('graph', "Данные"))
 
-        self.log_path_open = QtWidgets.QAction(QApplication.translate('graph',"Открыть лог файл"),self)
-        
-        self.save_action = QAction(QApplication.translate('graph',"Сохранить"), self)
+        self.rename_param_action = QAction(
+            QApplication.translate('graph', "Изменить имена параметров"), self)
+        self.read_all_statistics_action = QAction(
+            QApplication.translate('graph', "Показать статистику"), self)
+        self.log_path_open = QtWidgets.QAction(
+            QApplication.translate('graph', "Открыть лог файл"), self)
+
+        self.save_action = QAction(QApplication.translate('graph', "Сохранить"), self)
         self.save_action.setShortcut("Ctrl + S")
-        self.save_action_as = QAction(QApplication.translate('graph',"Сохранить как..."), self)
+        self.save_action_as = QAction(QApplication.translate('graph', "Сохранить как..."), self)
         self.save_action_as.setShortcut("Ctrl + Shift + S")
-        self.load_action = QAction(QApplication.translate('graph',"Загрузить"), self)
+        self.load_action = QAction(QApplication.translate('graph', "Загрузить"), self)
         self.load_action.setShortcut("Ctrl + O")
-        
+
         file_menu.addAction(self.save_action)
         file_menu.addAction(self.save_action_as)
         file_menu.addAction(self.load_action)
         file_menu.addAction(self.log_path_open)
 
         data_menu.addAction(self.rename_param_action)
-        #data_menu.addAction(self.read_all_statistics_action)
+
+        # --- «Правка» из реестра, БЕЗ QToolBar ---
+        if self.action_registry is not None:
+            self.action_registry.add_actions_to_menu(self.edit_menu, "edit")
+        # Если реестра нет — меню остаётся пустым, приложение не падает
 
     def eventFilter(self, obj, event):
         if obj == self.session_selector:
@@ -191,15 +212,16 @@ class GraphWindow(QMainWindow):
             return total_height
         else:
             return self.session_selector.sizeHint().height()
-        
+
     def closeEvent(self, event):
         self.graph_win_close_signal.emit(1)
         event.accept()
-        
+
+
 class GraphSession(QWidget):
     graph_win_close_signal = pyqtSignal(int)
 
-    def __init__(self, id, name, alias_manager, session_controller, simple_mode=False, ses_uuid=None,):
+    def __init__(self, id, name, alias_manager, session_controller, simple_mode=False, ses_uuid=None):
         super().__init__()
         self.alias_manager = alias_manager
         self.notification = None
@@ -211,6 +233,10 @@ class GraphSession(QWidget):
         logger.info(f"Session {self.uuid=} created")
         self._simple_mode = simple_mode
         self.selection_model = SelectionModel(parent=self)
+
+        # per-session undo manager
+        self.undo_manager = SessionUndoManager(parent=self)
+
         self.initUI()
 
     @property
@@ -234,14 +260,14 @@ class GraphSession(QWidget):
     @property
     def session_name(self):
         return self._session_name
-    
+
     @session_name.setter
     def session_name(self, value):
         self._session_name = value
 
     def get_compare_graph(self):
         return self.session_controller.get_compare_graph()
-    
+
     def animation_start(self, animator):
         self.session_controller.animation_start(animator)
 
@@ -325,16 +351,26 @@ class GraphSession(QWidget):
                 self
             )
 
+        # подключение undo для инфинитных линий обеих вкладок
+        for gv in (self.graph_main.graphView,
+                   self.graph_wave.graphView,
+                   self.graph_wave.graphView_loop):
+            if gv is None:
+                continue
+            gv.inf_line_added.connect(self._on_inf_line_added)
+            gv.inf_line_removed.connect(self._on_inf_line_removed)
+            gv.appearance_undo_callback = self._on_appearance_changed
+
         self.tabWidget.setCurrentIndex(0)
 
-    def show_tooltip(self, message, show_while_not_click = False, timeout = 3000):
+    def show_tooltip(self, message, show_while_not_click=False, timeout=3000):
         if self.notification is None:
             self.notification = NotificationWidget(parent=self)
 
         self.notification.set_message(message)
 
         note_size = self.notification.sizeHint()
-        pos = QPoint(self.width() - note_size.width() , self.height() - note_size.height())
+        pos = QPoint(self.width() - note_size.width(), self.height() - note_size.height())
 
         self.notification.move(pos)
 
@@ -343,25 +379,76 @@ class GraphSession(QWidget):
         else:
             self.notification.show_with_animation(timeout=timeout)
 
-    def filters_callback(self, filter_comand: FilterCommand):
+    # ------------------------------------------------------------------
+    # Undo/redo: обработчики сигналов от виджетов
+    # ------------------------------------------------------------------
+    def _on_inf_line_added(self, line):
+        if self.undo_manager.is_applying:
+            return
+        from graph.core.undo_commands import AddInfiniteLineCommand
+        target = None
+        for gv in (self.graph_main.graphView,
+                   self.graph_wave.graphView,
+                   self.graph_wave.graphView_loop):
+            if gv is not None and line in gv.inf_lines:
+                target = gv
+                break
+        if target is None:
+            return
+        self.undo_manager.push(AddInfiniteLineCommand(target, line))
 
+    def _on_inf_line_removed(self, line):
+        if self.undo_manager.is_applying:
+            return
+        from graph.core.undo_commands import RemoveInfiniteLineCommand
+        sender = self.sender()
+        if sender is None:
+            return
+        self.undo_manager.push(RemoveInfiniteLineCommand(sender, line))
+
+    def _on_appearance_changed(self, before_settings, after_settings):
+        if self.undo_manager.is_applying:
+            return
+        from graph.core.undo_commands import GraphAppearanceCommand
+        sender = self.sender()
+        if sender is None:
+            return
+        self.undo_manager.push(GraphAppearanceCommand(sender, before_settings, after_settings))
+
+    # ------------------------------------------------------------------
+    # Фильтры
+    # ------------------------------------------------------------------
+    def filters_callback(self, filter_comand: FilterCommand):
         is_apply = True
         if self.data_manager is not None:
             if not self.can(modify=True):
                 is_apply = False
 
-        if is_apply:
-            active_tab_index = self.tabWidget.currentIndex()
-            if active_tab_index == 0:
-                self.graph_main.set_filters(filter_comand)
-            elif active_tab_index == 1:
-                self.graph_wave.set_filters(filter_comand)
+        if not is_apply:
+            self.show_tooltip(
+                QApplication.translate("GraphWindow", "Дождитесь окончания эксперимента"),
+                timeout=3000,
+            )
+            return
 
-            self.show_tooltip( QApplication.translate("GraphWindow","Фильтры применены к выделенным графикам. \n Для сброса фильтров выделите графики и нажмите кнопку esc."), timeout=5000)
-        else:
-            self.show_tooltip( QApplication.translate("GraphWindow","Дождитесь окончания эксперимента"), timeout=3000)
+        active_tab_index = self.tabWidget.currentIndex()
+        if active_tab_index == 0:
+            affected = self.graph_main.set_filters(filter_comand)
+            if affected and not self.undo_manager.is_applying:
+                self.undo_manager.push(ApplyFilterCommand(affected, filter_comand))
+        elif active_tab_index == 1:
+            self.graph_wave.set_filters(filter_comand)
 
-    def update_graphics(self, new_data: dict, is_exp_stop = False):
+        self.show_tooltip(
+            QApplication.translate(
+                "GraphWindow",
+                "Фильтры применены к выделенным графикам. \n "
+                "Для сброса фильтров выделите графики и нажмите кнопку esc.",
+            ),
+            timeout=5000,
+        )
+
+    def update_graphics(self, new_data: dict, is_exp_stop=False):
         '''is_exp_stop - флаг остановки эксперимента, передается, когда эксперимент завершается, принудительно переводит окно графиков в расщиренный режим просмотра'''
         if new_data:
             self.data_manager.add_measurement_data(new_data)
@@ -390,9 +477,10 @@ class GraphSession(QWidget):
         self.select_win.set_second_check_box(settings.graph_field.is_second_axis_enabled)
         self.select_win.set_multiple_mode(settings.graph_field.is_multiple_selection_enabled)
 
+
 class running_exp_test(QWidget):
-    
-    def __init__(self,graph_class, max_points, periodsec):
+
+    def __init__(self, graph_class, max_points, periodsec):
         super().__init__()
         self.test1 = test_graph(is_sine_wave=True)
         self.test2 = test_graph()
@@ -406,8 +494,8 @@ class running_exp_test(QWidget):
         self.graph_class = graph_class
 
     def run(self):
-        self.id = self.graph_class.start_new_session("test",is_experiment_running=True, use_timestamps=True)
-        self.timer.start(int(self.periodsec*1000))
+        self.id = self.graph_class.start_new_session("test", is_experiment_running=True, use_timestamps=True)
+        self.timer.start(int(self.periodsec * 1000))
 
     def gen_new_data(self):
         """функция раз в n секунд генерирует словарь и обновляет данные"""
@@ -421,14 +509,38 @@ class running_exp_test(QWidget):
         if self.counter_test >= self.max_points:
             self.counter_test = 0
             self.timer.stop()
-            self.graph_class.stop_session_running( self.id )
+            self.graph_class.stop_session_running(self.id)
+
 
 class sessionController():
-    def __init__(self, current_version = None):
+    def __init__(self, current_version=None):
         self.version_app = "1.0.0" if not current_version else str(current_version)
         self.experiment_port = ExperimentPort(self)
         self.alias_manager = ParameterAliasManager()
         self.action_registry = ActionRegistry(parent=self.alias_manager)
+
+        # --- undo/redo через реестр ---
+        self.undo_action = self.action_registry.register(
+            "edit.undo",
+            QApplication.translate("GraphWindow", "Отменить"),
+            self._undo_current_session,
+            shortcut="Ctrl+Z",
+            context="edit",
+            tooltip=QApplication.translate("GraphWindow", "Отменить последнее действие"),
+        )
+        self.redo_action = self.action_registry.register(
+            "edit.redo",
+            QApplication.translate("GraphWindow", "Повторить"),
+            self._redo_current_session,
+            shortcut="Ctrl+Y",
+            context="edit",
+            tooltip=QApplication.translate("GraphWindow", "Повторить отменённое действие"),
+        )
+        # Второй shortcut для redo
+        self.redo_action.setShortcuts(["Ctrl+Y", "Ctrl+Shift+Z"])
+        self.undo_action.setEnabled(False)
+        self.redo_action.setEnabled(False)
+
         self.session_selector = SessionSelectControl()
         self.buttons_controller = ButtonsControl(self.session_selector)
         self.status_bar = StatusBar()
@@ -443,7 +555,14 @@ class sessionController():
         self.buttons_controller.new_data_imported.connect(self.data_imported)
         self.buttons_controller.compare_sessions_requested.connect(self.compare_sessions)
 
-        self.graphics_win = GraphWindow(self.controll_sessions_win, self.buttons_controller.widget, version=self.version_app)
+        # ВАЖНО: передаём action_registry в GraphWindow,
+        # иначе меню «Правка» остаётся пустым.
+        self.graphics_win = GraphWindow(
+            self.controll_sessions_win,
+            self.buttons_controller.widget,
+            version=self.version_app,
+            action_registry=self.action_registry,
+        )
         self.graphics_win.setStatusBar(self.status_bar)
         self.graphics_win.graph_win_close_signal.connect(self.close_graph_window)
         self.graphics_win.save_action.triggered.connect(self.push_button_save_graph)
@@ -452,6 +571,7 @@ class sessionController():
         self.graphics_win.save_action_as.triggered.connect(self.push_button_save_graph_as)
         self.graphics_win.rename_param_action.triggered.connect(self.show_alias_dialog)
         self.graphics_win.read_all_statistics_action.triggered.connect(self.read_statistics)
+
         self.way_to_save_file = None
         self.way_to_save_excel = None
         self.way_to_save_project = None
@@ -461,8 +581,7 @@ class sessionController():
         self.animation_win = None
         self.dot_counter = 0  # счётчик для анимации точек
 
-
-        # --- Реестр действий: демонстрационная регистрация ---
+        # Регистрация действия «Сбросить имя кривой» (контекст curve)
         self.action_registry.register(
             "curve.reset_name",
             QApplication.translate("GraphWindow", "Сбросить название выделенных кривых"),
@@ -470,8 +589,60 @@ class sessionController():
             context="curve",
         )
 
+        # Синхронизируем состояние undo/redo-кнопок с реальностью
+        # (нужно даже при отсутствии сессий — просто выставит disabled).
+        self._update_undo_actions()
+
         self.status_bar.set_permanent("Готово")
 
+    # ------------------------------------------------------------------
+    # Undo/redo: центральные слоты
+    # ------------------------------------------------------------------
+    def _current_session(self):
+        """Активная GraphSession или None."""
+        if not hasattr(self, "graphics_win") or self.graphics_win is None:
+            return None
+        current_widget = self.graphics_win.stack.currentWidget()
+        for session in self.graph_sessions.values():
+            if session is current_widget:
+                return session
+        return None
+
+    def _undo_current_session(self):
+        session = self._current_session()
+        if session is not None and hasattr(session, "undo_manager"):
+            session.undo_manager.undo()
+
+    def _redo_current_session(self):
+        session = self._current_session()
+        if session is not None and hasattr(session, "undo_manager"):
+            session.undo_manager.redo()
+
+    def _update_undo_actions(self):
+        tr = QApplication.translate
+        base_u = tr('graph', "Отменить")
+        base_r = tr('graph', "Повторить")
+
+        session = self._current_session()
+        if session is None or not hasattr(session, "undo_manager"):
+            self.undo_action.setEnabled(False)
+            self.redo_action.setEnabled(False)
+            self.undo_action.setText(base_u)
+            self.redo_action.setText(base_r)
+            return
+
+        mgr = session.undo_manager
+        self.undo_action.setEnabled(mgr.can_undo())
+        self.redo_action.setEnabled(mgr.can_redo())
+
+        ut = mgr.undo_text()
+        rt = mgr.redo_text()
+        self.undo_action.setText(f"{base_u}: {ut}" if ut else base_u)
+        self.redo_action.setText(f"{base_r}: {rt}" if rt else base_r)
+
+    # ------------------------------------------------------------------
+    # Окно
+    # ------------------------------------------------------------------
     def close_graph_window(self):
         if self.compare_graph is not None:
             self.compare_graph.close()
@@ -490,11 +661,12 @@ class sessionController():
             self.animation_win.close()
         self.animation_win = AnimationWindow(animator=animator)
         self.animation_win.show()
-            
+
     def compare_sessions(self):
         data = {}
         for session_id, session in self.graph_sessions.items():
-            data[session_id] = {"name": session.session_name, "values": session.data_manager.get_name_params()}
+            data[session_id] = {"name": session.session_name,
+                                "values": session.data_manager.get_name_params()}
         data_test = {
             101: {"name": "Фрукты", "values": ["яблоко", "банан", "апельсин", "киви"]},
             102: {"name": "Овощи", "values": ["морковь", "картофель", "помидор", "огурец"]},
@@ -527,14 +699,14 @@ class sessionController():
                 simple_mode=True,
                 ses_uuid=125
             )
-            self.compare_graph = CompareWindowMediator(1,     
+            self.compare_graph = CompareWindowMediator(1,
                                                        "test",
                                                        self.alias_manager,
                                                        graph_compare,
-                                                    )
-            
+                                                       )
+
             self.compare_graph.window.show()
-            
+
     def get_compare_graph(self):
         if self.compare_graph is None:
             graph_compare = GraphSession(
@@ -545,11 +717,11 @@ class sessionController():
                 simple_mode=True,
                 ses_uuid=125
             )
-            self.compare_graph = CompareWindowMediator(1,     
+            self.compare_graph = CompareWindowMediator(1,
                                                        "test",
                                                        self.alias_manager,
                                                        graph_compare,
-                                                    )
+                                                       )
         self.compare_graph.window.show()
         return self.compare_graph
 
@@ -559,17 +731,9 @@ class sessionController():
 
     def show_alias_dialog(self):
         """Показывает диалог управления псевдонимами"""
-        #available_params = self.get_name_params()
-        dialog = ParameterAliasDialog(self.alias_manager,  self.graphics_win)
+        # available_params = self.get_name_params()
+        dialog = ParameterAliasDialog(self.alias_manager, self.graphics_win)
         dialog.exec_()
-
-    def _current_session(self):
-        """Активная GraphSession или None."""
-        current_widget = self.graphics_win.stack.currentWidget()
-        for session in self.graph_sessions.values():
-            if session is current_widget:
-                return session
-        return None
 
     def _action_reset_curve_name(self):
         """Сбросить пользовательские имена у выделенных кривых в текущей сессии."""
@@ -613,6 +777,7 @@ class sessionController():
             for data in sorted(sessions_data, key=sort_key):
                 print(f"{data['session_name']}, {data['mean']}, {data['std']}")
             print()
+
     def push_button_save_graph(self):
         """Быстрое сохранение проекта – всегда в HDF5, независимо от последнего Save As."""
         if self.way_to_save_project is not None:
@@ -721,7 +886,7 @@ class sessionController():
             self.saving_excell_timer.stop()
             self.status_bar.hide_progress()
             self.status_bar.set_permanent(f"Файл эксель сохранён: {self.temp_excell_file_path}")
-            
+
     def push_button_open_graph(self):
         logger.debug("нажата кнопка открыть график")
         options = QtWidgets.QFileDialog.Options()
@@ -747,11 +912,13 @@ class sessionController():
     def stop_session_running(self, session_id):
         if self.graph_sessions.get(session_id):
             self.graph_sessions[session_id].data_manager.stop_session_running()
-            self.session_selector.set_session_status(session_id=session_id, status = "Exp completed")
+            self.session_selector.set_session_status(session_id=session_id, status="Exp completed")
 
-    def start_new_session(self, session_name: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None, uuid = None) -> str | bool:
+    def start_new_session(self, session_name: str, use_timestamps: bool = False,
+                          is_experiment_running: bool = False, new_data=None, uuid=None) -> str | bool:
         session_id = self.session_selector.get_free_id()
-        is_session_created = self.__create_session(session_name, session_id, use_timestamps, is_experiment_running, new_data, uuid)
+        is_session_created = self.__create_session(session_name, session_id, use_timestamps,
+                                                   is_experiment_running, new_data, uuid)
 
         if is_session_created:
             if is_experiment_running:
@@ -764,10 +931,14 @@ class sessionController():
 
         return session_id if is_session_created else False
 
-    def __create_session(self, session_name: str, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data = None, uuid = None) -> bool:
-        new_session_graph = GraphSession(session_id, copy.copy(session_name), alias_manager=self.alias_manager, ses_uuid=uuid, session_controller = self)
+    def __create_session(self, session_name: str, session_id: str, use_timestamps: bool = False,
+                         is_experiment_running: bool = False, new_data=None, uuid=None) -> bool:
+        new_session_graph = GraphSession(session_id, copy.copy(session_name),
+                                         alias_manager=self.alias_manager,
+                                         ses_uuid=uuid, session_controller=self)
         try:
-            new_session_graph.data_manager.start_new_session(session_id, use_timestamps, is_experiment_running, new_data)
+            new_session_graph.data_manager.start_new_session(session_id, use_timestamps,
+                                                             is_experiment_running, new_data)
             logger.info(f"Session {session_id} {new_session_graph.uuid=} {new_session_graph.session_name=} created")
         except Exception as e:
             logger.warning(f"Failed to start session {session_id} {e}")
@@ -776,15 +947,21 @@ class sessionController():
         self.graph_sessions[session_id] = new_session_graph
         self.graphics_win.stack.addWidget(new_session_graph)
 
+        # подключаем сигнал изменения истории — обновит состояние undo/redo-кнопок
+        new_session_graph.undo_manager.state_changed.connect(self._update_undo_actions)
+
         return True
 
     def change_session(self, session_id: str):
-        if self.graph_sessions.get(session_id) is not None:
-            self.graphics_win.stack.setCurrentWidget(self.graph_sessions[session_id])
+        session = self.graph_sessions.get(session_id)
+        if session is not None:
+            self.graphics_win.stack.setCurrentWidget(session)
         else:
             logger.warning(f"Session {session_id} not found")
+        # обновляем состояние undo/redo-кнопок под новую сессию
+        self._update_undo_actions()
 
-    def data_imported(self,session_name: str, session_id: str, data: dict):
+    def data_imported(self, session_name: str, session_id: str, data: dict):
         status = self.__create_session(session_name, session_id, new_data=data)
         if status:
             self.graph_sessions[session_id].data_manager.stop_session_running()
@@ -806,16 +983,39 @@ class sessionController():
 
     def _session_renamed(self, session_id: str, new_session_name: str):
         logger.info(f"_session_renamed {session_id=} {new_session_name=}")
-        if self.graph_sessions.get(session_id) is not None:
-            self.graph_sessions[session_id].session_name = copy.copy(new_session_name)
-        else:
+        session = self.graph_sessions.get(session_id)
+        if session is None:
             logger.warning(f"Session {session_id} not found")
+            return
+
+        old_name = session.session_name
+        if old_name == new_session_name:
+            return
+
+        session.session_name = copy.copy(new_session_name)
+
+        if hasattr(session, "undo_manager") and not session.undo_manager.is_applying:
+            session.undo_manager.push(
+                RenameSessionCommand(self, session_id, old_name, new_session_name)
+            )
 
     def _session_description_changed(self, session_id: str, new_description: str):
-        if self.graph_sessions.get(session_id) is not None:
-            self.graph_sessions[session_id].description = new_description
-        else:
+        session = self.graph_sessions.get(session_id)
+        if session is None:
             logger.warning(f"Session {session_id} not found")
+            return
+
+        old_description = session.description or ""
+        new_description = new_description or ""
+        if old_description == new_description:
+            return
+
+        session.description = new_description
+
+        if hasattr(session, "undo_manager") and not session.undo_manager.is_applying:
+            session.undo_manager.push(
+                ChangeDescriptionCommand(self, session_id, old_description, new_description)
+            )
 
     def update_session_description(self, session_id: str, new_description: str):
         logger.info(f"update_session_description {session_id} {new_description}")
@@ -834,7 +1034,7 @@ class sessionController():
         self._session_renamed(session_id, new_session_name)
         self.session_selector.set_session_name(session_id, new_session_name)
         return True
-    
+
     def update_session_data(self, session_id: str, data: dict) -> bool:
         session = self.graph_sessions.get(session_id)
         if session is None:
@@ -852,22 +1052,22 @@ class sessionController():
             if self.graph_sessions[session_id].session_name == session_name:
                 return session_id
         return None
-    
+
     def get_session_name(self, session_id: str) -> str:
         logger.info(f"get_session_name {session_id} list: {self.graph_sessions}")
         if self.graph_sessions.get(session_id) is None:
             logger.warning(f"Session {session_id} not found")
             return None
         return self.graph_sessions[session_id].session_name
-    
+
     def decode_add_exp_parameters(self, session_id, entry, time) -> bool:
         if self.graph_sessions.get(session_id) is None:
             return False
         return self.graph_sessions[session_id].data_manager.decode_add_exp_parameters(entry, time)
-    
+
+
 def run_graph_process(queue):
     app = QApplication([])
     controller = sessionController(current_version="test")
     controller.controll_sessions_win.show()
     app.exec_()
-
