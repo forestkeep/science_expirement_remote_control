@@ -67,6 +67,11 @@ class graphSelectAdapter:
 
         self.selector.clear_selections("", first, second, is_signal=True)
 
+        # Скрыть артефакты анализа, привязанные к этой кривой
+        ctrl = getattr(self.main_class, "analysis_controller", None)
+        if ctrl is not None:
+            ctrl.on_source_hidden(y_name)
+
     def stop_session(self):
         """
         Остановка эксперимента.
@@ -135,6 +140,23 @@ class graphSelectAdapter:
                 )
 
     def destroy_curve(self, curve_data_obj: linearData):
+        # 1. Убрать все артефакты анализа, производные от этой кривой
+        #    (фитинги, спектры, интегралы, автокорреляции, attached/domain-панели).
+        ctrl = getattr(self.main_class, "analysis_controller", None)
+        if ctrl is not None:
+            root_name = curve_data_obj.rel_data.root_name
+            for art in list(ctrl.get_artifacts_for_curve(root_name)):
+                # физическое удаление без новой undo-команды:
+                # undo-восстановление уже обеспечивает DeleteCurveCommand
+                try:
+                    ctrl._do_remove(art.id)
+                except Exception:
+                    logger.exception(
+                        "destroy_curve: failed to remove artifact %s", art.id
+                    )
+            ctrl.artifacts_changed.emit()
+
+        # 2. Убрать кривую с графика и из стека
         if curve_data_obj.is_draw:
             self.hide_curve(curve_data_obj)
         self.graph.destroy_curve(curve_data_obj)
@@ -176,6 +198,10 @@ class graphSelectAdapter:
             self.selector.set_selections("", [], [y_name], is_signal=True)
         else:
             logger.warning(f"show_curve: unknown axis {axis} for {y_name}")
+
+        ctrl = getattr(self.main_class, "analysis_controller", None)
+        if ctrl is not None:
+            ctrl.on_source_shown(y_name)
 
     def reset_filters(self, curve_data_obj: linearData):
         self.graph.reset_filters(curve_data_obj)

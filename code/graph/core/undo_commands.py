@@ -129,6 +129,8 @@ class DeleteCurveCommand(UndoCommand):
         self.was_draw = bool(self.curve.is_draw)
         self.number_axis = self.curve.number_axis or 1
         self.top_index = tree_win.tree_widget.indexOfTopLevelItem(tree_item)
+        self._artifact_cmds = []
+        self._macro = None
 
     def text(self):
         return _TR("Удаление кривой")
@@ -207,6 +209,22 @@ class DeleteCurveCommand(UndoCommand):
             sel.set_selections("", [y_name], [], is_signal=True)
 
     def redo(self):
+        # собираем артефакты, привязанные к кривой
+        session = self.session
+        controller = getattr(session, "analysis_controller", None)
+        self._artifact_cmds = []
+        if controller is not None:
+            from graph.analysis.commands import RemoveAnalysisCommand, MacroAnalysisCommand
+            artifacts = controller.get_artifacts_for_curve(self.root_name)
+            macro = MacroAnalysisCommand(controller)
+            for art in artifacts:
+                c = RemoveAnalysisCommand(controller, art)
+                self._artifact_cmds.append(c)
+                macro.add(c)
+            if self._artifact_cmds:
+                macro.redo()
+        self._macro = macro if self._artifact_cmds else None
+
         if self.was_draw:
             self._detach_from_selector()
         self._detach_from_graph()
@@ -214,9 +232,12 @@ class DeleteCurveCommand(UndoCommand):
         self.tree_win.update_visible()
 
     def undo(self):
+        # сначала кривая, потом артефакты
         self._attach_to_tree()
         self._attach_to_graph()
         self._attach_to_selector()
+        if getattr(self, "_macro", None) is not None:
+            self._macro.undo()
         self.tree_win.update_visible()
 
 

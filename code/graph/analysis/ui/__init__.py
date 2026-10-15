@@ -1,0 +1,1 @@
+from .analysis_tab import AnalysisTab  # noqa: F401

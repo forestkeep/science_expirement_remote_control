@@ -72,6 +72,11 @@ from graph.ui.status_line import StatusBar
 from graph.ui.tabPage_win import tabPage
 from graph.ui.tree_curves import treeWin
 from graph.ui.inspector import Inspector
+from graph.analysis.registry import AnalysisToolRegistry
+from graph.analysis.models import tr_analysis
+
+from graph.analysis import AnalysisController
+from graph.analysis.io.serializer import save_artifacts, load_artifacts
 
 logger = logging.getLogger(__name__)
 
@@ -237,6 +242,8 @@ class GraphSession(QWidget):
 
         # per-session undo manager
         self.undo_manager = SessionUndoManager(parent=self)
+        self.analysis_controller = AnalysisController(self, parent=self)
+        self.analysis_controller.artifacts_changed.connect(self._sync_analysis_tree)
 
         self.initUI()
 
@@ -272,6 +279,34 @@ class GraphSession(QWidget):
     def animation_start(self, animator):
         self.session_controller.animation_start(animator)
 
+    def _sync_analysis_tree(self) -> None:
+        """Синхронизирует AnalysisTreeItem'ы в дереве под источниками."""
+        from graph.ui.tree_curves import AnalysisTreeItem, CurveTreeItem
+        for curve_item in self.tree_class.curves:
+            if not isinstance(curve_item, CurveTreeItem):
+                continue
+            root_name = curve_item.curve_data_obj.rel_data.root_name
+            wanted = {a.id: a for a in self.analysis_controller.get_artifacts_for_curve(root_name)}
+            existing = {it.artifact_id: it for it in curve_item.get_analysis_items()}
+            # Удалить отсутствующие
+            for aid, item in existing.items():
+                if aid not in wanted:
+                    curve_item.remove_analysis_item(item)
+            # Добавить новые
+            for aid, art in wanted.items():
+                if aid not in existing:
+                    desc = AnalysisToolRegistry.instance().get(art.tool_id)
+                    human = tr_analysis(desc.title_key) if desc else art.tool_id
+                    text = f"{root_name} → {human}"
+                    if art.description:
+                        text += f" ({art.description})"
+                    new_item = AnalysisTreeItem(aid, text, tool_id=art.tool_id)
+                    if not art.visibility:
+                        f = new_item.font(0)
+                        f.setItalic(True)
+                        new_item.setFont(0, f)
+                    curve_item.add_analysis_item(new_item, art.order_index)
+
     def initUI(self):
         simple = self._simple_mode
         self.up_lay = QHBoxLayout(self)
@@ -282,6 +317,18 @@ class GraphSession(QWidget):
                 main_class=self,
                 action_registry=getattr(self.session_controller, "action_registry", None),
             )
+            # Клик/выбор в дереве синхронизируется с SelectionModel,
+            # чтобы артефакты анализа подсвечивались на всех графиках.
+            self.tree_class.tree_widget.itemSelectionChanged.connect(
+                self._on_tree_selection_changed
+            )
+
+        if not simple:
+            self.tree_class.analysis_item_removed.connect(self._on_analysis_item_removed)
+            self.tree_class.analysis_item_visibility_toggled.connect(
+                self._on_analysis_item_visibility_toggled)
+            self.tree_class.analysis_item_properties_requested.connect(
+                self._on_analysis_item_properties_requested)
 
         self.tabWidget = QTabWidget()
 
@@ -378,6 +425,23 @@ class GraphSession(QWidget):
 
         self.tabWidget.setCurrentIndex(0)
 
+    def _on_tree_selection_changed(self) -> None:
+        """Синхронизировать выделение дерева с SelectionModel."""
+        try:
+            from graph.ui.tree_curves import CurveTreeItem
+            selected_curves = []
+            for item in self.tree_class.tree_widget.selectedItems():
+                root = item
+                while root.parent() is not None:
+                    root = root.parent()
+                if isinstance(root, CurveTreeItem) and root in self.tree_class.curves:
+                    facade = root.curve_data_obj
+                    if facade not in selected_curves:
+                        selected_curves.append(facade)
+            self.selection_model.select(selected_curves)
+        except Exception:
+            logger.exception("_on_tree_selection_changed failed")
+
     def show_tooltip(self, message, show_while_not_click=False, timeout=3000):
         if self.notification is None:
             self.notification = NotificationWidget(parent=self)
@@ -415,6 +479,18 @@ class GraphSession(QWidget):
     def _on_session_stopped(self):
         """При остановке эксперимента показываем инспектор (режим REVIEW)."""
         self.inspector.setVisible(True)
+
+    def _on_analysis_item_removed(self, artifact_id: str) -> None:
+        self.analysis_controller.remove_artifact(artifact_id)
+
+    def _on_analysis_item_visibility_toggled(self, artifact_id: str, visible: bool) -> None:
+        self.analysis_controller.set_artifact_visibility(artifact_id, visible)
+
+    def _on_analysis_item_properties_requested(self, artifact_id: str) -> None:
+        # Открыть вкладку «Анализ» с параметрами артефакта
+        if hasattr(self, "inspector"):
+            self.inspector.curve_inspector.tabs.setCurrentWidget(
+                self.inspector.curve_inspector.tools_tab)
 
     def _on_inf_line_removed(self, line):
         if self.undo_manager.is_applying:
@@ -494,6 +570,21 @@ class GraphSession(QWidget):
         # аналогично для осциллограмм, если нужно
         self.select_win.set_second_check_box(settings.graph_field.is_second_axis_enabled)
         self.select_win.set_multiple_mode(settings.graph_field.is_multiple_selection_enabled)
+
+    def save_analysis_artifacts_to_h5(self, session_group) -> None:
+        """Вызывается при сохранении проекта."""
+        if hasattr(self, "analysis_controller"):
+            save_artifacts(self.analysis_controller.store, session_group)
+
+    def restore_analysis_artifacts_from_h5(self, session_group) -> None:
+        if not hasattr(self, "analysis_controller"):
+            return
+        artifacts = load_artifacts(session_group)
+        for art in artifacts:
+            cmd = None
+            from graph.analysis.commands import ApplyAnalysisCommand
+            cmd = ApplyAnalysisCommand(self.analysis_controller, art)
+            self.undo_manager.push(cmd, execute=True)
 
 
 class running_exp_test(QWidget):

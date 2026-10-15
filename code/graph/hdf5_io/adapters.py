@@ -287,6 +287,17 @@ class HDF5ToProjectAdapter:
 
         core_session.graph_sessions[session_id].apply_field_settings(session.field_settings)
 
+         # Восстановление артефактов анализа
+        try:
+            from graph.analysis.commands import ApplyAnalysisCommand
+            core_sess = core_session.graph_sessions[session_id]
+            if hasattr(core_sess, "analysis_controller") and session.analysis_artifacts:
+                for art in session.analysis_artifacts:
+                    cmd = ApplyAnalysisCommand(core_sess.analysis_controller, art)
+                    core_sess.undo_manager.push(cmd, execute=True)
+        except Exception:
+            logger.exception("restore analysis artifacts failed")
+
     def apply_graph_settings(self, graph_widget: PatchedPlotWidget, settings: FieldSettings) -> None:
         """
         Применяет настройки к графику.

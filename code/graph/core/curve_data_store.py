@@ -59,6 +59,10 @@ class CurveDataStore:
 
         self._on_changed: List[Callable[[], None]] = []
 
+        # --- Погрешности ---
+        self.uncertainty_records: list = []
+        self.active_uncertainty_ids: set = set()
+
     # -- observers ---------------------------------------------------
     def on_changed(self, cb: Callable[[], None]) -> None:
         if cb not in self._on_changed:
@@ -181,4 +185,25 @@ class CurveDataStore:
     def stop_session(self) -> None:
         if not self.data_reset():
             logger.debug("CurveDataStore.stop_session: data was not filtered")
+        self._notify_changed()
+
+    # -- uncertainty -------------------------------------------------
+    def active_uncertainty_records(self) -> list:
+        return [r for r in self.uncertainty_records if r.id in self.active_uncertainty_ids]
+
+    def add_uncertainty(self, record) -> None:
+        self.uncertainty_records.append(record)
+        self.active_uncertainty_ids.add(record.id)
+        self._notify_changed()
+
+    def remove_uncertainty(self, record_id: str) -> None:
+        self.uncertainty_records = [r for r in self.uncertainty_records if r.id != record_id]
+        self.active_uncertainty_ids.discard(record_id)
+        self._notify_changed()
+
+    def set_uncertainty_active(self, record_id: str, active: bool) -> None:
+        if active:
+            self.active_uncertainty_ids.add(record_id)
+        else:
+            self.active_uncertainty_ids.discard(record_id)
         self._notify_changed()

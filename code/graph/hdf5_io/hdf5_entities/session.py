@@ -112,6 +112,16 @@ class HDF5Session(BaseHDF5Entity):
             plot_entity_group = plots_group.create_group(plot_name)
             plot_entity = HDF5Plot(plot_entity_group)
             plot_entity.write(plot)
+
+         # --- Артефакты анализа ---
+        try:
+            from graph.analysis.io.serializer import save_artifacts
+            # Хук: если сессия ядра передана через session.analysis_controller,
+            # пишем артефакты. Здесь мы не имеем ссылки на GraphSession,
+            # поэтому сохранение артефактов выполняется отдельно из SessionController
+            # (см. save_project в hdf5_io/facade.py).
+        except Exception:
+            logger.exception("write analysis artifacts failed")
     
     def read(self) -> Session:
         """Читает сессию из HDF5 и возвращает объект Session."""
@@ -185,6 +195,13 @@ class HDF5Session(BaseHDF5Entity):
             data_manager=data_manager,
             plots=plots
         )
+
+        try:
+            from graph.analysis.io.serializer import load_artifacts
+            session.analysis_artifacts = load_artifacts(self._hdf5_object)
+        except Exception:
+            logger.exception("read analysis artifacts failed")
+            session.analysis_artifacts = []
         
         return session
     

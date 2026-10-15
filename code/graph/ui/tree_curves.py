@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (QAction, QApplication,  QDialog,
                              QMenu, QMessageBox, QPushButton, QTextEdit,
                              QTreeWidget, QTreeWidgetItem, QVBoxLayout,
                              QWidget, QInputDialog, QDialogButtonBox)
-
+from PyQt5.QtGui import QBrush, QColor
 import copy
 
 from graph.core.calc_values_for_graph import ArrayProcessor
@@ -68,6 +68,17 @@ class HistoryItem(QTreeWidgetItem):
     def __init__(self, text: str, filter_command, parent=None):
         super().__init__(parent, [text])
         self.filter_command = filter_command
+
+
+class AnalysisTreeItem(QTreeWidgetItem):
+    """Узел дерева — результат анализа. Всегда вложен непосредственно в источник."""
+
+    def __init__(self, artifact_id: str, text: str, parent=None, tool_id: str = ""):
+        super().__init__(parent, [text])
+        self.artifact_id = artifact_id
+        self.tool_id = tool_id
+        self.setFont(0, QFont("Arial", 9))
+        self.setForeground(0, QBrush(QColor("#cccccc")))
 
 class CurveTreeItem(QTreeWidgetItem):
 
@@ -264,6 +275,22 @@ class CurveTreeItem(QTreeWidgetItem):
                 return self.child(i)
         return None
 
+    # ---- Analysis results ---------------------------------------------
+    def add_analysis_item(self, item: AnalysisTreeItem, order_index: int = 0) -> None:
+        """Добавляет дочерний узел-результат анализа (без промежуточных групп)."""
+        self.addChild(item)
+        item.setData(0, Qt.UserRole, order_index)
+        self.setExpanded(True)
+
+    def remove_analysis_item(self, item: AnalysisTreeItem) -> None:
+        idx = self.indexOfChild(item)
+        if idx >= 0:
+            self.takeChild(idx)
+
+    def get_analysis_items(self) -> list:
+        return [self.child(i) for i in range(self.childCount())
+                if isinstance(self.child(i), AnalysisTreeItem)]
+
 class CurveDialog(QDialog):
     def __init__(self, parent=None, description=None, formula=None, name=None):
         super().__init__(parent)
@@ -332,6 +359,9 @@ class treeWin(QWidget):
     curve_hide = pyqtSignal( object )
     curve_reset = pyqtSignal( object )
     curve_created = pyqtSignal( object, str, str )
+    analysis_item_removed = pyqtSignal(str)
+    analysis_item_visibility_toggled = pyqtSignal(str, bool)
+    analysis_item_properties_requested = pyqtSignal(str)
     def __init__(self, main_class = None, action_registry = None):
         super().__init__()
         self.setMinimumSize(0,0)
@@ -646,6 +676,24 @@ class treeWin(QWidget):
                     for action in registry_actions:
                         context_menu.addAction(action)
 
+
+            if isinstance(item, AnalysisTreeItem):
+                context_menu = QMenu(self)
+                hide_action = QAction(_("Скрыть") if True else "Скрыть", self)
+                del_action = QAction("Удалить", self)
+                props_action = QAction("Свойства", self)
+                hide_action.triggered.connect(
+                    lambda: self.analysis_item_visibility_toggled.emit(item.artifact_id, False))
+                del_action.triggered.connect(
+                    lambda: self.analysis_item_removed.emit(item.artifact_id))
+                props_action.triggered.connect(
+                    lambda: self.analysis_item_properties_requested.emit(item.artifact_id))
+                context_menu.addAction(hide_action)
+                context_menu.addAction(del_action)
+                context_menu.addAction(props_action)
+                context_menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
+                return
+
             context_menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
 
         self.update_visible()
@@ -736,9 +784,10 @@ class treeWin(QWidget):
             from graph.core.undo_commands import DeleteCurveCommand
             cmd = DeleteCurveCommand(session=session, tree_win=self, tree_item=item)
 
-        # существующий поток удаления
+        # Существующий поток удаления (adapter снимает кривую и её артефакты)
         self.curve_deleted.emit(item.curve_data_obj)
-        self.curves.remove(item)
+        if item in self.curves:
+            self.curves.remove(item)
 
         parent = item.parent()
         if parent:
@@ -750,8 +799,10 @@ class treeWin(QWidget):
 
         self.update_visible()
 
+        # Дополнительно привязываем undo-команду, чтобы можно было откатить.
+        # Команда будет вызвана в redo() и восстановит артефакты при undo().
         if cmd is not None and not session.undo_manager.is_applying:
-            session.undo_manager.push(cmd)
+            session.undo_manager.push(cmd, execute=True)
 
     def show_curve(self, item: CurveTreeItem =None):
         if item is None:

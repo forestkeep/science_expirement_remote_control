@@ -44,6 +44,15 @@ class HDF5Facade:
             
             for session_id, session in project_file.sessions.items():
                 h5_file.write_session(session, session_id=session_id)
+                # Артефакты анализа
+                core_session = core_project.graph_sessions.get(session_id)
+                if core_session is not None and hasattr(core_session, "analysis_controller"):
+                    from graph.analysis.io.serializer import save_artifacts
+                    try:
+                        sess_group = h5_file._h5file[session.parameters.uuid]
+                        save_artifacts(core_session.analysis_controller.store, sess_group)
+                    except Exception:
+                        logger.exception("save analysis artifacts failed")
     
     def load_project(self, file_path: str, core_project_class, 
                 load_strategy: Optional[BaseLoadStrategy] = None):

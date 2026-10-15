@@ -1,0 +1,1 @@
+from .adapter import AnalysisRendererAdapter  # noqa: F401

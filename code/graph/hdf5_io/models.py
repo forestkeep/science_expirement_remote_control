@@ -240,6 +240,7 @@ class Session(BaseModel):
     field_settings: FieldSettings = field(default_factory=FieldSettings)
     data_manager: DataManager = field(default_factory=DataManager)
     plots: Dict[str, Plot] = field(default_factory=dict)
+    analysis_artifacts: list = field(default_factory=list)
 
 @dataclass
 class ProjectFile(BaseModel):

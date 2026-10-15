@@ -18,6 +18,7 @@ from graph.utils.line_styles import PRESETS_LINE
 from graph.hdf5_io.utils import extract_plot_widget_settings
 from graph.hdf5_io.adapters import HDF5ToProjectAdapter
 from graph.hdf5_io.models import FieldSettings
+from graph.analysis.ui.analysis_tab import AnalysisTab
 
 logger = logging.getLogger(__name__)
 
@@ -178,6 +179,23 @@ class GraphSettingsWidget(QWidget):
 
         return g
 
+    def apply_preset(self, name):
+        if self._suppress or name == "—":
+            return
+        for preset in getattr(self.graph_view, "preset_styles", []):
+            if preset.get("name") == name:
+                gv_main = self.graph_view
+                def mutate():
+                    for gv in self._all_graph_views():
+                        try:
+                            gv.apply_preset_style(preset)
+                        except Exception:
+                            logger.exception("apply_preset: %r", gv)
+                gv_main.apply_appearance_change(mutate)
+                self.update_settings()
+                _status(self.session, f"Пресет применён: {name}", 2500)
+                return
+
     def _build_grid_group(self):
         g = QGroupBox("Сетка")
         f = QFormLayout(g)
@@ -325,16 +343,23 @@ class GraphSettingsWidget(QWidget):
         gv.apply_appearance_change(mutate)
         _status(self.session, "Настройки графика обновлены", 2000)
 
-    def apply_preset(self, name):
-        if self._suppress or name == "—":
+    def apply_general(self, *_):
+        if self._suppress:
             return
-        for preset in getattr(self.graph_view, "preset_styles", []):
-            if preset.get("name") == name:
-                gv = self.graph_view
-                gv.apply_appearance_change(lambda: gv.apply_preset_style(preset))
-                self.update_settings()
-                _status(self.session, f"Пресет применён: {name}", 2500)
-                return
+        title = self.title_edit.text()
+        antialias = self.antialias_check.isChecked()
+        gv_main = self.graph_view
+
+        def mutate():
+            for gv in self._all_graph_views():
+                try:
+                    gv.setTitle(title)
+                    gv.setAntialiasing(antialias)
+                except Exception:
+                    logger.exception("apply_general: %r", gv)
+
+        gv_main.apply_appearance_change(mutate)
+        _status(self.session, "Настройки графика обновлены", 2000)
 
     def apply_grid(self, *_):
         if self._suppress:
@@ -343,97 +368,86 @@ class GraphSettingsWidget(QWidget):
         show_y = self.grid_y_check.isChecked()
         alpha = int(round(self.grid_alpha.value() / 100.0 * 255))
         color = QColor(self._color_from_btn(self.grid_color_btn))
-        gv = self.graph_view
+        gv_main = self.graph_view
 
         def mutate():
-            try:
-                bottom = gv.plotItem.getAxis("bottom")
-                left = gv.plotItem.getAxis("left")
+            for gv in self._all_graph_views():
+                try:
+                    bottom = gv.plotItem.getAxis("bottom")
+                    left = gv.plotItem.getAxis("left")
+                    bottom.setPen(color)
+                    left.setPen(color)
+                    bottom.setGrid(alpha if show_x else False)
+                    left.setGrid(alpha if show_y else False)
+                    gv.is_grid_shown = bool(show_x or show_y)
+                except Exception:
+                    logger.exception("apply_grid: %r", gv)
 
-                # Цвет (для линий сетки и оси)
-                bottom.setPen(color)
-                left.setPen(color)
-
-                # Интенсивность: setGrid ожидает 0..255 либо False
-                bottom.setGrid(alpha if show_x else False)
-                left.setGrid(alpha if show_y else False)
-
-                gv.is_grid_shown = bool(show_x or show_y)
-            except Exception:
-                logger.exception("apply_grid failed")
-
-        gv.apply_appearance_change(mutate)
+        gv_main.apply_appearance_change(mutate)
         _status(self.session, "Сетка обновлена", 2000)
 
     def apply_axis(self, key):
         if self._suppress:
             return
-        controller = self.graph_view.axises.get(key)
-        if controller is None:
-            return
         w = self._axis_widgets.get(key)
         if w is None:
             return
-
         label = w["label"].text()
         visible = w["visible"].isChecked()
         invert = w["invert"].isChecked()
         log_on = w["log"].isChecked() if w["log"] is not None else None
-        gv = self.graph_view
+        gv_main = self.graph_view
 
         def mutate():
-            try:
-                controller.settings.label = label
-                controller.setLabel(label)
-
-                controller.settings.is_visible = visible
-                if visible:
-                    controller.show()
-                else:
-                    controller.hide()
-
-                controller.settings.is_inverted = invert
-                if key == "bottom":
-                    gv.invert_x_axis(invert)
-                elif key == "left":
-                    gv.invert_y_axis(invert)
-                elif key == "right":
-                    gv.invert_y2_axis(invert)
-
-                if log_on is not None:
-                    # log-режим применяется на PlotItem, но флаг хранится
-                    # в модели каждой оси — выставляем оба независимо.
-                    log_x = gv.plotItem.getAxis("bottom").logMode \
-                        if hasattr(gv.plotItem.getAxis("bottom"), "logMode") else False
-                    # используем setLogMode c сохранением второго флага
-                    cur_x = bool(getattr(gv.plotItem, "_log_x_on", False))
-                    cur_y = bool(getattr(gv.plotItem, "_log_y_on", False))
+            for gv in self._all_graph_views():
+                controller = gv.axises.get(key)
+                if controller is None:
+                    continue
+                try:
+                    controller.settings.label = label
+                    controller.setLabel(label)
+                    controller.settings.is_visible = visible
+                    if visible:
+                        controller.show()
+                    else:
+                        controller.hide()
+                    controller.settings.is_inverted = invert
                     if key == "bottom":
-                        cur_x = log_on
+                        gv.invert_x_axis(invert)
                     elif key == "left":
-                        cur_y = log_on
-                    gv.plotItem.setLogMode(x=cur_x, y=cur_y)
-                    gv.plotItem._log_x_on = cur_x
-                    gv.plotItem._log_y_on = cur_y
-                    controller.settings.log_mode = bool(log_on)
-            except Exception:
-                logger.exception("apply_axis failed")
+                        gv.invert_y_axis(invert)
+                    elif key == "right":
+                        gv.invert_y2_axis(invert)
+                    if log_on is not None:
+                        cur_x = bool(getattr(gv.plotItem, "_log_x_on", False))
+                        cur_y = bool(getattr(gv.plotItem, "_log_y_on", False))
+                        if key == "bottom":
+                            cur_x = log_on
+                        elif key == "left":
+                            cur_y = log_on
+                        gv.plotItem.setLogMode(x=cur_x, y=cur_y)
+                        gv.plotItem._log_x_on = cur_x
+                        gv.plotItem._log_y_on = cur_y
+                        controller.settings.log_mode = bool(log_on)
+                except Exception:
+                    logger.exception("apply_axis %s: %r", key, gv)
 
-        gv.apply_appearance_change(mutate)
+        gv_main.apply_appearance_change(mutate)
         _status(self.session, f"Ось «{self.AXIS_TITLES.get(key, key)}» обновлена", 2000)
-
+    
     def apply_legend(self, *_):
         if self._suppress:
             return
         show = self.legend_check.isChecked()
-        gv = self.graph_view
+        gv_main = self.graph_view
 
         def mutate():
-            for legend in (getattr(gv, "legend", None), getattr(gv, "legend2", None)):
-                if legend is not None:
-                    legend.setVisible(show)
+            for gv in self._all_graph_views():
+                for legend in (getattr(gv, "legend", None), getattr(gv, "legend2", None)):
+                    if legend is not None:
+                        legend.setVisible(show)
 
-        gv.apply_appearance_change(mutate)
+        gv_main.apply_appearance_change(mutate)
         _status(self.session, "Легенда обновлена", 2000)
 
     # ==================================================================
@@ -561,6 +575,27 @@ class GraphSettingsWidget(QWidget):
                 if val:
                     return val
         return fallback
+
+    def _all_graph_views(self):
+        """Все PatchedPlotWidget текущей сессии: основной, attached-панели, domain-вкладки."""
+        views = []
+        main = getattr(self.session, "graph_main", None)
+        if main is not None and getattr(main, "graphView", None) is not None:
+            views.append(main.graphView)
+
+        ctrl = getattr(self.session, "analysis_controller", None)
+        if ctrl is not None:
+            renderer = getattr(ctrl, "renderer", None)
+            if renderer is not None:
+                for info in getattr(renderer._attached, "_panels", {}).values():
+                    p = info.get("plot")
+                    if p is not None and p not in views:
+                        views.append(p)
+                for info in getattr(renderer._domain, "_tabs", {}).values():
+                    p = info.get("plot")
+                    if p is not None and p not in views:
+                        views.append(p)
+        return views
 # =====================================================================
 # Контейнер вкладок для кривых
 # =====================================================================
@@ -577,13 +612,13 @@ class CurveInspectorWidget(QWidget):
         self.note_tab = NoteTab(self.session, self)
         self.style_tab = StyleTab(self.session, self)
         self.filters_tab = FiltersTab(self.session, self)
-        self.tools_tab = ToolsTab(self.session, self)
+        self.tools_tab = AnalysisTab(self.session, self)
 
         self.tabs.addTab(self.data_tab, "Данные")
         self.tabs.addTab(self.note_tab, "Заметка")
         self.tabs.addTab(self.style_tab, "Стиль")
         self.tabs.addTab(self.filters_tab, "Фильтры")
-        self.tabs.addTab(self.tools_tab, "Инструменты")
+        self.tabs.addTab(self.tools_tab, "Анализ")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)

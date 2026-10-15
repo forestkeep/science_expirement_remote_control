@@ -69,11 +69,7 @@ class CurvePresenter:
 
         self.plot_items: dict = {}   # viewbox -> {'item', 'legend', 'axis'}
         self.saved_style: Optional[LineStyle] = None
-        self.clicked_style = LineStyle(
-            color=(180, 150, 150), line_style=QtCore.Qt.DashLine, line_width=4,
-            symbol="+", symbol_size=10,
-            symbol_color=(150, 150, 150), fill_color='w',
-        )
+        self.clicked_style = make_selection_style()
 
         self.is_draw = False
         self.number_axis: Optional[int] = None
@@ -186,7 +182,7 @@ class CurvePresenter:
             legend_field.addItem(new_item, self.store.legend.current_name)
 
         self.plot_items[graph_field] = {
-            'item': new_item, 'legend': legend_field, 'axis': number_axis,
+            'item': new_item, 'legend': legend_field, 'axis': number_axis, 'error_bars': []
         }
         self.number_axis = number_axis
 
@@ -283,3 +279,64 @@ class CurvePresenter:
         for info in self.plot_items.values():
             info['legend'].removeItem(self.store.legend.previous_name)
             info['legend'].addItem(info['item'], self.store.legend.current_name)
+
+    # -- error bars -----------------------------------------------------
+    def set_error_bars(self, records: list) -> None:
+        """Отрисовка полос погрешностей (error bars).
+
+        Перо берётся в цвет кривой, чтобы полосы были видимы на тёмном фоне
+        и визуально привязаны к источнику. Все прежние ErrorBarItem снимаются.
+        """
+        import numpy as np
+
+        # Убрать старые полосы
+        for viewbox, info in list(self.plot_items.items()):
+            for eb in info.get("error_bars", []) or []:
+                try:
+                    viewbox.removeItem(eb)
+                except Exception:
+                    pass
+            info["error_bars"] = []
+
+        if not records:
+            return
+
+        x = self.store.filtered_x_data
+        y = self.store.filtered_y_data
+        if len(x) == 0 or len(y) == 0:
+            return
+
+        color = None
+        if self.saved_style is not None:
+            color = self.saved_style.color
+        pen = pg.mkPen(color=color or (220, 220, 220), width=1)
+
+        for viewbox, info in self.plot_items.items():
+            bars = []
+            for rec in records:
+                try:
+                    yerr = np.asarray(rec.y_err) if rec.y_err is not None else None
+                    if yerr is None or yerr.size != y.size:
+                        continue
+                    eb = pg.ErrorBarItem(
+                        x=x, y=y,
+                        top=yerr, bottom=yerr,
+                        beam=0.5, pen=pen,
+                    )
+                    viewbox.addItem(eb)
+                    bars.append(eb)
+                except Exception:
+                    logger.exception("set_error_bars failed")
+            info["error_bars"] = bars
+            
+def make_selection_style() -> LineStyle:
+    """Единый стиль выделения основной кривой и всех её потомков (анализа).
+
+    Именно этот стиль применяется и к CurvePresenter.clicked_style,
+    и к артефактам анализа при подсветке источника.
+    """
+    return LineStyle(
+        color=(180, 150, 150), line_style=QtCore.Qt.DashLine, line_width=4,
+        symbol="+", symbol_size=10,
+        symbol_color=(150, 150, 150), fill_color='w',
+    )
