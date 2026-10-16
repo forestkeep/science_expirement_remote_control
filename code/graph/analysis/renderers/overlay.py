@@ -35,9 +35,11 @@ class OverlayRenderer(BaseRenderer):
                 pen.setColor(self._fade(color))
             legend_name = self._legend_name(artifact, curve_id)
             item = pg.PlotDataItem(x, y, pen=pen, name=legend_name)
+            # Запоминаем имя на самом item'е: pyqtgraph при removeItem/addItem
+            # без явного имени может потерять или подменить opts['name'].
+            item._legend_name = legend_name
             item.setZValue(150)
             graph_view.addItem(item)
-            # Группировка в легенде: добавляем как отдельный элемент
             try:
                 legend = getattr(graph_view, "legend", None)
                 if legend is not None and legend.getLabel(item) is None:
@@ -46,6 +48,44 @@ class OverlayRenderer(BaseRenderer):
                 logger.exception("OverlayRenderer: legend add failed")
             handles.append(item)
         return handles
+
+    def set_visible(self, handle, visible: bool) -> None:
+        """Скрыть/показать артефакт вместе с записью в легенде.
+
+        При visible=False запись физически удаляется из legend.removeItem;
+        при visible=True — возвращается обратно с тем же именем, что было
+        при первом render.
+        """
+        graph_view = self.session.graph_main.graphView
+        legend = getattr(graph_view, "legend", None)
+        for item in (handle or []):
+            try:
+                if visible:
+                    item.setVisible(True)
+                    if legend is not None and legend.getLabel(item) is None:
+                        name = getattr(item, "_legend_name", None) or item.name()
+                        if name is None:
+                            logger.warning(
+                                "OverlayRenderer.set_visible: no legend name for %r", item
+                            )
+                            continue
+                        try:
+                            legend.addItem(item, name)
+                        except Exception:
+                            logger.exception(
+                                "OverlayRenderer.set_visible: legend add failed"
+                            )
+                else:
+                    if legend is not None:
+                        try:
+                            legend.removeItem(item)
+                        except Exception:
+                            logger.exception(
+                                "OverlayRenderer.set_visible: legend remove failed"
+                            )
+                    item.setVisible(False)
+            except Exception:
+                logger.exception("OverlayRenderer.set_visible failed")
 
     def update(self, handle, payload) -> None:
         xs = getattr(payload, "x", None)
@@ -70,12 +110,6 @@ class OverlayRenderer(BaseRenderer):
             except Exception:
                 logger.exception("OverlayRenderer.remove failed")
 
-    def set_visible(self, handle, visible: bool) -> None:
-        for item in (handle or []):
-            try:
-                item.setVisible(bool(visible))
-            except Exception:
-                logger.exception("OverlayRenderer.set_visible failed")
 
     def set_highlighted(self, handle, highlighted: bool) -> None:
         """Подсветка артефакта тем же стилем, что и основная кривая.

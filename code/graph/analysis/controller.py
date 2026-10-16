@@ -180,6 +180,73 @@ class AnalysisController(QObject):
         self.session.undo_manager.push(cmd, execute=True)
         self.artifacts_changed.emit()
 
+    def on_source_style_changed(self, root_name: str) -> None:
+        """Кривая изменила стиль — перерисовать её артефакты (производная,
+        интеграл, FFT, фитинги, …) и error-bars, чтобы они подхватили
+        новый цвет/толщину/маркер.
+        """
+        # 1. Артефакты анализа
+        for art in list(self.store.for_curve(root_name)):
+            try:
+                old_handle = art.handle
+                if old_handle is not None:
+                    self.renderer.remove(old_handle)
+                new_handle = self.renderer.render(art, is_preview=False)
+                art.handle = new_handle
+                if new_handle is not None:
+                    self.renderer.set_visible(new_handle, art.visibility)
+            except Exception:
+                logger.exception(
+                    "on_source_style_changed: re-render %s failed", art.id
+                )
+
+        # 2. Полосы погрешностей на самой кривой (uncertainty)
+        curve = self.session.graph_main.get_curve(root_name)
+        if curve is not None:
+            store = getattr(curve, "store", None)
+            if store is not None and hasattr(curve.presenter, "set_error_bars"):
+                try:
+                    curve.presenter.set_error_bars(store.active_uncertainty_records())
+                except Exception:
+                    logger.exception(
+                        "on_source_style_changed: error bars failed"
+                    )
+
+        self.artifacts_changed.emit()
+
+    def apply_preset(self, preset, sources: Optional[List[str]] = None) -> int:
+        if preset is None or not getattr(preset, "artifacts", None):
+            return 0
+
+        snapshots = self._collect_sources(sources)
+        if not snapshots:
+            return 0
+
+        applied = 0
+        for entry in preset.artifacts:
+            tool_id = entry.get("tool_id")
+            if not tool_id or self.registry.get(tool_id) is None:
+                continue
+            params = dict(entry.get("params") or {})
+
+            self._active = ToolSession(
+                tool_id=tool_id,
+                params=params,
+                sources=list(snapshots),
+                leader_index=len(snapshots) - 1,
+            )
+            try:
+                created = self.apply()
+                if created or tool_id == "uncertainty.estimate":
+                    applied += 1
+            except Exception:
+                logger.exception("apply_preset: tool %s failed", tool_id)
+            finally:
+                self._active = None
+
+        self.artifacts_changed.emit()
+        return applied
+
     def set_uncertainty_visible(self, root_name: str, record_id: str,
                                  visible: bool) -> None:
         """Включить/выключить показ конкретной записи погрешности."""
@@ -221,24 +288,6 @@ class AnalysisController(QObject):
                 except Exception:
                     pass
 
-    def on_source_hidden(self, root_name: str) -> None:
-        """Источник скрыт — все его артефакты скрываются, независимо от чекбоксов."""
-        for art in self.store.for_curve(root_name):
-            try:
-                self.renderer.set_visible(art.handle, False)
-            except Exception:
-                pass
-        self.artifacts_changed.emit()
-
-    def on_source_shown(self, root_name: str) -> None:
-        """Источник показан — видимость артефактов определяется их чекбоксами."""
-        for art in self.store.for_curve(root_name):
-            try:
-                self.renderer.set_visible(art.handle, bool(art.visibility))
-            except Exception:
-                pass
-        self.artifacts_changed.emit()
-
     def remove_artifact(self, artifact_id: str) -> None:
         artifact = self.store.get(artifact_id)
         if artifact is None:
@@ -269,7 +318,37 @@ class AnalysisController(QObject):
         self.session.undo_manager.push(cmd, execute=True)
         self.artifacts_changed.emit()
 
+    # ------------------------------------------------------------------
+    # Внутренний помощник: артефакты, привязанные к источнику
+    # ------------------------------------------------------------------
+    def _artifacts_for_source(self, root_name: str) -> List[AnalysisArtifact]:
+        return [art for art in self.store.all() if root_name in art.source_curve_ids]
+
+    def on_source_hidden(self, root_name: str) -> None:
+        """Источник скрыт — все его артефакты физически удаляются из легенды
+        и скрываются на графике, независимо от их чекбоксов."""
+        for art in self._artifacts_for_source(root_name):
+            try:
+                self.renderer.set_visible(art.handle, False)
+            except Exception:
+                logger.exception("on_source_hidden: set_visible failed")
+        self.artifacts_changed.emit()
+
+    def on_source_shown(self, root_name: str) -> None:
+        """Источник показан — видимость артефактов возвращается к их чекбоксам."""
+        for art in self._artifacts_for_source(root_name):
+            try:
+                self.renderer.set_visible(art.handle, bool(art.visibility))
+            except Exception:
+                logger.exception("on_source_shown: set_visible failed")
+        self.artifacts_changed.emit()
+
     def set_artifact_visibility(self, artifact_id: str, visible: bool) -> None:
+        """Переключение видимости артефакта через его чекбокс.
+
+        Чекбокс — единственный источник правды для artifact.visibility;
+        при включении чекбокса артефакт возвращается и в легенду, и на график.
+        """
         artifact = self.store.get(artifact_id)
         if artifact is None:
             return

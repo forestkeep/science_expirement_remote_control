@@ -8,6 +8,7 @@ import pyqtgraph as pg
 from PyQt5.QtWidgets import QVBoxLayout, QWidget
 
 from graph.ui.customPlotWidget import PatchedPlotWidget
+from .base import apply_main_graph_style
 
 from .base import BaseRenderer
 
@@ -41,13 +42,13 @@ class AttachedRenderer(BaseRenderer):
 
         plot = PatchedPlotWidget()
         plot.setXLink(self.session.graph_main.graphView.plotItem)
-        # Легенда на самом поле графика — сюда попадут имена кривых
-        plot.addLegend()
-        # Подпись оси Y
+
         try:
             plot.setLabel("left", title)
         except Exception:
             pass
+
+        apply_main_graph_style(self.session, plot)
 
         outer.addWidget(plot)
 
@@ -81,14 +82,58 @@ class AttachedRenderer(BaseRenderer):
             curve_name = curve.curve_name if curve else (curve_id or "?")
             color = curve.saved_style.color if curve and curve.saved_style else "#ffffff"
             pen = pg.mkPen(color=color, width=2)
-            item = plot.plot(x, y, pen=pen, name=curve_name)
+
+            # name=curve_name сохраняет подпись в item.opts['name'],
+            # чтобы legend.addItem(item, name) её восстановил.
+            item = plot.plot(x, y, name=curve_name, pen=pen)
+            item._legend_name = curve_name
+
+            try:
+                legend = getattr(plot, "legend", None)
+                if legend is not None and legend.getLabel(item) is None:
+                    legend.addItem(item, curve_name)
+            except Exception:
+                logger.exception("AttachedRenderer: legend.addItem failed")
             handles.append(item)
+
         info["handles"].extend(handles)
-        # при применении артефакт видим по своему флагу
         for item in handles:
             item.setVisible(bool(getattr(artifact, "visibility", True)))
         self._maybe_hide_panel(artifact.tool_id)
         return handles
+
+    def set_visible(self, handle, visible: bool) -> None:
+        items = list(handle or [])
+        for item in items:
+            try:
+                item.setVisible(bool(visible))
+            except Exception:
+                pass
+
+        # Синхронизируем легенду панели: removeItem при скрытии, addItem при показе.
+        for info in self._panels.values():
+            legend = getattr(info.get("plot"), "legend", None)
+            if legend is None:
+                continue
+            for item in items:
+                if item not in info["handles"]:
+                    continue
+                try:
+                    if visible:
+                        if legend.getLabel(item) is None:
+                            name = getattr(item, "_legend_name", None) or item.name()
+                            if name is None:
+                                continue
+                            legend.addItem(item, name)
+                    else:
+                        legend.removeItem(item)
+                except Exception:
+                    logger.exception(
+                        "AttachedRenderer.set_visible: legend update failed"
+                    )
+
+        for tool_id in list(self._panels.keys()):
+            self._maybe_hide_panel(tool_id)
 
     def update(self, handle, payload) -> None:
         xs = getattr(payload, "x", None)
@@ -119,16 +164,6 @@ class AttachedRenderer(BaseRenderer):
                     parent.layout().removeWidget(info["container"])
                 info["container"].deleteLater()
                 self._panels.pop(tool_id, None)
-
-    def set_visible(self, handle, visible: bool) -> None:
-        for item in (handle or []):
-            try:
-                item.setVisible(bool(visible))
-            except Exception:
-                pass
-        # проверим, есть ли ещё видимые артефакты во всех панелях
-        for tool_id in list(self._panels.keys()):
-            self._maybe_hide_panel(tool_id)
 
     def set_highlighted(self, handle, highlighted: bool) -> None:
         """Тот же стиль выделения, что и у основной кривой."""

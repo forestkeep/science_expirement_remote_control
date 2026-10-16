@@ -49,10 +49,18 @@ class graphSelectAdapter:
         self.graph.show_all_points(bool(state))
 
     def hide_curve(self, curve_data_obj: linearData):
+        # 1. Сначала скрываем артефакты анализа, привязанные к этой кривой.
+        #    Артефакты матчатся по root_name ("y/x"), а не по y_root_name ("y").
+        if not curve_data_obj.rel_data.is_gen:
+            ctrl = getattr(self.main_class, "analysis_controller", None)
+            if ctrl is not None:
+                ctrl.on_source_hidden(curve_data_obj.rel_data.root_name)
+
+        # 2. Убираем саму кривую с графика и из легенды.
         curve_data_obj.delete_curve_from_graph()
 
         if curve_data_obj.rel_data.is_gen:
-            # генерируемые кривые не участвуют в селекторе — снимать выделение не с чего
+            # Генерируемые кривые в селекторе не участвуют — снимать выделение не с чего.
             return
 
         y_name = curve_data_obj.rel_data.y_root_name
@@ -65,12 +73,10 @@ class graphSelectAdapter:
             logger.warning(f"hide_curve: unknown axis {axis} for {y_name}")
             return
 
+        # 3. Снимаем выделение в селекторе. Сигнал parameters_updated вызовет
+        #    parameters_choised → update_data, но кривой уже нет в data_manager
+        #    для этой оси (Y вычищен), поэтому _handle_curve её не вернёт.
         self.selector.clear_selections("", first, second, is_signal=True)
-
-        # Скрыть артефакты анализа, привязанные к этой кривой
-        ctrl = getattr(self.main_class, "analysis_controller", None)
-        if ctrl is not None:
-            ctrl.on_source_hidden(y_name)
 
     def stop_session(self):
         """
@@ -201,7 +207,9 @@ class graphSelectAdapter:
 
         ctrl = getattr(self.main_class, "analysis_controller", None)
         if ctrl is not None:
-            ctrl.on_source_shown(y_name)
+            # КЛЮЧЕВОЕ: контракт с on_source_hidden симметричен —
+            # туда и сюда идёт root_name ("y/x"), а не y_root_name ("y").
+            ctrl.on_source_shown(curve_data_obj.rel_data.root_name)
 
     def reset_filters(self, curve_data_obj: linearData):
         self.graph.reset_filters(curve_data_obj)

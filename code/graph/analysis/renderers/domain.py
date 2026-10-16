@@ -3,15 +3,10 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict
-
 import pyqtgraph as pg
-
 from graph.ui.customPlotWidget import PatchedPlotWidget
-
 from .base import BaseRenderer
-
 logger = logging.getLogger(__name__)
-
 
 class DomainRenderer(BaseRenderer):
     def __init__(self, session) -> None:
@@ -22,6 +17,11 @@ class DomainRenderer(BaseRenderer):
         if artifact_id in self._tabs:
             return self._tabs[artifact_id]
         plot = PatchedPlotWidget()
+
+        # Стиль — как у основного графика
+        from .base import apply_main_graph_style
+        apply_main_graph_style(self.session, plot)
+
         idx = self.session.tabWidget.addTab(plot, title)
         info = {"plot": plot, "index": idx, "handles": []}
         self._tabs[artifact_id] = info
@@ -40,10 +40,49 @@ class DomainRenderer(BaseRenderer):
             curve = self.session.graph_main.get_curve(curve_id) if curve_id else None
             color = curve.saved_style.color if curve and curve.saved_style else "#ffffff"
             pen = pg.mkPen(color=color, width=2)
-            item = plot.plot(x, y, pen=pen)
+
+            name = curve.curve_name if curve else (curve_id or "?")
+            item = plot.plot(x, y, name=name, pen=pen)
+            item._legend_name = name
+
+            try:
+                legend = getattr(plot, "legend", None)
+                if legend is not None and legend.getLabel(item) is None:
+                    legend.addItem(item, name)
+            except Exception:
+                logger.exception("DomainRenderer: legend.addItem failed")
             handles.append(item)
         info["handles"].extend(handles)
         return handles
+
+    def set_visible(self, handle, visible: bool) -> None:
+        items = list(handle or [])
+        for item in items:
+            try:
+                item.setVisible(bool(visible))
+            except Exception:
+                pass
+
+        for info in self._tabs.values():
+            legend = getattr(info.get("plot"), "legend", None)
+            if legend is None:
+                continue
+            for item in items:
+                if item not in info["handles"]:
+                    continue
+                try:
+                    if visible:
+                        if legend.getLabel(item) is None:
+                            name = getattr(item, "_legend_name", None) or item.name()
+                            if name is None:
+                                continue
+                            legend.addItem(item, name)
+                    else:
+                        legend.removeItem(item)
+                except Exception:
+                    logger.exception(
+                        "DomainRenderer.set_visible: legend update failed"
+                    )
 
     def update(self, handle, payload) -> None:
         xs = getattr(payload, "x", None)
@@ -64,12 +103,6 @@ class DomainRenderer(BaseRenderer):
                 info["plot"].deleteLater()
                 self._tabs.pop(artifact_id, None)
 
-    def set_visible(self, handle, visible: bool) -> None:
-        for item in (handle or []):
-            try:
-                item.setVisible(bool(visible))
-            except Exception:
-                pass
 
     def set_highlighted(self, handle, highlighted: bool) -> None:
         """Тот же стиль выделения, что и у основной кривой."""

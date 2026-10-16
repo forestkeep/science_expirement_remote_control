@@ -339,8 +339,10 @@ class GraphSession(QWidget):
         if not simple:
             splitter.addWidget(self.tree_class)
         splitter.addWidget(self.tabWidget)
+
         if not simple:
-            splitter.addWidget(self.filter_class.filt_window)
+            pass
+            #splitter.addWidget(self.filter_class.filt_window)
 
         splitter.setHandleWidth(1)
         splitter.setStretchFactor(0, 3)
@@ -381,6 +383,10 @@ class GraphSession(QWidget):
             self,
             alias_manager=self.alias_manager
         )
+
+        # При смене внешнего вида основного графика — обновить все дочерние
+        # (attached-панели и domain-вкладки анализа).
+        self.graph_main.graphView.style_changed.connect(self._on_main_style_changed)
 
         if not simple:
             self.adapter_main_graph = graphSelectAdapter(
@@ -441,6 +447,30 @@ class GraphSession(QWidget):
             self.selection_model.select(selected_curves)
         except Exception:
             logger.exception("_on_tree_selection_changed failed")
+
+    def _on_main_style_changed(self) -> None:
+        """Скопировать стиль основного графика во все дочерние поля анализа."""
+        # Реагируем только на эмиттер основного графика — иначе рекурсия.
+        if self.sender() is not self.graph_main.graphView:
+            return
+        try:
+            from graph.analysis.renderers.base import apply_main_graph_style
+            ctrl = getattr(self, "analysis_controller", None)
+            if ctrl is None:
+                return
+            renderer = getattr(ctrl, "renderer", None)
+            if renderer is None:
+                return
+            for info in getattr(renderer._attached, "_panels", {}).values():
+                plot = info.get("plot")
+                if plot is not None:
+                    apply_main_graph_style(self, plot)
+            for info in getattr(renderer._domain, "_tabs", {}).values():
+                plot = info.get("plot")
+                if plot is not None:
+                    apply_main_graph_style(self, plot)
+        except Exception:
+            logger.exception("_on_main_style_changed failed")
 
     def show_tooltip(self, message, show_while_not_click=False, timeout=3000):
         if self.notification is None:

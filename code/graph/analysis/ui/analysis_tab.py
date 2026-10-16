@@ -59,11 +59,37 @@ class AnalysisTab(QWidget):
         ensure_tools_registered()
         self.registry = AnalysisToolRegistry.instance()
 
-        # 1. Применённые
+        # 1. Применённые + пресеты
         self.applied_group = QGroupBox(_TR("Применённые инструменты"))
-        self.applied_layout = QVBoxLayout(self.applied_group)
-        self.applied_layout.setContentsMargins(4, 4, 4, 4)
-        self.applied_layout.addWidget(QLabel(_TR("Результаты отсутствуют")))
+        applied_outer = QVBoxLayout(self.applied_group)
+        applied_outer.setContentsMargins(4, 4, 4, 4)
+
+        presets_row = QHBoxLayout()
+        self.presets_combo = QComboBox()
+        self.presets_combo.setMinimumWidth(0)
+        self.presets_combo.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        self.presets_combo.setMinimumContentsLength(10)
+        self.presets_combo.addItem(_TR("— пресеты —"), None)
+        self._reload_presets_combo()
+
+        self.btn_apply_preset = QPushButton(_TR("Применить"))
+        self.btn_apply_preset.clicked.connect(self._apply_selected_preset)
+
+        presets_row.addWidget(self.presets_combo, 1)
+        presets_row.addWidget(self.btn_apply_preset)
+        applied_outer.addLayout(presets_row)
+
+        self.btn_save_preset = QPushButton(_TR("Сохранить как пресет"))
+        self.btn_save_preset.clicked.connect(self._save_preset)
+        applied_outer.addWidget(self.btn_save_preset)
+
+        # Контейнер именно для динамического списка результатов
+        self.applied_results_layout = QVBoxLayout()
+        self.applied_results_layout.setContentsMargins(0, 0, 0, 0)
+        self.applied_empty_label = QLabel(_TR("Результаты отсутствуют"))
+        self.applied_results_layout.addWidget(self.applied_empty_label)
+        applied_outer.addLayout(self.applied_results_layout)
+
         layout.addWidget(self.applied_group)
 
         # 2. Добавить новый
@@ -121,25 +147,8 @@ class AnalysisTab(QWidget):
         params_widget.setLayout(self.params_form)
         active_layout.addWidget(params_widget)
 
-        self.btn_save_preset = QPushButton(_TR("Сохранить как пресет"))
-        self.btn_save_preset.clicked.connect(self._save_preset)
-        active_layout.addWidget(self.btn_save_preset)
-
         self.active_group.setVisible(False)
         layout.addWidget(self.active_group)
-
-        # 6. Результаты
-        self.results_group = QGroupBox(_TR("Результаты"))
-        self.results_layout = QVBoxLayout(self.results_group)
-        self.results_layout.setContentsMargins(4, 4, 4, 4)
-        self.results_table = QTableWidget()
-        self.results_table.setColumnCount(3)
-        self.results_table.setHorizontalHeaderLabels(
-            [_TR("Кривая"), _TR("Операция"), _TR("Параметры")])
-        self.results_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.results_table.setMinimumHeight(80)
-        self.results_layout.addWidget(self.results_table)
-        layout.addWidget(self.results_group)
 
         layout.addStretch()
         scroll.setWidget(content)
@@ -154,15 +163,15 @@ class AnalysisTab(QWidget):
             self.scope_label.setText(", ".join(names) if names else "—")
 
     def _reload_artifacts(self) -> None:
-        # очистка applied
-        while self.applied_layout.count():
-            item = self.applied_layout.takeAt(0)
+        # очищаем только список результатов, оставляя UI пресетов
+        while self.applied_results_layout.count():
+            item = self.applied_results_layout.takeAt(0)
             w = item.widget()
             if w is not None:
                 w.deleteLater()
 
         artifacts = []
-        uncertainty_entries = []  # [(curve, record), ...]
+        uncertainty_entries = []
         for curve in self.curves:
             root = curve.rel_data.root_name
             artifacts.extend(self.controller.get_artifacts_for_curve(root))
@@ -173,26 +182,75 @@ class AnalysisTab(QWidget):
 
         total = len(artifacts) + len(uncertainty_entries)
         if total == 0:
-            self.applied_layout.addWidget(QLabel(_TR("Результаты отсутствуют")))
+            self.applied_results_layout.addWidget(QLabel(_TR("Результаты отсутствуют")))
         else:
             for art in artifacts:
-                self.applied_layout.addWidget(self._build_artifact_row(art))
+                self.applied_results_layout.addWidget(self._build_artifact_row(art))
             for curve, rec in uncertainty_entries:
-                self.applied_layout.addWidget(self._build_uncertainty_row(curve, rec))
+                self.applied_results_layout.addWidget(self._build_uncertainty_row(curve, rec))
 
-        # обновляем таблицу результатов
-        self.results_table.setRowCount(total)
-        row = 0
-        for art in artifacts:
-            self.results_table.setItem(row, 0, QTableWidgetItem(",".join(art.source_curve_ids)))
-            self.results_table.setItem(row, 1, QTableWidgetItem(self._resolve_tool_title(art.tool_id)))
-            self.results_table.setItem(row, 2, QTableWidgetItem(str(art.params)))
-            row += 1
-        for curve, rec in uncertainty_entries:
-            self.results_table.setItem(row, 0, QTableWidgetItem(curve.rel_data.root_name))
-            self.results_table.setItem(row, 1, QTableWidgetItem(_TR("Погрешности точек")))
-            self.results_table.setItem(row, 2, QTableWidgetItem(str(getattr(rec, "params", {}))))
-            row += 1
+    def _reload_presets_combo(self) -> None:
+        self.presets_combo.blockSignals(True)
+        try:
+            current = self.presets_combo.currentData()
+            self.presets_combo.clear()
+            self.presets_combo.addItem(_TR("— пресеты —"), None)
+            for p in self.presets.all():
+                self.presets_combo.addItem(p.name or "(без имени)", p.id)
+            if current:
+                idx = self.presets_combo.findData(current)
+                if idx >= 0:
+                    self.presets_combo.setCurrentIndex(idx)
+        finally:
+            self.presets_combo.blockSignals(False)
+
+    def _apply_selected_preset(self) -> None:
+        preset_id = self.presets_combo.currentData()
+        if not preset_id:
+            return
+        preset = self.presets.get(preset_id)
+        if preset is None:
+            return
+        n = self.controller.apply_preset(preset, sources=None)
+        if n == 0:
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.information(
+                self, _TR("Применить пресет"),
+                _TR("Не удалось применить пресет: нет выделенных кривых."),
+            )
+        else:
+            self._reload_artifacts()
+    def _save_preset(self) -> None:
+        # Собираем применённые инструменты текущего выделения
+        artifacts: List[Dict[str, Any]] = []
+        seen = set()
+        for curve in self.curves:
+            root = curve.rel_data.root_name
+            for art in self.controller.get_artifacts_for_curve(root):
+                key = (art.tool_id, tuple(sorted((art.params or {}).items())))
+                if key in seen:
+                    continue
+                seen.add(key)
+                artifacts.append({
+                    "tool_id": art.tool_id,
+                    "params": dict(art.params or {}),
+                })
+
+        if not artifacts:
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.information(
+                self, _TR("Сохранить пресет"),
+                _TR("Нет применённых инструментов для сохранения."),
+            )
+            return
+
+        from PyQt5.QtWidgets import QInputDialog
+        name, ok = QInputDialog.getText(self, _TR("Сохранить пресет"),
+                                        _TR("Имя пресета:"))
+        if not ok or not name.strip():
+            return
+        self.presets.register(name.strip(), artifacts)
+        self._reload_presets_combo()
 
     def _build_uncertainty_row(self, curve, record) -> QWidget:
         w = QWidget()
@@ -261,16 +319,13 @@ class AnalysisTab(QWidget):
     def _on_tool_deactivated(self) -> None:
         self.active_group.setVisible(False)
         self._param_widgets.clear()
-        # очистить layout формы
-        while self.params_form.count():
-            self.params_form.takeAt(0)
+        self._clear_params_form()
 
     def _on_preview_updated(self) -> None:
         pass
 
     def _rebuild_params(self, desc) -> None:
-        while self.params_form.count():
-            self.params_form.takeAt(0)
+        self._clear_params_form()
         self._param_widgets.clear()
         for param in desc.param_schema:
             w = self._build_param_widget(param)
@@ -278,6 +333,25 @@ class AnalysisTab(QWidget):
                 self._param_widgets[param.name] = w
                 title = tr_analysis(param.title_key)
                 self.params_form.addRow(title, w)
+
+    def _clear_params_form(self) -> None:
+        """Полностью убрать все строки формы, включая автолейблы от addRow."""
+        while self.params_form.count():
+            item = self.params_form.takeAt(0)
+            if item is None:
+                break
+            w = item.widget()
+            if w is not None:
+                w.setParent(None)
+                w.deleteLater()
+            sub = item.layout()
+            if sub is not None:
+                while sub.count():
+                    sub_item = sub.takeAt(0)
+                    sw = sub_item.widget()
+                    if sw is not None:
+                        sw.setParent(None)
+                        sw.deleteLater()
 
     def _build_param_widget(self, param: ParamDescriptor) -> Optional[QWidget]:
         if param.type == ParamType.INT:
@@ -340,15 +414,35 @@ class AnalysisTab(QWidget):
 
     # ------------------------------------------------------------------
     def _save_preset(self) -> None:
-        active = self.controller.get_active_tool()
-        if active is None:
+        artifacts: List[Dict[str, Any]] = []
+        seen = set()
+        for curve in self.curves:
+            root = curve.rel_data.root_name
+            for art in self.controller.get_artifacts_for_curve(root):
+                key = (art.tool_id, tuple(sorted((art.params or {}).items())))
+                if key in seen:
+                    continue
+                seen.add(key)
+                artifacts.append({
+                    "tool_id": art.tool_id,
+                    "params": dict(art.params or {}),
+                })
+
+        if not artifacts:
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.information(
+                self, _TR("Сохранить пресет"),
+                _TR("Нет применённых инструментов для сохранения."),
+            )
             return
+
         from PyQt5.QtWidgets import QInputDialog
         name, ok = QInputDialog.getText(self, _TR("Сохранить пресет"),
                                         _TR("Имя пресета:"))
-        if not ok or not name:
+        if not ok or not name.strip():
             return
-        self.presets.register(name, active.tool_id, active.params)
+        self.presets.register(name.strip(), artifacts)
+        self._reload_presets_combo()
 
     # ------------------------------------------------------------------
     def _resolve_title(self, desc) -> str:

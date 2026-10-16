@@ -107,28 +107,21 @@ def extract_plot_widget_settings(plot_widget) -> GraphFieldSettings:
             settings.axes[axis_name] = axis_settings
     
     # Настройки легенды
+    # Настройки легенды
     if hasattr(plot_widget, 'legend'):
-        settings.legend_enabled = plot_widget.legend.isVisible()
-        
-        # Позиция легенды (упрощенная логика)
-        legend_pos = plot_widget.legend.pos()
-        view_size = plot_widget.size()
-        if legend_pos.x() < view_size.width() / 2:
-            horizontal_pos = "left"
-        else:
-            horizontal_pos = "right"
-        
-        if legend_pos.y() < view_size.height() / 2:
-            vertical_pos = "top"
-        else:
-            vertical_pos = "bottom"
-        
-        settings.legend_position = f"{vertical_pos} {horizontal_pos}"
-        
-        # Цвет и шрифт легенды
-        if plot_widget.legend.items:
-            sample_item = plot_widget.legend.items[0][1]
-            settings.legend_text_color = color_to_string(plot_widget.legend_color)
+        try:
+            settings.legend_enabled = plot_widget.legend.isVisible()
+        except Exception:
+            pass
+
+        # Цвет текста легенды — читаем ВСЕГДА из атрибута виджета,
+        # даже если сейчас в легенде нет ни одной подписи.
+        lc = getattr(plot_widget, "legend_color", None)
+        if lc is not None:
+            try:
+                settings.legend_text_color = color_to_string(lc)
+            except Exception:
+                pass
     
     return settings
 

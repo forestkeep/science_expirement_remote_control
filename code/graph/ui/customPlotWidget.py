@@ -65,6 +65,7 @@ class PatchedPlotWidget(pg.PlotWidget):
     new_curve_selected = pyqtSignal()
     inf_line_added   = pyqtSignal(object)
     inf_line_removed = pyqtSignal(object)
+    style_changed    = pyqtSignal()
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -137,7 +138,12 @@ class PatchedPlotWidget(pg.PlotWidget):
         tooltip_x = view_rect.right()# - (view_rect.width() * 0.02)  # 2% отступа от правого края
         tooltip_y = view_rect.top()# + (view_rect.height() * 0.02)   # 2% отступа от верхнего края
 
-        #self.tooltip.setPos(50, 50)
+    def _emit_style_changed(self):
+        """Оповестить подписчиков (сессия → дочерние графики) о смене стиля."""
+        try:
+            self.style_changed.emit()
+        except Exception:
+            logger.exception("style_changed emit failed")
 
     def add_inf_line(self, line):
         self.inf_lines.append(line)
@@ -165,6 +171,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.setGridColor(style["grid"])
         self.set_legend_color(style["legend"])
         self.toggleGrid(True)
+        self._emit_style_changed()
         
 
     def updateViews(self):
@@ -185,6 +192,7 @@ class PatchedPlotWidget(pg.PlotWidget):
             self.axises["right"].hide()
         else:
             self.axises["right"].show()
+        self._emit_style_changed()
 
     def create_axis_menu(self, axis_name, axis_key, invert_method, reset_method):
         menu = QtWidgets.QMenu(axis_name, self.plotItem.vb.menu)
@@ -407,18 +415,74 @@ class PatchedPlotWidget(pg.PlotWidget):
             self.set_legend_color(color)
 
     def set_legend_color(self, color):
-        if isinstance(color, tuple):
-            color = QtGui.QColor(*color)
-            
-        self.legend_color = color
+        """Обновить цвет текста легенды.
 
-        for legend in (self.legend, self.legend2):
-            for item in legend.items:
-                text = item[1].text
-                item[1].setText(text = text, color = color)
-        
-        self.legend.setLabelTextColor(color)
-        self.legend2.setLabelTextColor(color)
+        - Нормализует вход в QColor.
+        - Обновляет подписи у всех текущих элементов.
+        - Запоминает цвет для будущих подписей.
+        - Гарантированно эмитит style_changed (через finally), чтобы даже
+          при частичной ошибке propagation к дочерним графикам всё равно
+          произошёл.
+        """
+        try:
+            # 1. Нормализация цвета
+            if isinstance(color, tuple):
+                color = QtGui.QColor(*color)
+            elif isinstance(color, str):
+                color = QtGui.QColor(color)
+            self.legend_color = color
+
+            # 2. Обход обеих легенд (main + вторая ось)
+            for legend in (getattr(self, "legend", None),
+                           getattr(self, "legend2", None)):
+                if legend is None:
+                    continue
+
+                # 2a. Существующие подписи
+                for entry in list(getattr(legend, "items", []) or []):
+                    label = None
+                    if isinstance(entry, (tuple, list)) and len(entry) >= 2:
+                        label = entry[1]
+                    elif hasattr(entry, "setText"):
+                        label = entry
+                    if label is None or not hasattr(label, "setText"):
+                        continue
+                    text = getattr(label, "text", "")
+                    try:
+                        label.setText(text, color=color)
+                    except TypeError:
+                        # Старые сборки pyqtgraph: setText(text) + отдельная установка цвета
+                        try:
+                            label.setText(text)
+                        except Exception:
+                            pass
+                        if hasattr(label, "setAttr"):
+                            try:
+                                label.setAttr("color", color)
+                            except Exception:
+                                pass
+                        if hasattr(label, "updateText"):
+                            try:
+                                label.updateText(text, color=color)
+                            except Exception:
+                                pass
+
+                # 2b. Цвет для будущих подписей
+                for setter_name in ("setLabelTextColor", "setLabelTextColour"):
+                    setter = getattr(legend, setter_name, None)
+                    if callable(setter):
+                        try:
+                            setter(color)
+                        except Exception:
+                            logger.exception("set_legend_color: %s failed", setter_name)
+                try:
+                    opts = getattr(legend, "opts", None)
+                    if isinstance(opts, dict):
+                        opts["labelTextColor"] = color
+                except Exception:
+                    pass
+        finally:
+            self._emit_style_changed()
 
     def set_axis_color(self, color, axis_key):
         if isinstance(color, tuple):
@@ -429,6 +493,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         axis.setTextPen(color)
         if hasattr(axis, 'style') and 'tickText' in axis.style:
             axis.style['tickText'] = (color, axis.style['tickText'][1])
+        self._emit_style_changed()
 
     def choose_custom_axis_color(self, axis_key):
         color = QtWidgets.QColorDialog.getColor()
@@ -453,6 +518,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         if ok:
             axis.custom_style.text_font = font
             axis.set_custom_style( axis.custom_style )
+            self._emit_style_changed()
 
     def customize_axis_tick_font(self, axis_key):
         """Установка шрифта для оси"""
@@ -472,6 +538,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         if ok:
             axis.custom_style.tick_font = font
             axis.set_custom_style( axis.custom_style )
+            self._emit_style_changed()
 
     def customize_axes_font(self):
 
@@ -483,6 +550,7 @@ class PatchedPlotWidget(pg.PlotWidget):
                     axis.set_common_style( self.common_style )
                 else:
                     axis.update_common_style(self.common_style)
+            self._emit_style_changed()
 
     def customize_axes_tick_font(self):
 
@@ -497,36 +565,45 @@ class PatchedPlotWidget(pg.PlotWidget):
 
     def reset_x_axis_style(self):
         self.axises["bottom"].reset_style()
+        self._emit_style_changed()
 
     def reset_y1_axis_style(self):
         self.axises["left"].reset_style()
+        self._emit_style_changed()
 
     def reset_y2_axis_style(self):
         self.axises["right"].reset_style()
+        self._emit_style_changed()
 
     def customize_x_axis_font(self):
         self.customize_axis_font('x')
+        self._emit_style_changed()
 
     def customize_y1_axis_font(self):
         self.customize_axis_font('y1')
+        self._emit_style_changed()
 
     def customize_y2_axis_font(self):
         self.customize_axis_font('y2')
+        self._emit_style_changed()
         
     def invert_x_axis(self, checked):
         self.plotItem.vb.invertX(checked)
         if hasattr(self, 'second_graphView'):
             self.second_graphView.invertX(checked)
         self.axises["bottom"].settings.is_inverted = checked
+        self._emit_style_changed()
 
     def invert_y_axis(self, checked):
         self.plotItem.vb.invertY(checked)
         self.axises["left"].settings.is_inverted = checked
+        self._emit_style_changed()
 
     def invert_y2_axis(self, checked):
         if hasattr(self, 'second_graphView'):
             self.second_graphView.invertY(checked)
         self.axises["right"].settings.is_inverted = checked
+        self._emit_style_changed()
 
     def hide_second_line_grid(self):
         self.axises["right"].setGrid(0)
@@ -535,6 +612,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.is_grid_shown = checked
         self.plotItem.showGrid(x=checked, y=checked)
         self.hide_second_line_grid()
+        self._emit_style_changed()
     
     def setCustomBackgroundColor(self, color):
         if isinstance(color, tuple):
@@ -548,6 +626,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         for line in self.inf_lines:
             line.setPen(tooltip_color)
             line.label.setColor(tooltip_color)
+        self._emit_style_changed()
     
     def chooseCustomBackgroundColor(self):
         color = QtWidgets.QColorDialog.getColor()
@@ -561,6 +640,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         if hasattr(plot_item, 'showGrid'):
             plot_item.getAxis('bottom').setPen(color)
             plot_item.getAxis('left').setPen(color)
+        self._emit_style_changed()
             
     def chooseCustomGridColor(self):
         color = QtWidgets.QColorDialog.getColor()
@@ -583,6 +663,7 @@ class PatchedPlotWidget(pg.PlotWidget):
                 axis.setTextPen(color)
                 if hasattr(axis, 'style') and 'tickText' in axis.style:
                     axis.style['tickText'] = (color, axis.style['tickText'][1])
+        self._emit_style_changed()
         
     def chooseCustomTextColor(self):
         color = QtWidgets.QColorDialog.getColor()
@@ -594,6 +675,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         for item in self.plotItem.items:
             if isinstance(item, pg.PlotCurveItem):
                 item.setAntialiased(checked)
+            self._emit_style_changed()
     
     def autoRangeEnabled(self):
         return self.plotItem.getViewBox().autoRangeEnabled()
@@ -631,6 +713,7 @@ class PatchedPlotWidget(pg.PlotWidget):
             except TypeError:
                 # обратная совместимость со старым 2-аргументным колбэком
                 cb(before, after)
+        self._emit_style_changed()
     
     def add_vertical_line(self):
         """Добавляет вертикальную линию в центр видимой области"""

@@ -399,6 +399,11 @@ class HDF5ToProjectAdapter:
                 graph_widget.set_legend_color(graph_settings.legend_text_color)
         
         graph_widget.setAntialiasing(graph_settings.antialiasing)
+        if hasattr(graph_widget, "style_changed"):
+            try:
+                graph_widget.style_changed.emit()
+            except Exception:
+                pass
 
 
     def prepare_data_dict(self, data_items):

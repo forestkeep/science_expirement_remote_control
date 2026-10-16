@@ -182,9 +182,29 @@ class linearData:
 
     def change_style(self, new_style: LineStyle):
         self.presenter.change_style(new_style)
+        self._notify_analysis_style_changed()
 
     def apply_style_to_all(self, style: LineStyle):
         self.presenter.apply_style_to_all(style)
+        self._notify_analysis_style_changed()
+
+    def _notify_analysis_style_changed(self):
+        """Сообщить AnalysisController, что кривая сменила стиль.
+
+        Вызывается из change_style / apply_style_to_all — то есть из всех
+        путей изменения стиля: ChangeCurveStyleCommand, GraphCustomizer,
+        вкладка «Стиль» в инспекторе.
+        """
+        session = getattr(self, "_main_class", None)
+        if session is None:
+            return
+        ctrl = getattr(session, "analysis_controller", None)
+        if ctrl is None:
+            return
+        try:
+            ctrl.on_source_style_changed(self.store.rel_data.root_name)
+        except Exception:
+            logger.exception("_notify_analysis_style_changed failed")
 
     def on_plot_clicked(self, obj=None):
         self.presenter.on_plot_clicked(obj)

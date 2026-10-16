@@ -480,6 +480,8 @@ class manageGraph(QObject):
             alias_manager=self.alias_manager,
             selection_model=self.selection_model,
         )
+        new_data._main_class = self.main_class
+
         buf_color = next(self.color_warm_gen)
         if new_data.saved_style is None:
             style = LineStyle(
@@ -487,7 +489,14 @@ class manageGraph(QObject):
                 symbol="o", symbol_size=3,
                 symbol_color=buf_color, fill_color=buf_color,
             )
-            new_data.change_style(style)
+            ctrl = getattr(self.main_class, "analysis_controller", None)
+            if ctrl is not None:
+                try:
+                    new_data.change_style(style)
+                except Exception:
+                    logger.exception("create_curve: initial style failed")
+            else:
+                new_data.change_style(style)
         return new_data
 
     # ------------------------------------------------------------------
@@ -517,6 +526,8 @@ class manageGraph(QObject):
         return True
 
     def add_curve(self, curve_data_obj: linearData, type_axis: str = "left"):
+
+        curve_data_obj._main_class = self.main_class
         if self.selection_model is not None:
             curve_data_obj.attach_selection_model(self.selection_model)
 
