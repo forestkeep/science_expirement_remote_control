@@ -5,7 +5,6 @@ logger = logging.getLogger(__name__)
 
 class CompareWindowMediator:
 
-
     def __init__(self, session_id, session_name, alias_manager, graph_session, ses_uuid=None, parent=None):
         """
         :param session_id: идентификатор сессии

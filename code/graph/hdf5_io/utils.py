@@ -16,9 +16,6 @@ def extract_plot_widget_settings(plot_widget) -> GraphFieldSettings:
     if bg_brush and bg_brush.color():
         settings.background_color = color_to_string(bg_brush.color())
 
-    # Сетка: читаем фактическое состояние осей (AxisItem.grid — это alpha 0..255
-    # либо False). Интенсивность берём как максимум по X/Y (они должны совпадать,
-    # но безопасно использовать max).
     def _grid_state(axis):
         if axis is None:
             return False, 0

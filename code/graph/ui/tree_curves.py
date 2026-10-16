@@ -17,12 +17,11 @@ from PyQt5.QtWidgets import (QAction, QApplication,  QDialog,
                              QHBoxLayout, QHeaderView, QLineEdit, QMainWindow,
                              QMenu, QMessageBox, QPushButton, QTextEdit,
                              QTreeWidget, QTreeWidgetItem, QVBoxLayout,
-                             QWidget, QInputDialog, QDialogButtonBox)
+                             QWidget)
 from PyQt5.QtGui import QBrush, QColor
 import copy
 
 from graph.core.calc_values_for_graph import ArrayProcessor
-from graph.ui.customize_style_curve import GraphCustomizer
 from graph.core.dataManager import relationData, measTimeData
 from graph.animation_graph.curve_animation import Animator
 import numexpr as ne
@@ -30,45 +29,11 @@ import numpy as np
 import logging
 logger = logging.getLogger(__name__)
 
-class NameChangeDialog(QDialog):
-    def __init__(self, parent, current_name):
-        super().__init__(parent)
-        self.original_name = current_name
-        self.reset_clicked = False
-        
-        self.setWindowTitle(QApplication.translate("GraphWindow", "Новое название"))
-        layout = QVBoxLayout(self)
-
-        self.line_edit = QLineEdit(self.original_name)
-        layout.addWidget(self.line_edit)
-
-        self.reset_button = QPushButton(QApplication.translate("GraphWindow", "Сбросить название"))
-        self.reset_button.clicked.connect(self.on_reset_clicked)
-        layout.addWidget(self.reset_button)
-        
-        self.buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
-            Qt.Horizontal, self
-        )
-        self.buttons.accepted.connect(self.accept)
-        self.buttons.rejected.connect(self.reject)
-        layout.addWidget(self.buttons)
-
-    def on_reset_clicked(self):
-        self.reset_clicked = True
-        self.accept()
-
-    def get_results(self):
-        text = self.line_edit.text()
-        
-        ok = self.result() == QDialog.Accepted
-        return text, ok, self.reset_clicked
 
 class HistoryItem(QTreeWidgetItem):
     def __init__(self, text: str, filter_command, parent=None):
         super().__init__(parent, [text])
         self.filter_command = filter_command
-
 
 class AnalysisTreeItem(QTreeWidgetItem):
     """Узел дерева — результат анализа. Всегда вложен непосредственно в источник."""
@@ -539,50 +504,6 @@ class treeWin(QWidget):
             self.buf_description = None
             self.buf_new_curve_name = None
 
-    def create_autocorrelation(self, item: CurveTreeItem):
-        if not item:
-            return
-
-        curve = item.curve_data_obj
-        y_values = curve.filtered_y_data
-        x_values = curve.filtered_x_data
-
-        if len(x_values) == 0 or len(y_values) == 0:
-            logger.warning("create_autocorrelation: пустые данные, построение отменено")
-            return
-
-        autocorr = compute_autocorrelation(y_values)
-
-        orig = curve.rel_data
-
-        # Уникальный y-параметр гарантирует уникальный root_name
-        # (root_name = f"{y_original}/{x_original}"). Без этого manageGraph
-        # посчитает кривую дубликатом исходной и вернёт False.
-        autocorr_y_param = f"{orig.y_param}_autocorr"
-
-        x_meas = measTimeData(
-            device=orig.x_device,
-            ch=orig.x_ch,
-            param=orig.x_param,
-            par_val=x_values,
-            num_or_time=x_values,
-        )
-        y_meas = measTimeData(
-            device="",
-            ch="",
-            param=autocorr_y_param,
-            par_val=autocorr,
-            num_or_time=x_values,
-        )
-
-        # is_gen=True: кривая не имеет источника в graphDataManager,
-        # адаптеры (show_curve / _refresh_all_curves_data) уже умеют её распознавать.
-        new_rel_data = relationData(x_meas, y_meas, is_gen=True)
-
-        desc = QApplication.translate("GraphWindow", "Автокорреляционная функция от {data}")
-        desc = desc.format(data=curve.rel_data.current_name)
-        self.curve_created.emit(new_rel_data, None, desc)
-
     def preparation_arrays(self, tree_curves: dict):
         keys = list(tree_curves.keys())
         all_x = []
@@ -642,30 +563,15 @@ class treeWin(QWidget):
                 context_menu.addAction(show_action)
                 show_action.triggered.connect(lambda: self.show_curve(root_item))
 
-            style_action = QAction( QApplication.translate("GraphWindow","Изменить стиль"), self)
-            name_action = QAction( QApplication.translate("GraphWindow","Изменить название"), self)
             delete_action = QAction( QApplication.translate("GraphWindow","Удалить график"), self)
-            reset_data_action = QAction( QApplication.translate("GraphWindow","Сбросить фильтры"), self)
-            add_note_action = QAction( QApplication.translate("GraphWindow","Добавить заметку"), self)
-            create_autocorrelation = QAction( QApplication.translate("GraphWindow","Построить автокорреляционную функцию"), self)
             add_in_compare = QAction( QApplication.translate("GraphWindow","Добавить в сравнение"), self)
             animation_action = QAction( QApplication.translate("GraphWindow","Анимировать"), self)
 
-            context_menu.addAction(name_action)
-            context_menu.addAction(style_action)
             context_menu.addAction(delete_action)
-            context_menu.addAction(reset_data_action)
-            context_menu.addAction(add_note_action)
-            context_menu.addAction(create_autocorrelation)
             context_menu.addAction(add_in_compare)
             context_menu.addAction(animation_action)
 
-            name_action.triggered.connect(lambda: self.change_name_curve(root_item))
-            style_action.triggered.connect(lambda: self.change_curve_style(root_item))
             delete_action.triggered.connect(lambda: self.delete_curve(root_item))
-            reset_data_action.triggered.connect(lambda: self.reset_filters(root_item))
-            add_note_action.triggered.connect(lambda: self.add_note(root_item))
-            create_autocorrelation.triggered.connect(lambda: self.create_autocorrelation(root_item))
             add_in_compare.triggered.connect(lambda: self.add_in_compare(root_item))
             animation_action.triggered.connect(lambda: self.show_animation(root_item))
 
@@ -700,66 +606,12 @@ class treeWin(QWidget):
 
     def show_animation(self, item):
         self.animator = Animator(item.curve_data_obj)
-        #self.animator.set_speed(100)   # 100 точек в секунду
-        #self.animator.set_duration(10)
-        #self.animator.start(reset=True, apply_filters_after=True, filter_delay_ms=1000)
-
         self.main_class.animation_start(self.animator)
-    
-    def reset_filters(self, item=None):
-        if item in self.curves:
-            self.curve_reset.emit(item.curve_data_obj)
 
     def add_in_compare(self, item):
         compare_controller = self.main_class.get_compare_graph()
         graph_compare_field = compare_controller.get_graph_fields()
         item.curve_data_obj.add_to_graph(graph_compare_field, graph_compare_field.legend, 1)
-
-    def change_name_curve(self, item):
-        dialog = NameChangeDialog(self, item.curve_data_obj.curve_name)
-        if dialog.exec_() != QDialog.Accepted:
-            return
-        new_name, ok, reset = dialog.get_results()
-        if not ok:
-            return
-
-        session = self.main_class
-        curve = item.curve_data_obj
-
-        if reset:
-            from graph.core.undo_commands import ResetCurveNameCommand
-            cmd = ResetCurveNameCommand(curve=curve)
-            if session is not None and hasattr(session, "undo_manager") \
-                    and not session.undo_manager.is_applying:
-                session.undo_manager.push(cmd)
-                return
-            curve.reset
-
-    def add_note(self, item: CurveTreeItem):
-        description = item.get_description()
-        text, ok = QInputDialog().getText(
-            self,
-            QApplication.translate("GraphWindow", "Описание"),
-            QApplication.translate("GraphWindow", "Описание"),
-            QLineEdit.Normal,
-            description,
-        )
-        if not ok:
-            return
-
-        block_name = QApplication.translate("GraphWindow", "Разное")
-        session = self.main_class
-        from graph.core.undo_commands import AddNoteCommand
-        cmd = AddNoteCommand(tree_item=item,
-                             block_name=block_name,
-                             old_text=description,
-                             new_text=text)
-
-        if session is not None and hasattr(session, "undo_manager") \
-                and not session.undo_manager.is_applying:
-            session.undo_manager.push(cmd)
-        else:
-            cmd.redo()
 
     def delete_curve(self, item: CurveTreeItem = None):
         if item is None:
@@ -799,8 +651,6 @@ class treeWin(QWidget):
 
         self.update_visible()
 
-        # Дополнительно привязываем undo-команду, чтобы можно было откатить.
-        # Команда будет вызвана в redo() и восстановит артефакты при undo().
         if cmd is not None and not session.undo_manager.is_applying:
             session.undo_manager.push(cmd, execute=True)
 
@@ -831,121 +681,15 @@ class treeWin(QWidget):
                                           QApplication.translate("GraphWindow", "Пожалуйста, выберите элемент для отображения."))
                 return
         if item in self.curves:
-            #item.curve_data_obj.delete_curve_from_graph() #мы не должны удалять здесь, мы должны отправить сигнал, его перехватит адаптер и разберется, что делать
             self.curve_hide.emit(item.curve_data_obj)
 
         self.update_visible()
-
-    def change_curve_style(self, item: CurveTreeItem):
-        session = self.main_class
-        before_style = None
-        try:
-            before_style = copy.deepcopy(item.curve_data_obj.saved_style)
-        except Exception:
-            before_style = None
-
-        customizer = GraphCustomizer(item.curve_data_obj)
-        result = customizer.exec_()
-
-        if session is None or not hasattr(session, "undo_manager"):
-            return
-        if session.undo_manager.is_applying:
-            return
-
-        # Записываем финальный стиль (даже если пользователь отменил — он
-        # восстановил исходный, но нам нужен только случай фактического
-        # изменения). Поэтому сравним до и после.
-        after_style = copy.deepcopy(item.curve_data_obj.saved_style)
-        if before_style is None or after_style is None:
-            return
-        same = (
-            before_style.color == after_style.color
-            and before_style.line_style == after_style.line_style
-            and before_style.line_width == after_style.line_width
-            and before_style.symbol == after_style.symbol
-            and before_style.symbol_size == after_style.symbol_size
-            and before_style.symbol_color == after_style.symbol_color
-            and before_style.fill_color == after_style.fill_color
-        )
-        if same:
-            return
-
-        from graph.core.undo_commands import ChangeCurveStyleCommand
-        # Стиль уже применён — фиксируем команду, чтобы undo вернул старый.
-        cmd = ChangeCurveStyleCommand(item.curve_data_obj, before_style)
-        # обнуляем "новый" стиль — на самом деле в change_style мы уже
-        # установили текущий, поэтому пересоберём команду так, чтобы
-        # redo применял именно after_style:
-        cmd.new_style = after_style
-        cmd.old_style = before_style
-        # Записываем как «уже выполненную»
-        session.undo_manager.push(cmd)
 
     def clear_all(self):
         for curve in self.curves:
             self.delete_curve(curve)
 
         self.update_visible()
-
-def compute_autocorrelation(data, max_lag=None, normalized=True, method='direct'):
-    data = np.asarray(data)
-    if data.ndim != 1:
-        raise ValueError("Входные данные должны быть одномерным массивом")
-    
-    n = len(data)
-    if max_lag is None:
-        max_lag = n - 1
-    else:
-        max_lag = min(int(max_lag), n - 1)
-    
-    # Проверяем наличие NaN
-    has_nan = np.any(np.isnan(data))
-    
-    if has_nan and method == 'fft':
-        method = 'direct'
-    
-    if has_nan:
-        # Вычисляем среднее только по валидным точкам
-        mean_val = np.nanmean(data)
-        data_centered = data - mean_val
-        # Заменяем NaN на 0 для корректных вычислений в dot продуктах
-        data_valid = np.where(np.isnan(data_centered), 0, data_centered)
-        
-        if method == 'fft':
-            padding = 2 ** int(np.ceil(np.log2(2 * n - 1)))
-            fft = np.fft.fft(data_valid, padding)
-            autocorr = np.fft.ifft(fft * np.conj(fft))[:n].real
-            autocorr = autocorr[:max_lag+1]
-        else:
-            autocorr = np.zeros(max_lag + 1)
-            for k in range(max_lag + 1):
-                # Маска валидных точек для лага k
-                valid_mask = ~(np.isnan(data[:n-k]) | np.isnan(data[k:]))
-                if np.any(valid_mask):
-                    autocorr[k] = np.dot(data_centered[:n-k][valid_mask], data_centered[k:][valid_mask])
-                else:
-                    autocorr[k] = np.nan
-    else:
-        data_centered = data - np.mean(data)
-        if method == 'fft':
-            padding = 2 ** int(np.ceil(np.log2(2 * n - 1)))
-            fft = np.fft.fft(data_centered, padding)
-            autocorr = np.fft.ifft(fft * np.conj(fft))[:n].real
-            autocorr = autocorr[:max_lag+1]
-        else:
-            autocorr = np.zeros(max_lag + 1)
-            for k in range(max_lag + 1):
-                autocorr[k] = np.dot(data_centered[:n-k], data_centered[k:])
-
-    if normalized:
-        if has_nan:
-            # Нормализация по валидным точкам
-            norm = np.nansum(data_centered**2)
-        else:
-            norm = np.dot(data_centered, data_centered)
-        autocorr = autocorr / norm if norm != 0 else autocorr * 0
-    
-    return autocorr
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

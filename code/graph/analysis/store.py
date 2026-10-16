@@ -8,7 +8,6 @@ from .models import AnalysisArtifact
 
 logger = logging.getLogger(__name__)
 
-
 class SessionAnalysisStore:
     def __init__(self) -> None:
         self._artifacts: Dict[str, AnalysisArtifact] = {}

@@ -8,13 +8,11 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QScrollArea,
-    QSpinBox, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
-    QHeaderView, QSizePolicy,
+    QSpinBox, QVBoxLayout, QWidget,QSizePolicy,
 )
 from .. import ensure_tools_registered
-from ..models import ParamDescriptor, ParamType, PlacementType, tr_analysis
+from ..models import ParamDescriptor, ParamType, tr_analysis
 
-from ..models import ParamDescriptor, ParamType, PlacementType
 from ..registry import AnalysisToolRegistry
 from ..presets import AnalysisPresetStore
 
@@ -39,7 +37,6 @@ class AnalysisTab(QWidget):
 
         self.controller.tool_activated.connect(self._on_tool_activated)
         self.controller.tool_deactivated.connect(self._on_tool_deactivated)
-        self.controller.preview_updated.connect(self._on_preview_updated)
         self.controller.artifacts_changed.connect(self._reload_artifacts)
 
     # ------------------------------------------------------------------
@@ -321,9 +318,6 @@ class AnalysisTab(QWidget):
         self._param_widgets.clear()
         self._clear_params_form()
 
-    def _on_preview_updated(self) -> None:
-        pass
-
     def _rebuild_params(self, desc) -> None:
         self._clear_params_form()
         self._param_widgets.clear()
@@ -411,40 +405,6 @@ class AnalysisTab(QWidget):
             return
         self.controller.set_preview_params({name: value})
         self.controller.apply()
-
-    # ------------------------------------------------------------------
-    def _save_preset(self) -> None:
-        artifacts: List[Dict[str, Any]] = []
-        seen = set()
-        for curve in self.curves:
-            root = curve.rel_data.root_name
-            for art in self.controller.get_artifacts_for_curve(root):
-                key = (art.tool_id, tuple(sorted((art.params or {}).items())))
-                if key in seen:
-                    continue
-                seen.add(key)
-                artifacts.append({
-                    "tool_id": art.tool_id,
-                    "params": dict(art.params or {}),
-                })
-
-        if not artifacts:
-            from PyQt5.QtWidgets import QMessageBox
-            QMessageBox.information(
-                self, _TR("Сохранить пресет"),
-                _TR("Нет применённых инструментов для сохранения."),
-            )
-            return
-
-        from PyQt5.QtWidgets import QInputDialog
-        name, ok = QInputDialog.getText(self, _TR("Сохранить пресет"),
-                                        _TR("Имя пресета:"))
-        if not ok or not name.strip():
-            return
-        self.presets.register(name.strip(), artifacts)
-        self._reload_presets_combo()
-
-    # ------------------------------------------------------------------
     def _resolve_title(self, desc) -> str:
         from ..models import tr_analysis
         return tr_analysis(desc.title_key)

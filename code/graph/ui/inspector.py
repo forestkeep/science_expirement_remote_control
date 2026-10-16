@@ -5,9 +5,9 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTabWidget,
                              QDoubleSpinBox, QPushButton, QGroupBox, QFormLayout,
                              QTableWidget, QTableWidgetItem, QHeaderView,
                              QStackedWidget, QScrollArea, QApplication,
-                             QColorDialog, QTextEdit)
+                             QColorDialog, QTextEdit, QFontDialog)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor
+from PyQt5.QtGui import QColor, QFont
 
 from graph.core.curve_data import LineStyle
 from graph.core.filters_instance_class import FilterCommand
@@ -15,9 +15,6 @@ from graph.core.undo_commands import (RenameCurveCommand, ChangeCurveStyleComman
                                       ApplyFilterCommand, RemoveFilterCommand,
                                       ResetFiltersCommand, EditPointCommand)
 from graph.utils.line_styles import PRESETS_LINE
-from graph.hdf5_io.utils import extract_plot_widget_settings
-from graph.hdf5_io.adapters import HDF5ToProjectAdapter
-from graph.hdf5_io.models import FieldSettings
 from graph.analysis.ui.analysis_tab import AnalysisTab
 
 logger = logging.getLogger(__name__)
@@ -216,6 +213,7 @@ class GraphSettingsWidget(QWidget):
         self.grid_alpha.setRange(0, 100)
         self.grid_alpha.setSuffix(" %")
         self.grid_alpha.setToolTip("Интенсивность линий сетки (0 % — полностью прозрачные)")
+        self.grid_alpha.setValue(100)
         self.grid_alpha.valueChanged.connect(self.apply_grid)
         f.addRow("Интенсивность:", self.grid_alpha)
 
@@ -501,7 +499,7 @@ class GraphSettingsWidget(QWidget):
             current = controller.label.font()
         except Exception:
             current = None
-        from PyQt5.QtWidgets import QFontDialog
+
         font, ok = QFontDialog.getFont(current, self, "Шрифт подписи оси")
         if not ok:
             return
@@ -521,11 +519,13 @@ class GraphSettingsWidget(QWidget):
         controller = self.graph_view.axises.get(key)
         if controller is None:
             return
-        try:
-            current = controller.tickFont()
-        except Exception:
-            current = None
-        from PyQt5.QtWidgets import QFontDialog
+
+        # Прямое обращение к AxisItem, без __getattr__
+        axis_item = controller.axis
+        current = axis_item.style.get('tickFont')  # может быть None
+        if current is None:
+            current = QFont()  # безопасный fallback
+
         font, ok = QFontDialog.getFont(current, self, "Шрифт делений оси")
         if not ok:
             return
@@ -533,13 +533,14 @@ class GraphSettingsWidget(QWidget):
 
         def mutate():
             try:
+                axis_item.setTickFont(font)
                 controller.custom_style.tick_font = font
-                controller.set_custom_style(controller.custom_style)
             except Exception:
                 logger.exception("choose_axis_tick_font failed")
 
         gv.apply_appearance_change(mutate)
         _status(self.session, f"Шрифт делений оси {key} обновлён", 2000)
+
 
     def choose_legend_color(self):
         c = QColorDialog.getColor(QColor(self._color_from_btn(self.legend_color_btn)))

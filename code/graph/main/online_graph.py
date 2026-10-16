@@ -18,9 +18,9 @@ import uuid
 
 # --- Сторонние библиотеки ---
 import numpy as np
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import QEvent, QPoint, QRect, QSize, Qt, QTimer, pyqtSignal
+from PyQt5.QtCore import QEvent, QPoint, QRect, Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QGuiApplication, QIcon
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import (
     QAction,
     QApplication,
@@ -359,8 +359,7 @@ class GraphSession(QWidget):
             self.select_win = paramSelector(alias_manager=self.alias_manager)
             self.select_controller = paramController(self.select_win, alias_manager=self.alias_manager)
             self.filter_class.set_filter_slot(self.filters_callback)
-
-        self.data_manager.stop_current_session.connect(self._on_session_stopped)
+            self.data_manager.stop_current_session.connect(self._on_session_stopped)
 
         self.tab1 = tabPage(1)
         self.tab2 = tabPage(2)
@@ -601,22 +600,6 @@ class GraphSession(QWidget):
         self.select_win.set_second_check_box(settings.graph_field.is_second_axis_enabled)
         self.select_win.set_multiple_mode(settings.graph_field.is_multiple_selection_enabled)
 
-    def save_analysis_artifacts_to_h5(self, session_group) -> None:
-        """Вызывается при сохранении проекта."""
-        if hasattr(self, "analysis_controller"):
-            save_artifacts(self.analysis_controller.store, session_group)
-
-    def restore_analysis_artifacts_from_h5(self, session_group) -> None:
-        if not hasattr(self, "analysis_controller"):
-            return
-        artifacts = load_artifacts(session_group)
-        for art in artifacts:
-            cmd = None
-            from graph.analysis.commands import ApplyAnalysisCommand
-            cmd = ApplyAnalysisCommand(self.analysis_controller, art)
-            self.undo_manager.push(cmd, execute=True)
-
-
 class running_exp_test(QWidget):
 
     def __init__(self, graph_class, max_points, periodsec):
@@ -692,7 +675,6 @@ class sessionController():
         self.session_selector.session_description_changed.connect(self._session_description_changed)
 
         self.buttons_controller.new_data_imported.connect(self.data_imported)
-        self.buttons_controller.compare_sessions_requested.connect(self.compare_sessions)
 
         # ВАЖНО: передаём action_registry в GraphWindow,
         # иначе меню «Правка» остаётся пустым.
@@ -718,18 +700,8 @@ class sessionController():
         self.graph_sessions = {}
         self.compare_graph = None
         self.animation_win = None
-        self.dot_counter = 0  # счётчик для анимации точек
+        self.dot_counter = 0
 
-        # Регистрация действия «Сбросить имя кривой» (контекст curve)
-        self.action_registry.register(
-            "curve.reset_name",
-            QApplication.translate("GraphWindow", "Сбросить название выделенных кривых"),
-            self._action_reset_curve_name,
-            context="curve",
-        )
-
-        # Синхронизируем состояние undo/redo-кнопок с реальностью
-        # (нужно даже при отсутствии сессий — просто выставит disabled).
         self._update_undo_actions()
 
         self.status_bar.set_permanent("Готово")
@@ -801,51 +773,6 @@ class sessionController():
         self.animation_win = AnimationWindow(animator=animator)
         self.animation_win.show()
 
-    def compare_sessions(self):
-        data = {}
-        for session_id, session in self.graph_sessions.items():
-            data[session_id] = {"name": session.session_name,
-                                "values": session.data_manager.get_name_params()}
-        data_test = {
-            101: {"name": "Фрукты", "values": ["яблоко", "банан", "апельсин", "киви"]},
-            102: {"name": "Овощи", "values": ["морковь", "картофель", "помидор", "огурец"]},
-            103: {"name": "Ягоды", "values": ["клубника", "малина", "черника", "ежевика"]},
-            104: {"name": "Фрукты", "values": ["груша", "персик", "слива"]}
-        }
-
-        exclude = ["numbers", "time", "timestamp"]
-
-        is_valid = True
-        '''
-        dialog = MultiSelectionDialog(data, exclude_list=exclude, min_items=2)
-        if dialog.exec_() == QDialog.Accepted:
-            result = dialog.get_result()
-            is_valid = True
-            print("Выбранные данные после фильтрации (ключи - ID):")
-            for id_key, values in result.items():
-                name = data[id_key]["name"]
-                print(f"{id_key} ({name}): {values}")
-        else:
-            print("Отмена")
-        '''
-
-        if is_valid:
-            graph_compare = GraphSession(
-                id=125,
-                name="test",
-                alias_manager=self.alias_manager,
-                session_controller=self,
-                simple_mode=True,
-                ses_uuid=125
-            )
-            self.compare_graph = CompareWindowMediator(1,
-                                                       "test",
-                                                       self.alias_manager,
-                                                       graph_compare,
-                                                       )
-
-            self.compare_graph.window.show()
-
     def get_compare_graph(self):
         if self.compare_graph is None:
             graph_compare = GraphSession(
@@ -864,10 +791,6 @@ class sessionController():
         self.compare_graph.window.show()
         return self.compare_graph
 
-    def push_button_open_log(self):
-        if self.way_to_save_file is not None:
-            os.startfile(self.way_to_save_file)
-
     def show_alias_dialog(self):
         """Показывает диалог управления псевдонимами"""
         # available_params = self.get_name_params()
@@ -878,6 +801,7 @@ class sessionController():
         """Сбросить пользовательские имена у выделенных кривых в текущей сессии."""
         session = self._current_session()
         if session is None or not hasattr(session, "selection_model"):
+            logger.warning(f"_action_reset_curve_name: no current session {session} or no selection model")
             return
         for curve in session.selection_model.current():
             try:
@@ -1189,13 +1113,6 @@ class sessionController():
         except Exception as e:
             logger.exception(f"update_session_data failed for {session_id}: {e}")
             return False
-
-    def get_session_id(self, session_name: str) -> int:
-        logger.info(f"get_session_id {session_name}")
-        for session_id in self.graph_sessions.keys():
-            if self.graph_sessions[session_id].session_name == session_name:
-                return session_id
-        return None
 
     def get_session_name(self, session_id: str) -> str:
         logger.info(f"get_session_name {session_id} list: {self.graph_sessions}")

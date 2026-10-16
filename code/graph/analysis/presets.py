@@ -11,7 +11,6 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class AnalysisPreset:
     id: str = field(default_factory=lambda: uuid.uuid4().hex)

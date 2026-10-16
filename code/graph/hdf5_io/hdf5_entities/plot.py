@@ -1,7 +1,5 @@
-from datetime import datetime
 from .base import BaseHDF5Entity
 from ..models import Plot, GraphStyle, Statistics, FilterEntry, LinearData, CurveTreeItemData
-import json
 
 class HDF5Plot(BaseHDF5Entity):
     """Представление графика в HDF5."""

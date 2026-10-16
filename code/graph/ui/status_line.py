@@ -1,12 +1,6 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget
-
-
-from PyQt5.QtWidgets import QStatusBar, QLabel, QProgressBar, QWidget, QHBoxLayout
-from PyQt5.QtCore import Qt, QTimer
-
-from PyQt5.QtWidgets import QStatusBar, QProgressBar, QWidget
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QStatusBar, QProgressBar
+from PyQt5.QtCore import QTimer
 
 class StatusBar(QStatusBar):
     """

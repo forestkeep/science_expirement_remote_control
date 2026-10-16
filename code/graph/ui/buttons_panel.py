@@ -18,20 +18,17 @@ class ButtonsWidget(QWidget):
     def init_ui(self):
         self.btn_import_data = QPushButton(QApplication.translate("filters","Импортировать данные"))
         self.btn_import_osc = QPushButton(QApplication.translate("filters","Импортировать осциллограммы"))
-        self.btn_compare_sessions = QPushButton(QApplication.translate("filters","Сравнение сессий"))
         
         button_layout = QHBoxLayout(self)
         button_layout.addWidget(self.btn_import_data)
         button_layout.addWidget(self.btn_import_osc)
         button_layout.addStretch()
-        button_layout.addWidget(self.btn_compare_sessions)
 
 
 
 class ButtonsControl(QObject):
 
     new_data_imported = pyqtSignal(str, str, dict)
-    compare_sessions_requested = pyqtSignal()
 
     def __init__(self, session_selector):
         super().__init__()
@@ -40,7 +37,6 @@ class ButtonsControl(QObject):
         
         self.widget.btn_import_data.clicked.connect(self.handle_import_data)
         self.widget.btn_import_osc.clicked.connect(self.handle_import_osc)
-        self.widget.btn_compare_sessions.clicked.connect(self.compare_sessions_requested)
 
     def handle_import_data(self):
         options = QFileDialog.Options()

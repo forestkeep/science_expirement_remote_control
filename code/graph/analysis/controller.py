@@ -12,10 +12,10 @@ from graph.core.session_mode import SessionMode
 
 from .commands import (
     ApplyAnalysisCommand, ApplyUncertaintyCommand, RemoveAnalysisCommand,
-    RemoveUncertaintyCommand, UpdateAnalysisParamsCommand, MacroAnalysisCommand,
+    RemoveUncertaintyCommand, UpdateAnalysisParamsCommand
 )
 from .models import (
-    AnalysisArtifact, PlacementType, SourceSnapshot,
+    AnalysisArtifact, SourceSnapshot,
 )
 from .preview import AnalysisPreviewManager
 from .registry import AnalysisToolRegistry
@@ -457,42 +457,6 @@ class AnalysisController(QObject):
             if root_name and root_name not in ids:
                 ids.append(root_name)
         return ids
-
-    def _recompute_preview(self) -> None:
-        if self._active is None:
-            return
-        tool_id = self._active.tool_id
-        strategy = self.registry.create_strategy(tool_id)
-        if strategy is None:
-            return
-        # preview только для лидера
-        leader_snap = self._active.sources[self._active.leader_index]
-        if self._active.preview_handle is not None:
-            self.renderer.remove(self._active.preview_handle)
-            self._active.preview_handle = None
-
-        from .strategies.base import AnalysisContext
-        ctx = AnalysisContext(sources=[leader_snap],
-                              filter_instance=getattr(self.session, "filter_class", None))
-        try:
-            payload, _ = strategy.compute(ctx, self._active.params)
-        except Exception:
-            logger.exception("preview compute failed")
-            return
-        if payload is None:
-            return
-        desc = self.registry.get(tool_id)
-        temp = AnalysisArtifact(
-            tool_id=tool_id,
-            source_curve_ids=[leader_snap.root_name],
-            params=dict(self._active.params),
-            placement_type=desc.placement_type,
-            payload=self._payload_for_source(payload, 0),
-        )
-        self._active.preview_handle = self.renderer.render(temp, is_preview=True)
-        self.preview.set(tool_id, self._active.params, temp.payload,
-                         [leader_snap.root_name], leader_snap.root_name)
-        self.preview_updated.emit()
 
     def _compute_uncertainty_record(self, snap: SourceSnapshot,
                                      params: Dict[str, Any]) -> UncertaintyRecord:

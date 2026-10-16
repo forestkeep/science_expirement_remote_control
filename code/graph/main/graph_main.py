@@ -9,9 +9,6 @@
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-import time
-
-import pyqtgraph as pg
 import logging
 from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QFontMetrics
@@ -21,8 +18,6 @@ from graph.core.curve_data import linearData, LineStyle
 from graph.core.dataManager import relationData
 from graph.ui.customPlotWidget import PatchedPlotWidget
 from graph.core.filters_instance_class import FilterCommand
-from graph.core.session_mode import SessionMode
-from graph.utils.decorators import time_decorator
 
 logger = logging.getLogger(__name__)
 
@@ -392,23 +387,6 @@ class manageGraph(QObject):
         for curve in curv_for_del:
             self.main_class.tree_class.delete_curve(curve.tree_item)
 
-    def handle_skip_draw(self, selector, second_selector,  graph_field, string_x, string_y, is_multiple):
-        if is_multiple:
-            current_items = list(item.text() for item in selector.selectedItems())
-            if string_y not in current_items and string_y != "Select parameter":
-                curve_key = string_y + string_x
-                if self.__stack_curve.get(curve_key) is not None:
-                    self.__stack_curve[curve_key].delete_curve_from_graph()
-                    second_selector.addItem(self.__stack_curve[curve_key].y_name)
-                    return True
-        else:
-            #отменить отрисовку всех кривых в блоке
-            for data_curve in self.__stack_curve.values():
-                if data_curve.is_draw:
-                    data_curve.delete_curve_from_graph()
-                    second_selector.addItem(data_curve.y_name)
-        return False
-    
     def hide_second_line_grid(self):
         self.graphView.hide_second_line_grid()
 
@@ -462,14 +440,6 @@ class manageGraph(QObject):
         
     def set_multiple_mode(self, is_multiple):
         self.__is_multiple = is_multiple
-
-    def _on_curve_selection_changed(self, curve_obj, selected: bool):
-        if self.selection_model is None:
-            return
-        if selected:
-            self.selection_model.add(curve_obj)
-        else:
-            self.selection_model.remove(curve_obj)
 
     def get_curve(self, name):
         return self.__stack_curve.get(name)

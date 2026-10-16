@@ -14,7 +14,6 @@ import sys
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QDialog, QLabel,
                              QPushButton, QVBoxLayout)
 
-
 class messageDialog(QDialog):
     def __init__(
         self, title="Сообщение", text="Отлично выглядите!", are_show_again=False

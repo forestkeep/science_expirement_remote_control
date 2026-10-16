@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-
 class AnalysisPreviewManager:
     def __init__(self) -> None:
         self._payload: Any = None

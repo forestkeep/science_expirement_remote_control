@@ -134,9 +134,6 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.set_second_axis(False)
 
         view_rect = self.plots_lay.vb.viewRect()
-            
-        tooltip_x = view_rect.right()# - (view_rect.width() * 0.02)  # 2% отступа от правого края
-        tooltip_y = view_rect.top()# + (view_rect.height() * 0.02)   # 2% отступа от верхнего края
 
     def _emit_style_changed(self):
         """Оповестить подписчиков (сессия → дочерние графики) о смене стиля."""

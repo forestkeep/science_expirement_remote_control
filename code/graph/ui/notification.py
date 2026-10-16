@@ -12,7 +12,6 @@
 from PyQt5.QtCore import QPropertyAnimation, Qt, QTimer
 from PyQt5.QtWidgets import QFrame, QLabel, QVBoxLayout
 
-
 class NotificationWidget(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)

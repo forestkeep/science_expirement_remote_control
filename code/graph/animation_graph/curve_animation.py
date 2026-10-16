@@ -4,7 +4,6 @@ from PyQt5 import QtCore
 
 logger = logging.getLogger(__name__)
 
-
 class Animator(QtCore.QObject):
     """
     Аниматор для плавного отображения данных кривой (linearData).

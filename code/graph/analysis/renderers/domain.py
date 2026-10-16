@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Dict
 import pyqtgraph as pg
 from graph.ui.customPlotWidget import PatchedPlotWidget
 from .base import BaseRenderer

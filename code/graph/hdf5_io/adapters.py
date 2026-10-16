@@ -1,6 +1,6 @@
 from .models import (ProjectFile, Session, SessionParameters, FieldSettings, DataManager,Plot, OscillogramData,
                     ParameterData, GraphStyle, Statistics, CurveTreeItemData, GraphData, LinearData, FilterEntry)
-from .utils import extract_plot_widget_settings, string_to_qfont, string_to_color
+from .utils import string_to_qfont, string_to_color
 import logging
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QApplication

@@ -1,6 +1,3 @@
-
-
-
 class FilterCommand:
     def __init__(self, filter_type, params, filters_instance):
         self.filter_type = filter_type

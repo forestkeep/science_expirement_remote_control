@@ -8,7 +8,6 @@ from .models import AnalysisToolDescriptor, ToolCategory
 
 logger = logging.getLogger(__name__)
 
-
 class AnalysisToolRegistry:
     _instance: Optional["AnalysisToolRegistry"] = None
 

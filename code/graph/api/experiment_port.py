@@ -2,7 +2,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class ExperimentPort:
     """Фасад над sessionController для удалённого управления экспериментом."""
 

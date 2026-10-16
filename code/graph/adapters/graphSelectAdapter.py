@@ -15,7 +15,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class graphSelectAdapter:
     def __init__(self, graph, selector, data_manager, tree_class, type_data, main_class):
         self.graph = graph
@@ -38,7 +37,6 @@ class graphSelectAdapter:
         self.tree_class.curve_deleted.connect(self.destroy_curve)
         self.tree_class.curve_shown.connect(self.show_curve)
         self.tree_class.curve_hide.connect(self.hide_curve)
-        self.tree_class.curve_reset.connect(self.reset_filters)
         self.tree_class.curve_created.connect(self.curve_created)
 
     # --- видимое окно ---
@@ -211,8 +209,6 @@ class graphSelectAdapter:
             # туда и сюда идёт root_name ("y/x"), а не y_root_name ("y").
             ctrl.on_source_shown(curve_data_obj.rel_data.root_name)
 
-    def reset_filters(self, curve_data_obj: linearData):
-        self.graph.reset_filters(curve_data_obj)
 
     def curve_created(self, data: relationData, formula: str = None, description: str = None):
         status = self.graph.create_and_place_curve(data=data)
@@ -243,12 +239,6 @@ class graphSelectAdapter:
         cmd = AddCurveCommand(session=session, root_name=data.root_name)
         if cmd.bind_after_creation():
             session.undo_manager.push(cmd)
-
-    def numPointsChanged(self, value):
-        self.graph.set_num_points(value)
-
-    def showingAllPoints(self, state):
-        self.graph.show_all_points(state)
 
     def state_second_axis_changed(self, state):
         self.graph.set_second_axis(state)

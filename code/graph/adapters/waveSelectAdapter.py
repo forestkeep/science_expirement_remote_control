@@ -13,7 +13,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class waveSelectAdapter:
     def __init__(self, graph, selector, data_manager, type_data, main_class):
         self.graph = graph

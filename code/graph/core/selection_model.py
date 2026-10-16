@@ -1,6 +1,5 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
-
 class SelectionModel(QObject):
     """
     Single source of truth for curve selection.

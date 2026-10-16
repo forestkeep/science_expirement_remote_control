@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from PyQt5.QtCore import QObject, pyqtSignal
 

@@ -29,13 +29,11 @@ class ButtonsWidget(QWidget):
     def init_ui(self):
         self.btn_import_data = QPushButton(QApplication.translate("filters","Импортировать данные"))
         self.btn_import_osc = QPushButton(QApplication.translate("filters","Импортировать осциллограммы"))
-        self.btn_compare_sessions = QPushButton(QApplication.translate("filters","Сравнение сессий"))
         
         button_layout = QHBoxLayout()
         button_layout.addWidget(self.btn_import_data)
         button_layout.addWidget(self.btn_import_osc)
         button_layout.addStretch()
-        button_layout.addWidget(self.btn_compare_sessions)
 
 class SessionWidget(QWidget):
     session_selected = pyqtSignal(str)
