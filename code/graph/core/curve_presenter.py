@@ -113,6 +113,24 @@ class CurvePresenter:
         self.num_showing_points = value
         self._do_refresh() 
 
+    def _selection_style(self) -> LineStyle:
+        """Стиль выделения, наследующий dash и символы у saved_style.
+
+        Меняются только цвет пера, толщина и цвет символов. Символ, его размер
+        и тип линии остаются исходными, поэтому стоимость кадра при
+        панорамировании не растёт по сравнению с невыделенной кривой.
+        """
+        base = self.saved_style or LineStyle()
+        return LineStyle(
+            color=_SELECTION_COLOR,
+            line_style=base.line_style,
+            line_width=max(2, int(base.line_width) + 4),
+            symbol=base.symbol,
+            symbol_size=base.symbol_size,
+            symbol_color=_SELECTION_COLOR,
+            fill_color=base.fill_color,
+        )
+
     def _on_data_changed(self) -> None:
         if self._detached or self._refresh_scheduled:
             return
@@ -142,22 +160,24 @@ class CurvePresenter:
         self.is_all_points_showing = state
         self._do_refresh() 
 
+    def _apply_style_to_all(self, style: LineStyle, update_tree: bool = True) -> None:
+        for info in self.plot_items.values():
+            style.apply_to_curve(info['item'])
+        if update_tree and self.tree_item is not None:
+            color = style.to_pen().color().name()
+            self.tree_item.setForeground(1, pg.mkBrush(color=color))
+
     def _refresh_selection_style(self) -> None:
         selected = self.is_curve_selected
         if selected == getattr(self, "_last_selection_state", None):
             return
         self._last_selection_state = selected
-        style = self.clicked_style if selected else self.saved_style
-        if style is None:
+        if not selected:
+            if self.saved_style is not None:
+                self._apply_style_to_all(self.saved_style, update_tree=True)
             return
-        self._apply_style_to_all(style)
-
-    def _apply_style_to_all(self, style: LineStyle) -> None:
-        for info in self.plot_items.values():
-            style.apply_to_curve(info['item'])
-        if self.tree_item is not None:
-            color = style.to_pen().color().name()
-            self.tree_item.setForeground(1, pg.mkBrush(color=color))
+        self._apply_style_to_all(self._selection_style(), update_tree=True)
+    
 
     def attach_selection_model(self, model: Optional[SelectionModel]) -> None:
         """Подключить модель выделения и сбросить кэш состояния выделения."""
@@ -329,24 +349,38 @@ class CurvePresenter:
             self._selection_model.add(self)
 
     def higlight_curve(self) -> None:
+        """Подсветить кривую без пересборки пути (только перо/символы)."""
         if self.higlighted_flag:
             return
         self.higlighted_flag = True
         self.preselection_style = (
-            self.clicked_style if self.is_curve_selected else self.saved_style
+            self._selection_style() if self.is_curve_selected else self.saved_style
         )
         pen = pg.mkPen(color=(150, 150, 150, 90), width=5)
+        brush = pg.mkBrush(150, 150, 150, 90)
         for info in self.plot_items.values():
-            info['item'].setPen(pen)
-            info['item'].setSymbolBrush(color=(150, 150, 150, 90))
-            info['item'].setSymbolPen(pen)
+            item = info['item']
+            item.setPen(pen)
+            item.setSymbolPen(pen)
+            item.setSymbolBrush(brush)
 
     def unhiglight_curve(self) -> None:
+        """Снять подсветку, пересчитав актуальный стиль по текущему состоянию.
+
+        Стиль вычисляется заново по is_curve_selected / saved_style, а не
+        восстанавливается из preselection_style. Это исключает сценарий,
+        когда во время hover выделение изменилось (или preselection_style
+        был выставлен из clicked_style) и после hover на кривую попадает
+        dash-перо — а с ним и медленное панорамирование.
+        """
         if not self.higlighted_flag:
             return
         self.higlighted_flag = False
-        if self.preselection_style is not None:
-            self._apply_style_to_all(self.preselection_style)
+        self.preselection_style = None
+        if self.is_curve_selected:
+            self._apply_style_to_all(self._selection_style(), update_tree=False)
+        elif self.saved_style is not None:
+            self._apply_style_to_all(self.saved_style, update_tree=False)
 
     # -- legend ---------------------------------------------------------
     def set_legend_name(self, name: str) -> None:
@@ -407,12 +441,15 @@ class CurvePresenter:
                 except Exception:
                     logger.exception("set_error_bars failed")
             info["error_bars"] = bars
-            
-def make_selection_style() -> LineStyle:
-    """Единый стиль выделения основной кривой и всех её потомков (анализа).
 
-    Именно этот стиль применяется и к CurvePresenter.clicked_style,
-    и к артефактам анализа при подсветке источника.
+_SELECTION_COLOR = (100, 100, 100)
+def make_selection_style() -> LineStyle:
+    """Стиль выделения для артефактов анализа и fallback-совместимости.
+
+    Не использовать в CurvePresenter для основной кривой: в горячем пути
+    применяется CurvePresenter._selection_style(), наследующий символы и
+    dash у saved_style. Здесь dash и крупный символ допустимы, потому что
+    у артефактов мало точек.
     """
     return LineStyle(
         color=(180, 150, 150), line_style=QtCore.Qt.DashLine, line_width=4,

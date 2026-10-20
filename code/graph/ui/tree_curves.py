@@ -415,19 +415,35 @@ class treeWin(QWidget):
             session.undo_manager.push(cmd)
 
     def on_item_entered(self, item):
+        """Подсветить кривую под курсором с дебаунсом (60 мс)."""
+        if item is getattr(self, "_hover_item", None):
+            return
+        self._hover_item = item
+        if getattr(self, "_hover_timer", None) is None:
+            from PyQt5.QtCore import QTimer
+            self._hover_timer = QTimer(self)
+            self._hover_timer.setSingleShot(True)
+            self._hover_timer.timeout.connect(self._apply_hover)
+        self._hover_timer.start(60)
+
+    def _apply_hover(self):
+        """Применить подсветку к актуальному hover-элементу."""
+        item = getattr(self, "_hover_item", None)
         root_item = None
-        if item:
+        if item is not None:
             parent = item
             while True:
                 root_item = parent
                 parent = parent.parent()
-                if parent  is None:
+                if parent is None:
                     break
-
-            root_item.this_choise()
-
+        if not isinstance(root_item, CurveTreeItem):
+            for cur in self.curves:
+                cur.deselection()
+            return
+        root_item.this_choise()
         for cur in self.curves:
-            if cur != item and cur != root_item:
+            if cur is not root_item:
                 cur.deselection()
 
     def update_visible(self):
