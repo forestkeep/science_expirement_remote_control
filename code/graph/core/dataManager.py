@@ -214,6 +214,65 @@ class graphDataManager(QObject):
         relations_second_axis = [_relation_for(key) for key in original_keysy2]
 
         return relations_first_axis, relations_second_axis
+
+    def load_session_from_model(self, session_id: str, osc_items: list, param_items: list) -> None:
+        """Массово заполнить сессию измерениями из HDF5-модели.
+
+        Создаёт ``measTimeData`` напрямую из массивов модели, минуя разбор
+        вложенных словарей в ``_add_new_data``. Эмитит
+        ``list_parameters_updated`` ровно один раз, если были добавлены
+        новые параметры.
+        """
+        self.name = session_id
+        self.current_spicified_data = "time"
+        self.__sessions_data = {
+            "osc": sessionMeasData(data={}, spicified_data="time", is_running=False),
+            "main": sessionMeasData(data={}, spicified_data="time", is_running=False),
+        }
+        self.all_parameters = {"main": [], "osc": []}
+        self.updated_params = {"main": {}, "osc": {}}
+        self._relation_cache.clear()
+        self._data_version += 1
+
+        def _key_for(item):
+            device = item.device or ""
+            channel = item.channel or ""
+            if device and device[-1] != "-":
+                device += "-"
+            if channel and channel[-1] != "-":
+                channel += "-"
+            return f"{device}{channel}{item.parameter}"
+
+        added_any = False
+        for target, items, type_key in (
+            (self.__sessions_data["osc"].data, osc_items, "osc"),
+            (self.__sessions_data["main"].data, param_items, "main"),
+        ):
+            for item in items:
+                key = _key_for(item)
+                md = measTimeData(
+                    device=item.device or "",
+                    ch=item.channel or "",
+                    param=item.parameter or "",
+                    par_val=list(item.data_values),
+                    num_or_time=list(item.time_values),
+                )
+                target[key] = md
+                self.all_parameters[type_key].append(key)
+                self.alias_manager.add_param(key)
+                added_any = True
+
+        if added_any:
+            self.list_parameters_updated.emit(self.all_parameters)
+
+    def mark_stopped_silently(self) -> None:
+        """Пометить текущую сессию остановленной без эмита ``stop_current_session``.
+
+        Используется при загрузке проекта: кривые ещё не построены, полный
+        ``_refresh_all_curves_data`` не имеет смысла.
+        """
+        if "osc" in self.__sessions_data:
+            self.__sessions_data["osc"].is_running = False
     
     def get_session_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> tuple[measTimeData, dict, dict]:
         # Конвертируем псевдонимы обратно в оригинальные имена

@@ -85,42 +85,14 @@ class ProjectToHDF5Adapter:
             data_manager=data_manager,
             plots=plots
         )
-    def _convert_data_manager(self, core_manager: graphDataManager) -> DataManager:
-        """Преобразует данные измерений и осциллограмм"""
-
-        # Получаем все данные из ядра
-        core_data = core_manager.get_all_data()
-        session_name = core_manager.get_name()
-
-        data_manager = DataManager(name=session_name)
-        
-        # Обрабатываем осциллограммы
-        osc_data = core_data.get('osc', {}).data
-        for key, mtd in osc_data.items():
-            oscillogram = OscillogramData(
-                name=key,
-                device=mtd.device,
-                channel=mtd.ch,
-                parameter=mtd.param,
-                time_values=np.array(mtd.num_or_time),
-                data_values=np.array(mtd.par_val)
-            )
-            data_manager.oscillogram_data[key] = oscillogram
-        
-        # Обрабатываем параметры
-        main_data = core_data.get('main', {}).data
-        for key, mtd in main_data.items():
-            parameter_data = ParameterData(
-                name=key,
-                device=mtd.device,
-                channel=mtd.ch,
-                parameter=mtd.param,
-                time_values=np.array(mtd.num_or_time),
-                data_values=np.array(mtd.par_val)
-            )
-            data_manager.parameter_data[key] = parameter_data
-        
-        return data_manager
+    def _convert_data_manager(self, core_manager: graphDataManager, model: DataManager, session_id: str = None) -> None:
+        """Загрузить данные измерений в core_manager массово, без сигналов на каждый параметр."""
+        logger.info("Converting data manager")
+        core_manager.load_session_from_model(
+            session_id=session_id or core_manager.name,
+            osc_items=list(model.oscillogram_data.values()),
+            param_items=list(model.parameter_data.values()),
+        )
     
     def convert_plot(self, core_plot) -> Plot:
         """
@@ -237,19 +209,20 @@ class HDF5ToProjectAdapter:
 
 
     def _convert_session(self, session: Session, core_session):
+        """Восстановить сессию без лишних сигналов и повторных пересборок данных."""
         logger.info(f"Converting session {session.name}")
         uuid = session.parameters.uuid
         use_timestamp = True if 'time' in session.data_manager.parameter_data.keys() else False
-        session_id = core_session.start_new_session(session_name = session.name, use_timestamps = use_timestamp, uuid = uuid)
+        session_id = core_session.start_new_session(session_name=session.name, use_timestamps=use_timestamp, uuid=uuid)
 
         if not session_id:
             logger.warning(f"Failed to start session {session.name=} {uuid=}, convert session skipped")
             return
-        
+
         core_session.update_session_description(session_id, session.description)
         core_manager = core_session.graph_sessions[session_id].data_manager
         self._convert_data_manager(core_manager, session.data_manager)
-        core_manager.stop_session_running()
+        core_manager.mark_stopped_silently()
 
         selection_x_param = None
         selection_y_first_params = []
@@ -265,7 +238,7 @@ class HDF5ToProjectAdapter:
                 alias_manager=core_session.alias_manager,
                 filter_instance=core_session.graph_sessions[session_id].filter_class,
             )
-            curve_obj.number_axis = axis  # ← выставляем ДО add_curve
+            curve_obj.number_axis = axis
             core_session.graph_sessions[session_id].graph_main.add_curve(
                 curve_obj, type_axis="left" if axis == 1 else "right"
             )
@@ -282,17 +255,18 @@ class HDF5ToProjectAdapter:
                     selection_y_first_params.append(core_session.alias_manager.get_alias(plot.y_name))
                 elif axis == 2:
                     selection_y_second_params.append(core_session.alias_manager.get_alias(plot.y_name))
-
             else:
                 curve_obj.delete_curve_from_graph()
 
-        core_session.graph_sessions[session_id].select_controller.set_selections(x_param = selection_x_param, y_first_params = selection_y_first_params, y_second_params = selection_y_second_params)
-        
-        graphView = core_session.graph_sessions[session_id].graph_main.graphView
+        core_session.graph_sessions[session_id].select_controller.set_selections(
+            x_param=selection_x_param,
+            y_first_params=selection_y_first_params,
+            y_second_params=selection_y_second_params,
+            is_signal=False,
+        )
 
         core_session.graph_sessions[session_id].apply_field_settings(session.field_settings)
 
-         # Восстановление артефактов анализа
         try:
             from graph.analysis.commands import ApplyAnalysisCommand
             core_sess = core_session.graph_sessions[session_id]

@@ -232,9 +232,9 @@ class CurvePresenter:
 
     # -- plots ----------------------------------------------------------
     def create_plot_item(self):
+        """Создать пустой PlotDataItem; данные устанавливаются в refresh()."""
         style = self.saved_style or LineStyle()
         item = pg.PlotDataItem(
-            self.store.filtered_x_data, self.store.filtered_y_data,
             pen=style.to_pen(),
             name=self.store.legend.current_name,
             symbol=style.symbol,
@@ -249,6 +249,8 @@ class CurvePresenter:
         return item
 
     def add_to_graph(self, graph_field, legend_field, number_axis) -> None:
+        """Добавить кривую на график, форсируя первичную отрисовку данных.
+        """
         new_item = self.create_plot_item()
         graph_field.addItem(new_item)
         if legend_field.getLabel(new_item) is None:
@@ -260,10 +262,12 @@ class CurvePresenter:
         self.number_axis = number_axis
 
         self._apply_style_to_all(
-            self.clicked_style if self.is_curve_selected else (self.saved_style or LineStyle())
+            self._selection_style() if self.is_curve_selected else (self.saved_style or LineStyle()),
+            update_tree=False,
         )
         self.is_draw = True
-        self._do_refresh() 
+        self._last_rendered_version = -1
+        self._do_refresh()
 
     def remove_from_graph(self, viewbox) -> None:
         info = self.plot_items.pop(viewbox, None)
@@ -279,11 +283,17 @@ class CurvePresenter:
             self.remove_from_graph(viewbox)
 
     def delete_curve_from_graph(self) -> None:
+        """Убрать кривую и её error bars с графика без detach()."""
         logger.info(f"delete_curve_from_graph {self.store.curve_name}")
         if not self.is_draw:
             return
         self.is_draw = False
         for graph_field, info in list(self.plot_items.items()):
+            for eb in info.get('error_bars') or []:
+                try:
+                    graph_field.removeItem(eb)
+                except Exception:
+                    pass
             try:
                 graph_field.removeItem(info['item'])
             finally:
