@@ -48,14 +48,13 @@ class sessionMeasData:
 
 class relationData:
     def __init__(self, data_x_axis: measTimeData, data_y_axis: measTimeData, is_gen: bool = False):
-
+        """Создать связь X/Y с быстрым путём для совпадающих временных сеток."""
         self._x_root_name, self._y_root_name, self._root_name = self.create_base_names(
             data_x_axis.device, data_x_axis.ch, data_x_axis.param,
             data_y_axis.device, data_y_axis.ch, data_y_axis.param
         )
 
         self._is_gen = is_gen
-
         logger.debug(f"Creating relation {self.root_name} between {self.x_root_name} and {self.y_root_name}")
 
         self._y_current_name = copy.copy(self.y_root_name)
@@ -75,21 +74,29 @@ class relationData:
             self.__base_x = data_y_axis.num_or_time
             self.x_result = data_y_axis.num_or_time
             self.y_result = data_y_axis.par_val
-
         elif data_y_axis.param == "time" or data_y_axis.param == "numbers":
             self.__base_x = data_x_axis.par_val
             self.x_result = data_x_axis.par_val
             self.y_result = data_x_axis.num_or_time
-
         else:
-            '''Создается единая координатная упорядоченная сетка (__base_x), включающая все измерения обоих приборов.
-            После этого значения обоих параметров (par_val) пересчитываются (интерполируются) на эту общую сетку.
-            Благодаря этому в дальнейшем можно математически работать с парами (x_result, y_result)
-            как с точками на плоскости, определенными в одних и тех же координатах X.
-            Там, где данных не хватало, они "достраиваются" линейной интерполяцией.'''
-            self.__base_x = np.unique(np.concatenate((data_x_axis.num_or_time, data_y_axis.num_or_time)))
-            self.x_result = np.interp(self.__base_x, data_x_axis.num_or_time, data_x_axis.par_val)
-            self.y_result = np.interp(self.__base_x, data_y_axis.num_or_time, data_y_axis.par_val)
+            xt = np.asarray(data_x_axis.num_or_time)
+            yt = np.asarray(data_y_axis.num_or_time)
+            xv = np.asarray(data_x_axis.par_val)
+            yv = np.asarray(data_y_axis.par_val)
+            if xt.shape == yt.shape and np.array_equal(xt, yt):
+                self.__base_x = xt
+                self.x_result = xv
+                self.y_result = yv
+            else:
+                '''Создается единая координатная упорядоченная сетка (__base_x), включающая все измерения обоих приборов.
+                            После этого значения обоих параметров (par_val) пересчитываются (интерполируются) на эту общую сетку.
+                            Благодаря этому в дальнейшем можно математически работать с парами (x_result, y_result)
+                            как с точками на плоскости, определенными в одних и тех же координатах X.
+                            Там, где данных не хватало, они "достраиваются" линейной интерполяцией.'''
+                self.__base_x = np.unique(np.concatenate((xt, yt)))
+                self.x_result = np.interp(self.__base_x, xt, xv)
+                self.y_result = np.interp(self.__base_x, yt, yv)
+            
 
     def create_base_names(self, x_device, x_ch, x_param, y_device, y_ch, y_param):
         x_original = f"{x_device}{x_ch}{x_param}"
@@ -144,9 +151,10 @@ class graphDataManager(QObject):
     stop_current_session = pyqtSignal()
 
     def __init__(self, alias_manager: ParameterAliasManager):
+        """Инициализировать менеджер данных с версией и кэшем связей."""
         super().__init__()
         self.alias_manager = alias_manager
-        
+
         self.__sessions_data = {}
         self.name = None
         self.current_spicified_data = None
@@ -160,38 +168,50 @@ class graphDataManager(QObject):
             "osc": []
         }
 
-        # --- Батчинг обновлений---
+        self._data_version = 0
+        self._relation_cache = {}
+
         self._pending_batch = {"main": {}, "osc": {}}
         self._batch_timer = QTimer(self)
         self._batch_timer.setInterval(self.BATCH_INTERVAL_MS)
         self._batch_timer.timeout.connect(self._flush_batch)
 
     def get_relation_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> list[relationData]:
-        # Конвертируем псевдонимы обратно в оригинальные имена
+        """Вернуть связи X/Y с кэшем, инвалидируемым по версии данных.
+
+        Безопасно для live-режима: любое добавление точек инкрементирует
+        ``_data_version`` (см. ``_add_new_data``), поэтому при поступлении
+        нового батча кэш промахивается и relationData пересобирается по
+        актуальным массивам.
+        """
         logger.debug(f"get_relation_data {keysx=} {keysy1=} {keysy2=}")
         original_keysx = self.alias_manager.get_original_name(keysx)
         original_keysy1 = [self.alias_manager.get_original_name(key) for key in keysy1]
         original_keysy2 = [self.alias_manager.get_original_name(key) for key in keysy2]
-        
-        relations_first_axis = []
-        relations_second_axis = []
+
         if data_type not in self.__sessions_data.keys():
             logger.warning(f"Invalid data type {data_type} available types {list(self.__sessions_data[self.name].keys())}")
             return [], []
-        
-        if original_keysx and original_keysy1 or original_keysx and original_keysy2:
-            for key in original_keysy1:
-                buf = relationData(
-                    self.__sessions_data[data_type].data[original_keysx],
-                    self.__sessions_data[data_type].data[key]
-                )
-                relations_first_axis.append(buf)
-            for key in original_keysy2:
-                buf = relationData(
-                    self.__sessions_data[data_type].data[original_keysx],
-                    self.__sessions_data[data_type].data[key]
-                )
-                relations_second_axis.append(buf)
+
+        if not original_keysx or not (original_keysy1 or original_keysy2):
+            return [], []
+
+        session_data = self.__sessions_data[data_type].data
+        x_md = session_data[original_keysx]
+        version = self._data_version
+
+        def _relation_for(key):
+            y_md = session_data[key]
+            cache_key = (data_type, original_keysx, key)
+            cached = self._relation_cache.get(cache_key)
+            if cached is not None and cached[0] == version:
+                return cached[1]
+            relation = relationData(x_md, y_md)
+            self._relation_cache[cache_key] = (version, relation)
+            return relation
+
+        relations_first_axis = [_relation_for(key) for key in original_keysy1]
+        relations_second_axis = [_relation_for(key) for key in original_keysy2]
 
         return relations_first_axis, relations_second_axis
     
@@ -239,6 +259,7 @@ class graphDataManager(QObject):
         }
 
     def start_new_session(self, session_id: str, use_timestamps: bool = False, is_experiment_running: bool = False, new_data=None, type_data: str = None):
+        """Стартовать новую сессию и инвалидировать кэш связей."""
         if not session_id or not isinstance(session_id, str):
             raise ValueError("Invalid session_id")
 
@@ -249,16 +270,17 @@ class graphDataManager(QObject):
 
         try:
             self.__sessions_data = {
-                "osc": sessionMeasData(data={}, spicified_data=specified_data, is_running=is_experiment_running), 
+                "osc": sessionMeasData(data={}, spicified_data=specified_data, is_running=is_experiment_running),
                 "main": sessionMeasData(data={}, spicified_data=specified_data, is_running=is_experiment_running)
             }
             self.name = session_id
+            self._relation_cache.clear()
+            self._data_version += 1
 
             if new_data is not None:
                 status = self.add_measurement_data(new_data, type_data)
                 if not status:
                     raise ValueError("Failed to add measurement data")
-
         except Exception as e:
             self.current_spicified_data = self.__sessions_data['osc'].spicified_data
             raise
@@ -266,13 +288,9 @@ class graphDataManager(QObject):
         self.current_spicified_data = self.__sessions_data['osc'].spicified_data
 
         if use_timestamps:
-            spicified_data = {	
-                            "time":[[],[]]	
-                            }
+            spicified_data = {"time": [[], []]}
         else:
-            spicified_data = {	
-                            "numbers":[[],[]]	
-                            }
+            spicified_data = {"numbers": [[], []]}
 
         self.add_measurement_data(spicified_data)
 
@@ -387,6 +405,7 @@ class graphDataManager(QObject):
         return True, is_new_param_added, is_old_param_udated
 
     def _add_new_data(self, device: Optional[str], channel: Optional[str], param: str, value: list, type_data: str = None) -> tuple[bool, bool, bool]:
+        """Добавить/расширить данные параметра и инкрементировать версию данных."""
         is_new_param_added = False
         is_old_param_udated = False
 
@@ -406,15 +425,15 @@ class graphDataManager(QObject):
         key = f"{device}{channel}{param}"
 
         if "wavech" not in param:
-            val_list = value[0]  # [ [val1, val2], [time1, time2] ]
+            val_list = value[0]
         else:
-            val_list = value[0]  # [ [[osc1], [osc2]], [time1, time2] ]
+            val_list = value[0]
 
         time_list = ([float(i) for i in range(len(val_list))] if len(value) == 1 else value[1])
         if len(val_list) != len(time_list):
             logger.warning(f"Длины списков параметра и времени не равны {device=} {channel=} {param=} {value=}")
             return False, is_new_param_added, is_old_param_udated
-        
+
         if "wavech" in param or type_data == "osc":
             existing_data = self.__sessions_data['osc'].data.get(key)
             focus = self.__sessions_data['osc'].data
@@ -425,17 +444,18 @@ class graphDataManager(QObject):
             key_type = "main"
 
         if existing_data is None:
-            new_data = measTimeData(device=device, ch=channel, param=param, 
-                                par_val=val_list, num_or_time=time_list)
+            new_data = measTimeData(device=device, ch=channel, param=param,
+                                    par_val=val_list, num_or_time=time_list)
             focus[key] = new_data
             self.all_parameters[key_type].append(key)
             self.alias_manager.add_param(key)
-
+            self._data_version += 1
             is_new_param_added = True
         else:
             existing_data.par_val.extend(val_list)
             existing_data.num_or_time.extend(time_list)
             self.updated_params[key_type][key] = existing_data
+            self._data_version += 1
             is_old_param_udated = True
 
         return True, is_new_param_added, is_old_param_udated
