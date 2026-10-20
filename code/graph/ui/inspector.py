@@ -690,6 +690,13 @@ class DataTab(QWidget):
 
     # ------------------------------------------------------------------
     def set_curves(self, curves):
+        # Форсируем актуальность статистики перед чтением
+        for c in curves:
+            try:
+                c.ensure_stats_fresh()
+            except Exception:
+                logger.exception("DataTab: ensure_stats_fresh failed")
+
         self.curves = curves
         if not curves:
             self.name_edit.clear()
@@ -729,11 +736,12 @@ class DataTab(QWidget):
             self.stats_table.setRowCount(len(curves))
             for i, curve in enumerate(curves):
                 stats = curve.tree_item.parameters
+                min_y = stats.get("min_y")
+                max_y = stats.get("max_y")
                 self.stats_table.setItem(i, 0, QTableWidgetItem(curve.curve_name))
-                self.stats_table.setItem(i, 1, QTableWidgetItem(stats.get("tip", "linear")))
-                y = curve.raw_data_y
-                self.stats_table.setItem(i, 2, QTableWidgetItem(f"{y.min():.4g}" if len(y) else "-"))
-                self.stats_table.setItem(i, 3, QTableWidgetItem(f"{y.max():.4g}" if len(y) else "-"))
+                self.stats_table.setItem(i, 1, QTableWidgetItem(str(stats.get("tip") or "linear")))
+                self.stats_table.setItem(i, 2, QTableWidgetItem(str(min_y) if min_y is not None else "-"))
+                self.stats_table.setItem(i, 3, QTableWidgetItem(str(max_y) if max_y is not None else "-"))
             self.points_table.setRowCount(0)
 
     # ------------------------------------------------------------------
@@ -783,9 +791,18 @@ class DataTab(QWidget):
         if new_x == old_x and new_y == old_y:
             return
 
+        # Форсируем актуальность filtered, чтобы следующее чтение таблицы
+        # и статистики увидело свежие данные (важно для «медленного пути» —
+        # пересборки фильтров с дебаунсом 200 мс).
+        try:
+            curve.ensure_stats_fresh()
+        except Exception:
+            logger.exception("DataTab: ensure_stats_fresh before edit failed")
+
         cmd = EditPointCommand(curve, row, old_x, old_y, new_x, new_y)
         self.session.undo_manager.push(cmd, execute=True)
-        self._populate_points()
+        # Перерисовка произойдёт автоматически по state_changed undo_manager;
+        # второй ручной вызов _populate_points убран.
         _status(self.session, f"Изменена точка #{row}", 2000)
 
     # ------------------------------------------------------------------
@@ -1096,8 +1113,19 @@ class StyleTab(QWidget):
 # Вкладка "Фильтры"
 # =====================================================================
 class FiltersTab(QWidget):
-    FILTER_NAMES = ["Медианный", "Скользящее среднее",
-                    "Экспоненциальное среднее", "Прореживание", "Нормировка"]
+    FILTER_NAMES = [
+        "Медианный",
+        "Скользящее среднее",
+        "Экспоненциальное среднее",
+        "Прореживание",
+        "Нормировка",
+        "Hampel",
+        "Savitzky-Golay",
+        "Детренд",
+        "Butterworth",
+        "Notch",
+        "Гауссово сглаживание",
+    ]
 
     def __init__(self, session, parent=None):
         super().__init__(parent)
@@ -1135,6 +1163,12 @@ class FiltersTab(QWidget):
         self.param_stack.addWidget(self._build_exp_panel())
         self.param_stack.addWidget(self._build_thinning_panel())
         self.param_stack.addWidget(self._build_normalize_panel())
+        self.param_stack.addWidget(self._build_hampel_panel())
+        self.param_stack.addWidget(self._build_savgol_panel())
+        self.param_stack.addWidget(self._build_detrend_panel())
+        self.param_stack.addWidget(self._build_butterworth_panel())
+        self.param_stack.addWidget(self._build_notch_panel())
+        self.param_stack.addWidget(self._build_gaussian_panel())
         gl.addWidget(self.param_stack)
 
         self.apply_btn = QPushButton("Применить")
@@ -1143,7 +1177,160 @@ class FiltersTab(QWidget):
 
         layout.addWidget(group)
 
-    # --- панели параметров -------------------------------------------
+    def _build_hampel_panel(self):
+        w = QWidget(); f = QFormLayout(w)
+        self.hampel_window = QSpinBox()
+        self.hampel_window.setRange(3, 999)
+        self.hampel_window.setSingleStep(2)
+        self.hampel_window.setValue(5)
+        self.hampel_sigmas = QDoubleSpinBox()
+        self.hampel_sigmas.setRange(0.5, 10.0)
+        self.hampel_sigmas.setSingleStep(0.5)
+        self.hampel_sigmas.setDecimals(2)
+        self.hampel_sigmas.setValue(3.0)
+        f.addRow("Окно:", self.hampel_window)
+        f.addRow("Порог (σ):", self.hampel_sigmas)
+        return w
+
+    def _build_savgol_panel(self):
+        w = QWidget(); f = QFormLayout(w)
+        self.savgol_window = QSpinBox()
+        self.savgol_window.setRange(3, 999)
+        self.savgol_window.setSingleStep(2)
+        self.savgol_window.setValue(5)
+        self.savgol_polyorder = QSpinBox()
+        self.savgol_polyorder.setRange(1, 10)
+        self.savgol_polyorder.setValue(2)
+        f.addRow("Окно:", self.savgol_window)
+        f.addRow("Степень полинома:", self.savgol_polyorder)
+        return w
+
+    def _build_detrend_panel(self):
+        w = QWidget(); f = QFormLayout(w)
+        self.detrend_type = QComboBox()
+        self.detrend_type.addItems(["linear", "poly"])
+        self.detrend_type.currentTextChanged.connect(self._on_detrend_type_changed)
+        self.detrend_polyorder = QSpinBox()
+        self.detrend_polyorder.setRange(1, 10)
+        self.detrend_polyorder.setValue(2)
+        self.detrend_polyorder.setEnabled(False)
+        f.addRow("Тип:", self.detrend_type)
+        f.addRow("Степень:", self.detrend_polyorder)
+        return w
+
+    def _on_detrend_type_changed(self, text):
+        self.detrend_polyorder.setEnabled(text == "poly")
+
+    def _build_butterworth_panel(self):
+        w = QWidget(); f = QFormLayout(w)
+        self.butter_type = QComboBox()
+        self.butter_type.addItems(["low", "high", "band"])
+        self.butter_cutoff_low = QDoubleSpinBox()
+        self.butter_cutoff_low.setRange(0.0, 1e6)
+        self.butter_cutoff_low.setDecimals(4)
+        self.butter_cutoff_low.setValue(10.0)
+        self.butter_cutoff_high = QDoubleSpinBox()
+        self.butter_cutoff_high.setRange(0.0, 1e6)
+        self.butter_cutoff_high.setDecimals(4)
+        self.butter_cutoff_high.setValue(100.0)
+        self.butter_cutoff_high.setEnabled(False)
+        self.butter_order = QSpinBox()
+        self.butter_order.setRange(1, 10)
+        self.butter_order.setValue(4)
+        self.butter_type.currentTextChanged.connect(
+            lambda t: self.butter_cutoff_high.setEnabled(t == "band")
+        )
+        f.addRow("Тип:", self.butter_type)
+        f.addRow("Срез/нижн. (Гц):", self.butter_cutoff_low)
+        f.addRow("Верхн. (Гц):", self.butter_cutoff_high)
+        f.addRow("Порядок:", self.butter_order)
+        return w
+
+    def _build_notch_panel(self):
+        w = QWidget(); f = QFormLayout(w)
+        self.notch_freq = QDoubleSpinBox()
+        self.notch_freq.setRange(0.001, 1e6)
+        self.notch_freq.setDecimals(2)
+        self.notch_freq.setValue(50.0)
+        self.notch_q = QDoubleSpinBox()
+        self.notch_q.setRange(1.0, 1000.0)
+        self.notch_q.setDecimals(1)
+        self.notch_q.setValue(30.0)
+        f.addRow("Частота (Гц):", self.notch_freq)
+        f.addRow("Q:", self.notch_q)
+        return w
+
+    def _build_gaussian_panel(self):
+        w = QWidget(); f = QFormLayout(w)
+        self.gaussian_window = QSpinBox()
+        self.gaussian_window.setRange(1, 999)
+        self.gaussian_window.setValue(5)
+        f.addRow("Окно (→ σ):", self.gaussian_window)
+        return w
+
+    def _build_filter_command(self):
+        idx = self.filter_type_combo.currentIndex()
+        if idx == 0:
+            return FilterCommand("median", {"window": int(self.median_window.value())},
+                                 self.session.filter_class)
+        if idx == 1:
+            return FilterCommand("average", {"window": int(self.average_window.value())},
+                                 self.session.filter_class)
+        if idx == 2:
+            return FilterCommand("exp_mean", {"alpha": float(self.exp_alpha.value())},
+                                 self.session.filter_class)
+        if idx == 3:
+            params = {
+                "percent": int(self.thinning_percent.value()),
+                "uniform": bool(self.thinning_uniform.isChecked()),
+                "max": bool(self.thinning_max.isChecked()),
+                "min": bool(self.thinning_min.isChecked()),
+                "first": bool(self.thinning_first.isChecked()),
+                "last": bool(self.thinning_last.isChecked()),
+            }
+            return FilterCommand("thinning", params, self.session.filter_class)
+        if idx == 4:
+            return FilterCommand("normalize", {"norm_type": self.norm_type.currentText()},
+                                 self.session.filter_class)
+        if idx == 5:
+            return FilterCommand("hampel", {
+                "window": int(self.hampel_window.value()),
+                "n_sigmas": float(self.hampel_sigmas.value()),
+            }, self.session.filter_class)
+        if idx == 6:
+            return FilterCommand("savitzky_golay", {
+                "window": int(self.savgol_window.value()),
+                "polyorder": int(self.savgol_polyorder.value()),
+            }, self.session.filter_class)
+        if idx == 7:
+            return FilterCommand("detrend", {
+                "detrend_type": self.detrend_type.currentText(),
+                "polyorder": int(self.detrend_polyorder.value()),
+            }, self.session.filter_class)
+        if idx == 8:
+            btype = self.butter_type.currentText()
+            if btype == "band":
+                cutoff = (float(self.butter_cutoff_low.value()),
+                          float(self.butter_cutoff_high.value()))
+            else:
+                cutoff = float(self.butter_cutoff_low.value())
+            return FilterCommand("butterworth", {
+                "cutoff": cutoff,
+                "btype": btype,
+                "order": int(self.butter_order.value()),
+            }, self.session.filter_class)
+        if idx == 9:
+            return FilterCommand("notch", {
+                "freq": float(self.notch_freq.value()),
+                "q": float(self.notch_q.value()),
+            }, self.session.filter_class)
+        if idx == 10:
+            return FilterCommand("gaussian_smooth", {
+                "window": int(self.gaussian_window.value()),
+                "sigma": None,
+            }, self.session.filter_class)
+        return None
+
     def _build_median_panel(self):
         w = QWidget(); f = QFormLayout(w)
         self.median_window = QSpinBox(); self.median_window.setRange(1, 999); self.median_window.setValue(3)
@@ -1208,33 +1395,6 @@ class FiltersTab(QWidget):
             del_btn.clicked.connect(lambda _, c=curve, f=fc: self.remove_filter(c, f))
             hl.addWidget(del_btn)
             self.filters_list.setCellWidget(i, 2, cell)
-
-    # --- действия ----------------------------------------------------
-    def _build_filter_command(self):
-        idx = self.filter_type_combo.currentIndex()
-        if idx == 0:
-            return FilterCommand("median", {"window": int(self.median_window.value())},
-                                 self.session.filter_class)
-        if idx == 1:
-            return FilterCommand("average", {"window": int(self.average_window.value())},
-                                 self.session.filter_class)
-        if idx == 2:
-            return FilterCommand("exp_mean", {"alpha": float(self.exp_alpha.value())},
-                                 self.session.filter_class)
-        if idx == 3:
-            params = {
-                "percent": int(self.thinning_percent.value()),
-                "uniform": bool(self.thinning_uniform.isChecked()),
-                "max": bool(self.thinning_max.isChecked()),
-                "min": bool(self.thinning_min.isChecked()),
-                "first": bool(self.thinning_first.isChecked()),
-                "last": bool(self.thinning_last.isChecked()),
-            }
-            return FilterCommand("thinning", params, self.session.filter_class)
-        if idx == 4:
-            return FilterCommand("normalize", {"norm_type": self.norm_type.currentText()},
-                                 self.session.filter_class)
-        return None
 
     def apply_filter(self):
         if not self.curves:

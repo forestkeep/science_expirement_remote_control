@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QWidget
 from graph.ui.customPlotWidget import PatchedPlotWidget
 from .base import apply_main_graph_style
 
-from .base import BaseRenderer
+from .base import BaseRenderer, artifact_legend_name
 
 logger = logging.getLogger(__name__)
 
@@ -77,21 +77,20 @@ class AttachedRenderer(BaseRenderer):
         ys = getattr(payload, "y", None) or []
         handles = []
         for i, (x, y) in enumerate(zip(xs, ys)):
-            curve_id = artifact.source_curve_ids[i] if i < len(artifact.source_curve_ids) else None
+            curve_id = (artifact.source_curve_ids[i]
+                        if i < len(artifact.source_curve_ids) else None)
             curve = self.session.graph_main.get_curve(curve_id) if curve_id else None
-            curve_name = curve.curve_name if curve else (curve_id or "?")
+            legend_name = artifact_legend_name(self.session, artifact, curve_id)
             color = curve.saved_style.color if curve and curve.saved_style else "#ffffff"
             pen = pg.mkPen(color=color, width=2)
 
-            # name=curve_name сохраняет подпись в item.opts['name'],
-            # чтобы legend.addItem(item, name) её восстановил.
-            item = plot.plot(x, y, name=curve_name, pen=pen)
-            item._legend_name = curve_name
+            item = plot.plot(x, y, name=legend_name, pen=pen)
+            item._legend_name = legend_name
 
             try:
                 legend = getattr(plot, "legend", None)
                 if legend is not None and legend.getLabel(item) is None:
-                    legend.addItem(item, curve_name)
+                    legend.addItem(item, legend_name)
             except Exception:
                 logger.exception("AttachedRenderer: legend.addItem failed")
             handles.append(item)
@@ -141,6 +140,33 @@ class AttachedRenderer(BaseRenderer):
         for i, item in enumerate(handle or []):
             if i < len(xs) and i < len(ys):
                 item.setData(xs[i], ys[i])
+
+    def update_legend_names(self, artifact) -> None:
+        handles = getattr(artifact, "handle", None) or []
+        info = self._panels.get(artifact.tool_id)
+        if info is None:
+            return
+        legend = getattr(info.get("plot"), "legend", None)
+        if legend is None:
+            return
+        for i, item in enumerate(handles):
+            if item not in info["handles"]:
+                continue
+            curve_id = (artifact.source_curve_ids[i]
+                        if i < len(artifact.source_curve_ids) else None)
+            new_name = artifact_legend_name(self.session, artifact, curve_id)
+            item._legend_name = new_name
+            if not item.isVisible():
+                continue
+            try:
+                old = legend.getLabel(item)
+                if old == new_name:
+                    continue
+                if old is not None:
+                    legend.removeItem(item)
+                legend.addItem(item, new_name)
+            except Exception:
+                logger.exception("AttachedRenderer.update_legend_names failed")
 
     def remove(self, handle) -> None:
         for tool_id, info in list(self._panels.items()):

@@ -6,7 +6,7 @@ import logging
 import pyqtgraph as pg
 from PyQt5 import QtCore
 
-from .base import BaseRenderer
+from .base import BaseRenderer, artifact_legend_name
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +87,28 @@ class OverlayRenderer(BaseRenderer):
             except Exception:
                 logger.exception("OverlayRenderer.set_visible failed")
 
+    def update_legend_names(self, artifact) -> None:
+        """Обновить подписи в легенде без перерисовки данных."""
+        graph_view = self.session.graph_main.graphView
+        legend = getattr(graph_view, "legend", None)
+        handles = getattr(artifact, "handle", None) or []
+        for i, item in enumerate(handles):
+            curve_id = (artifact.source_curve_ids[i]
+                        if i < len(artifact.source_curve_ids) else None)
+            new_name = self._legend_name(artifact, curve_id)
+            item._legend_name = new_name
+            if legend is None or not item.isVisible():
+                continue
+            try:
+                old = legend.getLabel(item)
+                if old == new_name:
+                    continue
+                if old is not None:
+                    legend.removeItem(item)
+                legend.addItem(item, new_name)
+            except Exception:
+                logger.exception("OverlayRenderer.update_legend_names failed")
+
     def update(self, handle, payload) -> None:
         xs = getattr(payload, "x", None)
         ys = getattr(payload, "y", None)
@@ -137,10 +159,7 @@ class OverlayRenderer(BaseRenderer):
                 logger.exception("OverlayRenderer.set_highlighted failed")
     # ------------------------------------------------------------------
     def _legend_name(self, artifact, curve_id) -> str:
-        curve = self.session.graph_main.get_curve(curve_id) if curve_id else None
-        base = curve.curve_name if curve else (curve_id or "?")
-        suffix = artifact.tool_id.split(".")[-1]
-        return f"{base} ▸ {suffix}"
+        return artifact_legend_name(self.session, artifact, curve_id)
 
     def _color_for(self, curve_id):
         curve = self.session.graph_main.get_curve(curve_id) if curve_id else None

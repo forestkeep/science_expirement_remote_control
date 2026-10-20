@@ -14,14 +14,11 @@ import re
 import sys
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QInputDialog,
+from PyQt5.QtWidgets import (QApplication, QDialog, QInputDialog,
                              QLabel, QLineEdit, QMessageBox, QPushButton,
-                             QVBoxLayout)
-import sys
-from PyQt5.QtWidgets import (
-    QApplication, QDialog, QTableWidget, QTableWidgetItem,
-    QVBoxLayout, QPushButton, QHBoxLayout, QMessageBox, QHeaderView
-)
+                             QVBoxLayout, QTableWidget, QTableWidgetItem, 
+                             QHBoxLayout, QHeaderView)
+
 from PyQt5.QtGui import QColor
 
 try:

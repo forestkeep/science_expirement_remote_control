@@ -1,6 +1,7 @@
-"""Спектральные инструменты: FFT, автокорреляция."""
+# graph/analysis/strategies/spectral.py
 from __future__ import annotations
 
+import re
 import numpy as np
 
 from ..models import (
@@ -14,13 +15,39 @@ _registry = AnalysisToolRegistry.instance()
 
 
 class FFTStrategy(AnalysisStrategy):
-    def validate(self, params, sources):
-        if not sources:
-            return ValidationResult(False, "Не выделено кривых")
-        return ValidationResult(True)
+    # Карта «единица оси X → единица частоты в SI».
+    _FREQ_UNIT_BY_X_UNIT = {
+        "с":   "Гц",   "сек": "Гц",   "s": "Гц",   "sec": "Гц",
+        "мс":  "кГц",  "ms":  "кГц",
+        "мкс": "МГц",  "µs":  "МГц",  "us": "МГц",
+        "нс":  "ГГц",  "ns":  "ГГц",
+    }
 
-    def compute(self, context: AnalysisContext, params: Dict[str, Any]):
+    @staticmethod
+    def _make_freq_label(x_name: str) -> str:
+        """Подпись оси частот на основе имени/единицы оси X.
+
+        Ищем известную единицу (мс, с, мкс, …) в имени оси X. Если
+        нашли — показываем и «1/<unit>», и SI-имя частоты. Иначе
+        откатываемся к универсальному «1/<x_name>», что гарантирует
+        физическую корректность подписи для любых единиц.
+        """
+        if not x_name:
+            return "Частота, 1/ед. X"
+        m = re.search(
+            r'(?<![A-Za-zА-Яа-я])(мкс|мс|нс|сек|с|µs|us|ms|ns|s)(?![A-Za-zА-Яа-я])',
+            x_name, re.IGNORECASE,
+        )
+        if m:
+            unit = m.group(1)
+            freq_unit = FFTStrategy._FREQ_UNIT_BY_X_UNIT.get(unit.lower())
+            if freq_unit:
+                return f"Частота, 1/{unit} ({freq_unit})"
+        return f"Частота, 1/{x_name}"
+
+    def compute(self, context: AnalysisContext, params: dict):
         xs, ys, details = [], [], []
+        x_label = "Частота, 1/ед. X"
         for snap in context.sources:
             x = np.asarray(snap.x, dtype=float)
             y = np.asarray(snap.y, dtype=float)
@@ -35,22 +62,26 @@ class FFTStrategy(AnalysisStrategy):
             amplitude = np.abs(spectrum)
             xs.append(freqs)
             ys.append(amplitude)
+
+            x_label = self._make_freq_label(getattr(snap, "x_name", ""))
             details.append({
                 "curve": snap.root_name,
-                "x_label": "Частота",
+                "x_label": x_label,
                 "y_label": "|A|",
                 "tab_title": f"Спектр: {snap.curve_name or snap.root_name}",
             })
-        return DomainPayload(x=xs, y=ys, x_label="Частота",
-                             y_label="|A|", tab_title="Спектр"), details
+        return DomainPayload(
+            x=xs, y=ys, x_label=x_label, y_label="|A|", tab_title="Спектр",
+        ), details
 
     def describe(self, params):
         return "FFT"
 
 
 class AutocorrelationStrategy(AnalysisStrategy):
-    def compute(self, context: AnalysisContext, params: Dict[str, Any]):
+    def compute(self, context: AnalysisContext, params: dict):
         xs, ys, details = [], [], []
+        x_label = "Лаг"
         for snap in context.sources:
             x = np.asarray(snap.x, dtype=float)
             y = np.asarray(snap.y, dtype=float)
@@ -68,14 +99,18 @@ class AutocorrelationStrategy(AnalysisStrategy):
             lags = np.arange(n) * (x[1] - x[0]) if len(x) > 1 else np.arange(n)
             xs.append(lags)
             ys.append(ac)
+
+            # Лаг имеет те же единицы, что и X исходной кривой.
+            x_label = f"Лаг, {snap.x_name}" if getattr(snap, "x_name", "") else "Лаг"
             details.append({
                 "curve": snap.root_name,
-                "x_label": "Лаг",
+                "x_label": x_label,
                 "y_label": "ACF",
                 "tab_title": f"Автокорреляция: {snap.curve_name or snap.root_name}",
             })
-        return DomainPayload(x=xs, y=ys, x_label="Лаг",
-                             y_label="ACF", tab_title="Автокорреляция"), details
+        return DomainPayload(
+            x=xs, y=ys, x_label=x_label, y_label="ACF", tab_title="Автокорреляция",
+        ), details
 
     def describe(self, params):
         return "autocorr"

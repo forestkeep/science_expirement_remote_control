@@ -47,16 +47,24 @@ class LineStyle:
         )
 
     def apply_to_curve(self, plot_data_item) -> None:
-        plot_data_item.setPen(self.to_pen())
+        """Применить стиль к элементу, не перестраивая путь данных без необходимости."""
+        pen = self.to_pen()
+        current_pen = plot_data_item.opts.get('pen')
+        if current_pen is None or current_pen != pen:
+            plot_data_item.setPen(pen)
+
         if self.symbol is not None:
-            plot_data_item.setSymbol(self.symbol)
+            if plot_data_item.opts.get('symbol') != self.symbol:
+                plot_data_item.setSymbol(self.symbol)
             plot_data_item.setSymbolSize(self.symbol_size)
             plot_data_item.setSymbolPen(self.to_symbol_pen())
             plot_data_item.setSymbolBrush(self.to_brush())
-        else:
+        elif plot_data_item.opts.get('symbol') is not None:
             plot_data_item.setSymbol(None)
-        plot_data_item.opts['pxMode'] = self.px_mode
-        plot_data_item.updateItems()
+
+        if plot_data_item.opts.get('pxMode') != self.px_mode:
+            plot_data_item.opts['pxMode'] = self.px_mode
+            plot_data_item.updateItems()
 
 
 class CurvePresenter:
@@ -75,6 +83,8 @@ class CurvePresenter:
         self.number_axis: Optional[int] = None
         self.tree_item = None                 # set by linearData facade
 
+        self._last_rendered_version: int = -1
+
         self.i_am_click_now = False
         self.higlighted_flag = False
         self.preselection_style: Optional[LineStyle] = None
@@ -84,10 +94,16 @@ class CurvePresenter:
         self.is_all_points_showing = True
 
         # store → refresh plot data
-        self.store.on_changed(self.refresh)
+        self.store.on_data_changed(self._on_data_changed)
+        self.store.on_meta_changed(self._on_meta_changed)
 
         if self._selection_model is not None:
             self._selection_model.selection_changed.connect(self._on_model_selection_changed)
+
+        self._last_legend_name = self.store.legend.current_name
+
+        self._refresh_scheduled: bool = False
+        self._detached: bool = False
 
     # -- visible window -------------------------------------------------
     def set_num_points(self, value: int) -> None:
@@ -95,19 +111,56 @@ class CurvePresenter:
         if value == self.num_showing_points:
             return
         self.num_showing_points = value
-        # Всегда перерисовываем — если показываем все точки, refresh() просто
-        # выставит полный массив (no-op), если окно — обрежет хвост.
+        self._do_refresh() 
+
+    def _on_data_changed(self) -> None:
+        if self._detached or self._refresh_scheduled:
+            return
+        self._refresh_scheduled = True
+        QtCore.QTimer.singleShot(16, self._do_refresh)
+
+    def _do_refresh(self) -> None:
+        self._refresh_scheduled = False
+        if self._detached:
+            return
         self.refresh()
+
+    def _on_meta_changed(self) -> None:
+        if self._detached:
+            return
+        current_name = self.store.legend.current_name
+        if current_name == self._last_legend_name:
+            return
+        self._last_legend_name = current_name
+        for info in self.plot_items.values():
+            self._apply_legend_name(info, current_name)
 
     def show_all_points(self, state: bool) -> None:
         state = bool(state)
         if state == self.is_all_points_showing:
             return
         self.is_all_points_showing = state
-        self.refresh()
+        self._do_refresh() 
 
-    # -- selection plumbing ---------------------------------------------
+    def _refresh_selection_style(self) -> None:
+        selected = self.is_curve_selected
+        if selected == getattr(self, "_last_selection_state", None):
+            return
+        self._last_selection_state = selected
+        style = self.clicked_style if selected else self.saved_style
+        if style is None:
+            return
+        self._apply_style_to_all(style)
+
+    def _apply_style_to_all(self, style: LineStyle) -> None:
+        for info in self.plot_items.values():
+            style.apply_to_curve(info['item'])
+        if self.tree_item is not None:
+            color = style.to_pen().color().name()
+            self.tree_item.setForeground(1, pg.mkBrush(color=color))
+
     def attach_selection_model(self, model: Optional[SelectionModel]) -> None:
+        """Подключить модель выделения и сбросить кэш состояния выделения."""
         if self._selection_model is model:
             return
         if self._selection_model is not None:
@@ -118,12 +171,16 @@ class CurvePresenter:
             except (TypeError, RuntimeError):
                 pass
         self._selection_model = model
+        self._last_selection_state = None
         if model is not None:
             model.selection_changed.connect(self._on_model_selection_changed)
         self._refresh_selection_style()
 
     def detach(self) -> None:
-        self.store.off_changed(self.refresh)
+        self._detached = True
+        self._refresh_scheduled = False
+        self.store.off_data_changed(self._on_data_changed)
+        self.store.off_meta_changed(self._on_meta_changed)
         if self._selection_model is not None:
             try:
                 self._selection_model.selection_changed.disconnect(
@@ -151,11 +208,7 @@ class CurvePresenter:
     def _on_model_selection_changed(self, selected_list) -> None:
         self._refresh_selection_style()
 
-    def _refresh_selection_style(self) -> None:
-        style = self.clicked_style if self.is_curve_selected else self.saved_style
-        if style is None:
-            return
-        self._apply_style_to_all(style)
+    
 
     # -- plots ----------------------------------------------------------
     def create_plot_item(self):
@@ -190,7 +243,7 @@ class CurvePresenter:
             self.clicked_style if self.is_curve_selected else (self.saved_style or LineStyle())
         )
         self.is_draw = True
-        self.refresh()  # применить видимое окно
+        self._do_refresh() 
 
     def remove_from_graph(self, viewbox) -> None:
         info = self.plot_items.pop(viewbox, None)
@@ -218,7 +271,9 @@ class CurvePresenter:
         self.plot_items.clear()
 
     def refresh(self) -> None:
-        """Sync plot data with store, applying visible window if needed."""
+        version = self.store.data_version
+        if version == self._last_rendered_version:
+            return                       # данные не менялись — setData не нужен
         x = self.store.filtered_x_data
         y = self.store.filtered_y_data
         if not self.is_all_points_showing and len(x) > self.num_showing_points:
@@ -226,14 +281,34 @@ class CurvePresenter:
             y = y[-self.num_showing_points:]
         for info in self.plot_items.values():
             info['item'].setData(x, y)
+        self._last_rendered_version = version
+
+    def _apply_legend_name(self, info: dict, name: str) -> None:
+        """Привести подпись элемента в легенде к *name*.
+
+        Использует LegendItem.getLabel(item) — не зависит от
+        legend.previous_name, поэтому корректно работает в любом
+        порядке вызовов (change_name / reset_name / set_legend_name).
+        """
+        legend = info.get('legend')
+        item = info.get('item')
+        if legend is None or item is None:
+            return
+        try:
+            current_label = legend.getLabel(item)
+        except Exception:
+            current_label = None
+        if current_label == name:
+            return
+        try:
+            if current_label is not None:
+                legend.removeItem(item)
+            legend.addItem(item, name)
+        except Exception:
+            logger.exception("CurvePresenter: legend rename failed")
 
     # -- style ----------------------------------------------------------
-    def _apply_style_to_all(self, style: LineStyle) -> None:
-        for info in self.plot_items.values():
-            style.apply_to_curve(info['item'])
-        if self.tree_item is not None:
-            color = style.to_pen().color().name()
-            self.tree_item.setForeground(1, pg.mkBrush(color=color))
+    
 
     def apply_style_to_all(self, style: LineStyle) -> None:
         self._apply_style_to_all(style)
@@ -275,10 +350,14 @@ class CurvePresenter:
 
     # -- legend ---------------------------------------------------------
     def set_legend_name(self, name: str) -> None:
+        """Публичный API: задать пользовательское имя и обновить легенду.
+
+        Переписано, чтобы не зависеть от legend.previous_name.
+        """
         self.store.legend.set_custom(name)
+        self._last_legend_name = name
         for info in self.plot_items.values():
-            info['legend'].removeItem(self.store.legend.previous_name)
-            info['legend'].addItem(info['item'], self.store.legend.current_name)
+            self._apply_legend_name(info, name)
 
     # -- error bars -----------------------------------------------------
     def set_error_bars(self, records: list) -> None:

@@ -180,6 +180,19 @@ class AnalysisController(QObject):
         self.session.undo_manager.push(cmd, execute=True)
         self.artifacts_changed.emit()
 
+    def on_source_name_changed(self, root_name: str) -> None:
+        """Кривая переименована — обновить подписи её артефактов в легендах.
+
+        Данные и handle'ы не трогаем — только текст в LegendItem.
+        """
+        for art in self._artifacts_for_source(root_name):
+            try:
+                self.renderer.update_legend_names(art)
+            except Exception:
+                logger.exception(
+                    "on_source_name_changed: %s failed", art.id
+                )
+
     def on_source_style_changed(self, root_name: str) -> None:
         """Кривая изменила стиль — перерисовать её артефакты (производная,
         интеграл, FFT, фитинги, …) и error-bars, чтобы они подхватили

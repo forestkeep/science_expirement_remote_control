@@ -32,6 +32,7 @@ class AnalysisTab(QWidget):
         self.curves: List[Any] = []
         self._param_widgets: Dict[str, QWidget] = {}
         self._suppress = False
+        self._last_results_signature = None
 
         self._build_ui()
 
@@ -56,7 +57,6 @@ class AnalysisTab(QWidget):
         ensure_tools_registered()
         self.registry = AnalysisToolRegistry.instance()
 
-        # 1. Применённые + пресеты
         self.applied_group = QGroupBox(_TR("Применённые инструменты"))
         applied_outer = QVBoxLayout(self.applied_group)
         applied_outer.setContentsMargins(4, 4, 4, 4)
@@ -80,7 +80,6 @@ class AnalysisTab(QWidget):
         self.btn_save_preset.clicked.connect(self._save_preset)
         applied_outer.addWidget(self.btn_save_preset)
 
-        # Контейнер именно для динамического списка результатов
         self.applied_results_layout = QVBoxLayout()
         self.applied_results_layout.setContentsMargins(0, 0, 0, 0)
         self.applied_empty_label = QLabel(_TR("Результаты отсутствуют"))
@@ -89,7 +88,6 @@ class AnalysisTab(QWidget):
 
         layout.addWidget(self.applied_group)
 
-        # 2. Добавить новый
         add_group = QGroupBox(_TR("Добавить новый"))
         add_layout = QVBoxLayout(add_group)
         add_layout.setContentsMargins(4, 4, 4, 4)
@@ -99,7 +97,6 @@ class AnalysisTab(QWidget):
         self.tool_combo.setMinimumContentsLength(10)
         self.tool_combo.addItem(_TR("— выберите инструмент —"), None)
 
-        # Явный порядок: интерполяции первыми, далее по категориям
         _ORDER = [
             "fit.linear", "fit.polynomial", "fit.gaussian", "fit.lorentz",
             "search.peaks", "search.valleys",
@@ -113,7 +110,6 @@ class AnalysisTab(QWidget):
             if desc is None:
                 continue
             self.tool_combo.addItem(self._resolve_title(desc), tid)
-        # На случай, если появятся новые инструменты — добавим их в конец
         for tid, desc in tools_by_id.items():
             if tid in _ORDER:
                 continue
@@ -123,7 +119,6 @@ class AnalysisTab(QWidget):
         add_layout.addWidget(self.tool_combo)
         layout.addWidget(add_group)
 
-         # 3. Активный инструмент (без кнопок Применить/Отменить — применяется сразу)
         self.active_group = QGroupBox(_TR("Активный инструмент"))
         active_layout = QVBoxLayout(self.active_group)
         active_layout.setContentsMargins(4, 4, 4, 4)
@@ -144,29 +139,49 @@ class AnalysisTab(QWidget):
         params_widget.setLayout(self.params_form)
         active_layout.addWidget(params_widget)
 
+        buttons_row = QHBoxLayout()
+        self.btn_apply_active = QPushButton(_TR("Применить"))
+        self.btn_apply_active.clicked.connect(self._apply_active_tool)
+        buttons_row.addWidget(self.btn_apply_active)
+        active_layout.addLayout(buttons_row)
+
         self.active_group.setVisible(False)
         layout.addWidget(self.active_group)
 
         layout.addStretch()
         scroll.setWidget(content)
         outer.addWidget(scroll)
+
+    def _on_tool_selected(self, index: int) -> None:
+        """Активирует выбранный инструмент без немедленного применения."""
+        tool_id = self.tool_combo.itemData(index)
+        if not tool_id:
+            return
+        self.controller.cancel_preview()
+        self.controller.activate_tool(tool_id)
+
+    def _param_changed(self, name: str, value: Any) -> None:
+        """Обновляет параметры активного инструмента без применения."""
+        if self._suppress:
+            return
+        self.controller.set_preview_params({name: value})
+
+    def _apply_active_tool(self) -> None:
+        """Применяет активный инструмент анализа к выделенным кривым."""
+        if self.controller.get_active_tool() is None:
+            return
+        self.controller.apply()
+
     # ------------------------------------------------------------------
     def set_curves(self, curves: List[Any]) -> None:
         self.curves = [c for c in curves if hasattr(c, "rel_data")]
+        self._last_results_signature = None      # ← форсируем перестройку
         self._reload_artifacts()
-        # область применения
         if hasattr(self, "scope_label"):
             names = [c.curve_name for c in self.curves]
             self.scope_label.setText(", ".join(names) if names else "—")
 
     def _reload_artifacts(self) -> None:
-        # очищаем только список результатов, оставляя UI пресетов
-        while self.applied_results_layout.count():
-            item = self.applied_results_layout.takeAt(0)
-            w = item.widget()
-            if w is not None:
-                w.deleteLater()
-
         artifacts = []
         uncertainty_entries = []
         for curve in self.curves:
@@ -176,6 +191,25 @@ class AnalysisTab(QWidget):
             if store is not None:
                 for rec in getattr(store, "uncertainty_records", []) or []:
                     uncertainty_entries.append((curve, rec))
+
+        sig = (
+            tuple(c.rel_data.root_name for c in self.curves),
+            tuple((a.id, bool(a.visibility), int(a.order_index)) for a in artifacts),
+            tuple(
+                (c.rel_data.root_name, r.id,
+                 r.id in (getattr(c.store, "active_uncertainty_ids", set()) or set()))
+                for c, r in uncertainty_entries
+            ),
+        )
+        if sig == self._last_results_signature:
+            return
+        self._last_results_signature = sig
+
+        while self.applied_results_layout.count():
+            item = self.applied_results_layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.deleteLater()
 
         total = len(artifacts) + len(uncertainty_entries)
         if total == 0:
@@ -296,14 +330,7 @@ class AnalysisTab(QWidget):
         return w
 
     # ------------------------------------------------------------------
-    def _on_tool_selected(self, index: int) -> None:
-        tool_id = self.tool_combo.itemData(index)
-        if not tool_id:
-            return
-        # Сброс предыдущего инструмента и немедленное применение выбранного
-        self.controller.cancel_preview()
-        if self.controller.activate_tool(tool_id):
-            self.controller.apply()
+    
 
     def _on_tool_activated(self, tool_id: str) -> None:
         desc = self.registry.get(tool_id)
@@ -400,11 +427,7 @@ class AnalysisTab(QWidget):
             return w
         return None
 
-    def _param_changed(self, name: str, value: Any) -> None:
-        if self._suppress:
-            return
-        self.controller.set_preview_params({name: value})
-        self.controller.apply()
+    
     def _resolve_title(self, desc) -> str:
         from ..models import tr_analysis
         return tr_analysis(desc.title_key)

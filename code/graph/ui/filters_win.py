@@ -16,6 +16,8 @@ import pandas as pd
 from PyQt5.QtWidgets import QApplication
 from graph.core.filters_instance_class import FilterCommand
 import logging
+from scipy.signal import iirnotch, filtfilt, savgol_filter, butter
+from scipy.ndimage import gaussian_filter1d
 
 logger = logging.getLogger(__name__)
 
@@ -394,6 +396,235 @@ class filtersClass():
         
         return x_array, y_norm, description
 
+    def hampel_filt(self, x, y, window, n_sigmas=3.0):
+        """
+        Фильтр Хампеля для удаления выбросов.
+
+        Заменяет точки, отклоняющиеся от медианы окна более чем на
+        n_sigmas робастных стандартных отклонений (MAD * 1.4826),
+        на медиану окна. Не искажает остальной сигнал.
+
+        Параметры:
+            x: массив X-координат данных
+            y: массив Y-координат данных
+            window: размер окна (нечётное число >= 3)
+            n_sigmas: порог в робастных сигмах
+
+        Возвращает:
+            Кортеж (x, y_filtered, описание)
+        """
+        x_arr = np.asarray(x)
+        y_arr = np.asarray(y, dtype=float)
+        window = int(window)
+        if window < 3:
+            window = 3
+        if window % 2 == 0:
+            window += 1
+        n = len(y_arr)
+        if n < window:
+            return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Hampel: мало данных")
+        half = window // 2
+        k = 1.4826
+        y_out = y_arr.copy()
+        for i in range(n):
+            lo = max(0, i - half)
+            hi = min(n, i + half + 1)
+            seg = y_arr[lo:hi]
+            med = np.median(seg)
+            mad = np.median(np.abs(seg - med))
+            if mad == 0:
+                continue
+            threshold = float(n_sigmas) * k * mad
+            if abs(y_arr[i] - med) > threshold:
+                y_out[i] = med
+        return x_arr, y_out, QApplication.translate("GraphWindow", "Hampel({}, {}σ)").format(window, n_sigmas)
+
+    def savitzky_golay_filt(self, x, y, window, polyorder):
+        """
+        Сглаживание Савицкого-Голея.
+
+        Аппроксимирует данные полиномом заданной степени в скользящем
+        окне. Не даёт sinc-лепестков и сохраняет форму пиков.
+
+        Параметры:
+            x: массив X-координат данных
+            y: массив Y-координат данных
+            window: длина окна (нечётное число >= 3)
+            polyorder: степень полинома
+
+        Возвращает:
+            Кортеж (x, y_filtered, описание)
+        """
+        x_arr = np.asarray(x)
+        y_arr = np.asarray(y, dtype=float)
+        window = int(window)
+        polyorder = int(polyorder)
+        if window < 3:
+            window = 3
+        if window % 2 == 0:
+            window += 1
+        n = len(y_arr)
+        if n < window:
+            return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Savitzky-Golay: мало данных")
+        if polyorder >= window:
+            polyorder = window - 1
+        if polyorder < 1:
+            polyorder = 1
+        try:
+            y_out = savgol_filter(y_arr, window, polyorder)
+            return x_arr, y_out, QApplication.translate("GraphWindow", "Savitzky-Golay({}, {})").format(window, polyorder)
+        except Exception as e:
+            logger.error(f"savitzky_golay_filt failed: {e}")
+            return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Savitzky-Golay: ошибка")
+
+    def detrend_filt(self, x, y, detrend_type='linear', polyorder=1):
+        """
+        Удаление тренда (детрендинг).
+
+        Вычитает из данных полиномиальный тренд заданной степени.
+        Устраняет дрейф и низкочастотные «пучности» в спектре.
+
+        Параметры:
+            x: массив X-координат данных
+            y: массив Y-координат данных
+            detrend_type: 'linear' или 'poly'
+            polyorder: степень полинома для 'poly'
+
+        Возвращает:
+            Кортеж (x, y_detrended, описание)
+        """
+        x_arr = np.asarray(x, dtype=float)
+        y_arr = np.asarray(y, dtype=float)
+        n = len(y_arr)
+        if n < 2:
+            return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Детренд: мало данных")
+        if detrend_type == 'linear':
+            order = 1
+        else:
+            order = max(1, int(polyorder))
+        if order >= n:
+            order = n - 1
+        coeffs = np.polyfit(x_arr, y_arr, order)
+        trend = np.polyval(coeffs, x_arr)
+        y_out = y_arr - trend
+        return x_arr, y_out, QApplication.translate("GraphWindow", "Детренд(order={})").format(order)
+
+    def butterworth_filt(self, x, y, cutoff, btype='low', order=4):
+        """
+        Фильтр Баттерворта (low/high/band) с zero-phase через filtfilt.
+
+        Даёт гладкую АЧХ без лепестков; фаза не искажается.
+
+        Параметры:
+            x: массив X-координат данных
+            y: массив Y-координат данных
+            cutoff: частота среза в Гц (или кортеж (low, high) для band)
+            btype: 'low', 'high' или 'band'
+            order: порядок фильтра
+
+        Возвращает:
+            Кортеж (x, y_filtered, описание)
+        """
+        x_arr = np.asarray(x, dtype=float)
+        y_arr = np.asarray(y, dtype=float)
+        n = len(y_arr)
+        if n < 16:
+            return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Butterworth: мало данных")
+        dx = float(np.mean(np.diff(x_arr)))
+        if dx <= 0:
+            return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Butterworth: некорректный шаг X")
+        fs = 1.0 / dx
+        nyq = 0.5 * fs
+        try:
+            order = max(1, int(order))
+            if btype == 'band':
+                if isinstance(cutoff, (tuple, list)) and len(cutoff) == 2:
+                    low, high = float(cutoff[0]), float(cutoff[1])
+                    wn = [low / nyq, high / nyq]
+                    if wn[0] <= 0 or wn[1] >= 1 or wn[0] >= wn[1]:
+                        return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Butterworth: диапазон вне допустимого")
+                else:
+                    return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Butterworth: нужен диапазон")
+            else:
+                wn = float(cutoff) / nyq
+                if wn <= 0 or wn >= 1:
+                    return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Butterworth: частота среза вне диапазона")
+            b, a = butter(order, wn, btype=btype)
+            y_out = filtfilt(b, a, y_arr)
+            return x_arr, y_out, QApplication.translate("GraphWindow", "Butterworth({}, {})").format(btype, order)
+        except Exception as e:
+            logger.error(f"butterworth_filt failed: {e}")
+            return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Butterworth: ошибка")
+
+    def notch_filt(self, x, y, freq=50.0, q=30.0):
+        """
+        Режекторный фильтр (notch) для подавления сетевой наводки.
+
+        Вырожденный Butterworth bandstop с zero-phase.
+
+        Параметры:
+            x: массив X-координат данных
+            y: массив Y-координат данных
+            freq: подавляемая частота, Гц
+            q: добротность (обычно 20–50)
+
+        Возвращает:
+            Кортеж (x, y_filtered, описание)
+        """
+        x_arr = np.asarray(x, dtype=float)
+        y_arr = np.asarray(y, dtype=float)
+        n = len(y_arr)
+        if n < 16:
+            return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Notch: мало данных")
+        dx = float(np.mean(np.diff(x_arr)))
+        if dx <= 0:
+            return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Notch: некорректный шаг X")
+        fs = 1.0 / dx
+        nyq = 0.5 * fs
+        w0 = float(freq) / nyq
+        if w0 <= 0 or w0 >= 1:
+            return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Notch: частота вне диапазона")
+        try:
+            b, a = iirnotch(w0, float(q))
+            y_out = filtfilt(b, a, y_arr)
+            return x_arr, y_out, QApplication.translate("GraphWindow", "Notch({} Гц, Q={})").format(freq, q)
+        except Exception as e:
+            logger.error(f"notch_filt failed: {e}")
+            return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Notch: ошибка")
+
+    def gaussian_smooth_filt(self, x, y, window, sigma=None):
+        """
+        Гауссово сглаживание.
+
+        То же, что скользящее среднее, но с гладкой АЧХ без боковых
+        лепестков.
+
+        Параметры:
+            x: массив X-координат данных
+            y: массив Y-координат данных
+            window: размер окна (используется для оценки sigma)
+            sigma: явное значение sigma (если None, берётся window/6)
+
+        Возвращает:
+            Кортеж (x, y_filtered, описание)
+        """
+        x_arr = np.asarray(x)
+        y_arr = np.asarray(y, dtype=float)
+        window = int(window)
+        if window < 1:
+            window = 1
+        if sigma is None:
+            sigma = window / 6.0
+        sigma = float(sigma)
+        if sigma <= 0:
+            sigma = 1.0
+        try:
+            y_out = gaussian_filter1d(y_arr, sigma=sigma)
+            return x_arr, y_out, QApplication.translate("GraphWindow", "Gaussian(σ={})").format(sigma)
+        except Exception as e:
+            logger.error(f"gaussian_smooth_filt failed: {e}")
+            return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Gaussian: ошибка")
+        
 if __name__ == '__main__':
     import sys
     app = QApplication(sys.argv)

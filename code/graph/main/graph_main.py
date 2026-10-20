@@ -450,7 +450,7 @@ class manageGraph(QObject):
             alias_manager=self.alias_manager,
             selection_model=self.selection_model,
         )
-        new_data._main_class = self.main_class
+        new_data.set_main_class(self.main_class)
 
         buf_color = next(self.color_warm_gen)
         if new_data.saved_style is None:

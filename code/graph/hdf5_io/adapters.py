@@ -129,6 +129,11 @@ class ProjectToHDF5Adapter:
 
         style_settings = self.from_graph_item( graph_item = core_plot)
         
+        try:
+            core_plot.ensure_stats_fresh()
+        except Exception:
+            logger.exception("convert_plot: ensure_stats_fresh failed")
+
         stats = Statistics(
             mean=core_plot.tree_item.parameters.get('mean', 0.0),
             median=core_plot.tree_item.parameters.get('median', 0.0),

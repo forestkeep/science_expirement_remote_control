@@ -449,7 +449,6 @@ class GraphSession(QWidget):
 
     def _on_main_style_changed(self) -> None:
         """Скопировать стиль основного графика во все дочерние поля анализа."""
-        # Реагируем только на эмиттер основного графика — иначе рекурсия.
         if self.sender() is not self.graph_main.graphView:
             return
         try:
@@ -460,14 +459,24 @@ class GraphSession(QWidget):
             renderer = getattr(ctrl, "renderer", None)
             if renderer is None:
                 return
+
             for info in getattr(renderer._attached, "_panels", {}).values():
                 plot = info.get("plot")
                 if plot is not None:
                     apply_main_graph_style(self, plot)
+
             for info in getattr(renderer._domain, "_tabs", {}).values():
                 plot = info.get("plot")
                 if plot is not None:
                     apply_main_graph_style(self, plot)
+
+            # apply_main_graph_style перезаписал подписи осей domain-вкладок
+            # стилем главного графика. Восстанавливаем «смысловые» подписи
+            # (Частота / |A| для FFT, Лаг / ACF для автокорреляции).
+            try:
+                renderer._domain.reapply_labels()
+            except Exception:
+                logger.exception("_on_main_style_changed: reapply_labels failed")
         except Exception:
             logger.exception("_on_main_style_changed failed")
 
@@ -810,6 +819,10 @@ class sessionController():
                 logger.warning(f"_action_reset_curve_name failed for {curve}: {e}")
 
     def read_statistics(self, group_by_param=True):
+        for session in self.graph_sessions.values():
+            for curve in session.graph_main.get_curves().values():
+                try: curve.ensure_stats_fresh()
+                except Exception: logger.exception("flush stats failed")
         param_data = {}
         for session in self.graph_sessions.values():
             session_data = session.data_manager.get_all_data()
@@ -843,6 +856,13 @@ class sessionController():
 
     def push_button_save_graph(self):
         """Быстрое сохранение проекта – всегда в HDF5, независимо от последнего Save As."""
+
+        for session in self.graph_sessions.values():
+            for curve in session.graph_main.get_curves().values():
+                try:
+                    curve.ensure_stats_fresh()
+                except Exception:
+                    logger.exception("push_button_save_graph: ensure_stats_fresh failed")
         if self.way_to_save_project is not None:
             # Сохраняем по известному пути проекта
             HDF5Facade().save_project(self, self.way_to_save_project)
@@ -866,6 +886,12 @@ class sessionController():
                 self.graphics_win.setWindowTitle(fileName)
 
     def push_button_save_graph_as(self):
+        for session in self.graph_sessions.values():
+            for curve in session.graph_main.get_curves().values():
+                try:
+                    curve.ensure_stats_fresh()
+                except Exception:
+                    logger.exception("push_button_save_graph_as: ensure_stats_fresh failed")
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
 

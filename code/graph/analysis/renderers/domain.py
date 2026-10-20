@@ -5,13 +5,14 @@ import logging
 from typing import Dict
 import pyqtgraph as pg
 from graph.ui.customPlotWidget import PatchedPlotWidget
-from .base import BaseRenderer
+from .base import BaseRenderer, artifact_legend_name
 logger = logging.getLogger(__name__)
 
 class DomainRenderer(BaseRenderer):
     def __init__(self, session) -> None:
         self.session = session
         self._tabs: Dict[str, dict] = {}
+
 
     def _ensure_tab(self, artifact_id: str, title: str) -> dict:
         if artifact_id in self._tabs:
@@ -23,25 +24,89 @@ class DomainRenderer(BaseRenderer):
         apply_main_graph_style(self.session, plot)
 
         idx = self.session.tabWidget.addTab(plot, title)
-        info = {"plot": plot, "index": idx, "handles": []}
+
+        # Запоминаем «смысловые» подписи осей, чтобы можно было их
+        # восстановить после повторного apply_main_graph_style.
+        info = {
+            "plot": plot,
+            "index": idx,
+            "handles": [],
+            "x_label": "",
+            "y_label": "",
+        }
         self._tabs[artifact_id] = info
         return info
+
+    def _apply_axis_labels(self, plot, x_label: str, y_label: str) -> None:
+        """Перезаписать подписи осей и заголовок, скопированные с главного графика.
+
+        ``apply_main_graph_style`` копирует весь внешний вид главного
+        графика, включая заголовок и тексты осей. Для DOMAIN-вкладок
+        (спектр, автокорреляция) оси несут совсем другой смысл — подписи
+        берём из payload. Заголовок внутри поля очищаем, поскольку он
+        дублирует текст вкладки.
+        """
+        try:
+            plot.setTitle("")
+        except Exception:
+            logger.exception("DomainRenderer: setTitle failed")
+
+        for axis_name, label in (("bottom", x_label), ("left", y_label)):
+            try:
+                plot.setLabel(axis_name, label or "")
+            except Exception:
+                logger.exception("DomainRenderer: setLabel(%s) failed", axis_name)
+
+            # Синхронизируем внутреннее состояние контроллера оси, чтобы
+            # extract_plot_widget_settings сохранял именно наши подписи.
+            ctrl = getattr(plot, "axises", {}).get(axis_name)
+            if ctrl is not None:
+                try:
+                    ctrl.settings.label = label or ""
+                except Exception:
+                    pass
+
+    def reapply_labels(self) -> None:
+        """Пере-применить подписи осей для всех открытых DOMAIN-вкладок.
+
+        Вызывается после того, как ``apply_main_graph_style`` перезаписал
+        подписи (например, при смене внешнего вида главного графика через
+        инспектор или контекстное меню).
+        """
+        for info in self._tabs.values():
+            plot = info.get("plot")
+            if plot is None:
+                continue
+            self._apply_axis_labels(
+                plot, info.get("x_label", ""), info.get("y_label", "")
+            )
 
     def render(self, artifact, is_preview: bool = False):
         payload = artifact.payload
         title = payload.tab_title or artifact.tool_id
         info = self._ensure_tab(artifact.id, title)
         plot = info["plot"]
+
+        # 1. Сохраняем «смысловые» подписи осей из payload …
+        x_label = getattr(payload, "x_label", "") or ""
+        y_label = getattr(payload, "y_label", "") or ""
+        info["x_label"] = x_label
+        info["y_label"] = y_label
+
+        # 2. … и накладываем их поверх скопированных с главного графика.
+        self._apply_axis_labels(plot, x_label, y_label)
+
         xs = getattr(payload, "x", None)
         ys = getattr(payload, "y", None)
         handles = []
         for i, (x, y) in enumerate(zip(xs, ys)):
-            curve_id = artifact.source_curve_ids[i] if i < len(artifact.source_curve_ids) else None
+            curve_id = (artifact.source_curve_ids[i]
+                        if i < len(artifact.source_curve_ids) else None)
             curve = self.session.graph_main.get_curve(curve_id) if curve_id else None
             color = curve.saved_style.color if curve and curve.saved_style else "#ffffff"
             pen = pg.mkPen(color=color, width=2)
 
-            name = curve.curve_name if curve else (curve_id or "?")
+            name = artifact_legend_name(self.session, artifact, curve_id)
             item = plot.plot(x, y, name=name, pen=pen)
             item._legend_name = name
 
@@ -54,6 +119,34 @@ class DomainRenderer(BaseRenderer):
             handles.append(item)
         info["handles"].extend(handles)
         return handles
+
+    # ------------------------------------------------------------------
+    def update_legend_names(self, artifact) -> None:
+        handles = getattr(artifact, "handle", None) or []
+        info = self._tabs.get(artifact.id)
+        if info is None:
+            return
+        legend = getattr(info.get("plot"), "legend", None)
+        if legend is None:
+            return
+        for i, item in enumerate(handles):
+            if item not in info["handles"]:
+                continue
+            curve_id = (artifact.source_curve_ids[i]
+                        if i < len(artifact.source_curve_ids) else None)
+            new_name = artifact_legend_name(self.session, artifact, curve_id)
+            item._legend_name = new_name
+            if not item.isVisible():
+                continue
+            try:
+                old = legend.getLabel(item)
+                if old == new_name:
+                    continue
+                if old is not None:
+                    legend.removeItem(item)
+                legend.addItem(item, new_name)
+            except Exception:
+                logger.exception("DomainRenderer.update_legend_names failed")
 
     def set_visible(self, handle, visible: bool) -> None:
         items = list(handle or [])

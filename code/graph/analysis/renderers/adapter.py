@@ -60,6 +60,25 @@ class AnalysisRendererAdapter:
             except Exception:
                 pass
 
+    def update_legend_names(self, artifact) -> None:
+        """Обновить подпись артефакта в легенде после переименования источника."""
+        ptype = artifact.placement_type
+        if ptype in (PlacementType.OVERLAY, PlacementType.ANNOTATION):
+            r = self._overlay
+        elif ptype == PlacementType.ATTACHED:
+            r = self._attached
+        elif ptype == PlacementType.DOMAIN:
+            r = self._domain
+        else:
+            return
+        updater = getattr(r, "update_legend_names", None)
+        if updater is None:
+            return
+        try:
+            updater(artifact)
+        except Exception:
+            logger.exception("AnalysisRendererAdapter.update_legend_names failed")
+
     # ------------------------------------------------------------------
     @staticmethod
     def _handle_belongs_to(renderer, handle) -> bool:

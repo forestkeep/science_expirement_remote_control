@@ -31,6 +31,7 @@ from graph.core.filters_instance_class import FilterCommand
 from graph.core.selection_model import SelectionModel
 from graph.core.statistics_calc import StatisticsCalculator, STATISTICS_DESCRIPTIONS
 from graph.ui.tree_curves import CurveTreeItem
+from PyQt5 import QtCore
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +62,11 @@ class linearData:
         self.presenter.tree_item.set_name(self.store.curve_name)
 
         # now that tree_item exists, hook stats recalculation
-        self.store.on_changed(self._on_store_changed)
+        self.store.on_data_changed(self._on_store_changed)
         self.recalc_stats_param()
+
+        self._stats_dirty: bool = False
+        self._detached: bool = False
 
     # ------------------------------------------------------------------
     # Data delegation
@@ -188,23 +192,11 @@ class linearData:
         self.presenter.apply_style_to_all(style)
         self._notify_analysis_style_changed()
 
-    def _notify_analysis_style_changed(self):
-        """Сообщить AnalysisController, что кривая сменила стиль.
+    def set_main_class(self, main_class):
+        self._main_class = main_class
 
-        Вызывается из change_style / apply_style_to_all — то есть из всех
-        путей изменения стиля: ChangeCurveStyleCommand, GraphCustomizer,
-        вкладка «Стиль» в инспекторе.
-        """
-        session = getattr(self, "_main_class", None)
-        if session is None:
-            return
-        ctrl = getattr(session, "analysis_controller", None)
-        if ctrl is None:
-            return
-        try:
-            ctrl.on_source_style_changed(self.store.rel_data.root_name)
-        except Exception:
-            logger.exception("_notify_analysis_style_changed failed")
+    def _notify_analysis_style_changed(self):
+        self._main_class.analysis_controller.on_source_style_changed(self.store.rel_data.root_name)
 
     def on_plot_clicked(self, obj=None):
         self.presenter.on_plot_clicked(obj)
@@ -215,31 +207,36 @@ class linearData:
     def unhiglight_curve(self):
         self.presenter.unhiglight_curve()
 
-    def set_selection_callback(self, callback):
-        """Legacy API; kept for compatibility. Model is now authoritative."""
-        # do nothing: selection flows through SelectionModel
-
     def set_legend_name(self, name: str):
         self.presenter.set_legend_name(name)
 
     def attach_selection_model(self, model):
         self.presenter.attach_selection_model(model)
 
-    def detach(self):
-        try:
-            self.alias_manager.aliases_updated.disconnect(self._alias_changed)
-        except (TypeError, RuntimeError):
-            pass
-        self.presenter.detach()
-
     # ------------------------------------------------------------------
     # Actions: data
     # ------------------------------------------------------------------
     def change_name(self, name: str):
         self.store.change_name(name)
+        self._notify_analysis_name_changed()
 
     def reset_name(self):
         self.store.reset_name()
+        self._notify_analysis_name_changed()
+
+    def _notify_analysis_name_changed(self):
+        mc = getattr(self, "_main_class", None)
+        if mc is None:
+            return
+        ctrl = getattr(mc, "analysis_controller", None)
+        if ctrl is None:
+            return
+        try:
+            ctrl.on_source_name_changed(self.store.rel_data.root_name)
+        except Exception:
+            logger.exception(
+                "linearData: analysis name change notification failed"
+            )
 
     def setData(self, data: relationData):
         self.store.set_data(data)
@@ -293,11 +290,49 @@ class linearData:
     # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------
-    def _on_store_changed(self):
+    def _on_store_changed(self) -> None:
+        if self._detached:
+            return
+        self._stats_dirty = True
+        QtCore.QTimer.singleShot(250, self._recalc_stats_if_dirty)
+
+    def _recalc_stats_if_dirty(self) -> None:
+        if self._detached or not self._stats_dirty:
+            return
         try:
             self.recalc_stats_param()
+        finally:
+            self._stats_dirty = False
+
+    def ensure_stats_fresh(self) -> None:
+        """Форсировать пересчёт статистики (и отложенных фильтров), если устарело."""
+        # Сначала досчитать filtered, если пересборка была отложена
+        if self.store._rebuild_scheduled:
+            self.store._do_rebuild_filtered()
+        if self._detached or not self._stats_dirty:
+            return
+        try:
+            self.recalc_stats_param()
+        finally:
+            self._stats_dirty = False
+
+    def detach(self) -> None:
+        self._detached = True
+        self._stats_dirty = False
+        try:
+            self.store._detached = True
+            self.store._rebuild_scheduled = False
         except Exception:
-            logger.exception("linearData: stats recalculation failed")
+            pass
+        try:
+            self.alias_manager.aliases_updated.disconnect(self._alias_changed)
+        except (TypeError, RuntimeError):
+            pass
+        self.presenter.detach()
+
+
+
+    #-----------------------------------------------
 
     # ------------------------------------------------------------------
     # Visible window delegation
@@ -316,6 +351,7 @@ class linearData:
         if original_name == self.store.rel_data.y_root_name:
             new_y = alias
         self.store.update_aliases(new_x, new_y)
+        self._notify_analysis_name_changed()
 
     def _append_history_entry(self, fc: FilterCommand, message: str):
         if self.tree_item is None:

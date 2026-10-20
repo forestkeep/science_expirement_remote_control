@@ -12,6 +12,7 @@ from typing import Callable, List, Optional
 import numpy as np
 
 from graph.core.dataManager import relationData
+from PyQt5 import QtCore
 from graph.core.filters_instance_class import FilterCommand
 
 logger = logging.getLogger(__name__)
@@ -42,12 +43,21 @@ class CurveDataStore:
         raw_x = np.asarray(data.x_result)
         raw_y = np.asarray(data.y_result)
         n = min(len(raw_x), len(raw_y))
-        # Копии — чтобы правки из инспектора не утекали в graphDataManager
+        
         self.raw_data_x = np.array(raw_x[:n], copy=True)
         self.raw_data_y = np.array(raw_y[:n], copy=True)
-        self.filtered_x_data = self.raw_data_x.copy()
-        self.filtered_y_data = self.raw_data_y.copy()
+        self._filtered_x_data = self.raw_data_x.copy()
+        self._filtered_y_data = self.raw_data_y.copy()
+        self._filtered_dirty = False
         self.filters_history: List[FilterCommand] = []
+
+        self._data_version: int = 0
+
+        self._rebuild_scheduled: bool = False
+        self._detached: bool = False
+
+        self._on_data_changed: List[Callable[[], None]] = []
+        self._on_meta_changed: List[Callable[[], None]] = []
 
         self.curve_name: str = data.current_name
         self.is_name_curve_customized: bool = False
@@ -64,42 +74,67 @@ class CurveDataStore:
         self.active_uncertainty_ids: set = set()
 
     # -- observers ---------------------------------------------------
-    def on_changed(self, cb: Callable[[], None]) -> None:
-        if cb not in self._on_changed:
-            self._on_changed.append(cb)
+    def on_data_changed(self, cb): 
+        if cb not in self._on_data_changed:
+            self._on_data_changed.append(cb)
 
-    def off_changed(self, cb: Callable[[], None]) -> None:
-        try:
-            self._on_changed.remove(cb)
-        except ValueError:
-            pass
+    def on_meta_changed(self, cb):
+        if cb not in self._on_meta_changed:
+            self._on_meta_changed.append(cb)
 
+    def off_data_changed(self, cb):
+        try: self._on_data_changed.remove(cb)
+        except ValueError: pass
+
+    def off_meta_changed(self, cb):
+        try: self._on_meta_changed.remove(cb)
+        except ValueError: pass
+
+    # обратная совместимость:
+    def on_changed(self, cb):   self.on_data_changed(cb)
+    def off_changed(self, cb):  self.off_data_changed(cb)
+
+    def _notify_data_changed(self) -> None:
+        for cb in list(self._on_data_changed):
+            try: cb()
+            except Exception: logger.exception("store: on_data_changed failed")
+
+    def _notify_meta_changed(self) -> None:
+        for cb in list(self._on_meta_changed):
+            try: cb()
+            except Exception: logger.exception("store: on_meta_changed failed")
+
+    # для мест, которые меняют и данные, и метаданные одновременно
     def _notify_changed(self) -> None:
-        for cb in list(self._on_changed):
-            try:
-                cb()
-            except Exception:
-                logger.exception("CurveDataStore: on_changed callback failed")
+        self._notify_data_changed()
+        self._notify_meta_changed()
+
+    def _bump_version(self) -> None:
+        self._data_version += 1
+
+    @property
+    def data_version(self) -> int:
+        return self._data_version
 
     # -- naming ------------------------------------------------------
     def change_name(self, name: str) -> None:
         self.is_name_curve_customized = True
         self.curve_name = name
         self.legend.set_custom(name)
-        self._notify_changed()
+        self._notify_meta_changed()
 
     def reset_name(self) -> None:
         self.is_name_curve_customized = False
         self.curve_name = self.rel_data.current_name
         self.legend.set_custom(self.curve_name)
-        self._notify_changed()
+        self._notify_meta_changed()
 
     def update_aliases(self, x_name: str, y_name: str) -> None:
         self.rel_data.update_names(x_name, y_name)
         if not self.is_name_curve_customized:
             self.curve_name = self.rel_data.current_name
             self.legend.set_custom(self.curve_name)
-        self._notify_changed()
+        self._notify_meta_changed()
 
     # -- data --------------------------------------------------------
     def set_data(self, new_rel_data: relationData) -> None:
@@ -114,19 +149,85 @@ class CurveDataStore:
         n = min(len(raw_x), len(raw_y))
         self.raw_data_x = np.array(raw_x[:n], copy=True)
         self.raw_data_y = np.array(raw_y[:n], copy=True)
+        self._filtered_dirty = True          # ← обязательно
         self._rebuild_filtered()
-        self._notify_changed()
+        self._bump_version()                 # ← обязательно
+        self._notify_data_changed()
+
+    def _do_reset_arrays(self) -> bool:
+        """Скопировать raw → filtered без нотификации и бампа версии."""
+        if not self._filtered_dirty:
+            return False
+        self._filtered_x_data = self.raw_data_x.copy()
+        self._filtered_y_data = self.raw_data_y.copy()
+        self._filtered_dirty = False
+        return True
+
+    def data_reset(self) -> bool:
+        """Публичный сброс: применяется извне, нотифицирует при изменении."""
+        if not self._do_reset_arrays():
+            return False
+        self._bump_version()
+        self._notify_data_changed()
+        return True
+
+    def _rebuild_filtered(self) -> None:
+        """Пересобрать filtered_* из raw_* + filters_history. Без нотификации.
+
+        Вызывающие обязаны выставить self._filtered_dirty = True перед
+        вызовом и сами бампнуть версию/нотифицировать после.
+        """
+        self._do_reset_arrays()
+        for f in self.filters_history:
+            self._filtered_x_data, self._filtered_y_data, _ = f.apply(
+                self._filtered_x_data, self._filtered_y_data
+            )
+        self._filtered_dirty = bool(self.filters_history)
+
+    def delete_filter(self, fc: FilterCommand) -> None:
+        if fc not in self.filters_history:
+            return
+        self.filters_history.remove(fc)
+        self._filtered_dirty = True          # ← обязательно
         self._rebuild_filtered()
-        self._notify_changed()
+        self._bump_version()
+        self._notify_data_changed()
+
+    def clear_filters(self) -> None:
+        if not self.filters_history and not self._filtered_dirty:
+            return
+        self.filters_history = []
+        self._filtered_dirty = True
+        self._rebuild_filtered()
+        self._bump_version()
+        self._notify_data_changed()
+
+    def stop_session(self) -> None:
+        if self._do_reset_arrays():
+            self._bump_version()
+            self._notify_data_changed()
+        else:
+            logger.debug("CurveDataStore.stop_session: data was not filtered")
+
+    def _schedule_rebuild_filtered(self) -> None:
+        """Отложенный пересчёт filtered_* (дебаунс 200 мс)."""
+        self._filtered_dirty = True           # ← обязательно: _do_reset_arrays потом скопирует
+        if self._rebuild_scheduled:
+            return
+        self._rebuild_scheduled = True
+        QtCore.QTimer.singleShot(200, self._do_rebuild_filtered)
+
+    def _do_rebuild_filtered(self) -> None:
+        self._rebuild_scheduled = False
+        if self._detached:
+            return
+        self._rebuild_filtered()
+        self._bump_version()
+        self._notify_data_changed()
+
+    #-------------------------------------------------------------------
 
     def set_raw_point(self, index: int, x=None, y=None):
-        """
-        Изменить одну точку (raw) локально.
-        Возвращает (old_x, old_y, new_x, new_y) или None, если индекс невалиден.
-        Пересобирает filtered_* через filters_history и уведомляет подписчиков
-        (CurvePresenter.refresh обновит график, recalc_stats пересчитает статистику).
-        graphDataManager НЕ затрагивается — raw_* хранится как копия.
-        """
         n = len(self.raw_data_x)
         if index < 0 or index >= n:
             return None
@@ -136,56 +237,32 @@ class CurveDataStore:
         new_y = old_y if y is None else float(y)
         self.raw_data_x[index] = new_x
         self.raw_data_y[index] = new_y
-        self._rebuild_filtered()
-        self._notify_changed()
+
+        # быстрый путь: фильтров нет, длины raw и filtered совпадают
+        if (not self.filters_history
+                and len(self._filtered_x_data) == n
+                and len(self._filtered_y_data) == n):
+            self._filtered_x_data[index] = new_x
+            self._filtered_y_data[index] = new_y
+            self._filtered_dirty = False
+            self._bump_version()
+            self._notify_data_changed()
+            return old_x, old_y, new_x, new_y
+
+        # медленный путь: пересборка через дебаунс
+        self._schedule_rebuild_filtered()
         return old_x, old_y, new_x, new_y
-
-    def data_reset(self) -> bool:
-        same = (
-            self.filtered_x_data.shape == self.raw_data_x.shape
-            and np.array_equal(self.filtered_x_data, self.raw_data_x)
-            and self.filtered_y_data.shape == self.raw_data_y.shape
-            and np.array_equal(self.filtered_y_data, self.raw_data_y)
-        )
-        if same:
-            return False
-        self.filtered_x_data = self.raw_data_x.copy()
-        self.filtered_y_data = self.raw_data_y.copy()
-        return True
-
-    def _rebuild_filtered(self) -> None:
-        self.data_reset()
-        for f in self.filters_history:
-            self.filtered_x_data, self.filtered_y_data, _ = f.apply(
-                self.filtered_x_data, self.filtered_y_data
-            )
 
     # -- filters -----------------------------------------------------
     def set_filter(self, fc: FilterCommand) -> str:
-        self.filtered_x_data, self.filtered_y_data, message = fc.apply(
-            self.filtered_x_data, self.filtered_y_data
+        self._filtered_x_data, self._filtered_y_data, message = fc.apply(
+            self._filtered_x_data, self._filtered_y_data
         )
         self.filters_history.append(fc)
-        self._notify_changed()
+        self._filtered_dirty = True
+        self._bump_version()
+        self._notify_data_changed()
         return message
-
-    def delete_filter(self, fc: FilterCommand) -> None:
-        if fc not in self.filters_history:
-            return
-        self.filters_history.remove(fc)
-        self._rebuild_filtered()
-        self._notify_changed()
-
-    def clear_filters(self) -> None:
-        self.filters_history = []
-        self.data_reset()
-        self._notify_changed()
-
-    # -- session -----------------------------------------------------
-    def stop_session(self) -> None:
-        if not self.data_reset():
-            logger.debug("CurveDataStore.stop_session: data was not filtered")
-        self._notify_changed()
 
     # -- uncertainty -------------------------------------------------
     def active_uncertainty_records(self) -> list:
@@ -194,16 +271,34 @@ class CurveDataStore:
     def add_uncertainty(self, record) -> None:
         self.uncertainty_records.append(record)
         self.active_uncertainty_ids.add(record.id)
-        self._notify_changed()
+        self._notify_meta_changed()
 
     def remove_uncertainty(self, record_id: str) -> None:
         self.uncertainty_records = [r for r in self.uncertainty_records if r.id != record_id]
         self.active_uncertainty_ids.discard(record_id)
-        self._notify_changed()
+        self._notify_meta_changed()
 
     def set_uncertainty_active(self, record_id: str, active: bool) -> None:
         if active:
             self.active_uncertainty_ids.add(record_id)
         else:
             self.active_uncertainty_ids.discard(record_id)
-        self._notify_changed()
+        self._notify_meta_changed()
+
+    @property
+    def filtered_x_data(self):
+        return self._filtered_x_data
+
+    @filtered_x_data.setter
+    def filtered_x_data(self, value):
+        self._filtered_x_data = value
+        self._filtered_dirty = True
+
+    @property
+    def filtered_y_data(self):
+        return self._filtered_y_data
+
+    @filtered_y_data.setter
+    def filtered_y_data(self, value):
+        self._filtered_y_data = value
+        self._filtered_dirty = True
