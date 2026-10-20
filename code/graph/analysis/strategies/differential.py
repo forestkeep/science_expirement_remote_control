@@ -72,7 +72,8 @@ def _register():
         title_key="analysis.tool.diff.derivative.title",
         param_schema=[
             ParamDescriptor("window", ParamType.INT, default=0, min=0, max=100,
-                            title_key="analysis.param.diff.window"),
+                            title_key="analysis.param.diff.window",
+                            tooltip_key="analysis.param.diff.window.tooltip"),
         ],
         strategy_factory=DerivativeStrategy,
     ))

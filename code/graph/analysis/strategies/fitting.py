@@ -200,7 +200,8 @@ def _register():
         title_key="analysis.tool.fit.polynomial.title",
         param_schema=[
             ParamDescriptor("degree", ParamType.INT, default=2, min=2, max=6,
-                            title_key="analysis.param.fit.polynomial.degree"),
+                            title_key="analysis.param.fit.polynomial.degree",
+                            tooltip_key="analysis.param.fit.polynomial.degree.tooltip"),
         ],
         strategy_factory=PolynomialFitStrategy,
     ))

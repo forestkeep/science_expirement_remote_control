@@ -84,9 +84,11 @@ def _register():
         title_key="analysis.tool.search.peaks.title",
         param_schema=[
             ParamDescriptor("min_height", ParamType.FLOAT, default=0.0,
-                            title_key="analysis.param.search.peaks.min_height"),
+                            title_key="analysis.param.search.peaks.min_height",
+                            tooltip_key="analysis.param.search.peaks.min_height.tooltip"),
             ParamDescriptor("min_distance", ParamType.INT, default=1, min=1, max=1000,
-                            title_key="analysis.param.search.peaks.min_distance"),
+                            title_key="analysis.param.search.peaks.min_distance",
+                            tooltip_key="analysis.param.search.peaks.min_distance.tooltip"),
         ],
         strategy_factory=PeakSearchStrategy,
     ))
@@ -97,9 +99,11 @@ def _register():
         title_key="analysis.tool.search.valleys.title",
         param_schema=[
             ParamDescriptor("min_height", ParamType.FLOAT, default=0.0,
-                            title_key="analysis.param.search.valleys.min_height"),
+                            title_key="analysis.param.search.valleys.min_height",
+                            tooltip_key="analysis.param.search.valleys.min_height.tooltip"),
             ParamDescriptor("min_distance", ParamType.INT, default=1, min=1, max=1000,
-                            title_key="analysis.param.search.valleys.min_distance"),
+                            title_key="analysis.param.search.valleys.min_distance",
+                            tooltip_key="analysis.param.search.valleys.min_distance.tooltip"),
         ],
         strategy_factory=ValleySearchStrategy,
     ))

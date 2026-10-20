@@ -193,6 +193,29 @@ _RU_TITLES = {
     "analysis.param.uncertainty.level":            "Уровень доверия",
     "analysis.param.uncertainty.iterations":       "Число итераций",
     "analysis.param.uncertainty.y_err":            "Y-погрешность (вручную)",
+    # Параметры: tooltips
+    "analysis.param.fit.polynomial.degree.tooltip":
+        "Степень аппроксимирующего полинома: 2 — парабола, 3 — кубическая, … до 6",
+    "analysis.param.search.peaks.min_height.tooltip":
+        "Минимальная высота пика: пики ниже порога игнорируются",
+    "analysis.param.search.peaks.min_distance.tooltip":
+        "Минимальное расстояние между соседними пиками (в точках)",
+    "analysis.param.search.valleys.min_height.tooltip":
+        "Минимальная глубина впадины: впадины меньше порога игнорируются",
+    "analysis.param.search.valleys.min_distance.tooltip":
+        "Минимальное расстояние между соседними впадинами (в точках)",
+    "analysis.param.diff.window.tooltip":
+        "Окно сглаживания производной. 0 или 1 — без сглаживания, >1 — скользящее среднее указанного размера",
+    "analysis.param.uncertainty.method.tooltip":
+        "Метод оценки погрешности: СКО, стандартная ошибка, доверительный интервал или бутстрап",
+    "analysis.param.uncertainty.window.tooltip":
+        "Размер локального окна усреднения. 0 — оценка по всей кривой",
+    "analysis.param.uncertainty.level.tooltip":
+        "Доверительный уровень (например, 0.95 для 95 %)",
+    "analysis.param.uncertainty.iterations.tooltip":
+        "Число бутстрап-итераций (10–5000)",
+    "analysis.param.uncertainty.y_err.tooltip":
+        "Фиксированное значение Y-погрешности для метода «Вручную»",
 
     # Подписи для выбора метода
     "analysis.param.uncertainty.method.std":       "Стандартное отклонение (СКО)",

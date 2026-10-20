@@ -9,6 +9,7 @@ from PyQt5.QtCore import QTranslator
 from SettingsManager import SettingsManager
 from open_file_controller import FileTypeChecker
 from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtGui import QColor, QPalette
 
 import pyvisa
 
@@ -127,6 +128,24 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")
     os.environ["APP_THEME"] = "dark"
+
+    palette = app.palette()
+    palette.setColor(QPalette.ToolTipBase, QColor("#1e1e1e"))
+    palette.setColor(QPalette.ToolTipText, QColor("#FFEB3B"))
+    app.setPalette(palette)
+
+    existing = app.styleSheet() or ""
+    tooltip_css = (
+        "QToolTip {"
+        "    background-color: #1e1e1e;"
+        "    color: #FFEB3B;"
+        "    border: 1px solid #4aa3f8;"
+        "    border-radius: 4px;"
+        "    padding: 6px 10px;"
+        "    font-size: 12px;"
+        "}"
+    )
+    app.setStyleSheet(existing + "\n" + tooltip_css)
 
     translator = QTranslator()
     QtWidgets.QApplication.instance().installTranslator(translator)

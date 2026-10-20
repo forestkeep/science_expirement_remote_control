@@ -353,16 +353,16 @@ class treeWin(QWidget):
         self.buf_description = None
         self.buf_new_curve_name = None
 
-        icon = QIcon()
-        icon.addPixmap(QPixmap("picture/close_eye_light.png"), QIcon.Normal, QIcon.On)
-
         self.visibility_button = QPushButton()
-        self.visibility_button.setIcon(icon)
+        self.visibility_button.setIcon(QIcon("picture/open_eye_light.png"))
         self.visibility_button.setCheckable(True)
-        self.visibility_button.clicked.connect(self.toggle_visibility)
-        self.visibility_button.setToolTip( QApplication.translate("GraphWindow","Показать активные кривые"))
+        self.visibility_button.setChecked(True)
+        self.visibility_button.setToolTip(
+            QApplication.translate("GraphWindow", "Показать все кривые")
+        )
         self.visibility_button.setMinimumSize(0, 30)
         self.visibility_button.setMaximumSize(30, 30)
+        self.visibility_button.clicked.connect(self.toggle_visibility)
         button_layout.addWidget(self.visibility_button)
 
         self.tree_widget = customTreeWidget(self)
@@ -460,20 +460,21 @@ class treeWin(QWidget):
             curve.setHidden(hidden)
 
     def toggle_visibility(self):
-        """Обработчик клика по кнопке.
+        """Переключить режим видимости и обновить иконку/tooltip по действию.
 
-        Меняет иконку/тултип (визуальная индикация режима) и применяет
-        фильтр через update_visible().
+        При нажатой кнопке показываются только активные (is_draw) кривые,
+        tooltip подсказывает, что клик вернёт показ всех. При отжатой —
+        наоборот.
         """
         if self.visibility_button.isChecked():
             self.visibility_button.setIcon(QIcon("picture/open_eye_light.png"))
             self.visibility_button.setToolTip(
-                QApplication.translate("GraphWindow", "Показать активные кривые")
+                QApplication.translate("GraphWindow", "Показать все кривые")
             )
         else:
             self.visibility_button.setIcon(QIcon("picture/close_eye_light.png"))
             self.visibility_button.setToolTip(
-                QApplication.translate("GraphWindow", "Показать все кривые")
+                QApplication.translate("GraphWindow", "Показать только активные кривые")
             )
         self.update_visible()
 

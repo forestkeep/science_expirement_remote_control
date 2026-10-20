@@ -109,11 +109,11 @@ class AnalysisTab(QWidget):
             desc = tools_by_id.get(tid)
             if desc is None:
                 continue
-            self.tool_combo.addItem(self._resolve_title(desc), tid)
+            self._add_tool_item(desc)
         for tid, desc in tools_by_id.items():
             if tid in _ORDER:
                 continue
-            self.tool_combo.addItem(self._resolve_title(desc), tid)
+            self._add_tool_item(desc)
 
         self.tool_combo.currentIndexChanged.connect(self._on_tool_selected)
         add_layout.addWidget(self.tool_combo)
@@ -141,6 +141,9 @@ class AnalysisTab(QWidget):
 
         buttons_row = QHBoxLayout()
         self.btn_apply_active = QPushButton(_TR("Применить"))
+        self.btn_apply_active.setToolTip(
+            _TR("Применить выбранный инструмент к выделенным кривым")
+        )
         self.btn_apply_active.clicked.connect(self._apply_active_tool)
         buttons_row.addWidget(self.btn_apply_active)
         active_layout.addLayout(buttons_row)
@@ -153,10 +156,17 @@ class AnalysisTab(QWidget):
         outer.addWidget(scroll)
 
     def _on_tool_selected(self, index: int) -> None:
-        """Активирует выбранный инструмент без немедленного применения."""
+        """Активирует инструмент и переносит tooltip элемента на сам combo.
+
+        В QComboBox tooltip задаётся для пункта списка через Qt.ToolTipRole
+        и виден только в выпадающем списке. Для свернутого combo tooltip
+        копируется с текущего пункта.
+        """
         tool_id = self.tool_combo.itemData(index)
         if not tool_id:
             return
+        tip = self.tool_combo.itemData(index, Qt.ToolTipRole) or ""
+        self.tool_combo.setToolTip(tip)
         self.controller.cancel_preview()
         self.controller.activate_tool(tool_id)
 
@@ -354,6 +364,10 @@ class AnalysisTab(QWidget):
                 self._param_widgets[param.name] = w
                 title = tr_analysis(param.title_key)
                 self.params_form.addRow(title, w)
+                if param.tooltip_key:
+                    tip = tr_analysis(param.tooltip_key)
+                    if tip:
+                        w.setToolTip(tip)
 
     def _clear_params_form(self) -> None:
         """Полностью убрать все строки формы, включая автолейблы от addRow."""
@@ -431,6 +445,15 @@ class AnalysisTab(QWidget):
     def _resolve_title(self, desc) -> str:
         from ..models import tr_analysis
         return tr_analysis(desc.title_key)
+
+    def _add_tool_item(self, desc) -> None:
+        """Добавить инструмент в combo с локализованным tooltip'ом."""
+        self.tool_combo.addItem(self._resolve_title(desc), desc.tool_id)
+        idx = self.tool_combo.count() - 1
+        if desc.tooltip_key:
+            tip = tr_analysis(desc.tooltip_key)
+            if tip:
+                self.tool_combo.setItemData(idx, tip, Qt.ToolTipRole)
 
     def _resolve_tool_title(self, tool_id: str) -> str:
         d = self.registry.get(tool_id)

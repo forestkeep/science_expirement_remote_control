@@ -1133,6 +1133,59 @@ class FiltersTab(QWidget):
         self.curves = []
         self.setup_ui()
 
+    @staticmethod
+    def _filter_tooltip(index: int) -> str:
+        """Локализованный tooltip фильтра по индексу в FILTER_NAMES."""
+        tips = [
+            QApplication.translate(
+                "GraphWindow",
+                "Медианный фильтр: удаляет одиночные выбросы, сохраняя форму сигнала. "
+                "Окно — нечётное число точек."),
+            QApplication.translate(
+                "GraphWindow",
+                "Скользящее среднее: сглаживает сигнал, подавляя высокочастотный шум. "
+                "Окно — число усредняемых точек."),
+            QApplication.translate(
+                "GraphWindow",
+                "Экспоненциальное среднее: сглаживание с экспоненциально убывающими "
+                "весами. Коэффициент α задаёт скорость забывания старых значений."),
+            QApplication.translate(
+                "GraphWindow",
+                "Прореживание: удаляет заданный процент точек по выбранному правилу "
+                "(равномерно, максимумы, минимумы, с начала или с конца)."),
+            QApplication.translate(
+                "GraphWindow",
+                "Нормировка: приводит значения Y к стандартному диапазону "
+                "(0–1, −1–1, Z-score или robust)."),
+            QApplication.translate(
+                "GraphWindow",
+                "Hampel: устойчивый к выбросам фильтр. Заменяет точки, отклоняющиеся "
+                "от медианы окна больше заданного порога (в робастных σ)."),
+            QApplication.translate(
+                "GraphWindow",
+                "Savitzky-Golay: сглаживание полиномом в скользящем окне. Сохраняет "
+                "форму пиков без sinc-лепестков."),
+            QApplication.translate(
+                "GraphWindow",
+                "Детренд: вычитает из данных полиномиальный тренд, устраняя дрейф "
+                "и низкочастотные «пучности» в спектре."),
+            QApplication.translate(
+                "GraphWindow",
+                "Butterworth: частотный фильтр (low/high/band) с нулевым сдвигом фазы. "
+                "Частота среза задаётся в Гц."),
+            QApplication.translate(
+                "GraphWindow",
+                "Notch: режекторный фильтр для подавления узкополосной наводки "
+                "(обычно 50 Гц). Q задаёт добротность."),
+            QApplication.translate(
+                "GraphWindow",
+                "Гауссово сглаживание: свёртка с гауссовым ядром. σ оценивается "
+                "как window/6."),
+        ]
+        if 0 <= index < len(tips):
+            return tips[index]
+        return ""
+
     def setup_ui(self):
         layout = QVBoxLayout(self)
 
@@ -1146,6 +1199,8 @@ class FiltersTab(QWidget):
         layout.addWidget(self.filters_list)
 
         self.reset_all_btn = QPushButton("Сбросить все")
+        self.reset_all_btn.setToolTip(QApplication.translate(
+            "GraphWindow", "Снять все фильтры с выделенных кривых"))
         self.reset_all_btn.clicked.connect(self.reset_all_filters)
         layout.addWidget(self.reset_all_btn)
 
@@ -1154,6 +1209,10 @@ class FiltersTab(QWidget):
 
         self.filter_type_combo = QComboBox()
         self.filter_type_combo.addItems(self.FILTER_NAMES)
+        for i in range(self.filter_type_combo.count()):
+            self.filter_type_combo.setItemData(
+                i, self._filter_tooltip(i), Qt.ToolTipRole
+            )
         self.filter_type_combo.currentIndexChanged.connect(self._on_type_changed)
         gl.addWidget(self.filter_type_combo)
 
@@ -1172,71 +1231,300 @@ class FiltersTab(QWidget):
         gl.addWidget(self.param_stack)
 
         self.apply_btn = QPushButton("Применить")
+        self.apply_btn.setToolTip(QApplication.translate(
+            "GraphWindow", "Применить выбранный фильтр к выделенным кривым"))
         self.apply_btn.clicked.connect(self.apply_filter)
         gl.addWidget(self.apply_btn)
 
         layout.addWidget(group)
 
+    def _build_median_panel(self):
+        w = QWidget()
+        f = QFormLayout(w)
+        self.median_window = QSpinBox()
+        self.median_window.setRange(1, 999)
+        self.median_window.setValue(3)
+        self.median_window.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Размер окна медианного фильтра в точках. Обычно 3–7 (нечётное число). "
+            "Чем больше окно, тем сильнее подавление одиночных выбросов, но тем больше "
+            "сглаживается форма сигнала."
+        ))
+        f.addRow("Окно:", self.median_window)
+        return w
+
+    def _build_average_panel(self):
+        w = QWidget()
+        f = QFormLayout(w)
+        self.average_window = QSpinBox()
+        self.average_window.setRange(1, 999)
+        self.average_window.setValue(3)
+        self.average_window.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Число усредняемых точек. Больше окно — сильнее сглаживание и меньше шума, "
+            "но заметнее размытие быстрых изменений сигнала."
+        ))
+        f.addRow("Окно:", self.average_window)
+        return w
+
+    def _build_exp_panel(self):
+        w = QWidget()
+        f = QFormLayout(w)
+        self.exp_alpha = QDoubleSpinBox()
+        self.exp_alpha.setRange(0.01, 1.0)
+        self.exp_alpha.setSingleStep(0.01)
+        self.exp_alpha.setValue(0.5)
+        self.exp_alpha.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Коэффициент α экспоненциального сглаживания (0.01–1.0). "
+            "Ближе к 1 — больше веса у свежих значений, слабее сглаживание; "
+            "ближе к 0 — сильнее сглаживание и запаздывание."
+        ))
+        f.addRow("Коэффициент α:", self.exp_alpha)
+        return w
+
+    def _build_thinning_panel(self):
+        w = QWidget()
+        f = QFormLayout(w)
+        self.thinning_percent = QSpinBox()
+        self.thinning_percent.setRange(0, 100)
+        self.thinning_percent.setSuffix(" %")
+        self.thinning_percent.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Процент точек, которые будут удалены. При нескольких включённых правилах "
+            "процент делится между ними поровну."
+        ))
+        f.addRow("Процент удаления:", self.thinning_percent)
+
+        self.thinning_uniform = QCheckBox("Равномерно")
+        self.thinning_uniform.setChecked(True)
+        self.thinning_uniform.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Равномерное прореживание: удаляет каждую N-ю точку, сохраняя общую форму сигнала."
+        ))
+        f.addRow(self.thinning_uniform)
+
+        self.thinning_max = QCheckBox("Удалить максимальные")
+        self.thinning_max.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Удаляет заданный процент точек с наибольшими значениями Y. "
+            "Полезно для подавления положительных выбросов."
+        ))
+        f.addRow(self.thinning_max)
+
+        self.thinning_min = QCheckBox("Удалить минимальные")
+        self.thinning_min.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Удаляет заданный процент точек с наименьшими значениями Y. "
+            "Полезно для подавления отрицательных выбросов."
+        ))
+        f.addRow(self.thinning_min)
+
+        self.thinning_first = QCheckBox("Удалить первые %")
+        self.thinning_first.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Удаляет заданный процент точек с начала кривой (по индексу)."
+        ))
+        f.addRow(self.thinning_first)
+
+        self.thinning_last = QCheckBox("Удалить последние %")
+        self.thinning_last.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Удаляет заданный процент точек с конца кривой (по индексу)."
+        ))
+        f.addRow(self.thinning_last)
+
+        return w
+
+    def _build_normalize_panel(self):
+        w = QWidget()
+        f = QFormLayout(w)
+        self.norm_type = QComboBox()
+        self.norm_type.addItems(["0-1 (Min-Max)", "-1-1", "Z-score", "Robust (медиана/IQR)"])
+        self.norm_type.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Тип нормировки: 0–1 (min-max), −1–1, Z-score (среднее 0, СКО 1) "
+            "или robust (медиана и межквартильный размах)."
+        ))
+        self.norm_type.setItemData(
+            0,
+            QApplication.translate(
+                "GraphWindow",
+                "Приводит Y к диапазону [0, 1]. Устойчива к выбросам только по границам."),
+            Qt.ToolTipRole,
+        )
+        self.norm_type.setItemData(
+            1,
+            QApplication.translate(
+                "GraphWindow",
+                "Приводит Y к диапазону [−1, 1]. Удобно для симметричных сигналов."),
+            Qt.ToolTipRole,
+        )
+        self.norm_type.setItemData(
+            2,
+            QApplication.translate(
+                "GraphWindow",
+                "Стандартизация: (Y − среднее) / СКО. Среднее 0, СКО 1."),
+            Qt.ToolTipRole,
+        )
+        self.norm_type.setItemData(
+            3,
+            QApplication.translate(
+                "GraphWindow",
+                "Робастная нормировка: (Y − медиана) / IQR. Устойчива к выбросам."),
+            Qt.ToolTipRole,
+        )
+        f.addRow("Тип:", self.norm_type)
+        return w
+
     def _build_hampel_panel(self):
-        w = QWidget(); f = QFormLayout(w)
+        w = QWidget()
+        f = QFormLayout(w)
         self.hampel_window = QSpinBox()
         self.hampel_window.setRange(3, 999)
         self.hampel_window.setSingleStep(2)
         self.hampel_window.setValue(5)
+        self.hampel_window.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Размер окна для оценки локальной медианы и MAD. Нечётное число ≥ 3. "
+            "Окно должно быть больше типичной ширины выброса."
+        ))
         self.hampel_sigmas = QDoubleSpinBox()
         self.hampel_sigmas.setRange(0.5, 10.0)
         self.hampel_sigmas.setSingleStep(0.5)
         self.hampel_sigmas.setDecimals(2)
         self.hampel_sigmas.setValue(3.0)
+        self.hampel_sigmas.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Порог в робастных σ (MAD·1.4826). Точки, отклонившиеся от медианы окна "
+            "сильнее порога, заменяются медианой. 3σ — стандарт."
+        ))
         f.addRow("Окно:", self.hampel_window)
         f.addRow("Порог (σ):", self.hampel_sigmas)
         return w
 
     def _build_savgol_panel(self):
-        w = QWidget(); f = QFormLayout(w)
+        w = QWidget()
+        f = QFormLayout(w)
         self.savgol_window = QSpinBox()
         self.savgol_window.setRange(3, 999)
         self.savgol_window.setSingleStep(2)
         self.savgol_window.setValue(5)
+        self.savgol_window.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Длина окна аппроксимации. Нечётное число ≥ 3 и строго больше степени полинома. "
+            "Больше окно — сильнее сглаживание."
+        ))
         self.savgol_polyorder = QSpinBox()
         self.savgol_polyorder.setRange(1, 10)
         self.savgol_polyorder.setValue(2)
+        self.savgol_polyorder.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Степень аппроксимирующего полинома. Должна быть меньше длины окна. "
+            "2 — парабола, 3 — кубическая и т.д."
+        ))
         f.addRow("Окно:", self.savgol_window)
         f.addRow("Степень полинома:", self.savgol_polyorder)
         return w
 
     def _build_detrend_panel(self):
-        w = QWidget(); f = QFormLayout(w)
+        w = QWidget()
+        f = QFormLayout(w)
         self.detrend_type = QComboBox()
         self.detrend_type.addItems(["linear", "poly"])
+        self.detrend_type.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Тип тренда: linear — прямая, poly — полином заданной степени."
+        ))
+        self.detrend_type.setItemData(
+            0,
+            QApplication.translate("GraphWindow", "Вычитает линейный тренд k·x + b."),
+            Qt.ToolTipRole,
+        )
+        self.detrend_type.setItemData(
+            1,
+            QApplication.translate(
+                "GraphWindow",
+                "Вычитает полиномиальный тренд степени, указанной ниже."),
+            Qt.ToolTipRole,
+        )
         self.detrend_type.currentTextChanged.connect(self._on_detrend_type_changed)
+
         self.detrend_polyorder = QSpinBox()
         self.detrend_polyorder.setRange(1, 10)
         self.detrend_polyorder.setValue(2)
         self.detrend_polyorder.setEnabled(False)
+        self.detrend_polyorder.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Степень полиномиального тренда. Доступно только при типе «poly»."
+        ))
         f.addRow("Тип:", self.detrend_type)
         f.addRow("Степень:", self.detrend_polyorder)
         return w
 
     def _on_detrend_type_changed(self, text):
+        """Активировать степень полинома только для типа «poly»."""
         self.detrend_polyorder.setEnabled(text == "poly")
 
     def _build_butterworth_panel(self):
-        w = QWidget(); f = QFormLayout(w)
+        w = QWidget()
+        f = QFormLayout(w)
         self.butter_type = QComboBox()
         self.butter_type.addItems(["low", "high", "band"])
+        self.butter_type.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Тип фильтра: low — нижних частот, high — верхних, band — полосовой."
+        ))
+        self.butter_type.setItemData(
+            0,
+            QApplication.translate(
+                "GraphWindow",
+                "ФНЧ: пропускает частоты ниже среза."),
+            Qt.ToolTipRole,
+        )
+        self.butter_type.setItemData(
+            1,
+            QApplication.translate(
+                "GraphWindow",
+                "ФВЧ: пропускает частоты выше среза."),
+            Qt.ToolTipRole,
+        )
+        self.butter_type.setItemData(
+            2,
+            QApplication.translate(
+                "GraphWindow",
+                "Полосовой: пропускает частоты между нижней и верхней границами."),
+            Qt.ToolTipRole,
+        )
+
         self.butter_cutoff_low = QDoubleSpinBox()
         self.butter_cutoff_low.setRange(0.0, 1e6)
         self.butter_cutoff_low.setDecimals(4)
         self.butter_cutoff_low.setValue(10.0)
+        self.butter_cutoff_low.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Частота среза в Гц. Для band — нижняя граница полосы."
+        ))
+
         self.butter_cutoff_high = QDoubleSpinBox()
         self.butter_cutoff_high.setRange(0.0, 1e6)
         self.butter_cutoff_high.setDecimals(4)
         self.butter_cutoff_high.setValue(100.0)
         self.butter_cutoff_high.setEnabled(False)
+        self.butter_cutoff_high.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Верхняя граница полосы в Гц. Используется только для типа band."
+        ))
+
         self.butter_order = QSpinBox()
         self.butter_order.setRange(1, 10)
         self.butter_order.setValue(4)
+        self.butter_order.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Порядок фильтра. Больше порядок — круче срез, но выше риск нестабильности. "
+            "Типично 2–6."
+        ))
+
         self.butter_type.currentTextChanged.connect(
             lambda t: self.butter_cutoff_high.setEnabled(t == "band")
         )
@@ -1247,24 +1535,41 @@ class FiltersTab(QWidget):
         return w
 
     def _build_notch_panel(self):
-        w = QWidget(); f = QFormLayout(w)
+        w = QWidget()
+        f = QFormLayout(w)
         self.notch_freq = QDoubleSpinBox()
         self.notch_freq.setRange(0.001, 1e6)
         self.notch_freq.setDecimals(2)
         self.notch_freq.setValue(50.0)
+        self.notch_freq.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Частота подавляемой наводки в Гц. Для сети 50 Гц оставьте 50.0."
+        ))
+
         self.notch_q = QDoubleSpinBox()
         self.notch_q.setRange(1.0, 1000.0)
         self.notch_q.setDecimals(1)
         self.notch_q.setValue(30.0)
+        self.notch_q.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Добротность Q: чем больше, тем уже полоса подавления. "
+            "Обычно 20–50."
+        ))
+
         f.addRow("Частота (Гц):", self.notch_freq)
         f.addRow("Q:", self.notch_q)
         return w
 
     def _build_gaussian_panel(self):
-        w = QWidget(); f = QFormLayout(w)
+        w = QWidget()
+        f = QFormLayout(w)
         self.gaussian_window = QSpinBox()
         self.gaussian_window.setRange(1, 999)
         self.gaussian_window.setValue(5)
+        self.gaussian_window.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Размер окна для оценки σ (σ = window/6). Больше окно — сильнее сглаживание."
+        ))
         f.addRow("Окно (→ σ):", self.gaussian_window)
         return w
 
@@ -1331,48 +1636,10 @@ class FiltersTab(QWidget):
             }, self.session.filter_class)
         return None
 
-    def _build_median_panel(self):
-        w = QWidget(); f = QFormLayout(w)
-        self.median_window = QSpinBox(); self.median_window.setRange(1, 999); self.median_window.setValue(3)
-        f.addRow("Окно:", self.median_window)
-        return w
-
-    def _build_average_panel(self):
-        w = QWidget(); f = QFormLayout(w)
-        self.average_window = QSpinBox(); self.average_window.setRange(1, 999); self.average_window.setValue(3)
-        f.addRow("Окно:", self.average_window)
-        return w
-
-    def _build_exp_panel(self):
-        w = QWidget(); f = QFormLayout(w)
-        self.exp_alpha = QDoubleSpinBox(); self.exp_alpha.setRange(0.01, 1.0)
-        self.exp_alpha.setSingleStep(0.01); self.exp_alpha.setValue(0.5)
-        f.addRow("Коэффициент α:", self.exp_alpha)
-        return w
-
-    def _build_thinning_panel(self):
-        w = QWidget(); f = QFormLayout(w)
-        self.thinning_percent = QSpinBox(); self.thinning_percent.setRange(0, 100); self.thinning_percent.setSuffix(" %")
-        f.addRow("Процент удаления:", self.thinning_percent)
-        self.thinning_uniform = QCheckBox("Равномерно"); self.thinning_uniform.setChecked(True)
-        self.thinning_max = QCheckBox("Удалить максимальные")
-        self.thinning_min = QCheckBox("Удалить минимальные")
-        self.thinning_first = QCheckBox("Удалить первые %")
-        self.thinning_last = QCheckBox("Удалить последние %")
-        for cb in (self.thinning_uniform, self.thinning_max, self.thinning_min,
-                   self.thinning_first, self.thinning_last):
-            f.addRow(cb)
-        return w
-
-    def _build_normalize_panel(self):
-        w = QWidget(); f = QFormLayout(w)
-        self.norm_type = QComboBox()
-        self.norm_type.addItems(["0-1 (Min-Max)", "-1-1", "Z-score", "Robust (медиана/IQR)"])
-        f.addRow("Тип:", self.norm_type)
-        return w
-
     def _on_type_changed(self, idx):
         self.param_stack.setCurrentIndex(idx)
+        tip = self.filter_type_combo.itemData(idx, Qt.ToolTipRole) or ""
+        self.filter_type_combo.setToolTip(tip)
 
     # --- список применённых ------------------------------------------
     def set_curves(self, curves):
