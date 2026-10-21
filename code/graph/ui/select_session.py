@@ -1,243 +1,325 @@
-from PyQt5.QtWidgets import (QWidget, QTableWidget, QTableWidgetItem, QHeaderView,
-                             QHBoxLayout, QVBoxLayout, QPushButton, QMenu, QAbstractItemView,
-                             QAction, QApplication, QDialog, QTextEdit, QDialogButtonBox)
+from PyQt5.QtWidgets import (
+    QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QMenu,
+    QAction, QApplication, QDialog, QTextEdit, QDialogButtonBox,
+    QTabBar, QToolButton, QInputDialog,
+)
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QPoint
-from PyQt5.QtCore import Qt, pyqtSignal, QObject, QPoint, QTimer   # +QTimer
-from PyQt5.QtGui import QColor, QBrush  
+from PyQt5.QtGui import QColor, QIcon, QPixmap, QPainter, QBrush, QPen
 
 import logging
-
-import copy
 
 logger = logging.getLogger(__name__)
 
 STATUS_COLORS = {
-    "running":       QColor("#4aa3f8"),   # активная — синяя
+    "running":       QColor("#4aa3f8"),
     "downloaded":    QColor("#c8c8c8"),
     "imported":      QColor("#c8c8c8"),
     "ok":            QColor("#7ad07a"),
-    "Exp completed": QColor("#7ad07a"),   # завершённая — зелёная
-}
-ROW_BG = {
-    "running": QColor(40, 90, 160, 90),   # подсветка строки активной сессии
+    "Exp completed": QColor("#7ad07a"),
 }
 
-class ButtonsWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.init_ui()
-    def init_ui(self):
-        self.btn_import_data = QPushButton(QApplication.translate("filters","Импортировать данные"))
-        self.btn_import_osc = QPushButton(QApplication.translate("filters","Импортировать осциллограммы"))
-        
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(self.btn_import_data)
-        button_layout.addWidget(self.btn_import_osc)
-        button_layout.addStretch()
+STATUS_LABELS = {
+    "running":       "выполняется",
+    "downloaded":    "загружена",
+    "imported":      "импортирована",
+    "Exp completed": "завершена",
+    "ok":            "завершена",
+}
+
+class SessionTabBar(QTabBar):
+    """QTabBar с сигналами: двойной клик по вкладке и контекстное меню по вкладке."""
+
+    tab_double_clicked = pyqtSignal(int)
+    tab_context_menu = pyqtSignal(int, QPoint)
+
+    def mouseDoubleClickEvent(self, event):
+        idx = self.tabAt(event.pos())
+        if idx >= 0:
+            self.tab_double_clicked.emit(idx)
+        super().mouseDoubleClickEvent(event)
+
+    def contextMenuEvent(self, event):
+        idx = self.tabAt(event.pos())
+        if idx >= 0:
+            self.tab_context_menu.emit(idx, event.globalPos())
+            event.accept()
+            return
+        super().contextMenuEvent(event)
+
 
 class SessionWidget(QWidget):
     session_selected = pyqtSignal(str)
     session_deleted = pyqtSignal(str)
-
-    session_renamed = pyqtSignal(str, str)  # session_id, new_name
-    session_description_updated = pyqtSignal(str, str)  # session_id, new_description
+    session_renamed = pyqtSignal(str, str)
+    session_description_updated = pyqtSignal(str, str)
+    session_reordered = pyqtSignal(list)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.sessions_data = []
-        self._anim_dot = 0
-        self._anim_timer = QTimer(self)
-        self._anim_timer.setInterval(400)             # период мигания
-        self._anim_timer.timeout.connect(self._animate_running)
-        self._anim_timer.start()
-        self.init_ui()
-        
-    def init_ui(self):
-        self.layout = QVBoxLayout(self)
-              
-        self.table = QTableWidget()
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["ID", QApplication.translate("filters","Имя"), QApplication.translate("filters","Статус")])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.table.customContextMenuRequested.connect(self.show_context_menu)
-        
-        self.layout.addWidget(self.table)
+        self._suppress = False
+        self._build_ui()
 
-        self.table.cellDoubleClicked.connect(self._on_cell_double_click)
-        self.table.cellClicked.connect(self._on_cell_clicked)
-        self.table.model().dataChanged.connect(self._on_data_changed)
+    # ------------------------------------------------------------------
+    def _build_ui(self):
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(4, 2, 4, 2)
+        layout.setSpacing(2)
 
-    def _status_for(self, session_id):
-        for s in self.sessions_data:
-            if s['id'] == session_id:
-                return s.get('status', '')
-        return ''
+        self.tab_bar = SessionTabBar()
+        self.tab_bar.setExpanding(False)
+        self.tab_bar.setMovable(True)          # ← включено перетаскивание
+        self.tab_bar.setTabsClosable(True)
+        self.tab_bar.setUsesScrollButtons(True)
+        self.tab_bar.setElideMode(Qt.ElideRight)
+        self.tab_bar.setDrawBase(False)
+        self.tab_bar.currentChanged.connect(self._on_tab_changed)
+        self.tab_bar.tabCloseRequested.connect(self._on_tab_close_requested)
+        self.tab_bar.tab_double_clicked.connect(self._on_tab_double_clicked)
+        self.tab_bar.tab_context_menu.connect(self._on_tab_context_menu)
+        self.tab_bar.tabMoved.connect(self._on_tab_moved)   # ← новое
 
-    def _apply_row_style(self, row):
-        id_item = self.table.item(row, 0)
-        if id_item is None:
-            return
-        status = self._status_for(id_item.text())
+        self.all_sessions_btn = QToolButton()
+        self.all_sessions_btn.setText("▾")
+        self.all_sessions_btn.setToolTip("Все сессии")
+        self.all_sessions_btn.setPopupMode(QToolButton.InstantPopup)
+        self.all_sessions_menu = QMenu(self.all_sessions_btn)
+        self.all_sessions_btn.setMenu(self.all_sessions_menu)
+
+        layout.addWidget(self.tab_bar, 1)
+        layout.addWidget(self.all_sessions_btn)
+
+    # ------------------------------------------------------------------
+    # Иконка статуса (цветной кружок)
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _status_icon(status: str) -> QIcon:
         color = STATUS_COLORS.get(status, QColor("#ffffff"))
+        pixmap = QPixmap(12, 12)
+        pixmap.fill(Qt.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setBrush(QBrush(color))
+        painter.setPen(QPen(color.darker(160), 1))
+        painter.drawEllipse(2, 2, 8, 8)
+        painter.end()
+        return QIcon(pixmap)
 
-        status_item = self.table.item(row, 2)
-        if status_item is not None:
-            status_item.setForeground(QBrush(color))
+    def _tooltip_for(self, session: dict) -> str:
+        name = session.get('name', '')
+        status = session.get('status', '')
+        label = STATUS_LABELS.get(status, status)
+        desc = session.get('description') or ''
+        parts = [name, f"Статус: {label}"]
+        if desc:
+            parts.append(desc)
+        return "\n".join(parts)
 
-        bg = ROW_BG.get(status)
-        for col in range(self.table.columnCount()):
-            cell = self.table.item(row, col)
-            if cell is None:
-                continue
-            if bg is not None:
-                cell.setBackground(QBrush(bg))
-            else:
-                cell.setBackground(QBrush(Qt.transparent))
-
-    def _animate_running(self):
-        """Раз в 400 мс обновляет текст статуса активных сессий: running, running., running.., running..."""
-        self._anim_dot = (self._anim_dot + 1) % 4
-        dots = "." * self._anim_dot
-        for row in range(self.table.rowCount()):
-            id_item = self.table.item(row, 0)
-            if id_item is None:
-                continue
-            if self._status_for(id_item.text()) == "running":
-                status_item = self.table.item(row, 2)
-                if status_item is None:
-                    status_item = QTableWidgetItem()
-                    self.table.setItem(row, 2, status_item)
-                status_item.setText(f"running{dots}")
-                status_item.setForeground(QBrush(STATUS_COLORS["running"]))
-                bg = ROW_BG["running"]
-                for col in range(self.table.columnCount()):
-                    cell = self.table.item(row, col)
-                    if cell is not None:
-                        cell.setBackground(QBrush(bg))
-
-    def _on_data_changed(self, top_left, bottom_right):
-        if top_left.column() <= 1 <= bottom_right.column():
-            row = top_left.row()
-            session_id_item = self.table.item(row, 0)
-            new_name_item = self.table.item(row, 1)
-            
-            logger.info(f"session_id_item {session_id_item} new_name_item {new_name_item}")
-            if session_id_item and new_name_item:
-                session_id = session_id_item.text()
-                new_name = new_name_item.text()
-                
-                for session in self.sessions_data:
-                    if session['id'] == session_id:
-                        session['name'] = new_name
-                        break
-                
-                self.session_renamed.emit(session_id, new_name)
-
-    def update_sessions(self, sessions):
-        logger.info(f"update_sessions {sessions}")
-        self.sessions_data = sessions.copy()
-        self.table.setRowCount(len(self.sessions_data))
-        for row, session in enumerate(self.sessions_data):
-            self.table.setItem(row, 0, QTableWidgetItem(session['id']))
-            self.table.setItem(row, 1, QTableWidgetItem(session['name']))
-            self.table.setItem(row, 2, QTableWidgetItem(session['status']))
-            self._apply_row_style(row)  
+    # ------------------------------------------------------------------
+    # Синхронизация из контроллера
+    # ------------------------------------------------------------------
 
     def update_session(self, session):
-        logger.info(f"update_session {session}")
-        for row in range(self.table.rowCount()):
-            item = self.table.item(row, 0)
-            if item and item.text() == session['id']:
-                self.table.setItem(row, 1, QTableWidgetItem(session['name']))
-                self.table.setItem(row, 2, QTableWidgetItem(session['status']))
-                # Если нужно обновить и внутренний список сессий:
-                if 0 <= row < len(self.sessions_data):
-                    self.sessions_data[row] = session
-                    self._apply_row_style(row)  
+        for i, s in enumerate(self.sessions_data):
+            if s['id'] == session['id']:
+                self.sessions_data[i] = dict(session)
                 break
+        self.refresh_tab(session['id'])
 
-    def show_context_menu(self, pos: QPoint):
-        menu = QMenu(self)
-        
-        rename_action = QAction("Переименовать", self)
-        delete_action = QAction("Удалить", self)
-        desc_action = QAction("Добавить описание", self)
-        
-        menu.addAction(rename_action)
-        menu.addAction(delete_action)
-        menu.addAction(desc_action)
-        
-        selected_row = self.table.rowAt(pos.y())
-        if selected_row == -1:
-            return
-        
-        rename_action.triggered.connect(lambda: self._start_rename_session(selected_row))
-        delete_action.triggered.connect(lambda: self._delete_session(selected_row))
-        desc_action.triggered.connect(lambda: self._add_description(selected_row))
-        
-        menu.exec_(self.table.viewport().mapToGlobal(pos))
-
-    def _start_rename_session(self, row):
-        if 0 <= row < len(self.sessions_data):
-            old_name_item = self.table.item(row, 1)
-            logger.info(f"start_rename_session {old_name_item}")
-            self.table.editItem(old_name_item)
-
-    def _delete_session(self, row):
-        if 0 <= row < len(self.sessions_data):
-            session_id = self.sessions_data[row]['id']
-            self.session_deleted.emit(session_id)
+    def update_sessions(self, sessions):
+        """Полная перестройка всех вкладок из списка сессий."""
+        self.sessions_data = list(sessions)
+        self._rebuild_view()
 
     def add_session_view(self, session):
-        self.sessions_data.append(session.copy())
-        self.table.insertRow(self.table.rowCount())
-        self.table.setItem(self.table.rowCount() - 1, 0, QTableWidgetItem(copy.copy(session['id'])))
-        self.table.setItem(self.table.rowCount() - 1, 1, QTableWidgetItem(copy.copy(session['name'])))
-        self.table.setItem(self.table.rowCount() - 1, 2, QTableWidgetItem(copy.copy(session['status'])))
-        self._apply_row_style(self.table.rowCount() - 1)
+        self.sessions_data.append(session)
+        self._rebuild_view()
 
-    def _add_description(self, row):
-        """Открывает модальное окно для редактирования описания сессии"""
-        if 0 <= row < len(self.sessions_data):
-            session = self.sessions_data[row]
-            session_id = session['id']
-            
-            current_description = session.get('description', '')
-            
-            dialog = QDialog(self)
-            dialog.setWindowTitle("Редактирование описания")
-            dialog.setModal(True)
-            dialog.resize(400, 300)
-            
-            layout = QVBoxLayout(dialog)
-            
-            text_edit = QTextEdit()
-            text_edit.setPlainText(current_description)
-            text_edit.setPlaceholderText("Введите описание сессии...")
-            layout.addWidget(text_edit)
-            
-            button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-            button_box.accepted.connect(dialog.accept)
-            button_box.rejected.connect(dialog.reject)
-            layout.addWidget(button_box)
-            
-            if dialog.exec_() == QDialog.Accepted:
-                new_description = text_edit.toPlainText()
-                
-                session['description'] = new_description
-                
-                self.session_description_updated.emit(session_id, new_description)
+    def select_session(self, session_id: str):
+        """Программно выбрать вкладку без эмита session_selected."""
+        self._select_without_emit(session_id)
 
-    def _on_cell_double_click(self, row, col):
-        if col == 1:
-            self._start_rename_session(row)
+    # ------------------------------------------------------------------
+    def _rebuild_view(self):
+        current_id = self._current_id()
 
-    def _on_cell_clicked(self, row, col):
-        session_id = self.table.item(row, 0).text()
+        self._suppress = True
+        try:
+            while self.tab_bar.count() > 0:
+                self.tab_bar.removeTab(0)
+
+            for session in self.sessions_data:
+                status = session.get('status', '')
+                name = session.get('name', '')
+                icon = self._status_icon(status)
+                tip = self._tooltip_for(session)
+
+                idx = self.tab_bar.addTab(icon, name)
+                self.tab_bar.setTabToolTip(idx, tip)
+                self.tab_bar.setTabData(idx, session['id'])
+                if status == "running":
+                    self.tab_bar.setTabButton(idx, QTabBar.RightSide, None)
+        finally:
+            self._suppress = False
+
+        self._rebuild_all_sessions_menu()
+
+        if current_id and any(s['id'] == current_id for s in self.sessions_data):
+            self._select_without_emit(current_id)
+        elif self.sessions_data:
+            self._select_without_emit(self.sessions_data[0]['id'])
+
+    def _on_tab_moved(self, from_idx: int, to_idx: int):
+        if self._suppress:
+            return
+        if (0 <= from_idx < len(self.sessions_data)
+                and 0 <= to_idx < len(self.sessions_data)):
+            item = self.sessions_data.pop(from_idx)
+            self.sessions_data.insert(to_idx, item)
+            self._rebuild_all_sessions_menu()
+            self.session_reordered.emit([s['id'] for s in self.sessions_data])
+
+    def _rebuild_all_sessions_menu(self):
+        self.all_sessions_menu.clear()
+        current_id = self._current_id()
+        for session in self.sessions_data:
+            icon = self._status_icon(session.get('status', ''))
+            label = session.get('name', '')
+            action = QAction(icon, label, self.all_sessions_menu)
+            action.setCheckable(True)
+            action.setChecked(session['id'] == current_id)
+            action.triggered.connect(
+                lambda checked=False, sid=session['id']: self._on_menu_select(sid)
+            )
+            self.all_sessions_menu.addAction(action)
+
+    def _select_without_emit(self, session_id: str):
+        self._suppress = True
+        try:
+            for i in range(self.tab_bar.count()):
+                if self.tab_bar.tabData(i) == session_id:
+                    self.tab_bar.setCurrentIndex(i)
+                    break
+        finally:
+            self._suppress = False
+
+    def _current_id(self):
+        idx = self.tab_bar.currentIndex()
+        if 0 <= idx < self.tab_bar.count():
+            return self.tab_bar.tabData(idx)
+        return None
+
+    def _find_session(self, session_id):
+        for s in self.sessions_data:
+            if s['id'] == session_id:
+                return s
+        return None
+
+    # ------------------------------------------------------------------
+    # Обработчики
+    # ------------------------------------------------------------------
+    def _on_tab_changed(self, index: int):
+        if self._suppress:
+            return
+        if 0 <= index < self.tab_bar.count():
+            sid = self.tab_bar.tabData(index)
+            if sid:
+                self.session_selected.emit(sid)
+
+    def _on_tab_close_requested(self, index: int):
+        if 0 <= index < self.tab_bar.count():
+            sid = self.tab_bar.tabData(index)
+            if sid:
+                self.session_deleted.emit(sid)
+
+    def _on_tab_double_clicked(self, index: int):
+        if 0 <= index < self.tab_bar.count():
+            sid = self.tab_bar.tabData(index)
+            self._rename_session(sid)
+
+    def _on_tab_context_menu(self, index: int, global_pos: QPoint):
+        sid = self.tab_bar.tabData(index)
+        if sid is None:
+            return
+        self._show_context_menu(sid, global_pos)
+
+    def _on_menu_select(self, session_id: str):
+        self._select_without_emit(session_id)
         self.session_selected.emit(session_id)
+
+    # ------------------------------------------------------------------
+    def _show_context_menu(self, session_id: str, global_pos: QPoint):
+        menu = QMenu(self)
+
+        rename_action = QAction("Переименовать", menu)
+        rename_action.triggered.connect(lambda: self._rename_session(session_id))
+        menu.addAction(rename_action)
+
+        desc_action = QAction("Описание...", menu)
+        desc_action.triggered.connect(lambda: self._edit_description(session_id))
+        menu.addAction(desc_action)
+
+        menu.addSeparator()
+
+        delete_action = QAction("Удалить", menu)
+        delete_action.triggered.connect(lambda: self.session_deleted.emit(session_id))
+        menu.addAction(delete_action)
+
+        menu.exec_(global_pos)
+
+    def _rename_session(self, session_id: str):
+        session = self._find_session(session_id)
+        if session is None:
+            return
+        old_name = session.get('name', '')
+        new_name, ok = QInputDialog.getText(
+            self, "Переименовать сессию", "Новое имя:", text=old_name
+        )
+        if not ok:
+            return
+        new_name = new_name.strip()
+        if not new_name or new_name == old_name:
+            return
+        self.session_renamed.emit(session_id, new_name)
+
+    def refresh_tab(self, session_id: str):
+        """Обновить текст, иконку статуса и tooltip вкладки из self.sessions_data."""
+        for s in self.sessions_data:
+            if s['id'] == session_id:
+                for i in range(self.tab_bar.count()):
+                    if self.tab_bar.tabData(i) == session_id:
+                        self.tab_bar.setTabText(i, s.get('name', ''))
+                        self.tab_bar.setTabIcon(i, self._status_icon(s.get('status', '')))
+                        self.tab_bar.setTabToolTip(i, self._tooltip_for(s))
+                        break
+                self._rebuild_all_sessions_menu()
+                return
+
+    def _edit_description(self, session_id: str):
+        session = self._find_session(session_id)
+        if session is None:
+            return
+        current = session.get('description', '') or ''
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Описание сессии")
+        dialog.setModal(True)
+        dialog.resize(400, 300)
+
+        layout = QVBoxLayout(dialog)
+        text_edit = QTextEdit()
+        text_edit.setPlainText(current)
+        text_edit.setPlaceholderText("Введите описание сессии...")
+        layout.addWidget(text_edit)
+
+        bbox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        bbox.accepted.connect(dialog.accept)
+        bbox.rejected.connect(dialog.reject)
+        layout.addWidget(bbox)
+
+        if dialog.exec_() == QDialog.Accepted:
+            new_desc = text_edit.toPlainText()
+            self.session_description_updated.emit(session_id, new_desc)
 
 class SessionSelectControl(QObject):
     current_session_changed = pyqtSignal(str)
@@ -254,15 +336,20 @@ class SessionSelectControl(QObject):
         self.widget.session_deleted.connect(self.handle_session_deleted)
         self.widget.session_renamed.connect(self._session_renamed)
         self.widget.session_description_updated.connect(self._session_description_updated)
+        self.widget.session_reordered.connect(self._session_reordered)
 
     def _session_description_updated(self, session_id, new_description):
         logger.info(f"_session_description_updated {session_id} {new_description}")
         for session in self.sessions:
             if session['id'] == session_id:
                 session['description'] = new_description
-                logger.info(f"session_description_changed emitted {session_id}")
+                self.widget.update_session(session)
                 self.session_description_changed.emit(session_id, str(new_description))
                 break
+
+    def _session_reordered(self, ordered_ids):
+        by_id = {s['id']: s for s in self.sessions}
+        self.sessions = [by_id[sid] for sid in ordered_ids if sid in by_id]
     
     def update_session_description(self, session_id, new_description):
         logger.info(f"update_session_description {session_id=} {new_description}")
@@ -273,12 +360,13 @@ class SessionSelectControl(QObject):
                     break
 
     def _session_renamed(self, session_id, new_name):
-        logger.info(f"_session_renamed {session_id} {new_name} list: {self.sessions}")
+        logger.info(f"_session_renamed {session_id} {new_name}")
         for session in self.sessions:
             if session['id'] == session_id:
-                    logger.info(f"session_name_changed emitted id:{session_id} last_name:{session['name']} new_name:{new_name}")
-                    session['name'] = new_name
-                    self.session_name_changed.emit(session_id, str(new_name))
+                session['name'] = new_name
+                self.widget.update_session(session)
+                self.session_name_changed.emit(session_id, str(new_name))
+                break
 
     def update_view(self):
         logger.info(f"update_view, session list : {self.sessions}")
@@ -292,18 +380,16 @@ class SessionSelectControl(QObject):
                 break
 
     def set_current_session(self, session_id):
-        for session in self.sessions:
-            if session['id'] == session_id:
-                logger.info(f"current_session_changed emitted {id}")
-                self.current_session_changed.emit(session['id'])
-                break
+        """Синхронизировать выбранную вкладку без эмита current_session_changed."""
+        self.widget.select_session(session_id)
 
     def set_session_name(self, session_id, name: str):
-        logger.info(f"set_session_name {session_id} {name} list: {self.sessions}")
+        logger.info(f"set_session_name {session_id} {name}")
         for session in self.sessions:
             if session['id'] == session_id:
                 session['name'] = name
-                self.update_view()
+                self.widget.update_session(session)
+                break
 
     def set_session_status(self, session_id, status: str):
         logger.info(f"set_session_status {session_id} {status} list: {self.sessions}")
@@ -321,9 +407,9 @@ class SessionSelectControl(QObject):
         #self.update_view()
 
     def handle_session_deleted(self, session_id):
-        logger.info(f"Deleting session {session_id}")
-        self.sessions[:] = [s for s in self.sessions if s['id'] != session_id]
-        self.update_view()
+        """Сигнал от вкладки. Реальное удаление (с подтверждением) — в
+        sessionController.delete_session, который сам вызовет
+        SessionSelectControl.delete_session после QMessageBox.Yes."""
         self.session_deleted.emit(session_id)
 
     def delete_session(self, session_id):

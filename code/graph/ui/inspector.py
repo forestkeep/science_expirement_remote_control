@@ -327,19 +327,6 @@ class GraphSettingsWidget(QWidget):
     # ==================================================================
     # Мутации (каждая оборачивается в undo-команду и пишет в статус-бар)
     # ==================================================================
-    def apply_general(self, *_):
-        if self._suppress:
-            return
-        title = self.title_edit.text()
-        antialias = self.antialias_check.isChecked()
-        gv = self.graph_view
-
-        def mutate():
-            gv.setTitle(title)
-            gv.setAntialiasing(antialias)
-
-        gv.apply_appearance_change(mutate)
-        _status(self.session, "Настройки графика обновлены", 2000)
 
     def apply_general(self, *_):
         if self._suppress:

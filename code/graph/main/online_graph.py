@@ -18,7 +18,8 @@ import uuid
 
 # --- Сторонние библиотеки ---
 import numpy as np
-from PyQt5.QtCore import QEvent, QPoint, QRect, Qt, QTimer, pyqtSignal
+from PyQt5.QtCore import QPoint, QRect, Qt, QTimer, pyqtSignal
+from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtGui import QGuiApplication, QIcon
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import (
@@ -84,15 +85,17 @@ logger = logging.getLogger(__name__)
 class GraphWindow(QMainWindow):
     graph_win_close_signal = pyqtSignal(int)
 
-    def __init__(self, session_selector, import_buttons=None, version=None,
+    def __init__(self, session_selector, buttons_controller=None, version=None,
                  action_registry=None):
         super().__init__()
         self.setWindowTitle(("Online Graph " + version) if version else "Online Graph")
         self.action_registry = action_registry
+        self.buttons_controller = buttons_controller
 
         self._apply_adaptive_geometry()
         self.notification = None
-        self.initUI(session_selector=session_selector, import_buttons=import_buttons)
+        self.initUI(session_selector=session_selector,
+                    buttons_controller=buttons_controller)
 
     def _apply_adaptive_geometry(self):
         """Подгоняем окно под текущий экран: 90% от доступной области,
@@ -130,40 +133,29 @@ class GraphWindow(QMainWindow):
             if self.width() > avail.width() or self.height() > avail.height():
                 self._apply_adaptive_geometry()
 
-    def initUI(self, session_selector, import_buttons):
+    def initUI(self, session_selector, buttons_controller):
         self.__add_menu()
 
         self.mainWidget = QWidget(self)
         self.main_lay = QVBoxLayout(self.mainWidget)
+        self.main_lay.setContentsMargins(4, 4, 4, 4)
+        self.main_lay.setSpacing(4)
         self.setWindowIcon(QIcon('picture/graph.png'))
         self.setCentralWidget(self.mainWidget)
+
+        self.session_selector = session_selector
 
         self.stack = QStackedWidget(self)
         self.stack.setMinimumWidth(0)
         self.stack.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        splitter = QSplitter(0)
-        splitter.addWidget(self.stack)
-        splitter.addWidget(session_selector)
-
-        self.splitter = splitter
-        self.session_selector = session_selector
-
-        self.splitter.setSizes([self.width() - 50, 50])
-
-        self.session_selector.installEventFilter(self)
-
-        self.main_lay.addWidget(self.splitter)
-        self.main_lay.addWidget(import_buttons)
-
-        self.main_lay.setStretch(0, 1)
-        self.main_lay.setStretch(1, 0)
+        self.main_lay.addWidget(self.session_selector)
+        self.main_lay.addWidget(self.stack, 1)
 
     def __add_menu(self):
         menubar = self.menuBar()
 
         file_menu = menubar.addMenu(QApplication.translate('graph', "Файл"))
-        # меню «Правка» создаём сразу и наполняем из реестра
         self.edit_menu = menubar.addMenu(QApplication.translate('graph', "Правка"))
         data_menu = menubar.addMenu(QApplication.translate('graph', "Данные"))
 
@@ -186,38 +178,30 @@ class GraphWindow(QMainWindow):
         file_menu.addAction(self.load_action)
         file_menu.addAction(self.log_path_open)
 
+        # --- Импорт данных и осциллограмм перенесён в меню «Файл» ---
+        if self.buttons_controller is not None:
+            file_menu.addSeparator()
+
+            self.import_data_action = QAction(
+                QApplication.translate('graph', "Импортировать данные"), self
+            )
+            self.import_data_action.triggered.connect(
+                self.buttons_controller.handle_import_data
+            )
+            file_menu.addAction(self.import_data_action)
+
+            self.import_osc_action = QAction(
+                QApplication.translate('graph', "Импортировать осциллограммы"), self
+            )
+            self.import_osc_action.triggered.connect(
+                self.buttons_controller.handle_import_osc
+            )
+            file_menu.addAction(self.import_osc_action)
+
         data_menu.addAction(self.rename_param_action)
 
-        # --- «Правка» из реестра, БЕЗ QToolBar ---
         if self.action_registry is not None:
             self.action_registry.add_actions_to_menu(self.edit_menu, "edit")
-        # Если реестра нет — меню остаётся пустым, приложение не падает
-
-    def eventFilter(self, obj, event):
-        if obj == self.session_selector:
-            if event.type() == QEvent.Enter:
-                desired_height = self._compute_desired_session_height()
-                desired_height = max(self.session_selector.minimumHeight(),
-                                    min(desired_height, self.session_selector.maximumHeight()))
-                total_height = self.splitter.height()
-                self.splitter.setSizes([total_height - desired_height, desired_height])
-            elif event.type() == QEvent.Leave:
-                min_height = self.session_selector.minimumHeight()
-                min_height = max(self.session_selector.minimumHeight(), 50)
-                total_height = self.splitter.height()
-                self.splitter.setSizes([total_height - min_height, min_height])
-        return super().eventFilter(obj, event)
-
-    def _compute_desired_session_height(self):
-        if hasattr(self.session_selector, 'table'):
-            table = self.session_selector.table
-            total_height = table.horizontalHeader().height()
-            total_height += table.verticalHeader().height()
-            for row in range(table.rowCount()):
-                total_height += table.rowHeight(row)
-            return total_height
-        else:
-            return self.session_selector.sizeHint().height()
 
     def closeEvent(self, event):
         self.graph_win_close_signal.emit(1)
@@ -685,11 +669,10 @@ class sessionController():
 
         self.buttons_controller.new_data_imported.connect(self.data_imported)
 
-        # ВАЖНО: передаём action_registry в GraphWindow,
-        # иначе меню «Правка» остаётся пустым.
+
         self.graphics_win = GraphWindow(
             self.controll_sessions_win,
-            self.buttons_controller.widget,
+            self.buttons_controller,
             version=self.version_app,
             action_registry=self.action_registry,
         )
@@ -1050,6 +1033,7 @@ class sessionController():
         session = self.graph_sessions.get(session_id)
         if session is not None:
             self.graphics_win.stack.setCurrentWidget(session)
+            self.session_selector.set_current_session(session_id)
         else:
             logger.warning(f"Session {session_id} not found")
         # обновляем состояние undo/redo-кнопок под новую сессию
@@ -1066,14 +1050,42 @@ class sessionController():
         session = self.graph_sessions.get(session_id)
         if session is None:
             return
-        if session.can(modify=True):
-            self.graphics_win.stack.removeWidget(session)
-            session.graph_main.destroy_all_curves()
-            session.deleteLater()
-            del self.graph_sessions[session_id]
-        else:
-            session.show_tooltip(QApplication.translate("graph", "Сессию можно удалить только после остановки."))
+        if not session.can(modify=True):
+            session.show_tooltip(
+                QApplication.translate("graph", "Сессию можно удалить только после остановки.")
+            )
             logger.warning(f"Session {session_id} is running. Broke session deletion.")
+            return
+
+        ans = QMessageBox.question(
+            self.graphics_win,
+            QApplication.translate("graph", "Удаление сессии"),
+            QApplication.translate(
+                "graph",
+                f"Удалить сессию «{session.session_name}»?\n\n"
+                "Действие необратимо. При необходимости сохраните её через "
+                "Файл → Сохранить как.",
+            ),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if ans != QMessageBox.Yes:
+            return
+
+        was_current = self.graphics_win.stack.currentWidget() is session
+
+        self.graphics_win.stack.removeWidget(session)
+        session.graph_main.destroy_all_curves()
+        session.deleteLater()
+        del self.graph_sessions[session_id]
+        self.session_selector.delete_session(session_id)
+
+        if was_current and self.graph_sessions:
+            new_cur = self.graphics_win.stack.currentWidget()
+            for sid, s in self.graph_sessions.items():
+                if s is new_cur:
+                    self.change_session(sid)
+                    break
 
     def _session_renamed(self, session_id: str, new_session_name: str):
         logger.info(f"_session_renamed {session_id=} {new_session_name=}")
