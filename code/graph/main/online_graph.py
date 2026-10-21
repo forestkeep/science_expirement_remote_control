@@ -34,6 +34,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from graph.helpers import HelperManager, HelperToolbar, HelperTab
 
 # --- Локальные модули проекта ---
 from functions import open_log_file
@@ -364,6 +365,10 @@ class GraphSession(QWidget):
             self,
             alias_manager=self.alias_manager
         )
+
+        self.helper_manager = HelperManager(self, parent=self)
+        helper_toolbar = HelperToolbar(self.helper_manager)
+        self.graph_main.tab1Layout.addWidget(helper_toolbar)
 
         # При смене внешнего вида основного графика — обновить все дочерние
         # (attached-панели и domain-вкладки анализа).

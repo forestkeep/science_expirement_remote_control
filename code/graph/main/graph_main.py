@@ -104,40 +104,6 @@ class manageGraph(QObject):
         self.graphView.inf_line_removed.connect(self._on_inf_line_removed)
 
         self.graphView.appearance_undo_callback = self._on_appearance_changed
-
-        #--------------------------------------------------------TESTS
-        '''
-        self.inf2 = pg.InfiniteLine(movable=True, angle=0, pen=(0, 0, 200), bounds = [-20, 20], hoverPen=(0,200,0), label='y={value:0.2f}mm', 
-                       labelOpts={'color': (200,0,0), 'movable': True, 'fill': (0, 0, 200, 100)})
-        
-        self.targetItem2 = pg.TargetItem(
-            pos=(0, 0),
-            size=20,
-            symbol="star",
-            pen="#F4511E",
-            label="vert={1:0.2f}"
-        )
-        self.targetItem2.label().setAngle(45)
-        
-
-        self.lr = pg.LinearRegionItem(values=[70, 80])
-        label = pg.InfLineLabel(self.lr.lines[1], "region 1", position=0.95, rotateAxis=(1,0), anchor=(1, 1))
-
-        self.x = np.arange(10)
-        self.y = np.arange(10) %3
-        top = np.linspace(1.0, 1, 10)
-
-
-        self.err = pg.ErrorBarItem(x=self.x, y=self.y, top=top, bottom=top, beam=0.5)
-        #self.graphView.addItem(self.err)
-        self.graphView.plot(self.x, self.y, symbol='o', pen={'color': 0.8, 'width': 2})
-
-
-        self.graphView.addItem(self.lr)
-        self.graphView.addItem(self.inf2)
-        #self.graphView.addItem(self.targetItem2)
-        '''
-        #--------------------------------------------------------------------
         
         self.graphView.plotItem.getAxis("left").linkToView(
             self.graphView.plotItem.getViewBox()
@@ -147,19 +113,6 @@ class manageGraph(QObject):
         )
 
         self.axislabel_line_edit.setParent(self.graphView)
-
-        self.buttons_layout = QHBoxLayout()
-        
-        self.add_vertical_line_btn = QPushButton("Добавить вертикальную линию")
-        self.add_vertical_line_btn.clicked.connect(self._add_vertical_line_undoable)
-        self.buttons_layout.addWidget(self.add_vertical_line_btn)
-        
-        self.add_horizontal_line_btn = QPushButton("Добавить горизонтальную линию")
-        self.add_horizontal_line_btn.clicked.connect(self._add_horizontal_line_undoable)
-        self.buttons_layout.addWidget(self.add_horizontal_line_btn)
-        
-        self.buttons_widget = QWidget()
-        self.buttons_widget.setLayout(self.buttons_layout)
 
         # Вертикальный сплиттер: секция выбора параметров над графиком.
         # Позволяет пользователю перетаскивать границу и сворачивать
@@ -175,7 +128,6 @@ class manageGraph(QObject):
         self.graph_splitter.setSizes([220, 400])
 
         self.tab1Layout.addWidget(self.graph_splitter)
-        self.tab1Layout.addWidget(self.buttons_widget)
         self.page.setLayout(self.tab1Layout)
 
         self.page.subscribe_to_key_press(key = Qt.Key_Delete, callback = self.delete_key_press)

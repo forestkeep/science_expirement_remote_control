@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTabWidget,
                              QColorDialog, QTextEdit, QFontDialog)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QFont
+from graph.helpers.ui import HelperTab
 
 from graph.core.curve_data import LineStyle
 from graph.core.filters_instance_class import FilterCommand
@@ -36,8 +37,6 @@ def _status(session, message: str, timeout: int = 3000) -> None:
 # Инспектор
 # =====================================================================
 class Inspector(QWidget):
-    """Правая док-панель — единое место для просмотра и настройки выделенного объекта."""
-
     def __init__(self, session, parent=None):
         super().__init__(parent)
         self.session = session
@@ -51,7 +50,13 @@ class Inspector(QWidget):
         self.graph_settings = GraphSettingsWidget(session, self)
         self.curve_inspector = CurveInspectorWidget(session, self)
 
-        self.stack.addWidget(self.graph_settings)
+        # «График» и «Хелперы» — соседние вкладки, когда ничего не выделено
+        self.no_selection_tabs = QTabWidget()
+        self.no_selection_tabs.addTab(self.graph_settings, "График")
+        self.helper_tab = HelperTab(session.helper_manager, self)
+        self.no_selection_tabs.addTab(self.helper_tab, "Хелперы")
+
+        self.stack.addWidget(self.no_selection_tabs)
         self.stack.addWidget(self.curve_inspector)
 
         layout = QVBoxLayout(self)
@@ -61,22 +66,7 @@ class Inspector(QWidget):
         self.selection_model.selection_changed.connect(self._on_selection_changed)
         self._on_selection_changed(self.selection_model.current())
 
-    # --------------------------------------------------------------
-    # SelectionModel хранит CurvePresenter (см. CurvePresenter.on_plot_clicked).
-    # Приводим каждый элемент к фасаду linearData через graph_main.get_curves().
-    # --------------------------------------------------------------
-    def _to_facade(self, item):
-        if hasattr(item, "change_name"):  # уже фасад
-            return item
-        store = getattr(item, "store", None)
-        if store is None:
-            return None
-        rel = getattr(store, "rel_data", None)
-        root = getattr(rel, "root_name", None) if rel is not None else None
-        if root is None:
-            return None
-        return self.graph_main.get_curves().get(root)
-
+    # и в _on_selection_changed:
     def _on_selection_changed(self, selected):
         facades = []
         for s in selected:
@@ -88,8 +78,19 @@ class Inspector(QWidget):
             self.stack.setCurrentWidget(self.curve_inspector)
             self.curve_inspector.set_curves(facades)
         else:
-            self.stack.setCurrentWidget(self.graph_settings)
+            self.stack.setCurrentWidget(self.no_selection_tabs)
             self.graph_settings.update_settings()
+    def _to_facade(self, item):
+        if hasattr(item, "change_name"):  # уже фасад
+            return item
+        store = getattr(item, "store", None)
+        if store is None:
+            return None
+        rel = getattr(store, "rel_data", None)
+        root = getattr(rel, "root_name", None) if rel is not None else None
+        if root is None:
+            return None
+        return self.graph_main.get_curves().get(root)
 
     def reset_width(self):
         self.setMinimumWidth(240)
