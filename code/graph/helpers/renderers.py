@@ -28,7 +28,17 @@ def _center(manager):
         return 0.0, 0.0, 1.0, 1.0
 
 
-def _add_item(manager, item):
+def _add_item(manager, item, ignore_bounds: bool = False):
+    """Добавить item на график.
+
+    ``ignore_bounds=True`` — элемент не участвует в auto-range ViewBox.
+    Нужно для всех TextItem/LabelItem-подобных элементов, иначе они
+    «расталкивают» поле в auto-режиме (особенно band/threshold).
+    """
+    if ignore_bounds:
+        manager.graph_view.plotItem.addItem(item, ignoreBounds=True)
+        return item
+        
     manager.graph_view.addItem(item)
     return item
 
@@ -39,6 +49,33 @@ def _remove_item(manager, item):
     except Exception:
         pass
 
+
+class _DraggableText(pg.TextItem):
+    """TextItem, который можно таскать мышкой.
+
+    Пока пользователь не двигал — родитель переставляет его
+    автоматически (например, к середине курсоров). Как только
+    пользователь сделал drag — позиция фиксируется, а helper.params
+    хранит ``text_pos`` и ``_text_dragged``.
+    """
+
+    def __init__(self, *args, on_moved=None, **kwargs):
+        self._suppress_pos_change = True
+        self._on_moved = on_moved
+        super().__init__(*args, **kwargs)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+        self.setZValue(200)
+        self._suppress_pos_change = False
+
+    def itemChange(self, change, value):
+        if (change == QtWidgets.QGraphicsItem.ItemPositionHasChanged
+                and not self._suppress_pos_change and self._on_moved is not None):
+            try:
+                self._on_moved(self.pos())
+            except Exception:
+                pass
+        return super().itemChange(change, value)
 
 def create_helper(manager, helper):
     fn = _CREATORS.get(helper.helper_type)
@@ -67,33 +104,92 @@ def _create_cursors(manager, helper):
     show_dx = bool(p.get("show_dx", True))
     show_dy = bool(p.get("show_dy", False))
     show_dist = bool(p.get("show_dist", False))
+    show_line1_label = bool(p.get("show_line1_label", True))
+    show_line2_label = bool(p.get("show_line2_label", True))
 
     pen = pg.mkPen(color=color, width=width, style=_style(style))
-    label_opts = {"color": color, "position": 0.92}
+    # Всегда создаём метку на линии. Видимость переключаем отдельно через
+    # setVisible — это надёжнее, чем label=None: label=None в некоторых
+    # сборках pyqtgraph ломает layout/отрисовку InfiniteLine.
+    label_fmt = f"{{value:{fmt}}}"
+    lab_opts = {"color": color, "position": 0.92}
 
     if orient == "vertical":
         v1 = p.get("x1", cx - sx * 0.1)
         v2 = p.get("x2", cx + sx * 0.1)
         line1 = pg.InfiniteLine(pos=v1, angle=90, movable=True, pen=pen,
-                                label=f"{v1:{fmt}}", labelOpts=dict(label_opts))
+                                label=label_fmt, labelOpts=lab_opts)
         line2 = pg.InfiniteLine(pos=v2, angle=90, movable=True, pen=pen,
-                                label=f"{v2:{fmt}}", labelOpts=dict(label_opts))
+                                label=label_fmt, labelOpts=lab_opts)
     else:
         v1 = p.get("y1", cy - sy * 0.1)
         v2 = p.get("y2", cy + sy * 0.1)
         line1 = pg.InfiniteLine(pos=v1, angle=0, movable=True, pen=pen,
-                                label=f"{v1:{fmt}}", labelOpts=dict(label_opts))
+                                label=label_fmt, labelOpts=lab_opts)
         line2 = pg.InfiniteLine(pos=v2, angle=0, movable=True, pen=pen,
-                                label=f"{v2:{fmt}}", labelOpts=dict(label_opts))
+                                label=label_fmt, labelOpts=lab_opts)
 
-    text = pg.TextItem("", color=color, anchor=(0, 0))
-    items = [line1, line2, text]
-    for it in items:
-        _add_item(manager, it)
+    _add_item(manager, line1)
+    _add_item(manager, line2)
+
+    # Раздельная видимость «значения» (метки) на каждой линии
+    for line, visible in ((line1, show_line1_label), (line2, show_line2_label)):
+        try:
+            lbl = getattr(line, "label", None)
+            if lbl is not None:
+                lbl.setVisible(bool(visible))
+        except Exception:
+            logger.exception("cursors: set label visible failed")
+
+    # Безопасный диапазон view (для только что созданного графика vb.viewRange()
+    # может вернуть (0,1)/(0,1) или мусор — тогда откатываемся на дефолт).
+    def _safe_view():
+        try:
+            (xmin, xmax), (ymin, ymax) = manager.graph_view.plotItem.vb.viewRange()
+        except Exception:
+            return 0.0, 1.0, 0.0, 1.0
+        if not (xmax > xmin and ymax > ymin):
+            return 0.0, 1.0, 0.0, 1.0
+        return xmin, xmax, ymin, ymax
+
+    def _midpoint():
+        a, b = line1.value(), line2.value()
+        xmin, xmax, ymin, ymax = _safe_view()
+        if orient == "vertical":
+            # центр по X, чуть ниже верхней кромки, чтобы текст не «прилипал»
+            inset = (ymax - ymin) * 0.05
+            return ((a + b) / 2.0, ymax - inset)
+        # горизонтальная: правая кромка минус отступ, центр по Y
+        inset = (xmax - xmin) * 0.05
+        return (xmax - inset, (a + b) / 2.0)
+
+    def _on_text_moved(pos):
+        helper.params["text_pos"] = (pos.x(), pos.y())
+        helper.params["_text_dragged"] = True
+
+    # anchor: «верх-центр» для вертикали, «право-центр» для горизонтали —
+    # текст всегда раскрывается внутрь поля.
+    anchor = (0.5, 1.0) if orient == "vertical" else (1.0, 0.5)
+    text = _DraggableText("", color=color, anchor=anchor,
+                          on_moved=_on_text_moved)
+    _add_item(manager, text, ignore_bounds=True)
+
+    saved = p.get("text_pos")
+    if saved and p.get("_text_dragged", False):
+        text._suppress_pos_change = True
+        try:
+            text.setPos(saved[0], saved[1])
+        finally:
+            text._suppress_pos_change = False
+    else:
+        text._suppress_pos_change = True
+        try:
+            text.setPos(*_midpoint())
+        finally:
+            text._suppress_pos_change = False
 
     def update():
-        a = line1.value()
-        b = line2.value()
+        a, b = line1.value(), line2.value()
         y1 = float(p.get("y1", cy))
         y2 = float(p.get("y2", cy))
         x1 = float(p.get("x1", cx))
@@ -106,7 +202,6 @@ def _create_cursors(manager, helper):
                 parts.append(f"ΔY = {y2 - y1:{fmt}}")
             if show_dist:
                 parts.append(f"d = {np.hypot(b - a, y2 - y1):{fmt}}")
-            text.setPos(min(a, b), max(y1, y2))
         else:
             if show_dy:
                 parts.append(f"ΔY = {b - a:{fmt}}")
@@ -114,8 +209,13 @@ def _create_cursors(manager, helper):
                 parts.append(f"ΔX = {x2 - x1:{fmt}}")
             if show_dist:
                 parts.append(f"d = {np.hypot(x2 - x1, b - a):{fmt}}")
-            text.setPos(max(x1, x2), min(a, b))
         text.setText("\n".join(parts))
+        if not helper.params.get("_text_dragged", False):
+            text._suppress_pos_change = True
+            try:
+                text.setPos(*_midpoint())
+            finally:
+                text._suppress_pos_change = False
         if orient == "vertical":
             helper.params.update({"x1": a, "x2": b})
         else:
@@ -124,13 +224,13 @@ def _create_cursors(manager, helper):
     line1.sigPositionChanged.connect(update)
     line2.sigPositionChanged.connect(update)
     update()
-    return items
-
+    return [line1, line2, text]
 
 # ---------------------------------------------------------------------------
 # Линейка — 2 drag-handle (TargetItem) + соединяющая линия + подпись
 # ---------------------------------------------------------------------------
 def _create_ruler(manager, helper):
+    """Линейка: всегда показывает ΔX и ΔY (общая длина убрана)."""
     p = helper.params
     cx, cy, sx, sy = _center(manager)
     x1 = p.get("x1", cx - sx * 0.15)
@@ -141,9 +241,6 @@ def _create_ruler(manager, helper):
     width = int(p.get("width", 2))
     style = p.get("style", "solid")
     fmt = p.get("format", ".4g")
-    show_dist = bool(p.get("show_dist", True))
-    show_dx = bool(p.get("show_dx", False))
-    show_dy = bool(p.get("show_dy", False))
 
     pen = pg.mkPen(color=color, width=width, style=_style(style))
     line = pg.PlotDataItem([x1, x2], [y1, y2], pen=pen)
@@ -152,23 +249,17 @@ def _create_ruler(manager, helper):
     p1 = pg.TargetItem(pos=(x1, y1), size=8, symbol="o", pen=color, brush=color)
     p2 = pg.TargetItem(pos=(x2, y2), size=8, symbol="o", pen=color, brush=color)
 
-    items = [line, text, p1, p2]
-    for it in items:
-        _add_item(manager, it)
+    for it in (line, text, p1, p2):
+        _add_item(manager, it, ignore_bounds=(it is text))
 
     def update():
         a = p1.pos()
         b = p2.pos()
         line.setData([a.x(), b.x()], [a.y(), b.y()])
         text.setPos((a.x() + b.x()) / 2, (a.y() + b.y()) / 2)
-        parts = []
-        if show_dist:
-            parts.append(f"d = {np.hypot(b.x() - a.x(), b.y() - a.y()):{fmt}}")
-        if show_dx:
-            parts.append(f"ΔX = {b.x() - a.x():{fmt}}")
-        if show_dy:
-            parts.append(f"ΔY = {b.y() - a.y():{fmt}}")
-        text.setText("\n".join(parts))
+        text.setText(
+            f"ΔX = {b.x() - a.x():{fmt}}\nΔY = {b.y() - a.y():{fmt}}"
+        )
         helper.params.update({
             "x1": a.x(), "y1": a.y(), "x2": b.x(), "y2": b.y(),
         })
@@ -176,7 +267,7 @@ def _create_ruler(manager, helper):
     p1.sigPositionChanged.connect(update)
     p2.sigPositionChanged.connect(update)
     update()
-    return items
+    return [line, text, p1, p2]
 
 
 # ---------------------------------------------------------------------------
@@ -197,13 +288,13 @@ def _create_text(manager, helper):
         brush=(200, 200, 200, 80),
         label=text,
     )
+    # ВАЖНО: pyqtgraph LabelItem применяет цвет/размер через setText(**opts),
+    # а не setAttr — setAttr ставит опцию, но не перерисовывает LabelItem.
     try:
         lbl = anchor.label()
         if lbl is not None:
-            font = QtGui.QFont()
-            font.setPointSize(font_size)
-            lbl.setFont(font)
-            lbl.setAttr("color", color)
+            lbl.setFont(QtGui.QFont("Arial", font_size))
+            lbl.setText(text, color=color, size=f"{font_size}pt")
     except Exception:
         pass
 
@@ -239,19 +330,37 @@ def _create_arrow(manager, helper):
     color = p.get("color", "#ff00ff")
     width = int(p.get("width", 2))
     style = p.get("style", "solid")
+    # НОВОЕ:
+    text_size = int(p.get("text_size", 12))
+    arrow_size = int(p.get("arrow_size", 12))
+    arrow_style = p.get("arrow_style", "default")
+
+    _ARROW_STYLES = {
+        "default": {"tipAngle": 30, "baseAngle": 20},
+        "narrow":  {"tipAngle": 20, "baseAngle": 14},
+        "wide":    {"tipAngle": 45, "baseAngle": 30},
+        "sharp":   {"tipAngle": 15, "baseAngle": 10},
+    }
+    arrow_kw = dict(_ARROW_STYLES.get(arrow_style, _ARROW_STYLES["default"]))
+    arrow_kw["headLen"] = arrow_size
 
     pen = pg.mkPen(color=color, width=width, style=_style(style))
     line = pg.PlotDataItem([x1, x2], [y1, y2], pen=pen)
-    arrow = pg.ArrowItem(pos=(x2, y2), tipAngle=30, baseAngle=20,
-                         headLen=12, pen=color, brush=color)
+    arrow = pg.ArrowItem(pos=(x2, y2), pen=color, brush=color, **arrow_kw)
+
     text_item = pg.TextItem(text, color=color, anchor=(0, 0))
+    try:
+        text_item.setFont(QtGui.QFont("Arial", text_size))
+        text_item.setText(text, color=color, size=f"{text_size}pt")
+    except Exception:
+        pass
     text_item.setPos(x1, y1)
+
     p1 = pg.TargetItem(pos=(x1, y1), size=8, symbol="o", pen=color, brush=color)
     p2 = pg.TargetItem(pos=(x2, y2), size=8, symbol="o", pen=color, brush=color)
 
-    items = [line, arrow, text_item, p1, p2]
-    for it in items:
-        _add_item(manager, it)
+    for it in (line, arrow, text_item, p1, p2):
+        _add_item(manager, it, ignore_bounds=(it is text_item))
 
     def update():
         a = p1.pos()
@@ -271,7 +380,7 @@ def _create_arrow(manager, helper):
     p1.sigPositionChanged.connect(update)
     p2.sigPositionChanged.connect(update)
     update()
-    return items
+    return [line, arrow, text_item, p1, p2]
 
 
 # ---------------------------------------------------------------------------
@@ -286,9 +395,18 @@ def _create_pin(manager, helper):
     color = p.get("color", "#ff3366")
     size = int(p.get("size", 12))
     symbol = p.get("symbol", "o")
+    # НОВОЕ: отдельный размер шрифта
+    text_size = int(p.get("text_size", 12))
 
     item = pg.TargetItem(pos=(x, y), size=size, symbol=symbol,
                          pen=color, brush=color, label=text)
+    try:
+        lbl = item.label()
+        if lbl is not None:
+            lbl.setFont(QtGui.QFont("Arial", text_size))
+            lbl.setText(text, color=color, size=f"{text_size}pt")
+    except Exception:
+        pass
     _add_item(manager, item)
 
     def update():
@@ -303,6 +421,7 @@ def _create_pin(manager, helper):
     helper.params.update({
         "x": x, "y": y, "text": text,
         "color": color, "size": size, "symbol": symbol,
+        "text_size": text_size,
     })
     return [item]
 
@@ -322,9 +441,11 @@ def _create_vline(manager, helper):
 
     pen = pg.mkPen(color=color, width=width, style=_style(style))
     label = f"{{value:{fmt}}}" if show_label else None
-    line = pg.InfiniteLine(pos=x, angle=90, movable=True, pen=pen,
-                            label=label, labelOpts={"color": color})
-
+    line = pg.InfiniteLine(
+        pos=x, angle=90, movable=True, pen=pen,
+        label=label,
+        labelOpts={"color": color, "movable": True},  # <- перетаскивание значения
+    )
     _add_item(manager, line)
 
     def update():
@@ -345,9 +466,11 @@ def _create_hline(manager, helper):
 
     pen = pg.mkPen(color=color, width=width, style=_style(style))
     label = f"{{value:{fmt}}}" if show_label else None
-    line = pg.InfiniteLine(pos=y, angle=0, movable=True, pen=pen,
-                            label=label, labelOpts={"color": color})
-
+    line = pg.InfiniteLine(
+        pos=y, angle=0, movable=True, pen=pen,
+        label=label,
+        labelOpts={"color": color, "movable": True},  # <- перетаскивание значения
+    )
     _add_item(manager, line)
 
     def update():
@@ -368,28 +491,110 @@ def _create_threshold(manager, helper):
     style = p.get("style", "dash")
     prefix = p.get("prefix", "Порог")
     fmt = p.get("format", ".4g")
+    direction = p.get("direction", "off")
+    show_count = bool(p.get("show_count", False))
+    fill_alpha = float(p.get("fill_alpha", 0.15))
 
     pen = pg.mkPen(color=color, width=width, style=_style(style))
+    # Единственный визуальный текст — перемещаемая подпись ниже.
+    # Встроенный label у InfiniteLine НЕ создаём: иначе на графике
+    # одновременно висели два текста («значение» у линии и «Порог = …»).
     line = pg.InfiniteLine(pos=y, angle=0, movable=True, pen=pen)
     _add_item(manager, line)
 
-    label = pg.TextItem("", color=color, anchor=(0, 1))
-    _add_item(manager, label)
+    # Заливка опасной зоны
+    fill_items = []
+    if direction in ("above", "below", "both"):
+        c = pg.mkColor(color)
+        c.setAlpha(int(max(0.0, min(1.0, fill_alpha)) * 255))
+        brush = pg.mkBrush(c)
+        huge = 1e9
+        if direction in ("above", "both"):
+            reg = pg.LinearRegionItem(values=(y, huge), brush=brush,
+                                      movable=False, orientation="horizontal")
+            reg.setZValue(-10)
+            _add_item(manager, reg, ignore_bounds=True)
+            fill_items.append(("above", reg))
+        if direction in ("below", "both"):
+            reg = pg.LinearRegionItem(values=(-huge, y), brush=brush,
+                                      movable=False, orientation="horizontal")
+            reg.setZValue(-10)
+            _add_item(manager, reg, ignore_bounds=True)
+            fill_items.append(("below", reg))
+
+    # Единственная подпись: «Порог = …» + опц. счётчики точек.
+    # Свисает вниз от верхней кромки поля, тянется мышкой.
+    def _safe_view():
+        try:
+            (xmin, xmax), (ymin, ymax) = manager.graph_view.plotItem.vb.viewRange()
+        except Exception:
+            return 0.0, 1.0, 0.0, 1.0
+        if not (xmax > xmin and ymax > ymin):
+            return 0.0, 1.0, 0.0, 1.0
+        return xmin, xmax, ymin, ymax
+
+    def _default_pos():
+        v = line.value()
+        xmin, xmax, _, _ = _safe_view()
+        inset = (xmax - xmin) * 0.02
+        return (xmin + inset, v)
+
+    def _on_text_moved(pos):
+        helper.params["text_pos"] = (pos.x(), pos.y())
+        helper.params["_text_dragged"] = True
+
+    label = _DraggableText("", color=color, anchor=(0.0, 1.0),
+                           on_moved=_on_text_moved)
+    _add_item(manager, label, ignore_bounds=True)
+
+    saved = p.get("text_pos")
+    if saved and p.get("_text_dragged", False):
+        label._suppress_pos_change = True
+        try:
+            label.setPos(saved[0], saved[1])
+        finally:
+            label._suppress_pos_change = False
+    else:
+        label._suppress_pos_change = True
+        try:
+            label.setPos(*_default_pos())
+        finally:
+            label._suppress_pos_change = False
 
     def update():
         v = line.value()
-        label.setText(f"{prefix} = {v:{fmt}}")
-        try:
-            rx, _ = manager.graph_view.plotItem.vb.viewRange()
-            label.setPos(rx[0], v)
-        except Exception:
-            pass
+        text = f"{prefix} = {v:{fmt}}"
+        if show_count:
+            n_above = n_below = 0
+            for item in manager.graph_view.plotItem.listDataItems():
+                try:
+                    data = item.getData()
+                    if data is None or data[1] is None:
+                        continue
+                    ys = np.asarray(data[1], dtype=float)
+                    ys = ys[~np.isnan(ys)]
+                    n_above += int(np.sum(ys > v))
+                    n_below += int(np.sum(ys < v))
+                except Exception:
+                    continue
+            text += f"\n▲ {n_above}  ▼ {n_below}"
+        label.setText(text)
+        for kind, reg in fill_items:
+            if kind == "above":
+                reg.setRegion([v, 1e9])
+            else:
+                reg.setRegion([-1e9, v])
+        if not helper.params.get("_text_dragged", False):
+            label._suppress_pos_change = True
+            try:
+                label.setPos(*_default_pos())
+            finally:
+                label._suppress_pos_change = False
         helper.params.update({"y": v})
 
     line.sigPositionChanged.connect(update)
     update()
-    return [line, label]
-
+    return [line, label] + [reg for _, reg in fill_items]
 
 # ---------------------------------------------------------------------------
 # Полоса — LinearRegionItem, ориентация настраивается
@@ -403,44 +608,84 @@ def _create_band(manager, helper):
     show_label = bool(p.get("show_label", True))
     fmt = p.get("format", ".4g")
 
+    # Для горизонтальной полосы — y1/y2, а не x1/x2.
     if orient == "vertical":
         v1 = p.get("x1", cx - sx * 0.1)
         v2 = p.get("x2", cx + sx * 0.1)
     else:
-        v1 = p.get("x1", cy - sy * 0.1)
-        v2 = p.get("x2", cy + sy * 0.1)
+        v1 = p.get("y1", cy - sy * 0.1)
+        v2 = p.get("y2", cy + sy * 0.1)
 
     c = pg.mkColor(color)
-    c.setAlpha(int(alpha * 255))
+    c.setAlpha(int(max(0.0, min(1.0, alpha)) * 255))
     brush = pg.mkBrush(c)
 
-    region = pg.LinearRegionItem(values=(v1, v2), brush=brush, movable=True,
-                                 orientation="vertical" if orient == "vertical" else "horizontal")
-    _add_item(manager, region)
+    region = pg.LinearRegionItem(
+        values=(v1, v2), brush=brush, movable=True,
+        orientation="vertical" if orient == "vertical" else "horizontal",
+    )
+    _add_item(manager, region, ignore_bounds=True)
 
-    text = pg.TextItem("", color=color, anchor=(0, 1))
-    _add_item(manager, text)
+    # anchor: текст «свисает» внутрь поля от верхней/правой кромки.
+    anchor = (0.5, 1.0) if orient == "vertical" else (1.0, 0.5)
+
+    def _on_text_moved(pos):
+        helper.params["text_pos"] = (pos.x(), pos.y())
+        helper.params["_text_dragged"] = True
+
+    text = _DraggableText("", color=color, anchor=anchor,
+                          on_moved=_on_text_moved)
+    _add_item(manager, text, ignore_bounds=True)
+
+    def _safe_view():
+        try:
+            (xmin, xmax), (ymin, ymax) = manager.graph_view.plotItem.vb.viewRange()
+        except Exception:
+            return 0.0, 1.0, 0.0, 1.0
+        if not (xmax > xmin and ymax > ymin):
+            return 0.0, 1.0, 0.0, 1.0
+        return xmin, xmax, ymin, ymax
+
+    def _default_pos():
+        a, b = region.getRegion()
+        xmin, xmax, ymin, ymax = _safe_view()
+        if orient == "vertical":
+            inset = (ymax - ymin) * 0.05
+            return ((a + b) / 2.0, ymax - inset)
+        inset = (xmax - xmin) * 0.05
+        return (xmax - inset, (a + b) / 2.0)
+
+    saved = p.get("text_pos")
+    if saved and p.get("_text_dragged", False):
+        text._suppress_pos_change = True
+        try:
+            text.setPos(saved[0], saved[1])
+        finally:
+            text._suppress_pos_change = False
+    else:
+        text._suppress_pos_change = True
+        try:
+            text.setPos(*_default_pos())
+        finally:
+            text._suppress_pos_change = False
 
     def update():
         a, b = region.getRegion()
-        if show_label:
-            text.setText(f"Δ = {b - a:{fmt}}")
+        text.setText(f"Δ = {b - a:{fmt}}" if show_label else "")
+        if not helper.params.get("_text_dragged", False):
+            text._suppress_pos_change = True
+            try:
+                text.setPos(*_default_pos())
+            finally:
+                text._suppress_pos_change = False
+        if orient == "vertical":
+            helper.params.update({"x1": a, "x2": b})
         else:
-            text.setText("")
-        try:
-            rx, ry = manager.graph_view.plotItem.vb.viewRange()
-            if orient == "vertical":
-                text.setPos(a, ry[1])
-            else:
-                text.setPos(rx[0], a)
-        except Exception:
-            pass
-        helper.params.update({"x1": a, "x2": b})
+            helper.params.update({"y1": a, "y2": b})
 
     region.sigRegionChanged.connect(update)
     update()
     return [region, text]
-
 
 _CREATORS = {
     "cursors":   _create_cursors,

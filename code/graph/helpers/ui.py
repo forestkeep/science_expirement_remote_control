@@ -164,10 +164,46 @@ class HelperTab(QWidget):
                     self.manager.update_params(h.id, {"text": e.text()}))
             f.addRow("Текст:", le)
 
+        if t == "arrow":
+            ts = QSpinBox()
+            ts.setRange(6, 72)
+            ts.setValue(int(helper.params.get("text_size", 12)))
+            ts.setToolTip("Размер шрифта текста выноски")
+            ts.valueChanged.connect(
+                lambda v, hid=helper.id:
+                    self.manager.update_params(hid, {"text_size": int(v)}))
+            f.addRow("Размер шрифта:", ts)
+
+            ah = QSpinBox()
+            ah.setRange(4, 60)
+            ah.setValue(int(helper.params.get("arrow_size", 12)))
+            ah.setToolTip("Длина наконечника стрелки")
+            ah.valueChanged.connect(
+                lambda v, hid=helper.id:
+                    self.manager.update_params(hid, {"arrow_size": int(v)}))
+            f.addRow("Размер стрелки:", ah)
+
+            arr_style = QComboBox()
+            for key, label in (
+                ("default", "Обычная"),
+                ("narrow",  "Узкая"),
+                ("wide",    "Широкая"),
+                ("sharp",   "Острая"),
+            ):
+                arr_style.addItem(label, key)
+            idx = arr_style.findData(helper.params.get("arrow_style", "default"))
+            if idx >= 0:
+                arr_style.setCurrentIndex(idx)
+            arr_style.currentIndexChanged.connect(
+                lambda _i, hid=helper.id, sw=arr_style:
+                    self.manager.update_params(hid, {"arrow_style": sw.currentData()}))
+            f.addRow("Стиль стрелки:", arr_style)
+
         if t == "text":
             fs = QSpinBox()
             fs.setRange(6, 72)
             fs.setValue(int(helper.params.get("font_size", 12)))
+            fs.setToolTip("Размер шрифта подписи")
             fs.valueChanged.connect(
                 lambda v, hid=helper.id:
                     self.manager.update_params(hid, {"font_size": int(v)}))
@@ -181,6 +217,16 @@ class HelperTab(QWidget):
                 lambda v, hid=helper.id:
                     self.manager.update_params(hid, {"size": int(v)}))
             f.addRow("Размер маркера:", size)
+
+            # НОВОЕ: отдельный размер шрифта
+            ts = QSpinBox()
+            ts.setRange(6, 72)
+            ts.setValue(int(helper.params.get("text_size", 12)))
+            ts.setToolTip("Размер шрифта подписи пина")
+            ts.valueChanged.connect(
+                lambda v, hid=helper.id:
+                    self.manager.update_params(hid, {"text_size": int(v)}))
+            f.addRow("Размер шрифта:", ts)
 
             sym = QComboBox()
             sym.addItems(_SYMBOLS)
@@ -198,6 +244,38 @@ class HelperTab(QWidget):
                 lambda h=helper, e=prefix:
                     self.manager.update_params(h.id, {"prefix": e.text()}))
             f.addRow("Подпись:", prefix)
+
+            direction = QComboBox()
+            for key, label in (
+                ("off",   "Без заливки"),
+                ("above", "Залить выше порога"),
+                ("below", "Залить ниже порога"),
+                ("both",  "Залить обе зоны"),
+            ):
+                direction.addItem(label, key)
+            idx = direction.findData(helper.params.get("direction", "off"))
+            if idx >= 0:
+                direction.setCurrentIndex(idx)
+            direction.currentIndexChanged.connect(
+                lambda _i, hid=helper.id, sw=direction:
+                    self.manager.update_params(hid, {"direction": sw.currentData()}))
+            f.addRow("Заливка:", direction)
+
+            alpha = QDoubleSpinBox()
+            alpha.setRange(0.0, 1.0)
+            alpha.setSingleStep(0.05)
+            alpha.setValue(float(helper.params.get("fill_alpha", 0.15)))
+            alpha.valueChanged.connect(
+                lambda v, hid=helper.id:
+                    self.manager.update_params(hid, {"fill_alpha": float(v)}))
+            f.addRow("Прозрачность заливки:", alpha)
+
+            cnt = QCheckBox("Показывать число точек ▲/▼")
+            cnt.setChecked(bool(helper.params.get("show_count", False)))
+            cnt.stateChanged.connect(
+                lambda st, hid=helper.id:
+                    self.manager.update_params(hid, {"show_count": st != 0}))
+            f.addRow(cnt)
 
         if t in ("cursors", "band"):
             orient = QComboBox()
@@ -221,6 +299,15 @@ class HelperTab(QWidget):
                     self.manager.update_params(hid, {"alpha": float(v)}))
             f.addRow("Прозрачность:", alpha)
 
+            reset_pos = QPushButton("Сбросить позицию значения")
+            reset_pos.clicked.connect(
+                lambda _=False, hid=helper.id:
+                    self.manager.update_params(hid, {
+                        "_text_dragged": False,
+                        "text_pos": None,
+                    }))
+            f.addRow(reset_pos)
+
         # Формат чисел
         if t in ("cursors", "ruler", "vline", "hline", "threshold", "band"):
             fmt = QLineEdit(str(helper.params.get("format", ".4g")))
@@ -241,9 +328,20 @@ class HelperTab(QWidget):
 
         # Специфика курсоров/линейки
         if t == "cursors":
+            # НОВОЕ: раздельная видимость значения на каждой линии
             for key, label, default in (
-                ("show_dx", "Показывать ΔX", True),
-                ("show_dy", "Показывать ΔY", False),
+                ("show_line1_label", "Показывать значение линии 1", True),
+                ("show_line2_label", "Показывать значение линии 2", True),
+            ):
+                cb = QCheckBox(label)
+                cb.setChecked(bool(helper.params.get(key, default)))
+                cb.stateChanged.connect(
+                    lambda st, hid=helper.id, k=key:
+                        self.manager.update_params(hid, {k: st != 0}))
+                f.addRow(cb)
+            for key, label, default in (
+                ("show_dx",   "Показывать ΔX", True),
+                ("show_dy",   "Показывать ΔY", False),
                 ("show_dist", "Показывать расстояние", False),
             ):
                 cb = QCheckBox(label)
@@ -252,17 +350,24 @@ class HelperTab(QWidget):
                     lambda st, hid=helper.id, k=key:
                         self.manager.update_params(hid, {k: st != 0}))
                 f.addRow(cb)
+
+            # Кнопка «сбросить позицию подписи Δ» — если пользователь её утащил
+            reset_pos = QPushButton("Сбросить позицию Δ")
+            reset_pos.clicked.connect(
+                lambda _=False, hid=helper.id:
+                    self.manager.update_params(hid, {
+                        "_text_dragged": False,
+                        "text_pos": None,
+                    }))
+            f.addRow(reset_pos)
+
         elif t == "ruler":
-            for key, label, default in (
-                ("show_dist", "Показывать расстояние", True),
-                ("show_dx", "Показывать ΔX", False),
-                ("show_dy", "Показывать ΔY", False),
-            ):
-                cb = QCheckBox(label)
-                cb.setChecked(bool(helper.params.get(key, default)))
-                cb.stateChanged.connect(
-                    lambda st, hid=helper.id, k=key:
-                        self.manager.update_params(hid, {k: st != 0}))
-                f.addRow(cb)
+            # Общая длина убрана: линейка всегда показывает ΔX и ΔY.
+            # Опции видимости компонентов сохранены для обратной совместимости,
+            # но по факту рендерер всегда рисует оба.
+            info = QLabel("Показывает ΔX и ΔY одновременно")
+            info.setStyleSheet("color: #888;")
+            info.setWordWrap(True)
+            f.addRow(info)
 
         return g
