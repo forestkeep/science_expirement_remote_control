@@ -12,7 +12,7 @@
 import logging
 from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QFontMetrics
-from PyQt5.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QPushButton, QWidget
+from PyQt5.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QPushButton, QWidget, QSplitter
 from graph.utils.colors import GColors
 from graph.core.curve_data import linearData, LineStyle
 from graph.core.dataManager import relationData
@@ -160,9 +160,21 @@ class manageGraph(QObject):
         
         self.buttons_widget = QWidget()
         self.buttons_widget.setLayout(self.buttons_layout)
+
+        # Вертикальный сплиттер: секция выбора параметров над графиком.
+        # Позволяет пользователю перетаскивать границу и сворачивать
+        # панель выбора, если она не нужна в данный момент.
+        self.graph_splitter = QSplitter(Qt.Vertical)
+        self.graph_splitter.setChildrenCollapsible(True)
         if self.select_win is not None:
-            self.tab1Layout.addWidget( self.select_win )
-        self.tab1Layout.addWidget(self.graphView)
+            self.graph_splitter.addWidget(self.select_win)
+        self.graph_splitter.addWidget(self.graphView)
+        if self.select_win is not None:
+            self.graph_splitter.setStretchFactor(0, 0)   # верх не растягивается
+        self.graph_splitter.setStretchFactor(1, 1)        # график растягивается
+        self.graph_splitter.setSizes([220, 400])
+
+        self.tab1Layout.addWidget(self.graph_splitter)
         self.tab1Layout.addWidget(self.buttons_widget)
         self.page.setLayout(self.tab1Layout)
 

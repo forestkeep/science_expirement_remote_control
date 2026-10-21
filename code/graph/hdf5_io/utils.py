@@ -156,7 +156,15 @@ def settings_to_dict(settings: GraphFieldSettings) -> Dict[str, Any]:
         'legend_font': settings.legend_font,
         'antialiasing': settings.antialiasing,
         'is_second_axis_enabled': settings.is_second_axis_enabled,
-        "is_multiple_selection_enabled" : settings.is_multiple_selection_enabled    
+        # legacy-поле: продолжаем писать Y1, чтобы старые файлы читались
+        'is_multiple_selection_enabled': settings.is_multiple_selection_enabled,
+        'is_multiple_y1_enabled': getattr(
+            settings, 'is_multiple_y1_enabled',
+            settings.is_multiple_selection_enabled,
+        ),
+        'is_multiple_y2_enabled': getattr(
+            settings, 'is_multiple_y2_enabled', False,
+        ),
     }
 
 def string_to_qfont(font_string: str):
@@ -256,7 +264,18 @@ def dict_to_graph_field_settings(data_dict: Dict[str, Any]) -> GraphFieldSetting
     settings.legend_font = data_dict.get('legend_font', 'Arial,10,-1,5,50,0,0,0,0,0')
     settings.antialiasing = data_dict.get('antialiasing', True)
     settings.is_second_axis_enabled = data_dict.get('is_second_axis_enabled', False)
-    settings.is_multiple_selection_enabled = data_dict.get('is_multiple_selection_enabled', False)
+    # legacy-поле читаем всегда — от него зависит fallback для новых полей
+    settings.is_multiple_selection_enabled = data_dict.get(
+        'is_multiple_selection_enabled', False
+    )
+    settings.is_multiple_y1_enabled = bool(data_dict.get(
+        'is_multiple_y1_enabled',
+        settings.is_multiple_selection_enabled,     # старый файл → Y1
+    ))
+    settings.is_multiple_y2_enabled = bool(data_dict.get(
+        'is_multiple_y2_enabled',
+        False,                                      # старый файл → Y2 single
+    ))
     
     # Обрабатываем common_axis_style
     common_axis_style_data = data_dict.get('common_axis_style', {})

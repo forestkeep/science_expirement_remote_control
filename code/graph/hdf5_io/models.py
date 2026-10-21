@@ -160,7 +160,9 @@ class GraphFieldSettings:
     
     antialiasing: bool = True
     is_second_axis_enabled: bool = False
-    is_multiple_selection_enabled: bool = False
+    is_multiple_selection_enabled: bool = False   # legacy, = Y1
+    is_multiple_y1_enabled: bool = False
+    is_multiple_y2_enabled: bool = False
     
     def __post_init__(self):
         """Инициализация осей по умолчанию"""

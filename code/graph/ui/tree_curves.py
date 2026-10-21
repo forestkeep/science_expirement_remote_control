@@ -339,7 +339,7 @@ class treeWin(QWidget):
         self._curve_id_counter = 0  # счётчик уникальных ID
 
         self.buttons = []
-        button = QPushButton("+")
+        button = QPushButton("Создать кривую", self)
         button.setMaximumSize(30, 30)
         button.setMinimumSize(0, 0)
         button_layout.addWidget(button)

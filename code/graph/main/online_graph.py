@@ -161,8 +161,6 @@ class GraphWindow(QMainWindow):
 
         self.rename_param_action = QAction(
             QApplication.translate('graph', "Изменить имена параметров"), self)
-        self.read_all_statistics_action = QAction(
-            QApplication.translate('graph', "Показать статистику"), self)
         self.log_path_open = QtWidgets.QAction(
             QApplication.translate('graph', "Открыть лог файл"), self)
 
@@ -499,8 +497,11 @@ class GraphSession(QWidget):
         self.undo_manager.push(AddInfiniteLineCommand(target, line))
 
     def _on_session_stopped(self):
-        """При остановке эксперимента показываем инспектор (режим REVIEW)."""
+        """При остановке эксперимента переходим в REVIEW-режим."""
         self.inspector.setVisible(True)
+        # Скрыть секцию видимого окна точек: в REVIEW данные не растут.
+        if getattr(self, "select_controller", None) is not None:
+            self.select_controller.set_live_mode(False)
 
     def _on_analysis_item_removed(self, artifact_id: str) -> None:
         self.analysis_controller.remove_artifact(artifact_id)
@@ -582,7 +583,13 @@ class GraphSession(QWidget):
         fs.graph_field = extract_plot_widget_settings(self.graph_main.graphView)
         fs.oscilloscope_field = extract_plot_widget_settings(self.graph_wave.graphView)
         fs.graph_field.is_second_axis_enabled = self.select_win.second_check_box.isChecked()
-        fs.graph_field.is_multiple_selection_enabled = self.select_win.check_miltiple.isChecked()
+
+        y1_mult = self.select_win.y1_group.multiple_check.isChecked()
+        y2_mult = self.select_win.y2_group.multiple_check.isChecked()
+        fs.graph_field.is_multiple_y1_enabled = y1_mult
+        fs.graph_field.is_multiple_y2_enabled = y2_mult
+        # legacy: пишем Y1, чтобы старый софт видел хоть что-то осмысленное
+        fs.graph_field.is_multiple_selection_enabled = y1_mult
         return fs
 
     def apply_field_settings(self, settings: FieldSettings) -> None:
@@ -591,7 +598,14 @@ class GraphSession(QWidget):
         adapter.apply_graph_settings(self.graph_main.graphView, settings)
         # аналогично для осциллограмм, если нужно
         self.select_win.set_second_check_box(settings.graph_field.is_second_axis_enabled)
-        self.select_win.set_multiple_mode(settings.graph_field.is_multiple_selection_enabled)
+
+        gf = settings.graph_field
+        y1_mult = getattr(
+            gf, 'is_multiple_y1_enabled', gf.is_multiple_selection_enabled
+        )
+        y2_mult = getattr(gf, 'is_multiple_y2_enabled', False)
+        self.select_win.set_multiple_mode_y1(y1_mult)
+        self.select_win.set_multiple_mode_y2(y2_mult)
 
 class running_exp_test(QWidget):
 
@@ -683,7 +697,6 @@ class sessionController():
         self.graphics_win.log_path_open.triggered.connect(open_log_file)
         self.graphics_win.save_action_as.triggered.connect(self.push_button_save_graph_as)
         self.graphics_win.rename_param_action.triggered.connect(self.show_alias_dialog)
-        self.graphics_win.read_all_statistics_action.triggered.connect(self.read_statistics)
 
         self.way_to_save_file = None
         self.way_to_save_excel = None
@@ -788,54 +801,6 @@ class sessionController():
         # available_params = self.get_name_params()
         dialog = ParameterAliasDialog(self.alias_manager, self.graphics_win)
         dialog.exec_()
-
-    def _action_reset_curve_name(self):
-        """Сбросить пользовательские имена у выделенных кривых в текущей сессии."""
-        session = self._current_session()
-        if session is None or not hasattr(session, "selection_model"):
-            logger.warning(f"_action_reset_curve_name: no current session {session} or no selection model")
-            return
-        for curve in session.selection_model.current():
-            try:
-                curve.reset_name()
-            except Exception as e:
-                logger.warning(f"_action_reset_curve_name failed for {curve}: {e}")
-
-    def read_statistics(self, group_by_param=True):
-        for session in self.graph_sessions.values():
-            for curve in session.graph_main.get_curves().values():
-                try: curve.ensure_stats_fresh()
-                except Exception: logger.exception("flush stats failed")
-        param_data = {}
-        for session in self.graph_sessions.values():
-            session_data = session.data_manager.get_all_data()
-            main_data = session_data['main'].data
-            for name, value_data in main_data.items():
-                values = value_data.par_val
-                if values is None:
-                    continue
-                alias = self.alias_manager.get_alias(name)
-                param_data.setdefault(alias, []).append({
-                    'session_name': session.session_name,
-                    'mean': float(np.mean(values)),
-                    'std': float(np.std(values)),
-                    'median': float(np.median(values)),
-                })
-
-        def sort_key(item):
-            name = item['session_name']
-            parts = name.split()
-            # пробуем числовую сортировку, иначе — строковую
-            try:
-                return (0, tuple(int(p) for p in parts))
-            except (ValueError, TypeError):
-                return (1, name)
-
-        for param_name, sessions_data in param_data.items():
-            print(f"Parameter: {param_name}")
-            for data in sorted(sessions_data, key=sort_key):
-                print(f"{data['session_name']}, {data['mean']}, {data['std']}")
-            print()
 
     def push_button_save_graph(self):
         """Быстрое сохранение проекта – всегда в HDF5, независимо от последнего Save As."""
@@ -1020,6 +985,15 @@ class sessionController():
             new_session_graph.inspector.setVisible(False)
         else:
             new_session_graph.inspector.setVisible(True)
+
+        # «Отображение точек» показываем только в LIVE-режиме.
+        # В simple_mode (окно сравнения) select_controller отсутствует —
+        # защищаемся через hasattr, хотя __create_session для него и не
+        # вызывается.
+        if hasattr(new_session_graph, "select_controller"):
+            new_session_graph.select_controller.set_live_mode(
+                bool(is_experiment_running)
+            )
 
         self.graph_sessions[session_id] = new_session_graph
         self.graphics_win.stack.addWidget(new_session_graph)
