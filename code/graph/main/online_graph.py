@@ -34,7 +34,10 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from graph.ui.empty_state import EmptyStateWidget
+from graph.main.demo_session import LiveDemoController, StaticDemoLoader
 from graph.helpers import HelperManager, HelperToolbar, HelperTab
+from graph.publication.ui.publication_window import PublicationWindow
 
 # --- Локальные модули проекта ---
 from functions import open_log_file
@@ -87,11 +90,12 @@ class GraphWindow(QMainWindow):
     graph_win_close_signal = pyqtSignal(int)
 
     def __init__(self, session_selector, buttons_controller=None, version=None,
-                 action_registry=None):
+                 action_registry=None, session_controller=None):
         super().__init__()
         self.setWindowTitle(("Online Graph " + version) if version else "Online Graph")
         self.action_registry = action_registry
         self.buttons_controller = buttons_controller
+        self.session_controller = session_controller 
 
         self._apply_adaptive_geometry()
         self.notification = None
@@ -156,7 +160,7 @@ class GraphWindow(QMainWindow):
     def __add_menu(self):
         menubar = self.menuBar()
 
-        file_menu = menubar.addMenu(QApplication.translate('graph', "Файл"))
+        self.file_menu = menubar.addMenu(QApplication.translate('graph', "Файл"))
         self.edit_menu = menubar.addMenu(QApplication.translate('graph', "Правка"))
         data_menu = menubar.addMenu(QApplication.translate('graph', "Данные"))
 
@@ -172,14 +176,14 @@ class GraphWindow(QMainWindow):
         self.load_action = QAction(QApplication.translate('graph', "Загрузить"), self)
         self.load_action.setShortcut("Ctrl + O")
 
-        file_menu.addAction(self.save_action)
-        file_menu.addAction(self.save_action_as)
-        file_menu.addAction(self.load_action)
-        file_menu.addAction(self.log_path_open)
+        self.file_menu.addAction(self.save_action)
+        self.file_menu.addAction(self.save_action_as)
+        self.file_menu.addAction(self.load_action)
+        self.file_menu.addAction(self.log_path_open)
 
         # --- Импорт данных и осциллограмм перенесён в меню «Файл» ---
         if self.buttons_controller is not None:
-            file_menu.addSeparator()
+            self.file_menu.addSeparator()
 
             self.import_data_action = QAction(
                 QApplication.translate('graph', "Импортировать данные"), self
@@ -187,7 +191,7 @@ class GraphWindow(QMainWindow):
             self.import_data_action.triggered.connect(
                 self.buttons_controller.handle_import_data
             )
-            file_menu.addAction(self.import_data_action)
+            self.file_menu.addAction(self.import_data_action)
 
             self.import_osc_action = QAction(
                 QApplication.translate('graph', "Импортировать осциллограммы"), self
@@ -195,7 +199,28 @@ class GraphWindow(QMainWindow):
             self.import_osc_action.triggered.connect(
                 self.buttons_controller.handle_import_osc
             )
-            file_menu.addAction(self.import_osc_action)
+            self.file_menu.addAction(self.import_osc_action)
+
+        if self.session_controller is not None:
+            self.file_menu.addSeparator()
+
+            self.live_demo_action = QAction(
+                QApplication.translate('graph', "Демо: live-сессия"), self)
+            self.live_demo_action.setToolTip(QApplication.translate(
+                'graph',
+                "2 прибора × 3 канала, по 100 точек каждую секунду"))
+            self.live_demo_action.triggered.connect(
+                self.session_controller.start_live_demo_session)
+            self.file_menu.addAction(self.live_demo_action)
+
+            self.static_demo_action = QAction(
+                QApplication.translate('graph', "Демо: готовые данные"), self)
+            self.static_demo_action.setToolTip(QApplication.translate(
+                'graph',
+                "2 прибора × 3 канала, 10 000 точек сразу"))
+            self.static_demo_action.triggered.connect(
+                self.session_controller.load_static_demo_session)
+            self.file_menu.addAction(self.static_demo_action)
 
         data_menu.addAction(self.rename_param_action)
 
@@ -653,6 +678,9 @@ class sessionController():
         self.alias_manager = ParameterAliasManager()
         self.action_registry = ActionRegistry(parent=self.alias_manager)
 
+        self.pub_win = PublicationWindow(self)   # self — sessionController
+        self.pub_win.show()
+
         # --- undo/redo через реестр ---
         self.undo_action = self.action_registry.register(
             "edit.undo",
@@ -694,6 +722,7 @@ class sessionController():
             self.buttons_controller,
             version=self.version_app,
             action_registry=self.action_registry,
+            session_controller=self
         )
         self.graphics_win.setStatusBar(self.status_bar)
         self.graphics_win.graph_win_close_signal.connect(self.close_graph_window)
@@ -703,6 +732,19 @@ class sessionController():
         self.graphics_win.save_action_as.triggered.connect(self.push_button_save_graph_as)
         self.graphics_win.rename_param_action.triggered.connect(self.show_alias_dialog)
 
+        # --- Empty state: показывается, когда в проекте нет ни одной сессии ---
+        self._empty_state_page = EmptyStateWidget(self.graphics_win)
+        self.graphics_win.stack.addWidget(self._empty_state_page)
+
+        self._empty_state_page.load_hdf5_requested.connect(
+            self.push_button_open_graph)
+        self._empty_state_page.import_excel_requested.connect(
+            self.buttons_controller.handle_import_data)
+        self._empty_state_page.start_live_demo_requested.connect(
+            self.start_live_demo_session)
+        self._empty_state_page.start_static_demo_requested.connect(
+            self.load_static_demo_session)
+
         self.way_to_save_file = None
         self.way_to_save_excel = None
         self.way_to_save_project = None
@@ -711,10 +753,13 @@ class sessionController():
         self.compare_graph = None
         self.animation_win = None
         self.dot_counter = 0
+        self._live_demo = None
 
         self._update_undo_actions()
 
         self.status_bar.set_permanent("Готово")
+
+        self._refresh_empty_state()
 
     # ------------------------------------------------------------------
     # Undo/redo: центральные слоты
@@ -728,6 +773,16 @@ class sessionController():
             if session is current_widget:
                 return session
         return None
+
+    def _refresh_empty_state(self) -> None:
+        """Показать заглушку с кнопками, когда сессий нет вообще,
+        и переключиться на первую сессию, если она появилась."""
+        if not self.graph_sessions:
+            self.graphics_win.stack.setCurrentWidget(self._empty_state_page)
+            return
+        if self.graphics_win.stack.currentWidget() is self._empty_state_page:
+            first_session = next(iter(self.graph_sessions.values()))
+            self.graphics_win.stack.setCurrentWidget(first_session)
 
     def _undo_current_session(self):
         session = self._current_session()
@@ -951,6 +1006,26 @@ class sessionController():
     def show(self):
         self.graphics_win.show()
 
+    def start_live_demo_session(self):
+        """Live-демо: 2 прибора × 3 канала × 100 точек/с."""
+        if self._live_demo is not None:
+            self._live_demo.stop()
+        self._live_demo = LiveDemoController(self)
+        if not self._live_demo.start():
+            self._live_demo = None
+            self.status_bar.set_status(
+                QApplication.translate("graph", "Не удалось запустить live-демо"), 5000)
+
+    def load_static_demo_session(self):
+        """Демо: 10 000 точек сразу, обычная остановленная сессия."""
+        sid = StaticDemoLoader(self).load()
+        if sid is None:
+            self.status_bar.set_status(
+                QApplication.translate("graph", "Не удалось загрузить демо-данные"), 5000)
+        else:
+            self.status_bar.set_status(
+                QApplication.translate("graph", "Демо-данные загружены"), 3000)
+
     def stop_session_running(self, session_id):
         if self.graph_sessions.get(session_id):
             self.graph_sessions[session_id].data_manager.stop_session_running()
@@ -1005,6 +1080,8 @@ class sessionController():
 
         # подключаем сигнал изменения истории — обновит состояние undo/redo-кнопок
         new_session_graph.undo_manager.state_changed.connect(self._update_undo_actions)
+
+        self._refresh_empty_state()
 
         return True
 
@@ -1065,6 +1142,8 @@ class sessionController():
                 if s is new_cur:
                     self.change_session(sid)
                     break
+
+        self._refresh_empty_state()
 
     def _session_renamed(self, session_id: str, new_session_name: str):
         logger.info(f"_session_renamed {session_id=} {new_session_name=}")

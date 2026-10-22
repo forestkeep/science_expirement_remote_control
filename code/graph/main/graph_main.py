@@ -12,7 +12,10 @@
 import logging
 from PyQt5.QtCore import QObject, Qt, pyqtSignal
 from PyQt5.QtGui import QFontMetrics
-from PyQt5.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QPushButton, QWidget, QSplitter
+from PyQt5.QtWidgets import (
+    QApplication, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit,
+    QPushButton, QWidget, QSplitter, QStackedWidget
+)
 from graph.utils.colors import GColors
 from graph.core.curve_data import linearData, LineStyle
 from graph.core.dataManager import relationData
