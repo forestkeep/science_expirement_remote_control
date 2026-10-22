@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "id": "fig_demo_001",
+  "column_preset_id": "nature_double",
+  "width_mm": 183.0,
+  "height_mm": 120.0,
+  "journal_preset_id": "nature_double",
+  "style_profile_id": "default",
+  "lab_profile_id": "",
+  "panels": [
+    {
+      "id": "pn_0001",
+      "x_mm": 5.0, "y_mm": 5.0, "w_mm": 85.0, "h_mm": 50.0,
+      "z": 1,
+      "data_ref": {
+        "session_id": "1",
+        "series_root_name": "device3-ch_1-R/device3-ch_1-time",
+        "x_name": "time", "y_name": "R"
+      },
+      "title": "a",
+      "x_label": "t, s", "y_label": "R, Ом",
+      "x_range": null, "y_range": null,
+      "x_log": false, "y_log": false,
+      "visible": true, "locked": false,
+      "style_overrides": {}
+    },
+    {
+      "id": "pn_0002",
+      "x_mm": 95.0, "y_mm": 5.0, "w_mm": 85.0, "h_mm": 50.0,
+      "z": 2,
+      "data_ref": {
+        "session_id": "1",
+        "series_root_name": "device3-ch_2-R/device3-ch_2-time",
+        "x_name": "time", "y_name": "R"
+      },
+      "title": "b",
+      "x_label": "t, s", "y_label": "R, Ом",
+      "x_range": null, "y_range": null,
+      "x_log": false, "y_log": false,
+      "visible": true, "locked": false,
+      "style_overrides": {}
+    }
+  ],
+  "presentation_annotations": [
+    {
+      "id": "ann_0001", "kind": "panel_label",
+      "coordinate_space": "panel_mm", "panel_id": "pn_0001",
+      "coords": [-8.0, -2.0],
+      "text": "a",
+      "style": {"size": 11.0, "weight": "bold", "color": "black"},
+      "z": 100, "visible": true, "locked": false
+    },
+    {
+      "id": "ann_0002", "kind": "panel_label",
+      "coordinate_space": "panel_mm", "panel_id": "pn_0002",
+      "coords": [-8.0, -2.0],
+      "text": "b",
+      "style": {"size": 11.0, "weight": "bold", "color": "black"},
+      "z": 100, "visible": true, "locked": false
+    }
+  ],
+  "data_bound_overrides": {},
+  "figure_overrides": {},
+  "metadata": {
+    "author": "demo",
+    "notes": "Example figure spec — replace data_ref with real session/series."
+  }
+}

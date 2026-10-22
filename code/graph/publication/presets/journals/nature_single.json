@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "nature_single",
+  "name": "Nature single column",
+  "column": {
+    "width_mm": 89.0,
+    "height_mm": 120.0,
+    "dpi": 300
+  },
+  "constraints": {
+    "min_font_pt": 5.0,
+    "min_line_pt": 0.25,
+    "dpi_min": 300,
+    "colorblind_safe": false,
+    "margin_mm": 2.0
+  },
+  "defaults": {
+    "figure.font.family": "Arial",
+    "figure.font.size": 7.0,
+    "figure.line.width": 0.75
+  }
+}

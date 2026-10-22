@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "nature_double",
+  "name": "Nature double column",
+  "column": {
+    "width_mm": 183.0,
+    "height_mm": 247.0,
+    "dpi": 300
+  },
+  "constraints": {
+    "min_font_pt": 5.0,
+    "min_line_pt": 0.25,
+    "dpi_min": 300,
+    "colorblind_safe": false,
+    "margin_mm": 3.0
+  },
+  "defaults": {
+    "figure.font.family": "Arial",
+    "figure.font.size": 7.0,
+    "figure.line.width": 0.75,
+    "figure.axes.line_width": 0.5,
+    "figure.axes.tick_size": 6.0
+  }
+}
