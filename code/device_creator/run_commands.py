@@ -16,7 +16,7 @@ from PyQt5.QtCore import QTimer, QThread, pyqtSignal
 from PyQt5.QtWidgets import (QApplication, QComboBox, QGridLayout, QLabel,
                              QTextEdit, QLineEdit, QMainWindow, QPushButton, QWidget)
 try:
-    from Adapter import instrument
+    from infrastructure.transport.adapter import instrument
 except:
     pass
 

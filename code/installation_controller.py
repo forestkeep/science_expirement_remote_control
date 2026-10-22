@@ -17,19 +17,19 @@ from dataclasses import dataclass
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QTranslator
 from PyQt5.QtWidgets import QApplication
-from SettingsManager import SettingsManager
+from infrastructure.settings import SettingsManager
 
 import interface.info_window_dialog
 from device_creator.dev_creator import deviceCreator
 from device_creator.run_commands import TestCommands
-from graph.main.online_graph import sessionController
-from Installation_class import installation_class
+from graphs.main.online_graph import sessionController
+from installation.Installation_class import installation_class
 from interface.main_window import Ui_MainWindow
 from controlDevicesJSON import search_devices_json
 from localJSONControl import localDeviceControl
 from device_selector import deviceSelector
 from functions import open_log_file
-from available_devices import local_device_class
+from Devices.available_devices import local_device_class
 
 logger = logging.getLogger(__name__)
 

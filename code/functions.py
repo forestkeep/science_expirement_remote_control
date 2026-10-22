@@ -14,7 +14,7 @@ from multiprocessing import Queue
 from queue import Empty
 from pymodbus.client import ModbusSerialClient
 
-from Adapter import Adapter
+from infrastructure.transport.adapter import Adapter
 import logging
 
 logger = logging.getLogger(__name__)
