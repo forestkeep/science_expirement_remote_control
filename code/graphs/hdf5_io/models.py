@@ -83,21 +83,21 @@ class LinearData(GraphData):
 
 @dataclass
 class Plot(BaseModel):
-
     status: str = "active"
     style: GraphStyle = field(default_factory=GraphStyle)
     statistics: Statistics = field(default_factory=Statistics)
     history: List[FilterEntry] = field(default_factory=list)
-    
+
     linear_data: LinearData = field(default_factory=LinearData)
-    
-    axis : int = 1
-    
+
+    axis: int = 1
     is_draw: bool = False
     is_curve_selected: bool = False
+    is_gen: bool = False
 
     x_name: str = ""
     y_name: str = ""
+
 
 @dataclass
 class AxisStyle:
@@ -243,6 +243,7 @@ class Session(BaseModel):
     data_manager: DataManager = field(default_factory=DataManager)
     plots: Dict[str, Plot] = field(default_factory=dict)
     analysis_artifacts: list = field(default_factory=list)
+    helpers: list = field(default_factory=list)
 
 @dataclass
 class ProjectFile(BaseModel):

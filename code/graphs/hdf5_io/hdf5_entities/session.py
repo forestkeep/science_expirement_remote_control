@@ -8,6 +8,7 @@ from .plot import HDF5Plot
 from ..utils import settings_to_dict, save_dict_to_hdf5_with_subgroups, load_dict_from_hdf5_group, dict_to_graph_field_settings
 from ..load_strategies.base import BaseLoadStrategy
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +114,19 @@ class HDF5Session(BaseHDF5Entity):
             plot_entity = HDF5Plot(plot_entity_group)
             plot_entity.write(plot)
 
+        # --- Хелперы ---
+        if 'helpers' in self._hdf5_object:
+            del self._hdf5_object['helpers']
+        helpers_group = self._hdf5_object.create_group('helpers')
+        for i, h in enumerate(getattr(session, 'helpers', []) or []):
+            h_group = helpers_group.create_group(f"h{i}")
+            h_group.attrs['helper_type'] = h.get('helper_type', '')
+            h_group.attrs['visible'] = bool(h.get('visible', True))
+            try:
+                h_group.attrs['params'] = json.dumps(h.get('params', {}), ensure_ascii=False)
+            except Exception:
+                h_group.attrs['params'] = '{}'
+
          # --- Артефакты анализа ---
         try:
             from graphs.analysis.io.serializer import save_artifacts
@@ -128,11 +142,10 @@ class HDF5Session(BaseHDF5Entity):
         name = self._hdf5_object.attrs.get('name', '')
         description = self._hdf5_object.attrs.get('description', '')
 
-        logger.info(f"reading parameters")
+        logger.info("reading parameters")
         parameters = SessionParameters()
         if 'parameters' in self._hdf5_object:
             params_group = self._hdf5_object['parameters']
-
             parameters.name = params_group.attrs['name']
             parameters.description = params_group.attrs.get('description', '')
             parameters.uuid = params_group.attrs['uuid']
@@ -148,7 +161,7 @@ class HDF5Session(BaseHDF5Entity):
         data_manager = DataManager()
         if 'data_manager' in self._hdf5_object:
             data_manager_group = self._hdf5_object['data_manager']
-            
+
             if 'oscillogram_data' in data_manager_group:
                 oscillogram_data_group = data_manager_group['oscillogram_data']
                 for data_name in oscillogram_data_group:
@@ -162,7 +175,7 @@ class HDF5Session(BaseHDF5Entity):
                     if 'data_values' in data_entity_group:
                         data.data_values = data_entity_group['data_values'][:]
                     data_manager.oscillogram_data[data_name] = data
-            
+
             if 'parameters_data' in data_manager_group:
                 parameters_data_group = data_manager_group['parameters_data']
                 for data_name in parameters_data_group:
@@ -186,14 +199,37 @@ class HDF5Session(BaseHDF5Entity):
                 plot_entity = HDF5Plot(plot_entity_group)
                 plot = plot_entity.read()
                 plots[plot_name] = plot
-        
+
+        # --- helpers ---
+        helpers = []
+        if 'helpers' in self._hdf5_object:
+            helpers_group = self._hdf5_object['helpers']
+            for h_name in helpers_group:
+                h_group = helpers_group[h_name]
+                params_raw = h_group.attrs.get('params', '{}')
+                if isinstance(params_raw, bytes):
+                    params_raw = params_raw.decode('utf-8', errors='replace')
+                try:
+                    params = json.loads(params_raw) if isinstance(params_raw, str) else {}
+                except Exception:
+                    params = {}
+                ht = h_group.attrs.get('helper_type', '')
+                if isinstance(ht, bytes):
+                    ht = ht.decode('utf-8', errors='replace')
+                helpers.append({
+                    'helper_type': ht,
+                    'params': params,
+                    'visible': bool(h_group.attrs.get('visible', True)),
+                })
+
         session = Session(
             name=name,
             description=description,
             parameters=parameters,
             field_settings=field_settings,
             data_manager=data_manager,
-            plots=plots
+            plots=plots,
+            helpers=helpers,
         )
 
         try:
@@ -202,7 +238,7 @@ class HDF5Session(BaseHDF5Entity):
         except Exception:
             logger.exception("read analysis artifacts failed")
             session.analysis_artifacts = []
-        
+
         return session
     
     def read_field_settings(self) -> FieldSettings:

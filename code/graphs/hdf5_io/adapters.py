@@ -47,60 +47,83 @@ class ProjectToHDF5Adapter:
     def convert_alias_manager(self, project_file, alias_manager):
         project_file.aliases = alias_manager.get_all_aliases()
     
-    def convert_session(self, core_session) -> Session: #core_session: GraphSession
-        """
-        Преобразует объект сессии ядра в Session.
-        
-        Args:
-            core_session: Объект сессии из ядра приложения
-            
-        Returns:
-            Session: Модель сессии для HDF5
-        """
+    def convert_session(self, core_session) -> Session:
         data_manager = self._convert_data_manager(core_session.data_manager)
 
         parameters = SessionParameters(
             name=core_session.session_name,
             description=core_session.description,
-            uuid = core_session.uuid,
+            uuid=core_session.uuid,
             experiment_date=None,
             operator=None,
-            comment=None
+            comment=None,
         )
 
-        field_settings = FieldSettings(name="test")
         field_settings = core_session.get_field_settings()
-            
+
         plots = {}
-        
         for plot_name, core_plot in core_session.graph_main.get_curves().items():
-            plot = self.convert_plot(core_plot)
+            try:
+                plot = self.convert_plot(core_plot)
+            except Exception:
+                logger.exception("convert_plot failed for %s", plot_name)
+                continue
             plots[plot_name.replace('\\', '_').replace('/', '_')] = plot
-            
+
+        helpers: list[dict] = []
+        hm = getattr(core_session, "helper_manager", None)
+        if hm is not None:
+            try:
+                for h in hm.get_helpers():
+                    helpers.append({
+                        "helper_type": h.helper_type,
+                        "params": dict(h.params or {}),
+                        "visible": bool(h.visible),
+                    })
+            except Exception:
+                logger.exception("save helpers failed")
+
         return Session(
             name=core_session.session_name,
             description=core_session.description,
             parameters=parameters,
             field_settings=field_settings,
             data_manager=data_manager,
-            plots=plots
+            plots=plots,
+            helpers=helpers,
         )
-    def _convert_data_manager(self, core_manager: graphDataManager, model: DataManager, session_id: str = None) -> None:
-        """Загрузить данные измерений в core_manager массово, без сигналов на каждый параметр."""
+
+    def _convert_data_manager(self, core_manager: graphDataManager) -> DataManager:
+        """Собрать DataManager из данных ядра для записи в HDF5."""
         logger.info("Converting data manager")
-        core_manager.load_session_from_model(
-            session_id=session_id or core_manager.name,
-            osc_items=list(model.oscillogram_data.values()),
-            param_items=list(model.parameter_data.values()),
-        )
+        dm = DataManager()
+        all_data = core_manager.get_all_data()
+
+        for key, md in all_data["osc"].data.items():
+            dm.oscillogram_data[key] = OscillogramData(
+                name=key,
+                device=md.device or "",
+                channel=md.ch or "",
+                parameter=md.param or "",
+                time_values=np.asarray(md.num_or_time, dtype=float),
+                data_values=np.asarray(md.par_val, dtype=float),
+            )
+
+        for key, md in all_data["main"].data.items():
+            dm.parameter_data[key] = ParameterData(
+                name=key,
+                device=md.device or "",
+                channel=md.ch or "",
+                parameter=md.param or "",
+                time_values=np.asarray(md.num_or_time, dtype=float),
+                data_values=np.asarray(md.par_val, dtype=float),
+            )
+
+        return dm
     
     def convert_plot(self, core_plot) -> Plot:
-        """
-        Преобразует объект графика ядра в Plot.
-        """
+        style_settings = self.from_graph_item(graph_item=core_plot)
 
-        style_settings = self.from_graph_item( graph_item = core_plot)
-        
         try:
             core_plot.ensure_stats_fresh()
         except Exception:
@@ -109,9 +132,9 @@ class ProjectToHDF5Adapter:
         stats = Statistics(
             mean=core_plot.tree_item.parameters.get('mean', 0.0),
             median=core_plot.tree_item.parameters.get('median', 0.0),
-            std_dev=core_plot.tree_item.parameters.get('std', 0.0)
+            std_dev=core_plot.tree_item.parameters.get('std', 0.0),
         )
-        
+
         try:
             note_description = core_plot.tree_item.get_description() or ""
         except Exception:
@@ -124,7 +147,7 @@ class ProjectToHDF5Adapter:
             col_font_info=f"{core_plot.tree_item.col_font.pointSize()}" if hasattr(core_plot.tree_item, 'col_font') else "15",
             description=note_description,
         )
-        
+
         graph_data = GraphData(
             raw_data_x=core_plot.raw_data_x,
             raw_data_y=core_plot.raw_data_y,
@@ -132,8 +155,8 @@ class ProjectToHDF5Adapter:
             filtered_y_data=core_plot.filtered_y_data,
             device=core_plot.device,
             channel=core_plot.ch,
-            x_name= core_plot.rel_data.x_root_name,
-            y_name= core_plot.rel_data.y_root_name,
+            x_name=core_plot.rel_data.x_root_name,
+            y_name=core_plot.rel_data.y_root_name,
             curve_name=core_plot.curve_name,
 
             is_name_customized=core_plot.is_name_curve_customized,
@@ -143,7 +166,7 @@ class ProjectToHDF5Adapter:
             is_curve_selected=core_plot.is_curve_selected,
             tree_item_data=tree_item_data,
         )
-        
+
         linear_data = LinearData(
             **graph_data.__dict__,
             tip=core_plot.tree_item.parameters.get('tip', 'linear'),
@@ -151,14 +174,13 @@ class ProjectToHDF5Adapter:
 
         history = []
         for filter in core_plot.filters_history:
-            temp_flt = FilterEntry(
-                                    name = "",
-                                    description = "",
-                                    filter_type =  filter.filter_type,
-                                    params =  filter.params
-                                )
-            history.append(temp_flt)
-        
+            history.append(FilterEntry(
+                name="",
+                description="",
+                filter_type=filter.filter_type,
+                params=filter.params,
+            ))
+
         return Plot(
             status="active",
             style=style_settings,
@@ -167,34 +189,36 @@ class ProjectToHDF5Adapter:
             linear_data=linear_data,
             is_draw=core_plot.is_draw,
             is_curve_selected=core_plot.is_curve_selected,
+            is_gen=bool(getattr(core_plot.rel_data, "is_gen", False)),
             name=core_plot.curve_name if hasattr(core_plot, 'curve_name') else "",
-            x_name= core_plot.rel_data.x_root_name,
-            y_name= core_plot.rel_data.y_root_name,
-            axis = core_plot.number_axis
+            x_name=core_plot.rel_data.x_root_name,
+            y_name=core_plot.rel_data.y_root_name,
+            axis=core_plot.number_axis,
         )
     
-    def from_graph_item(self,graph_item) -> GraphStyle:
-        """Создает GraphStyle из графического элемента"""
-        style_graph = graph_item.saved_style
-        
+    def from_graph_item(self, graph_item) -> GraphStyle:
+        style_graph = graph_item.saved_style or LineStyle()
+
         styles = {
-            "Solid": 1, #QtCore.Qt.SolidLine,
-            "Dash": 2, #QtCore.Qt.DashLine,
-            "Dot": 3, #QtCore.Qt.DotLine,
-            "DashDot": 4, #QtCore.Qt.DashDotLine
+            QtCore.Qt.SolidLine:       "Solid",
+            QtCore.Qt.DashLine:        "Dash",
+            QtCore.Qt.DotLine:         "Dot",
+            QtCore.Qt.DashDotLine:     "DashDot",
+            QtCore.Qt.DashDotDotLine:  "DashDotDot",
         }
 
-        # Обратный словарь для преобразования QtStyle в строку
-        rev_styles = {v: k for k, v in styles.items()}
+        sym = style_graph.symbol
+        if sym is None:
+            sym = ""
 
         return GraphStyle(
-            color=style_graph.color,
-            line_style=rev_styles[style_graph.line_style],
-            line_width=style_graph.line_width,
-            symbol=style_graph.symbol,
-            symbol_size=style_graph.symbol_size,
-            symbol_color=style_graph.symbol_color,
-            fill_color=style_graph.fill_color
+            color=style_graph.color or "#ffffff",
+            line_style=styles.get(style_graph.line_style, "Solid"),
+            line_width=int(style_graph.line_width or 1),
+            symbol=sym,
+            symbol_size=int(style_graph.symbol_size or 1),
+            symbol_color=style_graph.symbol_color or "#ffffff",
+            fill_color=style_graph.fill_color or "#ffffff",
         )
     
 class HDF5ToProjectAdapter:
@@ -207,75 +231,152 @@ class HDF5ToProjectAdapter:
         for session_name, session_model in project.sessions.items():
             self._convert_session(session_model, core_session)
 
-
     def _convert_session(self, session: Session, core_session):
         """Восстановить сессию без лишних сигналов и повторных пересборок данных."""
         logger.info(f"Converting session {session.name}")
         uuid = session.parameters.uuid
-        use_timestamp = True if 'time' in session.data_manager.parameter_data.keys() else False
-        session_id = core_session.start_new_session(session_name=session.name, use_timestamps=use_timestamp, uuid=uuid)
-
+        use_timestamp = 'time' in session.data_manager.parameter_data.keys()
+        session_id = core_session.start_new_session(
+            session_name=session.name, use_timestamps=use_timestamp, uuid=uuid
+        )
         if not session_id:
             logger.warning(f"Failed to start session {session.name=} {uuid=}, convert session skipped")
             return
 
         core_session.update_session_description(session_id, session.description)
-        core_manager = core_session.graph_sessions[session_id].data_manager
+
+        sess = core_session.graph_sessions[session_id]
+        core_manager = sess.data_manager
+        select_ctrl = sess.select_controller
+
+        # --- 1. Данные ---
         self._convert_data_manager(core_manager, session.data_manager)
         core_manager.mark_stopped_silently()
 
+        # --- 2. Кривые + сбор selection-модели ---
+        # Генерируемые кривые (is_gen) в селекторе не участвуют — их не собираем.
         selection_x_param = None
-        selection_y_first_params = []
-        selection_y_second_params = []
+        selection_y_first_params: list = []
+        selection_y_second_params: list = []
+
         for plot in session.plots.values():
             axis = plot.axis
             if axis not in (1, 2):
                 logger.warning(f"Unknown axis {axis} for plot {plot.name}")
                 continue
 
-            curve_obj = self.restore_curve_from_model(
-                plot_model=plot,
-                alias_manager=core_session.alias_manager,
-                filter_instance=core_session.graph_sessions[session_id].filter_class,
-            )
+            try:
+                curve_obj = self.restore_curve_from_model(
+                    plot_model=plot,
+                    alias_manager=core_session.alias_manager,
+                    filter_instance=sess.filter_class,
+                )
+            except Exception:
+                logger.exception(f"Failed to restore curve {plot.name!r}")
+                continue
+
             curve_obj.number_axis = axis
-            core_session.graph_sessions[session_id].graph_main.add_curve(
+            sess.graph_main.add_curve(
                 curve_obj, type_axis="left" if axis == 1 else "right"
             )
 
-            if plot.is_draw:
-                if selection_x_param and selection_x_param != core_session.alias_manager.get_alias(plot.x_name):
-                    logger.warning(f"Conflict selection x parameter {plot.x_name} {selection_x_param}")
-                    continue
-
-                if not selection_x_param:
-                    selection_x_param = core_session.alias_manager.get_alias(plot.x_name)
-
-                if axis == 1:
-                    selection_y_first_params.append(core_session.alias_manager.get_alias(plot.y_name))
-                elif axis == 2:
-                    selection_y_second_params.append(core_session.alias_manager.get_alias(plot.y_name))
-            else:
+            if not plot.is_draw:
                 curve_obj.delete_curve_from_graph()
+                continue
 
-        core_session.graph_sessions[session_id].select_controller.set_selections(
-            x_param=selection_x_param,
-            y_first_params=selection_y_first_params,
-            y_second_params=selection_y_second_params,
-            is_signal=False,
+            # Генерируемые кривые не должны засветиться в селекторе.
+            if getattr(plot, "is_gen", False):
+                continue
+
+            x_alias = core_session.alias_manager.get_alias(plot.x_name)
+            y_alias = core_session.alias_manager.get_alias(plot.y_name)
+
+            if selection_x_param is None:
+                selection_x_param = x_alias
+            elif selection_x_param != x_alias:
+                logger.warning(
+                    f"Conflict selection x parameter {plot.x_name} "
+                    f"(have {selection_x_param})"
+                )
+                continue
+
+            if axis == 1:
+                if y_alias not in selection_y_first_params:
+                    selection_y_first_params.append(y_alias)
+            else:
+                if y_alias not in selection_y_second_params:
+                    selection_y_second_params.append(y_alias)
+
+        # --- 3. Скорректировать field_settings под фактический выбор ----------
+        gf = session.field_settings.graph_field
+
+        # Если в сессии есть кривые на правой оси — флаг должен быть включён.
+        if selection_y_second_params:
+            gf.is_second_axis_enabled = True
+
+        # Если на какой-либо оси несколько кривых — multiple-mode обязателен.
+        if len(selection_y_first_params) > 1:
+            gf.is_multiple_y1_enabled = True
+            gf.is_multiple_selection_enabled = True
+        if len(selection_y_second_params) > 1:
+            gf.is_multiple_y2_enabled = True
+
+        # --- 4. Восстановление настроек поля без побочного эмита --------------
+        # «Замораживаем» текущее (пустое) состояние модели, чтобы эмиты
+        # apply_field_settings (через set_second_check_box → activation_changed
+        # → _emit_parameters_updated) не выстрелили parameters_updated и не снесли
+        # восстановленные кривые через graphSelectAdapter.parameters_choised.
+        select_ctrl._last_emitted_state = (
+            select_ctrl.curent_x_parameter,
+            tuple(select_ctrl.curent_y_first_parameters),
+            tuple(select_ctrl.curent_y_second_parameters),
         )
 
-        core_session.graph_sessions[session_id].apply_field_settings(session.field_settings)
+        # Применяем настройки: active-флаги (Y2), multiple-modes, стили.
+        # Это может эмитнуть state_second_axis_changed — что корректно:
+        # правая ось включится на графике.
+        sess.apply_field_settings(session.field_settings)
 
+        # --- 5. Установить selection-модель и синхронизировать UI -------------
+        select_ctrl.curent_x_parameter = selection_x_param
+        select_ctrl.curent_y_first_parameters = list(selection_y_first_params)
+        select_ctrl.curent_y_second_parameters = list(selection_y_second_params)
+        select_ctrl._enforce_invariants()
+        select_ctrl._sync_view_from_model()
+
+        # Фиксируем финальное состояние — последующие случайные эмиты
+        # (например, от повторной активации осей) станут no-op.
+        select_ctrl._last_emitted_state = (
+            select_ctrl.curent_x_parameter,
+            tuple(select_ctrl.curent_y_first_parameters),
+            tuple(select_ctrl.curent_y_second_parameters),
+        )
+
+        # --- 6. Хелперы -------------------------------------------------------
+        try:
+            hm = getattr(sess, "helper_manager", None)
+            if hm is not None:
+                hm.remove_all()
+                for h_data in getattr(session, "helpers", []) or []:
+                    new_helper = hm.add_helper(
+                        h_data.get("helper_type", ""),
+                        dict(h_data.get("params") or {}),
+                    )
+                    if new_helper is not None and not h_data.get("visible", True):
+                        hm.set_visible(new_helper.id, False)
+        except Exception:
+            logger.exception("restore helpers failed")
+
+        # --- 7. Артефакты анализа ---------------------------------------------
         try:
             from graphs.analysis.commands import ApplyAnalysisCommand
-            core_sess = core_session.graph_sessions[session_id]
-            if hasattr(core_sess, "analysis_controller") and session.analysis_artifacts:
+            if hasattr(sess, "analysis_controller") and session.analysis_artifacts:
                 for art in session.analysis_artifacts:
-                    cmd = ApplyAnalysisCommand(core_sess.analysis_controller, art)
-                    core_sess.undo_manager.push(cmd, execute=True)
+                    cmd = ApplyAnalysisCommand(sess.analysis_controller, art)
+                    sess.undo_manager.push(cmd, execute=True)
         except Exception:
             logger.exception("restore analysis artifacts failed")
+
 
     def apply_graph_settings(self, graph_widget: PatchedPlotWidget, settings: FieldSettings) -> None:
         """
@@ -431,30 +532,44 @@ class HDF5ToProjectAdapter:
     def restore_curve_from_model(self, plot_model: Plot, alias_manager, filter_instance) -> linearData:
         logger.info("Restoring curve from model")
 
+        def _strip_prefix(full: str, dev: str, ch: str) -> str:
+            prefix = (dev or "") + (ch or "")
+            if prefix and full and full.startswith(prefix):
+                return full[len(prefix):]
+            return full or ""
+
+        x_dev = plot_model.linear_data.device or ""
+        x_ch = plot_model.linear_data.channel or ""
+        y_dev = x_dev
+        y_ch = x_ch
+
+        x_param_only = _strip_prefix(plot_model.x_name or "", x_dev, x_ch)
+        y_param_only = _strip_prefix(plot_model.y_name or "", y_dev, y_ch)
+
+        is_gen = bool(getattr(plot_model, "is_gen", False))
+
         x_meas = measTimeData(
-            device=plot_model.linear_data.device,
-            ch=plot_model.linear_data.channel,
-            param=plot_model.x_name,
+            device=x_dev,
+            ch=x_ch,
+            param=x_param_only,
             par_val=plot_model.linear_data.raw_data_x,
             num_or_time=np.arange(len(plot_model.linear_data.raw_data_x)),
         )
         y_meas = measTimeData(
-            device=plot_model.linear_data.device,
-            ch=plot_model.linear_data.channel,
-            param=plot_model.y_name,
+            device=y_dev,
+            ch=y_ch,
+            param=y_param_only,
             par_val=plot_model.linear_data.raw_data_y,
             num_or_time=np.arange(len(plot_model.linear_data.raw_data_y)),
         )
-        rel_data = relationData(x_meas, y_meas)
+        rel_data = relationData(x_meas, y_meas, is_gen=is_gen)
 
-        # NOTE: no selection_model here — manageGraph.add_curve attaches it.
         new_data = linearData(data=rel_data, alias_manager=alias_manager)
 
         new_data.device = plot_model.linear_data.device
         new_data.channel = plot_model.linear_data.channel
         new_data.number = plot_model.linear_data.number
 
-        # restore filtered data (bypass filter re-application)
         new_data.store.raw_data_x = np.asarray(plot_model.linear_data.raw_data_x)
         new_data.store.raw_data_y = np.asarray(plot_model.linear_data.raw_data_y)
         new_data.store.filtered_x_data = np.asarray(plot_model.linear_data.filtered_x_data)
@@ -464,7 +579,7 @@ class HDF5ToProjectAdapter:
         new_data.presenter.saved_style = style
         new_data.presenter.preselection_style = style
 
-        # restore filter history (no re-application)
+        # Восстановить историю фильтров БЕЗ повторного применения
         for f in plot_model.history:
             new_data.store.filters_history.append(
                 FilterCommand(
@@ -474,12 +589,14 @@ class HDF5ToProjectAdapter:
                 )
             )
 
+        # filtered_* уже восстановлены из файла — не пересобирать
+        new_data.store._filtered_dirty = False
+
         if plot_model.linear_data.is_name_customized:
             new_data.change_name(plot_model.linear_data.curve_name)
         else:
             new_data.reset_name()
 
-        # Восстановить пользовательскую заметку (блок «Разное» → «Описание»).
         try:
             desc = plot_model.linear_data.tree_item_data.description or ""
         except Exception:
@@ -494,19 +611,22 @@ class HDF5ToProjectAdapter:
     
     def transform_line_style(self, style: GraphStyle) -> LineStyle:
         styles = {
-            "Solid": QtCore.Qt.SolidLine,
-            "Dash": QtCore.Qt.DashLine,
-            "Dot": QtCore.Qt.DotLine,
-            "DashDot": QtCore.Qt.DashDotLine
+            "Solid":       QtCore.Qt.SolidLine,
+            "Dash":        QtCore.Qt.DashLine,
+            "Dot":         QtCore.Qt.DotLine,
+            "DashDot":     QtCore.Qt.DashDotLine,
+            "DashDotDot":  QtCore.Qt.DashDotDotLine,
         }
+        sym = style.symbol
+        if sym in (None, "", "None"):
+            sym = None
 
         return LineStyle(
-            color=style.color,
-            line_style=styles[style.line_style],
-            line_width=style.line_width,
-            symbol=style.symbol,
-            symbol_size=style.symbol_size,
-            symbol_color=style.symbol_color,
-            fill_color=style.fill_color
+            color=style.color or "#ffffff",
+            line_style=styles.get(style.line_style, QtCore.Qt.SolidLine),
+            line_width=int(style.line_width or 1),
+            symbol=sym,
+            symbol_size=int(style.symbol_size or 1),
+            symbol_color=style.symbol_color or "#ffffff",
+            fill_color=style.fill_color or "#ffffff",
         )
-    
