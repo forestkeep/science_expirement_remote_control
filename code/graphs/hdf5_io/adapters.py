@@ -1,5 +1,4 @@
-from .models import (ProjectFile, Session, SessionParameters, FieldSettings, DataManager,Plot, OscillogramData,
-                    ParameterData, GraphStyle, Statistics, CurveTreeItemData, GraphData, LinearData, FilterEntry)
+
 from .utils import string_to_qfont, string_to_color
 import logging
 from PyQt5 import QtCore, QtGui
@@ -12,6 +11,10 @@ from ..core.dataManager import graphDataManager, relationData, measTimeData
 from ..core.curve_data import linearData, LineStyle
 from ..ui.customPlotWidget import PatchedPlotWidget, axisStyle
 from ..core.filters_instance_class import FilterCommand
+
+from .models import (ProjectFile, Session, SessionParameters, FieldSettings, DataManager,Plot, OscillogramData,
+                    ParameterData, GraphStyle, Statistics, CurveTreeItemData, GraphData, LinearData, FilterEntry,
+                    UncertaintyEntry)
 
 
 logger = logging.getLogger(__name__)
@@ -181,6 +184,29 @@ class ProjectToHDF5Adapter:
                 params=filter.params,
             ))
 
+        # --- Погрешности: записи и шаблон стиля ---
+        uncertainty_records = []
+        uncertainty_style = {}
+        store_ref = getattr(core_plot, "store", None)
+        if store_ref is not None:
+            try:
+                uncertainty_style = dict(
+                    getattr(store_ref, "uncertainty_style", {}) or {})
+                active_ids = set(
+                    getattr(store_ref, "active_uncertainty_ids", set()) or set())
+                for rec in getattr(store_ref, "uncertainty_records", []) or []:
+                    uncertainty_records.append(UncertaintyEntry(
+                        id=str(getattr(rec, "id", "")),
+                        method=str(getattr(rec, "method", "std")),
+                        params=dict(getattr(rec, "params", {}) or {}),
+                        x_err=getattr(rec, "x_err", None),
+                        y_err=getattr(rec, "y_err", None),
+                        active=(getattr(rec, "id", None) in active_ids),
+                        style=dict(getattr(rec, "style", {}) or {}),
+                    ))
+            except Exception:
+                logger.exception("convert_plot: uncertainty records failed")
+
         return Plot(
             status="active",
             style=style_settings,
@@ -194,6 +220,8 @@ class ProjectToHDF5Adapter:
             x_name=core_plot.rel_data.x_root_name,
             y_name=core_plot.rel_data.y_root_name,
             axis=core_plot.number_axis,
+            uncertainty_records=uncertainty_records,
+            uncertainty_style=uncertainty_style,
         )
     
     def from_graph_item(self, graph_item) -> GraphStyle:
@@ -606,6 +634,33 @@ class HDF5ToProjectAdapter:
             key = QApplication.translate("GraphWindow", "Описание")
             if not new_data.tree_item.update_block_data(block_name, {key: desc}):
                 new_data.tree_item.add_new_block(block_name, {key: desc})
+
+        # --- Восстановление погрешностей и их стиля ---
+        try:
+            from graphs.analysis.uncertainty import UncertaintyRecord
+            store = new_data.store
+            store.uncertainty_style = dict(
+                getattr(plot_model, "uncertainty_style", {}) or {})
+            for entry in getattr(plot_model, "uncertainty_records", []) or []:
+                kwargs = dict(
+                    method=entry.method or "std",
+                    params=dict(entry.params or {}),
+                    x_err=entry.x_err,
+                    y_err=entry.y_err,
+                    style=dict(entry.style or {}),
+                )
+                if getattr(entry, "id", ""):
+                    kwargs["id"] = entry.id
+                rec = UncertaintyRecord(**kwargs)
+                store.uncertainty_records.append(rec)
+                if entry.active:
+                    store.active_uncertainty_ids.add(rec.id)
+                else:
+                    store.active_uncertainty_ids.discard(rec.id)
+            if store.uncertainty_records and hasattr(new_data.presenter, "set_error_bars"):
+                new_data.presenter.set_error_bars(store.active_uncertainty_records())
+        except Exception:
+            logger.exception("restore_curve_from_model: uncertainty failed")
 
         return new_data
     

@@ -274,6 +274,41 @@ class AnalysisController(QObject):
             curve.presenter.set_error_bars(store.active_uncertainty_records())
         self.artifacts_changed.emit()
 
+    def set_uncertainty_style(self, root_name: str, style: Dict[str, Any]) -> None:
+        """Обновить стиль отображения погрешностей для всех записей кривой.
+
+        Стиль также запоминается в ``store.uncertainty_style`` — он будет
+        применён к новым записям, создаваемым через ``apply()``.
+        """
+        curve = self.session.graph_main.get_curve(root_name)
+        if curve is None:
+            return
+        store = getattr(curve, "store", None)
+        if store is None:
+            return
+        from .uncertainty import normalize_uncertainty_style
+        new_style = normalize_uncertainty_style(style or {})
+        store.uncertainty_style = dict(new_style)
+        for rec in getattr(store, "uncertainty_records", []) or []:
+            rec.style = dict(new_style)
+        if hasattr(curve.presenter, "set_error_bars"):
+            curve.presenter.set_error_bars(store.active_uncertainty_records())
+        self.artifacts_changed.emit()
+
+    def get_uncertainty_style(self, root_name: str) -> Optional[Dict[str, Any]]:
+        """Прочитать текущий стиль погрешностей (шаблон + значение по умолчанию)."""
+        curve = self.session.graph_main.get_curve(root_name)
+        if curve is None:
+            return None
+        store = getattr(curve, "store", None)
+        if store is None:
+            return None
+        from .uncertainty import normalize_uncertainty_style
+        style = dict(getattr(store, "uncertainty_style", {}) or {})
+        if not style and getattr(store, "uncertainty_records", None):
+            style = dict(store.uncertainty_records[0].style or {})
+        return normalize_uncertainty_style(style)
+
     def _on_selection_changed(self, selected) -> None:
         """Подсветить артефакты, чьи источники выделены."""
         selected_roots = set()
@@ -474,7 +509,15 @@ class AnalysisController(QObject):
     def _compute_uncertainty_record(self, snap: SourceSnapshot,
                                      params: Dict[str, Any]) -> UncertaintyRecord:
         method = params.get("method", "std")
-        return compute_uncertainty(method, snap.x, snap.y, params)
+        rec = compute_uncertainty(method, snap.x, snap.y, params)
+        # Перенести сохранённый стиль кривой на новую запись
+        curve = self.session.graph_main.get_curve(snap.root_name)
+        if curve is not None:
+            store_style = getattr(curve.store, "uncertainty_style", None) or {}
+            if store_style:
+                from .uncertainty import normalize_uncertainty_style
+                rec.style = normalize_uncertainty_style(store_style)
+        return rec
 
     def _payload_for_source(self, payload, index: int):
         """Возвращает payload, содержащий только данные для одного источника."""

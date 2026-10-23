@@ -249,7 +249,8 @@ class CurvePresenter:
         return item
 
     def add_to_graph(self, graph_field, legend_field, number_axis) -> None:
-        """Добавить кривую на график, форсируя первичную отрисовку данных.
+        """Добавить кривую на график, форсируя первичную отрисовку данных
+        и восстановление полос погрешностей (если они есть в store).
         """
         new_item = self.create_plot_item()
         graph_field.addItem(new_item)
@@ -268,6 +269,15 @@ class CurvePresenter:
         self.is_draw = True
         self._last_rendered_version = -1
         self._do_refresh()
+
+        # ВАЖНО: восстановить error bars ПОСЛЕ появления plot_items.
+        # Сценарии: загрузка проекта, show_curve (после hide), undo/redo удаления.
+        try:
+            records = self.store.active_uncertainty_records()
+            if records:
+                self.set_error_bars(records)
+        except Exception:
+            logger.exception("add_to_graph: set_error_bars failed")
 
     def remove_from_graph(self, viewbox) -> None:
         info = self.plot_items.pop(viewbox, None)
@@ -405,10 +415,19 @@ class CurvePresenter:
 
     # -- error bars -----------------------------------------------------
     def set_error_bars(self, records: list) -> None:
-        """Отрисовка полос погрешностей (error bars).
+        """Отрисовка полос погрешностей согласно стилю каждой записи.
 
-        Перо берётся в цвет кривой, чтобы полосы были видимы на тёмном фоне
-        и визуально привязаны к источнику. Все прежние ErrorBarItem снимаются.
+        Режимы (rec.style["mode"]):
+          - 'bars'   — вертикальные столбики + горизонтальные риски;
+          - 'caps'   — только горизонтальные риски;
+          - 'shaded' — полупрозрачная заливка между y±yerr;
+          - 'line'   — огибающие линии y+yerr и y−yerr.
+
+        Стиль (rec.style):
+          - color: "auto" (цвет кривой) | "#rrggbb";
+          - width: 1..10 px;
+          - alpha: 0..255;
+          - cap_size: 0..40 px.
         """
         import numpy as np
 
@@ -424,33 +443,95 @@ class CurvePresenter:
         if not records:
             return
 
-        x = self.store.filtered_x_data
-        y = self.store.filtered_y_data
-        if len(x) == 0 or len(y) == 0:
+        x = np.asarray(self.store.filtered_x_data, dtype=float)
+        y = np.asarray(self.store.filtered_y_data, dtype=float)
+        if x.size == 0 or y.size == 0:
             return
-
-        color = None
-        if self.saved_style is not None:
-            color = self.saved_style.color
-        pen = pg.mkPen(color=color or (220, 220, 220), width=1)
 
         for viewbox, info in self.plot_items.items():
             bars = []
             for rec in records:
                 try:
-                    yerr = np.asarray(rec.y_err) if rec.y_err is not None else None
-                    if yerr is None or yerr.size != y.size:
-                        continue
-                    eb = pg.ErrorBarItem(
-                        x=x, y=y,
-                        top=yerr, bottom=yerr,
-                        beam=0.5, pen=pen,
-                    )
-                    viewbox.addItem(eb)
-                    bars.append(eb)
+                    for item in self._build_error_items(viewbox, rec, x, y):
+                        viewbox.addItem(item)
+                        bars.append(item)
                 except Exception:
                     logger.exception("set_error_bars failed")
             info["error_bars"] = bars
+
+    def _build_error_items(self, viewbox, rec, x, y) -> list:
+        """Собрать графические элементы для одной записи погрешности."""
+        import numpy as np
+        from graphs.analysis.uncertainty import normalize_uncertainty_style
+
+        style = normalize_uncertainty_style(getattr(rec, "style", None) or {})
+        mode = style["mode"]
+        width = int(style["width"])
+        alpha = int(style["alpha"])
+        cap_size = int(style["cap_size"])
+
+        color = style.get("color", "auto")
+        if not color or color == "auto":
+            color = self.saved_style.color if self.saved_style is not None else "#cccccc"
+        try:
+            color_obj = pg.mkColor(color)
+            color_obj.setAlpha(alpha)
+        except Exception:
+            color_obj = pg.mkColor(200, 200, 200, alpha)
+
+        # ОТДЕЛЬНО: pen и brush из QColor (ScatterPlotItem принимает brush,
+        # а не QPen; иначе pyqtgraph падает в _mkBrush).
+        pen = pg.mkPen(color=color_obj, width=width)
+        brush = pg.mkBrush(color_obj)
+
+        yerr_raw = getattr(rec, "y_err", None)
+        if yerr_raw is None:
+            return []
+        yerr = np.asarray(yerr_raw, dtype=float)
+        if yerr.size != y.size:
+            return []
+
+        items = []
+
+        if mode == "line":
+            items.append(pg.PlotDataItem(x, y + yerr, pen=pen))
+            items.append(pg.PlotDataItem(x, y - yerr, pen=pen))
+            return items
+
+        if mode == "shaded":
+            fill_color = pg.mkColor(color_obj)
+            fill_color.setAlpha(max(20, min(140, alpha // 2)))
+            fill_brush = pg.mkBrush(fill_color)
+            upper = pg.PlotDataItem(x, y + yerr, pen=pg.mkPen(None))
+            lower = pg.PlotDataItem(x, y - yerr, pen=pg.mkPen(None))
+            fill = pg.FillBetweenItem(upper, lower, brush=fill_brush)
+            return [upper, lower, fill]
+
+        if mode == "bars":
+            xs, ys = [], []
+            for xi, yi, ei in zip(x, y, yerr):
+                if not np.isfinite(ei) or ei <= 0:
+                    continue
+                xs.extend([xi, xi, float('nan')])
+                ys.extend([yi - ei, yi + ei, float('nan')])
+            if xs:
+                items.append(pg.PlotDataItem(
+                    np.asarray(xs), np.asarray(ys),
+                    pen=pen, connect='finite',
+                ))
+
+        if cap_size > 0:
+            size = max(2, cap_size)
+            items.append(pg.ScatterPlotItem(
+                x=x, y=y + yerr, symbol='_', size=size,
+                pen=pen, brush=brush, pxMode=True,
+            ))
+            items.append(pg.ScatterPlotItem(
+                x=x, y=y - yerr, symbol='_', size=size,
+                pen=pen, brush=brush, pxMode=True,
+            ))
+
+        return items
 
 _SELECTION_COLOR = (100, 100, 100)
 def make_selection_style() -> LineStyle:

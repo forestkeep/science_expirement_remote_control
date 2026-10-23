@@ -15,6 +15,16 @@ class FilterEntry(BaseModel):
     params: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
+class UncertaintyEntry(BaseModel):
+    id: str = ""
+    method: str = "std"
+    params: Dict[str, Any] = field(default_factory=dict)
+    x_err: Optional[np.ndarray] = None
+    y_err: Optional[np.ndarray] = None
+    active: bool = True
+    style: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
 class GraphStyle(BaseModel):
     color: str = "#ffffff"
     line_style: QtCore.Qt.PenStyle = QtCore.Qt.SolidLine
@@ -97,6 +107,9 @@ class Plot(BaseModel):
 
     x_name: str = ""
     y_name: str = ""
+
+    uncertainty_records: List[UncertaintyEntry] = field(default_factory=list)
+    uncertainty_style: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

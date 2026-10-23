@@ -72,6 +72,7 @@ class CurveDataStore:
         # --- Погрешности ---
         self.uncertainty_records: list = []
         self.active_uncertainty_ids: set = set()
+        self.uncertainty_style: dict = {}
 
     # -- observers ---------------------------------------------------
     def on_data_changed(self, cb): 

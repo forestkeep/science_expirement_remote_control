@@ -933,6 +933,7 @@ class StyleTab(QWidget):
         self.session = session
         self.curves = []
         self._suppress_apply = False
+        self._suppress_unc = False
         self.setup_ui()
 
     def setup_ui(self):
@@ -986,7 +987,137 @@ class StyleTab(QWidget):
         form.addRow(self.px_mode_check)
 
         layout.addLayout(form)
+        layout.addWidget(self._build_uncertainty_group())   # NEW
         layout.addStretch()
+
+    # ------------------------------------------------------------------
+    # Погрешности точек
+    # ------------------------------------------------------------------
+    def _build_uncertainty_group(self):
+        g = QGroupBox("Погрешности точек")
+        f = QFormLayout(g)
+
+        self.unc_mode_combo = QComboBox()
+        self.unc_mode_combo.addItem("Полосы (столбики)", "bars")
+        self.unc_mode_combo.addItem("Только риски", "caps")
+        self.unc_mode_combo.addItem("Подсветка (заливка)", "shaded")
+        self.unc_mode_combo.addItem("Огибающие линии", "line")
+        self.unc_mode_combo.currentIndexChanged.connect(self.apply_uncertainty)
+        f.addRow("Стиль:", self.unc_mode_combo)
+
+        self.unc_color_btn = QPushButton("Авто")
+        self.unc_color_btn.clicked.connect(self.choose_unc_color)
+        f.addRow("Цвет:", self.unc_color_btn)
+
+        self.unc_auto_check = QCheckBox("Брать цвет кривой")
+        self.unc_auto_check.setChecked(True)
+        self.unc_auto_check.stateChanged.connect(self.apply_uncertainty)
+        f.addRow(self.unc_auto_check)
+
+        self.unc_width_spin = QSpinBox()
+        self.unc_width_spin.setRange(1, 10)
+        self.unc_width_spin.setValue(1)
+        self.unc_width_spin.setToolTip("Толщина линий погрешностей, px")
+        self.unc_width_spin.valueChanged.connect(self.apply_uncertainty)
+        f.addRow("Толщина:", self.unc_width_spin)
+
+        self.unc_alpha_spin = QSpinBox()
+        self.unc_alpha_spin.setRange(0, 100)
+        self.unc_alpha_spin.setValue(70)
+        self.unc_alpha_spin.setSuffix(" %")
+        self.unc_alpha_spin.setToolTip("Плотность (100 % — полностью непрозрачно)")
+        self.unc_alpha_spin.valueChanged.connect(self.apply_uncertainty)
+        f.addRow("Плотность:", self.unc_alpha_spin)
+
+        self.unc_cap_spin = QSpinBox()
+        self.unc_cap_spin.setRange(0, 40)
+        self.unc_cap_spin.setValue(6)
+        self.unc_cap_spin.setSuffix(" px")
+        self.unc_cap_spin.setToolTip("Длина горизонтальных рисок на концах (0 — без рисок)")
+        self.unc_cap_spin.valueChanged.connect(self.apply_uncertainty)
+        f.addRow("Длина рисок:", self.unc_cap_spin)
+
+        return g
+
+    def _load_uncertainty_style(self, curves):
+        """Прочитать стиль из первой кривой и синхронизировать UI."""
+        from graphs.analysis.uncertainty import normalize_uncertainty_style
+        style = {}
+        if curves:
+            store = getattr(curves[0], "store", None)
+            if store is not None:
+                style = dict(getattr(store, "uncertainty_style", {}) or {})
+                if not style and getattr(store, "uncertainty_records", None):
+                    style = dict(store.uncertainty_records[0].style or {})
+        style = normalize_uncertainty_style(style)
+
+        self._suppress_unc = True
+        try:
+            idx = self.unc_mode_combo.findData(style.get("mode", "bars"))
+            if idx >= 0:
+                self.unc_mode_combo.setCurrentIndex(idx)
+
+            color = style.get("color", "auto")
+            auto = (not color) or (color == "auto")
+            self.unc_auto_check.setChecked(auto)
+            self.unc_color_btn.setEnabled(not auto)
+            if auto:
+                self.unc_color_btn.setText("Авто")
+                self._set_btn_color(self.unc_color_btn, "#cccccc")
+            else:
+                self.unc_color_btn.setText(str(color))
+                self._set_btn_color(self.unc_color_btn, str(color))
+
+            self.unc_width_spin.setValue(int(style.get("width", 1)))
+            self.unc_alpha_spin.setValue(
+                int(round(int(style.get("alpha", 180)) / 255 * 100)))
+            self.unc_cap_spin.setValue(int(style.get("cap_size", 6)))
+        finally:
+            self._suppress_unc = False
+
+    def apply_uncertainty(self, *_):
+        if self._suppress_unc or not self.curves:
+            return
+        ctrl = getattr(self.session, "analysis_controller", None)
+        if ctrl is None:
+            return
+
+        from graphs.analysis.uncertainty import normalize_uncertainty_style
+        auto = self.unc_auto_check.isChecked()
+        color = "auto" if auto else self._color_from_btn(self.unc_color_btn, "#cccccc")
+        alpha = int(round(self.unc_alpha_spin.value() / 100.0 * 255))
+        style = normalize_uncertainty_style({
+            "mode": self.unc_mode_combo.currentData() or "bars",
+            "color": color,
+            "width": int(self.unc_width_spin.value()),
+            "alpha": alpha,
+            "cap_size": int(self.unc_cap_spin.value()),
+        })
+
+        for curve in self.curves:
+            try:
+                ctrl.set_uncertainty_style(curve.rel_data.root_name, style)
+            except Exception:
+                logger.exception("apply_uncertainty failed for %s",
+                                 curve.rel_data.root_name)
+
+        _status(self.session, "Стиль погрешностей обновлён", 2000)
+
+    def choose_unc_color(self):
+        current = self._color_from_btn(self.unc_color_btn, "#cccccc")
+        c = QColorDialog.getColor(QColor(current))
+        if not c.isValid():
+            return
+        self._set_btn_color(self.unc_color_btn, c.name())
+        self.unc_color_btn.setText(c.name())
+        if self.unc_auto_check.isChecked():
+            self._suppress_unc = True
+            try:
+                self.unc_auto_check.setChecked(False)
+            finally:
+                self._suppress_unc = False
+        self.unc_color_btn.setEnabled(True)
+        self.apply_uncertainty()
 
     # ------------------------------------------------------------------
     @staticmethod
@@ -1032,6 +1163,8 @@ class StyleTab(QWidget):
             self.px_mode_check.setChecked(bool(style.px_mode))
         finally:
             self._suppress_apply = False
+
+        self._load_uncertainty_style(curves)
 
     def _current_style(self) -> LineStyle:
         style = LineStyle()

@@ -1,5 +1,14 @@
+import json
+import logging
+import numpy as np
+
 from .base import BaseHDF5Entity
-from ..models import Plot, GraphStyle, Statistics, FilterEntry, LinearData, CurveTreeItemData
+from ..models import (
+    Plot, GraphStyle, Statistics, FilterEntry, LinearData,
+    CurveTreeItemData, UncertaintyEntry,
+)
+
+logger = logging.getLogger(__name__)
 
 class HDF5Plot(BaseHDF5Entity):
     """Представление графика в HDF5."""
@@ -69,6 +78,42 @@ class HDF5Plot(BaseHDF5Entity):
                 params_group = entry_group.create_group('params')
                 for param_key, param_value in entry.params.items():
                     params_group.attrs[param_key] = str(param_value)
+
+        # --- Погрешности ---
+        if 'uncertainty' in self._hdf5_object:
+            del self._hdf5_object['uncertainty']
+        unc_group = self._hdf5_object.create_group('uncertainty')
+        try:
+            unc_group.attrs['default_style'] = json.dumps(
+                plot.uncertainty_style or {}, ensure_ascii=False)
+        except Exception:
+            unc_group.attrs['default_style'] = '{}'
+
+        for i, entry in enumerate(getattr(plot, 'uncertainty_records', []) or []):
+            eg = unc_group.create_group(f"u{i}")
+            eg.attrs['id'] = entry.id or ""
+            eg.attrs['method'] = entry.method or "std"
+            eg.attrs['active'] = bool(entry.active)
+            try:
+                eg.attrs['params'] = json.dumps(entry.params or {}, ensure_ascii=False)
+            except Exception:
+                eg.attrs['params'] = '{}'
+            try:
+                eg.attrs['style'] = json.dumps(entry.style or {}, ensure_ascii=False)
+            except Exception:
+                eg.attrs['style'] = '{}'
+            if entry.y_err is not None:
+                try:
+                    eg.create_dataset('y_err', data=np.asarray(entry.y_err),
+                                      dtype=float, compression='gzip')
+                except Exception:
+                    logger.exception("write uncertainty y_err failed")
+            if entry.x_err is not None:
+                try:
+                    eg.create_dataset('x_err', data=np.asarray(entry.x_err),
+                                      dtype=float, compression='gzip')
+                except Exception:
+                    logger.exception("write uncertainty x_err failed")
 
         if 'linear_data' in self._hdf5_object:
             del self._hdf5_object['linear_data']
@@ -236,6 +281,49 @@ class HDF5Plot(BaseHDF5Entity):
 
                 linear_data.tree_item_data = tree_item_data
 
+        uncertainty_records = []
+        uncertainty_style = {}
+        if 'uncertainty' in self._hdf5_object:
+            ug = self._hdf5_object['uncertainty']
+            try:
+                raw_style = ug.attrs.get('default_style', '{}')
+                if isinstance(raw_style, bytes):
+                    raw_style = raw_style.decode('utf-8', errors='replace')
+                uncertainty_style = json.loads(raw_style) if raw_style else {}
+            except Exception:
+                uncertainty_style = {}
+            for name in ug:
+                eg = ug[name]
+                entry = UncertaintyEntry()
+                _id = eg.attrs.get('id', name)
+                if isinstance(_id, bytes):
+                    _id = _id.decode('utf-8', errors='replace')
+                entry.id = _id or name
+                _m = eg.attrs.get('method', 'std')
+                if isinstance(_m, bytes):
+                    _m = _m.decode('utf-8', errors='replace')
+                entry.method = _m or "std"
+                entry.active = bool(eg.attrs.get('active', True))
+                try:
+                    p_raw = eg.attrs.get('params', '{}')
+                    if isinstance(p_raw, bytes):
+                        p_raw = p_raw.decode('utf-8', errors='replace')
+                    entry.params = json.loads(p_raw) if p_raw else {}
+                except Exception:
+                    entry.params = {}
+                try:
+                    s_raw = eg.attrs.get('style', '{}')
+                    if isinstance(s_raw, bytes):
+                        s_raw = s_raw.decode('utf-8', errors='replace')
+                    entry.style = json.loads(s_raw) if s_raw else {}
+                except Exception:
+                    entry.style = {}
+                if 'y_err' in eg:
+                    entry.y_err = eg['y_err'][:]
+                if 'x_err' in eg:
+                    entry.x_err = eg['x_err'][:]
+                uncertainty_records.append(entry)
+
         return Plot(
             name=name,
             description=description,
@@ -250,4 +338,6 @@ class HDF5Plot(BaseHDF5Entity):
             is_gen=is_gen,
             is_curve_selected=is_curve_selected,
             axis=axis,
+            uncertainty_records=uncertainty_records,
+            uncertainty_style=uncertainty_style,
         )
