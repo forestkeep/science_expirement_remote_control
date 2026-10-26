@@ -66,6 +66,7 @@ class PatchedPlotWidget(pg.PlotWidget):
     inf_line_added   = pyqtSignal(object)
     inf_line_removed = pyqtSignal(object)
     style_changed    = pyqtSignal()
+    legend_recreated = pyqtSignal(object, object)
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -79,21 +80,22 @@ class PatchedPlotWidget(pg.PlotWidget):
         ]
 
         self.is_second_axis = False
-
         self.inf_lines = []
 
-        self.legend = pg.LegendItem(size=(80, 60), offset=(10, 10))
-        self.legend2 = pg.LegendItem(size=(80, 60), offset=(50, 10))
+        self.legend_font = QtGui.QFont("Arial", 10)
+        self.legend_color = QtGui.QColor(255, 255, 255)
+
+        self.legend = self._create_legend(offset=(10, 10))
+        self.legend2 = self._create_legend(offset=(50, 10))
         self.tooltip = pg.TextItem("X:0,Y:0", color=(255, 255, 255), anchor=(0,0))
-        
+
         self.setAntialiasing(False)
         self.scene().sigMouseMoved.connect(self.showToolTip)
 
         self.is_grid_shown = False
-        self.legend_color = QtGui.QColor(255, 255, 255)
 
         self.background_color = QtGui.QColor(0, 0, 0)
-        
+
         self.plots_lay = self.plotItem
         self.second_graphView = pg.ViewBox(
             border=None,
@@ -108,31 +110,222 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.common_style = axisStyle(text_font=QtGui.QFont("Arial", 13),tick_font=QtGui.QFont("Arial", 10), color=(255, 255, 255))
         self.axises = {}
         self.axises["left"] = axisController(self.plots_lay.getAxis("left"),
-                                              axisSettings(name_axis="left",label = "Y", is_style_customized=False, is_inverted=False, is_visible=True),
-                                              self.common_style)
-        
+                                            axisSettings(name_axis="left",label = "Y", is_style_customized=False, is_inverted=False, is_visible=True),
+                                            self.common_style)
+
         self.axises["bottom"] = axisController(axis_object=self.plots_lay.getAxis("bottom"),
-                                               axis_settings=axisSettings(name_axis="bottom",label = "X", is_style_customized=False, is_inverted=False, is_visible=True),
-                                               axis_style=self.common_style)
+                                            axis_settings=axisSettings(name_axis="bottom",label = "X", is_style_customized=False, is_inverted=False, is_visible=True),
+                                            axis_style=self.common_style)
 
         self.axises["right"] = axisController(self.plots_lay.getAxis("right"),
-                                              axisSettings(name_axis="right",label = "Y2", is_style_customized=False, is_inverted=False, is_visible=True),
-                                              self.common_style)
-        
+                                            axisSettings(name_axis="right",label = "Y2", is_style_customized=False, is_inverted=False, is_visible=True),
+                                            self.common_style)
+
         self.plots_lay.showAxis("right")
         self.plots_lay.scene().addItem(self.second_graphView)
         self.plots_lay.getAxis("right").linkToView(self.second_graphView)
         self.second_graphView.setXLink(self.plots_lay)
         self.plots_lay.vb.sigResized.connect(self.updateViews)
-        
+
         self.legend.setParentItem(self.plots_lay)
         self.legend2.setParentItem(self.second_graphView)
         self.tooltip.setParentItem(self.plots_lay)
-        
+
         self.set_second_axis(False)
 
         view_rect = self.plots_lay.vb.viewRect()
 
+    
+
+
+    
+
+
+    def _apply_legend_text_size(self, legend):
+        if legend is None:
+            return
+        opts = getattr(legend, "opts", None)
+        if not isinstance(opts, dict):
+            return
+        opts["labelTextSize"] = f"{self.legend_font.pointSize()}pt"
+
+
+    def _collect_legend_entries(self, legend):
+        if legend is None:
+            return []
+        result = []
+        for sample, label in list(getattr(legend, "items", []) or []):
+            plot_item = getattr(sample, "item", None)
+            if plot_item is None:
+                continue
+            name = getattr(label, "text", "")
+            result.append((plot_item, name))
+        return result
+
+
+    def _destroy_legend(self, legend):
+        if legend is None:
+            return
+        scene = legend.scene()
+        if scene is not None:
+            scene.removeItem(legend)
+
+
+    def _create_legend(self, offset):
+        return self._build_legend(None, [], offset)
+
+
+    def _build_legend(self, parent, entries, offset):
+        legend = pg.LegendItem(
+            size=None,
+            offset=offset,
+            labelTextColor=self.legend_color,
+            labelTextSize=f"{self.legend_font.pointSize()}pt",
+        )
+        if parent is not None:
+            legend.setParentItem(parent)
+        for plot_item, name in entries:
+            legend.addItem(plot_item, name)
+        legend.updateSize()
+        return legend
+
+
+    def set_legend_font(self, font):
+        """Сменить шрифт легенды, сохранив текущее положение.
+
+        Легенда пересоздаётся (нужно для корректного изменения
+        ``labelTextSize`` у существующих подписей). При пересоздании позиция
+        сбрасывается на исходный ``offset``, поэтому фактическое положение
+        ``old.pos()`` (учитывающее перетаскивание мышью) сохраняется и
+        восстанавливается.
+
+        Порядок важен:
+        1) снять снимок ``pos()`` ДО пересоздания;
+        2) собрать новые легенды;
+        3) синхронизировать ``offset`` и ``pos`` целевым значением
+            (``apply_pos``), отключить авто-подстройку ``_updateOffset``
+            от сигналов родителя;
+        4) заменить ссылки, уведомить наблюдателей;
+        5) удалить старые легенды;
+        6) отложенный повтор ``apply_pos`` на случай queued layout-pass'ов.
+        """
+        from PyQt5.QtCore import QTimer
+
+        self.legend_font = QtGui.QFont(font)
+
+        entries_main = self._collect_legend_entries(self.legend)
+        entries_second = self._collect_legend_entries(self.legend2)
+
+        old_main = self.legend
+        old_second = self.legend2
+
+        parent_main = old_main.parentItem() if old_main is not None else self.plotItem
+        parent_second = old_second.parentItem() if old_second is not None else self.second_graphView
+
+        # Снимок ТЕКУЩЕЙ позиции — ДО пересоздания. Кортеж (x, y), а не QPointF:
+        # кортеж переживает удаление старой легенды без риска инвалидации.
+        if old_main is not None:
+            pos_main = (old_main.pos().x(), old_main.pos().y())
+        else:
+            pos_main = None
+        if old_second is not None:
+            pos_second = (old_second.pos().x(), old_second.pos().y())
+        else:
+            pos_second = None
+
+        offset_main = getattr(old_main, "offset", None) if old_main is not None else None
+        if offset_main is None:
+            offset_main = (10, 10)
+        offset_second = getattr(old_second, "offset", None) if old_second is not None else None
+        if offset_second is None:
+            offset_second = (50, 10)
+
+        # --- Пересоздание (логика не меняется) ---
+        new_main = self._build_legend(parent_main, entries_main, offset=offset_main)
+        new_second = self._build_legend(parent_second, entries_second, offset=offset_second)
+
+        # --- Вложенные помощники (ВАЖНО: с отступом внутри set_legend_font) ---
+        def apply_pos(legend, target_xy):
+            if legend is None or target_xy is None:
+                return
+            try:
+                # 1. Сначала синхронизируем offset: если pyqtgraph сам вызовет
+                #    _updateOffset() (из resize/range-change), он поставит pos
+                #    ровно в ту же точку, что и мы.
+                setter = getattr(legend, "setOffset", None)
+                if callable(setter):
+                    try:
+                        setter(target_xy)
+                    except Exception:
+                        legend.offset = target_xy
+                else:
+                    legend.offset = target_xy
+                # 2. Затем — фактическое положение.
+                legend.setPos(target_xy[0], target_xy[1])
+            except Exception:
+                logger.exception("set_legend_font: apply_pos failed")
+
+        def detach_autoupdate(legend, parent):
+            """Отключить автоподстройку позиции от сигналов родителя.
+
+            pyqtgraph подключает ``parent.sigResized`` / ``parent.sigRangeChanged``
+            к ``legend._updateOffset``. Каждый такой вызов делает
+            ``setPos(*legend.offset)`` и в неблагоприятный момент может
+            перебить наш ``setPos``. Отключаем эти подписки — единственный
+            источник позиции теперь ``apply_pos``.
+            """
+            if legend is None or parent is None:
+                return
+            updater = getattr(legend, "_updateOffset", None)
+            if updater is None:
+                return
+            for sig_name in ("sigResized", "sigRangeChanged"):
+                sig = getattr(parent, sig_name, None)
+                if sig is None:
+                    continue
+                try:
+                    sig.disconnect(updater)
+                except (TypeError, RuntimeError):
+                    # Не было подключено / нельзя отключить — не страшно.
+                    pass
+
+        # 1. Восстановить позицию (синхронно) — до любых style_changed.
+        apply_pos(new_main, pos_main)
+        apply_pos(new_second, pos_second)
+
+        # 2. Отключить автоподстройку — чтобы никто не перебил наш setPos.
+        detach_autoupdate(new_main, parent_main)
+        detach_autoupdate(new_second, parent_second)
+
+        # 3. Заменить ссылки и уведомить наблюдателей
+        #    (manageGraph._on_legend_recreated делает replace_legend в presenter'ах).
+        self.legend = new_main
+        self.legend2 = new_second
+        self.legend_recreated.emit(old_main, new_main)
+        self.legend_recreated.emit(old_second, new_second)
+
+        # 4. Удалить старые легенды из сцены.
+        #    Именно этого шага не хватало из-за сбитого отступа — новые легенды
+        #    копились поверх старых, а self.legend продолжал указывать на старую.
+        self._destroy_legend(old_main)
+        self._destroy_legend(old_second)
+
+        self._emit_style_changed()
+
+        # 5. Страховка от отложенных layout-pass'ов: несколько повторов
+        #    apply_pos на разных временных метках переживают все queued
+        #    updateSize()/layout-события. default-args в lambda гарантируют,
+        #    что значения не изменятся между планированием и выполнением.
+        for delay in (0, 16, 50, 150):
+            QTimer.singleShot(delay, lambda l=new_main, p=pos_main: apply_pos(l, p))
+            QTimer.singleShot(delay, lambda l=new_second, p=pos_second: apply_pos(l, p))
+
+
+    def get_legend_font(self):
+        return QtGui.QFont(self.legend_font)
+
+
+    
     def _emit_style_changed(self):
         """Оповестить подписчиков (сессия → дочерние графики) о смене стиля."""
         try:

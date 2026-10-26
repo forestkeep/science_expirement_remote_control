@@ -5,6 +5,8 @@ import logging
 
 import pyqtgraph as pg
 from PyQt5 import QtCore
+from .base import BaseRenderer, artifact_legend_name
+from graphs.core.curve_presenter import force_legend_layout
 
 from .base import BaseRenderer, artifact_legend_name
 
@@ -50,12 +52,6 @@ class OverlayRenderer(BaseRenderer):
         return handles
 
     def set_visible(self, handle, visible: bool) -> None:
-        """Скрыть/показать артефакт вместе с записью в легенде.
-
-        При visible=False запись физически удаляется из legend.removeItem;
-        при visible=True — возвращается обратно с тем же именем, что было
-        при первом render.
-        """
         graph_view = self.session.graph_main.graphView
         legend = getattr(graph_view, "legend", None)
         for item in (handle or []):
@@ -83,6 +79,7 @@ class OverlayRenderer(BaseRenderer):
                             logger.exception(
                                 "OverlayRenderer.set_visible: legend remove failed"
                             )
+                        force_legend_layout(legend)
                     item.setVisible(False)
             except Exception:
                 logger.exception("OverlayRenderer.set_visible failed")
@@ -131,7 +128,8 @@ class OverlayRenderer(BaseRenderer):
                 graph_view.removeItem(item)
             except Exception:
                 logger.exception("OverlayRenderer.remove failed")
-
+        if handle:
+            force_legend_layout(legend)
 
     def set_highlighted(self, handle, highlighted: bool) -> None:
         """Подсветка артефакта тем же стилем, что и основная кривая.

@@ -505,6 +505,14 @@ class HDF5ToProjectAdapter:
 
             if hasattr(graph_widget, 'set_legend_color'):
                 graph_widget.set_legend_color(graph_settings.legend_text_color)
+
+            if (hasattr(graph_widget, 'set_legend_font')
+                    and graph_settings.legend_font):
+                try:
+                    font = string_to_qfont(graph_settings.legend_font)
+                    graph_widget.set_legend_font(font)
+                except Exception:
+                    logger.exception("apply_graph_settings: legend_font failed")
         
         graph_widget.setAntialiasing(graph_settings.antialiasing)
         if hasattr(graph_widget, "style_changed"):

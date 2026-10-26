@@ -107,6 +107,7 @@ class manageGraph(QObject):
         self.graphView.inf_line_removed.connect(self._on_inf_line_removed)
 
         self.graphView.appearance_undo_callback = self._on_appearance_changed
+        self.graphView.legend_recreated.connect(self._on_legend_recreated)
         
         self.graphView.plotItem.getAxis("left").linkToView(
             self.graphView.plotItem.getViewBox()
@@ -182,6 +183,10 @@ class manageGraph(QObject):
             return
         from graphs.core.undo_commands import RemoveInfiniteLineCommand
         session.undo_manager.push(RemoveInfiniteLineCommand(self.graphView, line))
+
+    def _on_legend_recreated(self, old_legend, new_legend):
+        for curve in self.__stack_curve.values():
+            curve.presenter.replace_legend(old_legend, new_legend)
 
     def _on_appearance_changed(self, widget, before_settings, after_settings):
         session = self.main_class

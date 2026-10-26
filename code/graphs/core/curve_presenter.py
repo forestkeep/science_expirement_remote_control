@@ -18,6 +18,25 @@ from graphs.core.selection_model import SelectionModel
 logger = logging.getLogger(__name__)
 
 
+def force_legend_layout(legend):
+    """Принудительно пересчитать раскладку легенды после изменения состава.
+
+    Вызывается как fallback из мест, где легенда могла быть изменена мимо
+    обёрнутого `removeItem` (например, если картинка ещё не успела
+    обновиться). Основную работу делает обёртка в ``PatchedPlotWidget``.
+    """
+    if legend is None:
+        return
+    layout = getattr(legend, "layout", None)
+    if layout is None:
+        return
+    layout.invalidate()
+    layout.activate()
+    update = getattr(legend, "updateSize", None)
+    if update is not None:
+        update()
+
+
 class LineStyle:
     def __init__(self, color='w', line_style=QtCore.Qt.SolidLine, line_width=1,
                  symbol=None, symbol_size=5, symbol_color='w', fill_color='w'):
@@ -292,6 +311,18 @@ class CurvePresenter:
         for viewbox in list(self.plot_items.keys()):
             self.remove_from_graph(viewbox)
 
+    def replace_legend(self, old_legend, new_legend) -> None:
+        """Заменить ссылку на легенду во всех plot_items.
+
+        Вызывается после пересоздания LegendItem в PatchedPlotWidget —
+        иначе presenter будет писать в удалённый QGraphicsItem.
+        """
+        if old_legend is None or new_legend is None or old_legend is new_legend:
+            return
+        for info in self.plot_items.values():
+            if info.get("legend") is old_legend:
+                info["legend"] = new_legend
+
     def delete_curve_from_graph(self) -> None:
         """Убрать кривую и её error bars с графика без detach()."""
         logger.info(f"delete_curve_from_graph {self.store.curve_name}")
@@ -307,7 +338,16 @@ class CurvePresenter:
             try:
                 graph_field.removeItem(info['item'])
             finally:
-                info['legend'].removeItem(self.store.legend.current_name)
+                legend = info.get('legend')
+                if legend is not None:
+                    try:
+                        legend.removeItem(info['item'])
+                    except Exception:
+                        try:
+                            legend.removeItem(self.store.legend.current_name)
+                        except Exception:
+                            pass
+                    force_legend_layout(legend)
         self.plot_items.clear()
 
     def refresh(self) -> None:

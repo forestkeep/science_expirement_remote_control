@@ -116,10 +116,10 @@ class GraphSettingsWidget(QWidget):
         self.graph_view = session.graph_main.graphView
         self._suppress = False
         self._axis_widgets = {}
+        self._legend_font = QFont("Arial", 10)
         self.setup_ui()
         self.update_settings()
 
-        # Undo/redo меняет виджет снаружи — синхронизируем UI.
         session.undo_manager.state_changed.connect(self._on_undo_state_changed)
 
     # ==================================================================
@@ -132,7 +132,29 @@ class GraphSettingsWidget(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         content = QWidget()
+        content.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid #555;
+                border-radius: 4px;
+                margin-top: 16px;
+                padding: 10px 6px 6px 6px;
+                background-color: rgba(255, 255, 255, 8);
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top left;
+                left: 8px;
+                padding: 2px 10px;
+                background-color: #3a3a3a;
+                border: 1px solid #666;
+                border-radius: 3px;
+                color: #f0f0f0;
+                font-weight: bold;
+            }
+        """)
         main = QVBoxLayout(content)
+        main.setContentsMargins(6, 6, 6, 6)
+        main.setSpacing(14)
 
         main.addWidget(self._build_general_group())
         main.addWidget(self._build_grid_group())
@@ -271,6 +293,17 @@ class GraphSettingsWidget(QWidget):
         self.legend_color_btn.clicked.connect(self.choose_legend_color)
         f.addRow("Цвет текста:", self.legend_color_btn)
 
+        self.legend_font_btn = QPushButton("Шрифт...")
+        self.legend_font_btn.clicked.connect(self.choose_legend_font)
+        f.addRow("Шрифт:", self.legend_font_btn)
+
+        self.legend_font_size_spin = QSpinBox()
+        self.legend_font_size_spin.setRange(6, 48)
+        self.legend_font_size_spin.setValue(10)
+        self.legend_font_size_spin.setSuffix(" pt")
+        self.legend_font_size_spin.valueChanged.connect(self.apply_legend_font)
+        f.addRow("Размер шрифта:", self.legend_font_size_spin)
+
         return g
 
     # ==================================================================
@@ -301,6 +334,17 @@ class GraphSettingsWidget(QWidget):
                 self.grid_alpha.setValue(int(round(float(settings.grid_alpha) * 100)))
             except Exception:
                 self.grid_alpha.setValue(100)
+
+            if hasattr(self.graph_view, "get_legend_font"):
+                try:
+                    self._legend_font = self.graph_view.get_legend_font()
+                    self.legend_font_size_spin.blockSignals(True)
+                    try:
+                        self.legend_font_size_spin.setValue(self._legend_font.pointSize())
+                    finally:
+                        self.legend_font_size_spin.blockSignals(False)
+                except Exception:
+                    pass
 
             for key, w in self._axis_widgets.items():
                 axis_model = settings.axes.get(key)
@@ -545,6 +589,33 @@ class GraphSettingsWidget(QWidget):
 
         gv.apply_appearance_change(mutate)
         _status(self.session, "Цвет легенды обновлён", 2000)
+
+    def apply_legend_font(self, *_):
+        if self._suppress:
+            return
+        new_font = QFont(self._legend_font)
+        new_font.setPointSize(int(self.legend_font_size_spin.value()))
+        self._legend_font = new_font
+        self._apply_font_to_all_views(new_font)
+        _status(self.session, "Шрифт легенды обновлён", 2000)
+
+    def choose_legend_font(self):
+        font, ok = QFontDialog.getFont(self._legend_font, self, "Шрифт легенды")
+        if not ok:
+            return
+        self._legend_font = font
+        self._suppress = True
+        try:
+            self.legend_font_size_spin.setValue(font.pointSize())
+        finally:
+            self._suppress = False
+        self._apply_font_to_all_views(font)
+        _status(self.session, "Шрифт легенды обновлён", 2000)
+
+    def _apply_font_to_all_views(self, font):
+        for gv in self._all_graph_views():
+            if hasattr(gv, "set_legend_font"):
+                gv.set_legend_font(font)
 
     # ==================================================================
     # Утилиты

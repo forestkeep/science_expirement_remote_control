@@ -104,19 +104,23 @@ def extract_plot_widget_settings(plot_widget) -> GraphFieldSettings:
             settings.axes[axis_name] = axis_settings
     
     # Настройки легенды
-    # Настройки легенды
     if hasattr(plot_widget, 'legend'):
         try:
             settings.legend_enabled = plot_widget.legend.isVisible()
         except Exception:
             pass
 
-        # Цвет текста легенды — читаем ВСЕГДА из атрибута виджета,
-        # даже если сейчас в легенде нет ни одной подписи.
         lc = getattr(plot_widget, "legend_color", None)
         if lc is not None:
             try:
                 settings.legend_text_color = color_to_string(lc)
+            except Exception:
+                pass
+
+        lf = getattr(plot_widget, "legend_font", None)
+        if lf is not None:
+            try:
+                settings.legend_font = lf.toString()
             except Exception:
                 pass
     
