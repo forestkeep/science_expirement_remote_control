@@ -87,12 +87,14 @@ class YAxisGroup(QGroupBox):
         outer.addLayout(header)
 
         # --- Поиск (компактный) ---
+        '''
         self.search = QLineEdit()
         self.search.setPlaceholderText(_TR("Поиск..."))
         self.search.setClearButtonEnabled(True)
         self.search.setMaximumHeight(22)
         self.search.textChanged.connect(self._apply_filter)
         outer.addWidget(self.search)
+        '''
 
          # --- Прокручиваемая сетка чекбоксов ---
         self._scroll = QScrollArea()
@@ -126,7 +128,7 @@ class YAxisGroup(QGroupBox):
             return
         enabled = state != 0
         self._scroll.setEnabled(enabled)
-        self.search.setEnabled(enabled)
+        #self.search.setEnabled(enabled)
         self.multiple_check.setEnabled(enabled)
         self.activation_changed.emit(enabled)
 
@@ -202,7 +204,7 @@ class YAxisGroup(QGroupBox):
     def set_parameters(self, names):
         checked = set(self.get_selected())
         self._rebuild_from_names(names, checked)
-        self._apply_filter(self.search.text())
+        #self._apply_filter(self.search.text())
 
     def get_selected(self):
         return [n for n, cb in self._checkboxes.items() if cb.isChecked()]
@@ -241,7 +243,7 @@ class YAxisGroup(QGroupBox):
                     cb.setToolTip(name)
         finally:
             self._suppress = False
-        self._apply_filter(self.search.text())
+        #self._apply_filter(self.search.text())
         self._update_counter()
 
     def rename_parameter(self, old: str, new: str):
@@ -263,7 +265,7 @@ class YAxisGroup(QGroupBox):
             lambda st, n=new: self._on_cb_changed(n, st)
         )
         self._checkboxes[new] = cb
-        self._apply_filter(self.search.text())
+        #self._apply_filter(self.search.text())
 
     def is_active(self) -> bool:
         return self.activate_check.isChecked()
@@ -276,7 +278,7 @@ class YAxisGroup(QGroupBox):
             self._suppress = False
         enabled = bool(state)
         self._scroll.setEnabled(enabled)
-        self.search.setEnabled(enabled)
+        #self.search.setEnabled(enabled)
         self.multiple_check.setEnabled(enabled)
         if is_signal:
             self.activation_changed.emit(enabled)

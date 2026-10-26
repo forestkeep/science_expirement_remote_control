@@ -252,6 +252,19 @@ class linearData:
         self.store.delete_filter(fc)
         self._rebuild_history_block()
 
+    def set_filter_enabled(self, fc: FilterCommand, enabled: bool) -> None:
+        """Включить/выключить фильтр без удаления (флаг enabled в FilterCommand)."""
+        self.store.set_filter_enabled(fc, enabled)
+
+    def update_filter_params(self, fc: FilterCommand, new_params: dict) -> None:
+        """Обновить параметры фильтра «на лету» и пересобрать данные."""
+        self.store.update_filter_params(fc, new_params)
+
+    def move_filter(self, fc: FilterCommand, new_index: int) -> None:
+        """Переместить фильтр в истории (изменяет порядок применения)."""
+        self.store.move_filter(fc, new_index)
+        self._rebuild_history_block()
+
     def clear_filters(self):
         self.store.clear_filters()
         if self.tree_item is not None:

@@ -13,6 +13,7 @@ class BaseModel:
 class FilterEntry(BaseModel):
     filter_type: str = ''
     params: Dict[str, Any] = field(default_factory=dict)
+    enabled: bool = True
 
 @dataclass
 class UncertaintyEntry(BaseModel):

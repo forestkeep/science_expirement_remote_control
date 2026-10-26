@@ -25,24 +25,6 @@ _STYLES = [("solid", "Сплошная"), ("dash", "Штрих"),
 _SYMBOLS = ["o", "s", "t", "d", "+", "x", "star", "p", "h"]
 
 
-class HelperToolbar(QWidget):
-    def __init__(self, manager, parent=None):
-        super().__init__(parent)
-        self.manager = manager
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(2, 2, 2, 2)
-        layout.setSpacing(2)
-        for helper_type, title in HELPER_TITLES.items():
-            btn = QPushButton(title[:3])
-            btn.setToolTip(f"Добавить: {title}")
-            btn.setFixedHeight(24)
-            btn.clicked.connect(lambda _=False, ht=helper_type: self.manager.add_helper(ht))
-            layout.addWidget(btn)
-        layout.addStretch()
-        clear_btn = QPushButton("Очистить")
-        clear_btn.clicked.connect(self.manager.remove_all)
-        layout.addWidget(clear_btn)
-
 
 class HelperTab(QWidget):
     def __init__(self, manager, parent=None):

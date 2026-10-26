@@ -1,11 +1,18 @@
 class FilterCommand:
-    def __init__(self, filter_type, params, filters_instance):
+    def __init__(self, filter_type, params, filters_instance, enabled=True):
         self.filter_type = filter_type
         self.params = params
         self._filters_instance = filters_instance
-    
+        self.enabled = bool(enabled)
+
     def apply(self, x, y):
-        """Применяет фильтр к данным, используя методы filters_instance"""
+        """Применяет фильтр к данным, используя методы filters_instance.
+
+        Если фильтр выключен — возвращает входные данные без изменений.
+        """
+        if not self.enabled:
+            return x, y, ""
+
         if self.filter_type == 'median':
             return self._filters_instance.med_filt(x, y, self.params['window'])
         elif self.filter_type == 'average':

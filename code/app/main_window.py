@@ -61,6 +61,9 @@ class UnifiedMainWindow(QMainWindow):
         self.sidebar.add_page_button("📊", "Графики",   self.PAGE_GRAPHS)
         self.sidebar.add_page_button("📄", "Публикация", self.PAGE_PUBLICATION)
 
+        # Единая строка состояния — для сообщений на уровне главного окна
+        self._status_bar = self.statusBar()
+
     # ========================================================== Menu
     def _build_menu(self):
         mb = self.menuBar()
@@ -243,14 +246,23 @@ class UnifiedMainWindow(QMainWindow):
 
         self.act_validate = QAction("Валидировать", self)
         self.act_validate.triggered.connect(self._on_validate)
+
         self.act_export_pkg = QAction("Экспорт пакета", self)
         self.act_export_pkg.triggered.connect(self._on_export_pkg)
+
         self.act_journal_preset = QAction("Пресет журнала", self)
         self.act_journal_preset.triggered.connect(self._on_journal_preset)
 
+        self.act_save_spec = QAction("Сохранить спецификацию…", self)
+        self.act_save_spec.triggered.connect(self._on_save_pub_spec)
+
+        self.act_load_spec = QAction("Загрузить спецификацию…", self)
+        self.act_load_spec.triggered.connect(self._on_load_pub_spec)
+
         self.menu_publication.addActions(
-            [self.act_validate, self.act_export_pkg,
-             self.act_journal_preset])
+            [self.act_validate, self.act_export_pkg, self.act_journal_preset])
+        self.menu_publication.addSeparator()
+        self.menu_publication.addActions([self.act_save_spec, self.act_load_spec])
 
     # ========================================================= Pages
     def _bootstrap_pages(self):
@@ -270,22 +282,49 @@ class UnifiedMainWindow(QMainWindow):
         self._installation_page = self._install_ctrl.installation_window
         if hasattr(self._installation_page, "open_graph_button"):
             self._installation_page.open_graph_button.hide()
+        self._hide_page_menu(self._installation_page)
         self.stack.insertWidget(self.PAGE_INSTALL, self._installation_page)
 
         self._session_ctrl = self._install_ctrl.graph_controller
         self._graphs_page = self._session_ctrl.graphics_win
+        self._hide_page_menu(self._graphs_page)
         self.stack.insertWidget(self.PAGE_GRAPHS, self._graphs_page)
 
         self._publication_page = self._session_ctrl.pub_win
+        self._hide_page_menu(self._publication_page)
         self.stack.insertWidget(self.PAGE_PUBLICATION, self._publication_page)
 
         # Текст пункта «режим разработчика» — по фактическому is_debug.
-        # При открытии .ns состояние могло быть восстановлено иным.
         if hasattr(self, "act_develop_mode"):
             self.act_develop_mode.setText(
                 "Выключить режим разработчика"
                 if self._install_ctrl.is_debug
                 else "Включить режим разработчика")
+
+    def _hide_page_menu(self, window):
+        """Скрыть менюбар встроенной страницы и обнулить ярлыки его действий.
+
+        Без обнуления ярлыков Ctrl+S, Ctrl+Z и др. срабатывали бы дважды:
+        и через действие главного окна, и через скрытое действие страницы,
+        потому что страница остаётся частью иерархии виджетов QMainWindow.
+        """
+        if window is None or not hasattr(window, "menuBar"):
+            return
+        menu_bar = window.menuBar()
+        if menu_bar is None:
+            return
+        menu_bar.hide()
+        self._clear_menu_shortcuts(menu_bar)
+
+    def _clear_menu_shortcuts(self, menu):
+        """Рекурсивно обнулить ярлыки действий меню (включая подменю)."""
+        if menu is None:
+            return
+        for action in menu.actions():
+            action.setShortcut(QKeySequence())
+            submenu = action.menu()
+            if submenu is not None:
+                self._clear_menu_shortcuts(submenu)
 
     def _rebind_after_reconstruction(self):
         for attr in ("_installation_page", "_graphs_page", "_publication_page"):
@@ -305,6 +344,38 @@ class UnifiedMainWindow(QMainWindow):
 
         self._bind_pages_from_controllers()
         self.set_current_page(self.PAGE_INSTALL)
+
+    def _on_save_pub_spec(self):
+        w = self._pub_widget()
+        if not w:
+            QMessageBox.warning(self, "Ошибка", "Виджет публикации не готов")
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Сохранить спецификацию публикации", "", "JSON (*.json)")
+        if not path:
+            return
+        if not path.endswith(".json"):
+            path += ".json"
+        try:
+            w.save_to_file(path)
+        except Exception as e:
+            logger.exception("save pub spec failed")
+            QMessageBox.critical(self, "Ошибка сохранения", str(e))
+
+    def _on_load_pub_spec(self):
+        w = self._pub_widget()
+        if not w:
+            QMessageBox.warning(self, "Ошибка", "Виджет публикации не готов")
+            return
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Загрузить спецификацию публикации", "", "JSON (*.json)")
+        if not path:
+            return
+        try:
+            w.load_from_file(path)
+        except Exception as e:
+            logger.exception("load pub spec failed")
+            QMessageBox.critical(self, "Ошибка загрузки", str(e))
 
     # ====================================================== Navigation
     def set_current_page(self, index):
@@ -326,6 +397,14 @@ class UnifiedMainWindow(QMainWindow):
         self.menu_data.menuAction().setVisible(is_graphs)
         self.menu_analysis.menuAction().setVisible(is_graphs)
         self.menu_publication.menuAction().setVisible(is_pub)
+
+        # Синхронизировать актуальный текст «режим разработчика» —
+        # состояние могло измениться при открытии .ns или программно.
+        if is_install and self._install_ctrl and hasattr(self, "act_develop_mode"):
+            self.act_develop_mode.setText(
+                "Выключить режим разработчика"
+                if self._install_ctrl.is_debug
+                else "Включить режим разработчика")
 
         self.menuBar().update()
 
@@ -400,13 +479,10 @@ class UnifiedMainWindow(QMainWindow):
             self._install_ctrl.push_button_save_installation()
         elif page == self.PAGE_GRAPHS and self._session_ctrl:
             self._session_ctrl.push_button_save_graph()
-        elif page == self.PAGE_PUBLICATION:
-            w = self._pub_widget()
-            if w:
-                path, _ = QFileDialog.getSaveFileName(
-                    self, "Сохранить спецификацию", "", "JSON (*.json)")
-                if path:
-                    w.save_to_file(path)
+        elif page == self.PAGE_PUBLICATION and self._session_ctrl:
+            # На странице публикации «Сохранить» = сохранить весь проект .hdf5,
+            # а не спецификацию публикации (для неё — отдельный пункт).
+            self._session_ctrl.push_button_save_graph()
 
     def _on_save_as(self):
         page = self.current_page()
@@ -414,8 +490,8 @@ class UnifiedMainWindow(QMainWindow):
             self._install_ctrl.push_button_save_installation_as()
         elif page == self.PAGE_GRAPHS and self._session_ctrl:
             self._session_ctrl.push_button_save_graph_as()
-        elif page == self.PAGE_PUBLICATION:
-            self._on_save()
+        elif page == self.PAGE_PUBLICATION and self._session_ctrl:
+            self._session_ctrl.push_button_save_graph_as()
 
     # ====================================================== Установка
     def _on_exp_settings(self):
@@ -431,10 +507,8 @@ class UnifiedMainWindow(QMainWindow):
         if not self._install_ctrl:
             return
         if self._install_ctrl.is_experiment_running():
-            if self._status_bar:
-                self._status_bar.set_status(
-                    "Нельзя менять режим разработчика во время эксперимента",
-                    3000)
+            self.statusBar().showMessage(
+                "Нельзя менять режим разработчика во время эксперимента", 3000)
             return
         self._install_ctrl.change_check_debug()
         self.act_develop_mode.setText(
@@ -511,13 +585,6 @@ class UnifiedMainWindow(QMainWindow):
             self._session_ctrl.show_alias_dialog()
 
     # ========================================================= Данные
-    def _on_import_data(self):
-        if self._session_ctrl:
-            self._session_ctrl.buttons_controller.handle_import_data()
-
-    def _on_import_osc(self):
-        if self._session_ctrl:
-            self._session_ctrl.buttons_controller.handle_import_osc()
 
     def _on_save_excel(self):
         if not self._session_ctrl:
@@ -530,16 +597,32 @@ class UnifiedMainWindow(QMainWindow):
             path += ".xlsx"
         try:
             self._session_ctrl._save_excel(path)
+            self.statusBar().showMessage(f"Сохранение Excel запущено: {path}", 5000)
         except Exception as e:
+            logger.exception("save excel failed")
             QMessageBox.warning(self, "Ошибка сохранения", str(e))
+
+    def _on_import_data(self):
+        if self._session_ctrl:
+            self._session_ctrl.buttons_controller.handle_import_data()
+            # handle_import_data() модальная — выполнится после закрытия диалогов,
+            # к этому моменту новые сессии уже созданы.
+            self.set_current_page(self.PAGE_GRAPHS)
+
+    def _on_import_osc(self):
+        if self._session_ctrl:
+            self._session_ctrl.buttons_controller.handle_import_osc()
+            self.set_current_page(self.PAGE_GRAPHS)
 
     def _on_live_demo(self):
         if self._session_ctrl:
             self._session_ctrl.start_live_demo_session()
+            self.set_current_page(self.PAGE_GRAPHS)
 
     def _on_static_demo(self):
         if self._session_ctrl:
             self._session_ctrl.load_static_demo_session()
+            self.set_current_page(self.PAGE_GRAPHS)
 
     # ========================================================= Анализ
     def _on_analysis_tools(self):

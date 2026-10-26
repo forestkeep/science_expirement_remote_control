@@ -172,18 +172,7 @@ class CurveDataStore:
         self._notify_data_changed()
         return True
 
-    def _rebuild_filtered(self) -> None:
-        """Пересобрать filtered_* из raw_* + filters_history. Без нотификации.
-
-        Вызывающие обязаны выставить self._filtered_dirty = True перед
-        вызовом и сами бампнуть версию/нотифицировать после.
-        """
-        self._do_reset_arrays()
-        for f in self.filters_history:
-            self._filtered_x_data, self._filtered_y_data, _ = f.apply(
-                self._filtered_x_data, self._filtered_y_data
-            )
-        self._filtered_dirty = bool(self.filters_history)
+    
 
     def delete_filter(self, fc: FilterCommand) -> None:
         if fc not in self.filters_history:
@@ -255,7 +244,25 @@ class CurveDataStore:
         return old_x, old_y, new_x, new_y
 
     # -- filters -----------------------------------------------------
+    def _rebuild_filtered(self) -> None:
+        """Пересобрать filtered_* из raw_* + filters_history. Без нотификации.
+
+        Вызывающие обязаны выставить self._filtered_dirty = True перед
+        вызовом и сами бампнуть версию/нотифицировать после.
+        Отключённые фильтры (enabled=False) пропускаются.
+        """
+        self._do_reset_arrays()
+        for f in self.filters_history:
+            if not getattr(f, "enabled", True):
+                continue
+            self._filtered_x_data, self._filtered_y_data, _ = f.apply(
+                self._filtered_x_data, self._filtered_y_data
+            )
+        self._filtered_dirty = bool(self.filters_history)
+
     def set_filter(self, fc: FilterCommand) -> str:
+        if not hasattr(fc, "enabled"):
+            fc.enabled = True
         self._filtered_x_data, self._filtered_y_data, message = fc.apply(
             self._filtered_x_data, self._filtered_y_data
         )
@@ -264,6 +271,64 @@ class CurveDataStore:
         self._bump_version()
         self._notify_data_changed()
         return message
+
+    def set_filter_enabled(self, fc: FilterCommand, enabled: bool) -> None:
+        """Включить/выключить фильтр без его удаления из истории."""
+        if fc not in self.filters_history:
+            return
+        enabled = bool(enabled)
+        if fc.enabled == enabled:
+            return
+        fc.enabled = enabled
+        self._filtered_dirty = True
+        self._rebuild_filtered()
+        self._bump_version()
+        self._notify_data_changed()
+
+    def move_filter(self, fc: FilterCommand, new_index: int) -> None:
+        """Переместить фильтр в истории и пересобрать данные.
+
+        Порядок применения фильтров влияет на результат (например,
+        «нормировка → медиана» ≠ «медиана → нормировка»). Метод переносит
+        фильтр ``fc`` на позицию ``new_index`` в ``filters_history`` и
+        пересобирает ``filtered_*``, чтобы кривая сразу отобразила
+        результат в новом порядке.
+        """
+        if fc not in self.filters_history:
+            return
+        old_index = self.filters_history.index(fc)
+
+        n = len(self.filters_history)
+        if new_index < 0:
+            new_index = 0
+        if new_index >= n:
+            new_index = n - 1
+
+        if new_index == old_index:
+            return
+
+        self.filters_history.pop(old_index)
+        self.filters_history.insert(new_index, fc)
+        self._filtered_dirty = True
+        self._rebuild_filtered()
+        self._bump_version()
+        self._notify_data_changed()
+
+    def update_filter_params(self, fc: FilterCommand, new_params: dict) -> None:
+        """Обновить параметры фильтра и пересобрать данные на лету."""
+        if fc not in self.filters_history:
+            return
+        changed = False
+        for key, value in (new_params or {}).items():
+            if fc.params.get(key) != value:
+                fc.params[key] = value
+                changed = True
+        if not changed:
+            return
+        self._filtered_dirty = True
+        self._rebuild_filtered()
+        self._bump_version()
+        self._notify_data_changed()
 
     # -- uncertainty -------------------------------------------------
     def active_uncertainty_records(self) -> list:

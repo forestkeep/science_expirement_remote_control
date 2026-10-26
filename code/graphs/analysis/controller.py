@@ -174,6 +174,29 @@ class AnalysisController(QObject):
         self.artifacts_changed.emit()
         return created
 
+    def apply_uncertainty_live(self) -> None:
+        """Пересчитать погрешности активного инструмента без undo-команд.
+
+        Используется, когда пользователь меняет параметры «Погрешностей
+        точек» на лету: записи в ``CurveDataStore`` обновляются сразу,
+        но история undo не засоряется промежуточными состояниями.
+        Undo фиксируется только при явном «Применить» (см. ``apply``).
+        """
+        if self._active is None or self._active.tool_id != "uncertainty.estimate":
+            return
+        for snap in self._active.sources:
+            curve = self.session.graph_main.get_curve(snap.root_name)
+            if curve is None:
+                continue
+            store = getattr(curve, "store", None)
+            if store is None:
+                continue
+            for rec in list(getattr(store, "uncertainty_records", []) or []):
+                self._do_remove_uncertainty(snap.root_name, rec.id)
+            record = self._compute_uncertainty_record(snap, self._active.params)
+            self._do_apply_uncertainty(snap.root_name, record)
+        self.artifacts_changed.emit()
+
     def remove_uncertainty(self, root_name: str, record_id: str) -> None:
         """Удалить запись погрешности (undoable)."""
         cmd = RemoveUncertaintyCommand(self, root_name, record_id)

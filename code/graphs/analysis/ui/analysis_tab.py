@@ -4,11 +4,11 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (
-    QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout,
-    QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QScrollArea,
-    QSpinBox, QVBoxLayout, QWidget,QSizePolicy,
+    QApplication, QCheckBox, QColorDialog, QComboBox, QDoubleSpinBox,
+    QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+    QScrollArea, QSpinBox, QVBoxLayout, QWidget, QSizePolicy,
 )
 from .. import ensure_tools_registered
 from ..models import ParamDescriptor, ParamType, tr_analysis
@@ -32,7 +32,14 @@ class AnalysisTab(QWidget):
         self.curves: List[Any] = []
         self._param_widgets: Dict[str, QWidget] = {}
         self._suppress = False
+        self._suppress_unc = False
         self._last_results_signature = None
+
+        # Дебаунс живой переоценки погрешностей при изменении параметров.
+        self._unc_live_debounce = QTimer(self)
+        self._unc_live_debounce.setSingleShot(True)
+        self._unc_live_debounce.setInterval(150)
+        self._unc_live_debounce.timeout.connect(self._apply_uncertainty_live)
 
         self._build_ui()
 
@@ -139,6 +146,12 @@ class AnalysisTab(QWidget):
         params_widget.setLayout(self.params_form)
         active_layout.addWidget(params_widget)
 
+        # Группа стиля погрешностей — показывается только для
+        # инструмента «Погрешности точек».
+        self.unc_style_group = self._build_uncertainty_group()
+        self.unc_style_group.setVisible(False)
+        active_layout.addWidget(self.unc_style_group)
+
         buttons_row = QHBoxLayout()
         self.btn_apply_active = QPushButton(_TR("Применить"))
         self.btn_apply_active.setToolTip(
@@ -171,16 +184,213 @@ class AnalysisTab(QWidget):
         self.controller.activate_tool(tool_id)
 
     def _param_changed(self, name: str, value: Any) -> None:
-        """Обновляет параметры активного инструмента без применения."""
+        """Обновляет параметры активного инструмента.
+
+        Для «Погрешностей точек» пересчёт применяется на лету: параметры
+        меняются «на ходу» с небольшим дебаунсом, чтобы таскание
+        ползунков не запускало десятки перерисовок. Undo-команды при этом
+        не создаются — они фиксируются только при явном «Применить».
+        """
         if self._suppress:
             return
         self.controller.set_preview_params({name: value})
+
+        active = self.controller.get_active_tool()
+        if active is not None and active.tool_id == "uncertainty.estimate":
+            self._unc_live_debounce.start()
 
     def _apply_active_tool(self) -> None:
         """Применяет активный инструмент анализа к выделенным кривым."""
         if self.controller.get_active_tool() is None:
             return
         self.controller.apply()
+
+    def _apply_uncertainty_live(self) -> None:
+        """Пересчитать погрешности по текущим параметрам активного инструмента."""
+        active = self.controller.get_active_tool()
+        if active is None or active.tool_id != "uncertainty.estimate":
+            return
+        try:
+            self.controller.apply_uncertainty_live()
+        except Exception:
+            logger.exception("apply_uncertainty_live failed")
+
+    # ------------------------------------------------------------------
+    # Стиль отображения погрешностей
+    # ------------------------------------------------------------------
+    def _build_uncertainty_group(self) -> QGroupBox:
+        g = QGroupBox(_TR("Стиль погрешностей"))
+        f = QFormLayout(g)
+
+        self.unc_mode_combo = QComboBox()
+        self.unc_mode_combo.addItem(_TR("Полосы (столбики)"), "bars")
+        self.unc_mode_combo.addItem(_TR("Только риски"), "caps")
+        self.unc_mode_combo.addItem(_TR("Подсветка (заливка)"), "shaded")
+        self.unc_mode_combo.addItem(_TR("Огибающие линии"), "line")
+        self.unc_mode_combo.currentIndexChanged.connect(
+            self._apply_uncertainty_style_live
+        )
+        f.addRow(_TR("Стиль:"), self.unc_mode_combo)
+
+        self.unc_color_btn = QPushButton(_TR("Авто"))
+        self.unc_color_btn.clicked.connect(self._choose_unc_color)
+        f.addRow(_TR("Цвет:"), self.unc_color_btn)
+
+        self.unc_auto_check = QCheckBox(_TR("Брать цвет кривой"))
+        self.unc_auto_check.setChecked(True)
+        self.unc_auto_check.stateChanged.connect(
+            self._apply_uncertainty_style_live
+        )
+        f.addRow(self.unc_auto_check)
+
+        self.unc_width_spin = QSpinBox()
+        self.unc_width_spin.setRange(1, 10)
+        self.unc_width_spin.setValue(1)
+        self.unc_width_spin.setToolTip(
+            _TR("Толщина линий погрешностей, px")
+        )
+        self.unc_width_spin.valueChanged.connect(
+            self._apply_uncertainty_style_live
+        )
+        f.addRow(_TR("Толщина:"), self.unc_width_spin)
+
+        self.unc_alpha_spin = QSpinBox()
+        self.unc_alpha_spin.setRange(0, 100)
+        self.unc_alpha_spin.setValue(70)
+        self.unc_alpha_spin.setSuffix(" %")
+        self.unc_alpha_spin.setToolTip(
+            _TR("Плотность (100 % — полностью непрозрачно)")
+        )
+        self.unc_alpha_spin.valueChanged.connect(
+            self._apply_uncertainty_style_live
+        )
+        f.addRow(_TR("Плотность:"), self.unc_alpha_spin)
+
+        self.unc_cap_spin = QSpinBox()
+        self.unc_cap_spin.setRange(0, 40)
+        self.unc_cap_spin.setValue(6)
+        self.unc_cap_spin.setSuffix(" px")
+        self.unc_cap_spin.setToolTip(
+            _TR("Длина горизонтальных рисок на концах (0 — без рисок)")
+        )
+        self.unc_cap_spin.valueChanged.connect(
+            self._apply_uncertainty_style_live
+        )
+        f.addRow(_TR("Длина рисок:"), self.unc_cap_spin)
+
+        return g
+
+    @staticmethod
+    def _color_from_btn(btn, fallback: str = "#ffffff") -> str:
+        css = btn.styleSheet() or ""
+        for token in css.split(";"):
+            token = token.strip()
+            if token.startswith("background-color"):
+                _, _, val = token.partition(":")
+                val = val.strip()
+                if val:
+                    return val
+        return fallback
+
+    @staticmethod
+    def _set_btn_color(btn, color: str) -> None:
+        btn.setStyleSheet(f"background-color: {color};")
+
+    def _load_uncertainty_style_for_active(self) -> None:
+        """Синхронизировать UI-контролы стиля с текущим стилем активных источников."""
+        from graphs.analysis.uncertainty import normalize_uncertainty_style
+
+        active = self.controller.get_active_tool()
+        if active is None:
+            return
+
+        style: Dict[str, Any] = {}
+        if active.sources:
+            curve = self.session.graph_main.get_curve(active.sources[0].root_name)
+            if curve is not None:
+                store = getattr(curve, "store", None)
+                if store is not None:
+                    style = dict(getattr(store, "uncertainty_style", {}) or {})
+                    if not style and getattr(store, "uncertainty_records", None):
+                        style = dict(store.uncertainty_records[0].style or {})
+        style = normalize_uncertainty_style(style)
+
+        self._suppress_unc = True
+        try:
+            idx = self.unc_mode_combo.findData(style.get("mode", "bars"))
+            if idx >= 0:
+                self.unc_mode_combo.setCurrentIndex(idx)
+
+            color = style.get("color", "auto")
+            auto = (not color) or (color == "auto")
+            self.unc_auto_check.setChecked(auto)
+            self.unc_color_btn.setEnabled(not auto)
+            if auto:
+                self.unc_color_btn.setText(_TR("Авто"))
+                self._set_btn_color(self.unc_color_btn, "#cccccc")
+            else:
+                self.unc_color_btn.setText(str(color))
+                self._set_btn_color(self.unc_color_btn, str(color))
+
+            self.unc_width_spin.setValue(int(style.get("width", 1)))
+            self.unc_alpha_spin.setValue(
+                int(round(int(style.get("alpha", 180)) / 255 * 100))
+            )
+            self.unc_cap_spin.setValue(int(style.get("cap_size", 6)))
+        finally:
+            self._suppress_unc = False
+
+    def _apply_uncertainty_style_live(self, *_args) -> None:
+        """Применить настройки стиля ко всем источникам активного инструмента.
+
+        Работает и до нажатия «Применить»: ``set_uncertainty_style``
+        сохраняет шаблон в ``store.uncertainty_style`` и подхватится при
+        создании записей.
+        """
+        if self._suppress_unc:
+            return
+        active = self.controller.get_active_tool()
+        if active is None or active.tool_id != "uncertainty.estimate":
+            return
+
+        from graphs.analysis.uncertainty import normalize_uncertainty_style
+
+        auto = self.unc_auto_check.isChecked()
+        color = "auto" if auto else self._color_from_btn(
+            self.unc_color_btn, "#cccccc"
+        )
+        alpha = int(round(self.unc_alpha_spin.value() / 100.0 * 255))
+        style = normalize_uncertainty_style({
+            "mode": self.unc_mode_combo.currentData() or "bars",
+            "color": color,
+            "width": int(self.unc_width_spin.value()),
+            "alpha": alpha,
+            "cap_size": int(self.unc_cap_spin.value()),
+        })
+
+        for snap in active.sources:
+            try:
+                self.controller.set_uncertainty_style(snap.root_name, style)
+            except Exception:
+                logger.exception(
+                    "set_uncertainty_style failed for %s", snap.root_name
+                )
+
+    def _choose_unc_color(self) -> None:
+        current = self._color_from_btn(self.unc_color_btn, "#cccccc")
+        c = QColorDialog.getColor(QColor(current))
+        if not c.isValid():
+            return
+        self._set_btn_color(self.unc_color_btn, c.name())
+        self.unc_color_btn.setText(c.name())
+        if self.unc_auto_check.isChecked():
+            self._suppress_unc = True
+            try:
+                self.unc_auto_check.setChecked(False)
+            finally:
+                self._suppress_unc = False
+        self.unc_color_btn.setEnabled(True)
+        self._apply_uncertainty_style_live()
 
     # ------------------------------------------------------------------
     def set_curves(self, curves: List[Any]) -> None:
@@ -261,6 +471,7 @@ class AnalysisTab(QWidget):
             )
         else:
             self._reload_artifacts()
+
     def _save_preset(self) -> None:
         # Собираем применённые инструменты текущего выделения
         artifacts: List[Dict[str, Any]] = []
@@ -321,7 +532,7 @@ class AnalysisTab(QWidget):
         hl.addStretch()
         hl.addWidget(del_btn)
         return w
-    
+
     def _build_artifact_row(self, artifact) -> QWidget:
         w = QWidget()
         hl = QHBoxLayout(w)
@@ -340,7 +551,6 @@ class AnalysisTab(QWidget):
         return w
 
     # ------------------------------------------------------------------
-    
 
     def _on_tool_activated(self, tool_id: str) -> None:
         desc = self.registry.get(tool_id)
@@ -350,10 +560,17 @@ class AnalysisTab(QWidget):
         self._rebuild_params(desc)
         self.active_group.setVisible(True)
 
+        is_unc = (tool_id == "uncertainty.estimate")
+        self.unc_style_group.setVisible(is_unc)
+        if is_unc:
+            self._load_uncertainty_style_for_active()
+
     def _on_tool_deactivated(self) -> None:
         self.active_group.setVisible(False)
         self._param_widgets.clear()
         self._clear_params_form()
+        self.unc_style_group.setVisible(False)
+        self._unc_live_debounce.stop()
 
     def _rebuild_params(self, desc) -> None:
         self._clear_params_form()
@@ -433,7 +650,6 @@ class AnalysisTab(QWidget):
                 lambda idx, n=param.name, ww=w: self._param_changed(n, ww.currentData()))
             return w
         if param.type == ParamType.TEXT:
-            
             w = QLineEdit(str(param.default or ""))
             w.setMinimumWidth(0)
             w.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -441,7 +657,6 @@ class AnalysisTab(QWidget):
             return w
         return None
 
-    
     def _resolve_title(self, desc) -> str:
         from ..models import tr_analysis
         return tr_analysis(desc.title_key)

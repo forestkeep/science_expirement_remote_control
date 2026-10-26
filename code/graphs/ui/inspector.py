@@ -1,11 +1,20 @@
 # graph/ui/inspector.py
 import logging
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTabWidget,
-                             QLabel, QLineEdit, QComboBox, QCheckBox, QSpinBox,
-                             QDoubleSpinBox, QPushButton, QGroupBox, QFormLayout,
-                             QTableWidget, QTableWidgetItem, QHeaderView,
-                             QStackedWidget, QScrollArea, QApplication,
-                             QColorDialog, QTextEdit, QFontDialog)
+from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import Qt, QTimer, QMimeData
+from PyQt5.QtGui import QColor, QFont, QDrag, QPainter
+from PyQt5.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QTabWidget,
+    QLabel, QLineEdit, QComboBox, QCheckBox, QSpinBox,
+    QDoubleSpinBox, QPushButton, QGroupBox, QFormLayout,
+    QTableWidget, QTableWidgetItem, QHeaderView,
+    QStackedWidget, QScrollArea, QApplication,
+    QColorDialog, QTextEdit, QFontDialog, QSlider,
+    QAbstractButton, QAbstractSlider, QAbstractSpinBox,
+    QSizePolicy,
+)
+from PyQt5.QtGui import QPainter, QColor, QPen, QFont
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QFont
 from graphs.helpers.ui import HelperTab
@@ -14,7 +23,8 @@ from graphs.core.curve_data import LineStyle
 from graphs.core.filters_instance_class import FilterCommand
 from graphs.core.undo_commands import (RenameCurveCommand, ChangeCurveStyleCommand,
                                       ApplyFilterCommand, RemoveFilterCommand,
-                                      ResetFiltersCommand, EditPointCommand)
+                                      ResetFiltersCommand, EditPointCommand,
+                                      ReorderFiltersCommand)
 from graphs.utils.line_styles import PRESETS_LINE
 from graphs.analysis.ui.analysis_tab import AnalysisTab
 
@@ -1004,12 +1014,13 @@ class StyleTab(QWidget):
         self.session = session
         self.curves = []
         self._suppress_apply = False
-        self._suppress_unc = False
+        self._style_form = None
         self.setup_ui()
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
         form = QFormLayout()
+        self._style_form = form
 
         self.preset_combo = QComboBox()
         self.preset_combo.addItem("—")
@@ -1045,150 +1056,50 @@ class StyleTab(QWidget):
         self.symbol_size.valueChanged.connect(self.apply_style)
         form.addRow("Размер маркера:", self.symbol_size)
 
+        self.sync_symbol_color_check = QCheckBox("Цвет маркера как у линии")
+        self.sync_symbol_color_check.setChecked(True)
+        self.sync_symbol_color_check.setToolTip(
+            "Если включено, цвет маркера и его заливки совпадает с цветом линии "
+            "и задаётся одной кнопкой «Цвет линии»."
+        )
+        self.sync_symbol_color_check.stateChanged.connect(self._on_sync_toggled)
+        form.addRow(self.sync_symbol_color_check)
+
         self.symbol_color_btn = QPushButton("Цвет маркера")
         self.symbol_color_btn.clicked.connect(self.choose_symbol_color)
-        form.addRow(self.symbol_color_btn)
+        form.addRow("Цвет маркера:", self.symbol_color_btn)
 
         self.fill_color_btn = QPushButton("Цвет заливки")
         self.fill_color_btn.clicked.connect(self.choose_fill_color)
-        form.addRow(self.fill_color_btn)
+        form.addRow("Цвет заливки:", self.fill_color_btn)
 
         self.px_mode_check = QCheckBox("Режим пикселей (pxMode)")
         self.px_mode_check.stateChanged.connect(self.apply_style)
         form.addRow(self.px_mode_check)
 
         layout.addLayout(form)
-        layout.addWidget(self._build_uncertainty_group())   # NEW
         layout.addStretch()
 
+        self._apply_sync_visibility()
+
     # ------------------------------------------------------------------
-    # Погрешности точек
-    # ------------------------------------------------------------------
-    def _build_uncertainty_group(self):
-        g = QGroupBox("Погрешности точек")
-        f = QFormLayout(g)
+    def _apply_sync_visibility(self) -> None:
+        sync = self.sync_symbol_color_check.isChecked()
+        for widget in (self.symbol_color_btn, self.fill_color_btn):
+            widget.setVisible(not sync)
+            label = self._style_form.labelForField(widget)
+            if label is not None:
+                label.setVisible(not sync)
 
-        self.unc_mode_combo = QComboBox()
-        self.unc_mode_combo.addItem("Полосы (столбики)", "bars")
-        self.unc_mode_combo.addItem("Только риски", "caps")
-        self.unc_mode_combo.addItem("Подсветка (заливка)", "shaded")
-        self.unc_mode_combo.addItem("Огибающие линии", "line")
-        self.unc_mode_combo.currentIndexChanged.connect(self.apply_uncertainty)
-        f.addRow("Стиль:", self.unc_mode_combo)
-
-        self.unc_color_btn = QPushButton("Авто")
-        self.unc_color_btn.clicked.connect(self.choose_unc_color)
-        f.addRow("Цвет:", self.unc_color_btn)
-
-        self.unc_auto_check = QCheckBox("Брать цвет кривой")
-        self.unc_auto_check.setChecked(True)
-        self.unc_auto_check.stateChanged.connect(self.apply_uncertainty)
-        f.addRow(self.unc_auto_check)
-
-        self.unc_width_spin = QSpinBox()
-        self.unc_width_spin.setRange(1, 10)
-        self.unc_width_spin.setValue(1)
-        self.unc_width_spin.setToolTip("Толщина линий погрешностей, px")
-        self.unc_width_spin.valueChanged.connect(self.apply_uncertainty)
-        f.addRow("Толщина:", self.unc_width_spin)
-
-        self.unc_alpha_spin = QSpinBox()
-        self.unc_alpha_spin.setRange(0, 100)
-        self.unc_alpha_spin.setValue(70)
-        self.unc_alpha_spin.setSuffix(" %")
-        self.unc_alpha_spin.setToolTip("Плотность (100 % — полностью непрозрачно)")
-        self.unc_alpha_spin.valueChanged.connect(self.apply_uncertainty)
-        f.addRow("Плотность:", self.unc_alpha_spin)
-
-        self.unc_cap_spin = QSpinBox()
-        self.unc_cap_spin.setRange(0, 40)
-        self.unc_cap_spin.setValue(6)
-        self.unc_cap_spin.setSuffix(" px")
-        self.unc_cap_spin.setToolTip("Длина горизонтальных рисок на концах (0 — без рисок)")
-        self.unc_cap_spin.valueChanged.connect(self.apply_uncertainty)
-        f.addRow("Длина рисок:", self.unc_cap_spin)
-
-        return g
-
-    def _load_uncertainty_style(self, curves):
-        """Прочитать стиль из первой кривой и синхронизировать UI."""
-        from graphs.analysis.uncertainty import normalize_uncertainty_style
-        style = {}
-        if curves:
-            store = getattr(curves[0], "store", None)
-            if store is not None:
-                style = dict(getattr(store, "uncertainty_style", {}) or {})
-                if not style and getattr(store, "uncertainty_records", None):
-                    style = dict(store.uncertainty_records[0].style or {})
-        style = normalize_uncertainty_style(style)
-
-        self._suppress_unc = True
-        try:
-            idx = self.unc_mode_combo.findData(style.get("mode", "bars"))
-            if idx >= 0:
-                self.unc_mode_combo.setCurrentIndex(idx)
-
-            color = style.get("color", "auto")
-            auto = (not color) or (color == "auto")
-            self.unc_auto_check.setChecked(auto)
-            self.unc_color_btn.setEnabled(not auto)
-            if auto:
-                self.unc_color_btn.setText("Авто")
-                self._set_btn_color(self.unc_color_btn, "#cccccc")
-            else:
-                self.unc_color_btn.setText(str(color))
-                self._set_btn_color(self.unc_color_btn, str(color))
-
-            self.unc_width_spin.setValue(int(style.get("width", 1)))
-            self.unc_alpha_spin.setValue(
-                int(round(int(style.get("alpha", 180)) / 255 * 100)))
-            self.unc_cap_spin.setValue(int(style.get("cap_size", 6)))
-        finally:
-            self._suppress_unc = False
-
-    def apply_uncertainty(self, *_):
-        if self._suppress_unc or not self.curves:
+    def _on_sync_toggled(self, state: int) -> None:
+        self._apply_sync_visibility()
+        if self._suppress_apply:
             return
-        ctrl = getattr(self.session, "analysis_controller", None)
-        if ctrl is None:
-            return
-
-        from graphs.analysis.uncertainty import normalize_uncertainty_style
-        auto = self.unc_auto_check.isChecked()
-        color = "auto" if auto else self._color_from_btn(self.unc_color_btn, "#cccccc")
-        alpha = int(round(self.unc_alpha_spin.value() / 100.0 * 255))
-        style = normalize_uncertainty_style({
-            "mode": self.unc_mode_combo.currentData() or "bars",
-            "color": color,
-            "width": int(self.unc_width_spin.value()),
-            "alpha": alpha,
-            "cap_size": int(self.unc_cap_spin.value()),
-        })
-
-        for curve in self.curves:
-            try:
-                ctrl.set_uncertainty_style(curve.rel_data.root_name, style)
-            except Exception:
-                logger.exception("apply_uncertainty failed for %s",
-                                 curve.rel_data.root_name)
-
-        _status(self.session, "Стиль погрешностей обновлён", 2000)
-
-    def choose_unc_color(self):
-        current = self._color_from_btn(self.unc_color_btn, "#cccccc")
-        c = QColorDialog.getColor(QColor(current))
-        if not c.isValid():
-            return
-        self._set_btn_color(self.unc_color_btn, c.name())
-        self.unc_color_btn.setText(c.name())
-        if self.unc_auto_check.isChecked():
-            self._suppress_unc = True
-            try:
-                self.unc_auto_check.setChecked(False)
-            finally:
-                self._suppress_unc = False
-        self.unc_color_btn.setEnabled(True)
-        self.apply_uncertainty()
+        if state != 0:
+            color = self._color_from_btn(self.color_btn)
+            self._set_btn_color(self.symbol_color_btn, color)
+            self._set_btn_color(self.fill_color_btn, color)
+            self.apply_style()
 
     # ------------------------------------------------------------------
     @staticmethod
@@ -1216,7 +1127,6 @@ class StyleTab(QWidget):
             style = curve.saved_style
             if style is None:
                 return
-            # ВАЖНО: приводим всё к int, т.к. HDF5 сохраняет числа как float
             self.width_spin.setValue(int(style.line_width or 1))
             self.symbol_size.setValue(int(style.symbol_size or 1))
             self._set_btn_color(self.color_btn, str(style.color))
@@ -1232,10 +1142,16 @@ class StyleTab(QWidget):
                 self.symbol_combo.setCurrentIndex(idx)
 
             self.px_mode_check.setChecked(bool(style.px_mode))
+
+            sync = (
+                str(style.symbol_color) == str(style.color)
+                and str(style.fill_color) == str(style.color)
+            )
+            self.sync_symbol_color_check.setChecked(bool(sync))
         finally:
             self._suppress_apply = False
 
-        self._load_uncertainty_style(curves)
+        self._apply_sync_visibility()
 
     def _current_style(self) -> LineStyle:
         style = LineStyle()
@@ -1245,8 +1161,12 @@ class StyleTab(QWidget):
         sym = self.symbol_combo.currentText()
         style.symbol = None if sym == "None" else sym
         style.symbol_size = int(self.symbol_size.value())
-        style.symbol_color = self._color_from_btn(self.symbol_color_btn)
-        style.fill_color = self._color_from_btn(self.fill_color_btn)
+        if self.sync_symbol_color_check.isChecked():
+            style.symbol_color = style.color
+            style.fill_color = style.color
+        else:
+            style.symbol_color = self._color_from_btn(self.symbol_color_btn)
+            style.fill_color = self._color_from_btn(self.fill_color_btn)
         style.px_mode = bool(self.px_mode_check.isChecked())
         return style
 
@@ -1286,6 +1206,9 @@ class StyleTab(QWidget):
         c = QColorDialog.getColor(QColor(self._color_from_btn(self.color_btn)))
         if c.isValid():
             self._set_btn_color(self.color_btn, c.name())
+            if self.sync_symbol_color_check.isChecked():
+                self._set_btn_color(self.symbol_color_btn, c.name())
+                self._set_btn_color(self.fill_color_btn, c.name())
             self.apply_style()
 
     def choose_symbol_color(self):
@@ -1299,11 +1222,469 @@ class StyleTab(QWidget):
         if c.isValid():
             self._set_btn_color(self.fill_color_btn, c.name())
             self.apply_style()
-
-
 # =====================================================================
 # Вкладка "Фильтры"
 # =====================================================================
+# ---------------------------------------------------------------------
+# Схема «живых» параметров: какие параметры показывать ползунками.
+# Формат: (key, label, kind, min, max, step, decimals, default)
+# kind: 'int' | 'float'
+# ---------------------------------------------------------------------
+_FILTER_PARAM_SCHEMA = {
+    "median": [
+        ("window", "Окно", "int", 1, 999, 2, 0, 3),
+    ],
+    "average": [
+        ("window", "Окно", "int", 1, 999, 1, 0, 3),
+    ],
+    "exp_mean": [
+        ("alpha", "Коэффициент α", "float", 0.01, 1.0, 0.01, 2, 0.5),
+    ],
+    "hampel": [
+        ("window", "Окно", "int", 3, 999, 2, 0, 5),
+        ("n_sigmas", "Порог σ", "float", 0.5, 10.0, 0.1, 2, 3.0),
+    ],
+    "savitzky_golay": [
+        ("window", "Окно", "int", 3, 999, 2, 0, 5),
+        ("polyorder", "Степень", "int", 1, 10, 1, 0, 2),
+    ],
+    "gaussian_smooth": [
+        ("window", "Окно", "int", 1, 999, 1, 0, 5),
+    ],
+    "butterworth": [
+        ("cutoff", "Срез, Гц", "float", 0.0, 1e6, 1.0, 4, 10.0),
+        ("order", "Порядок", "int", 1, 10, 1, 0, 4),
+    ],
+    "notch": [
+        ("freq", "Частота, Гц", "float", 0.001, 1e6, 1.0, 2, 50.0),
+        ("q", "Q", "float", 1.0, 1000.0, 1.0, 1, 30.0),
+    ],
+    "detrend": [
+        ("polyorder", "Степень", "int", 1, 10, 1, 0, 2),
+    ],
+    "thinning": [
+        ("percent", "Процент", "int", 0, 100, 1, 0, 10),
+    ],
+    "normalize": [],
+}
+
+_MIME_FILTER_CARD = "application/x-filter-card"
+
+
+class FilterDropIndicator(QWidget):
+    """Светящаяся полоска-индикатор места вставки при drag-and-drop.
+
+    Рисуется как горизонтальная линия с мягким свечением и круглыми
+    маркерами на концах. Не принимает события мыши, поэтому не мешает
+    drag'у, идущему над контейнером.
+    """
+
+    INDICATOR_HEIGHT = 10
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        self.setFixedHeight(self.INDICATOR_HEIGHT)
+        self.setStyleSheet("background: transparent;")
+        self.hide()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        w = self.width()
+        h = self.height()
+        cy = h / 2.0
+        left = 4
+        right = w - 4
+
+        # Мягкое свечение вокруг линии
+        base_color = QColor(90, 180, 255)
+        for i in range(4, 0, -1):
+            glow = QColor(base_color)
+            glow.setAlpha(max(0, 60 - i * 12))
+            painter.setPen(QPen(glow, i * 2.0))
+            painter.drawLine(left, int(cy), right, int(cy))
+
+        # Яркая центральная линия
+        painter.setPen(QPen(QColor(120, 210, 255), 2))
+        painter.drawLine(left, int(cy), right, int(cy))
+
+        # Маркеры на концах
+        painter.setBrush(QColor(120, 210, 255))
+        painter.setPen(Qt.NoPen)
+        painter.drawEllipse(left - 3, int(cy) - 3, 6, 6)
+        painter.drawEllipse(right - 3, int(cy) - 3, 6, 6)
+
+class FiltersContainer(QWidget):
+    """Контейнер карточек фильтров с приёмом drag-and-drop.
+
+    Карточки — обычные дочерние виджеты в QVBoxLayout. Перетаскивание
+    инициируется самой карточкой (см. ``AppliedFilterWidget.mouseMoveEvent``),
+    а этот контейнер:
+      * принимает дроп;
+      * во время движения мыши показывает светящуюся полоску
+        (``FilterDropIndicator``) между карточками — индикатор того,
+        куда именно встанет фильтр;
+      * по отпусканию сообщает индекс вставки через ``filter_dropped``.
+    """
+
+    filter_dropped = pyqtSignal(int)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self._indicator = FilterDropIndicator(self)
+        self._last_drop_index = -1
+
+    # ------------------------------------------------------------------
+    # События drag-and-drop
+    # ------------------------------------------------------------------
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasFormat(_MIME_FILTER_CARD):
+            event.acceptProposedAction()
+            self._update_indicator(event.pos())
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasFormat(_MIME_FILTER_CARD):
+            event.acceptProposedAction()
+            self._update_indicator(event.pos())
+
+    def dragLeaveEvent(self, event):
+        self._hide_indicator()
+        super().dragLeaveEvent(event)
+
+    def dropEvent(self, event):
+        if not event.mimeData().hasFormat(_MIME_FILTER_CARD):
+            return
+        target_index = self._compute_drop_index(event.pos())
+        self._hide_indicator()
+        event.acceptProposedAction()
+        self.filter_dropped.emit(target_index)
+
+    # ------------------------------------------------------------------
+    # Индикатор места вставки
+    # ------------------------------------------------------------------
+    def _hide_indicator(self) -> None:
+        self._indicator.hide()
+        self._last_drop_index = -1
+
+    def _update_indicator(self, pos) -> None:
+        idx = self._compute_drop_index(pos)
+        if idx == self._last_drop_index:
+            return
+        self._last_drop_index = idx
+        self._position_indicator(idx)
+
+    def _position_indicator(self, index: int) -> None:
+        """Поставить полоску над карточкой ``index`` или под последней."""
+        cards = self._cards()
+        n = len(cards)
+        if n == 0:
+            self._indicator.hide()
+            return
+
+        h = self._indicator.height()
+
+        if index < n:
+            # Полоска по центру верхней границы карточки index
+            y = cards[index].y() - h // 2
+        else:
+            # После последней карточки
+            last = cards[-1]
+            y = last.y() + last.height() - h // 2
+
+        if y < 0:
+            y = 0
+        container_h = self.height()
+        if y + h > container_h:
+            y = max(0, container_h - h)
+
+        x = 0
+        w = max(0, self.width())
+        self._indicator.setGeometry(x, int(y), w, h)
+        self._indicator.raise_()
+        self._indicator.show()
+
+    # ------------------------------------------------------------------
+    # Геометрия и вычисление индекса
+    # ------------------------------------------------------------------
+    def _cards(self) -> list:
+        """Дочерние карточки фильтров в порядке layout'а."""
+        result = []
+        layout = self.layout()
+        if layout is None:
+            return result
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            if item is None:
+                continue
+            w = item.widget()
+            if isinstance(w, AppliedFilterWidget):
+                result.append(w)
+        return result
+
+    def _compute_drop_index(self, pos) -> int:
+        """Индекс вставки (0..N) по координате Y курсора.
+
+        Идём по карточкам сверху вниз и возвращаем первую, чей центр
+        ниже курсора. Если такой нет — вставка в конец.
+        """
+        for i, card in enumerate(self._cards()):
+            center_y = card.y() + card.height() / 2
+            if pos.y() < center_y:
+                return i
+        return len(self._cards())
+
+class AppliedFilterWidget(QGroupBox):
+    """Карточка применённого фильтра.
+
+    Содержит:
+      * чекбокс включения (выключение исключает фильтр из расчёта, не удаляя);
+      * ползунки + спинбоксы для «живых» параметров;
+      * кнопку удаления фильтра из истории.
+
+    Карточку можно перетащить мышью, чтобы изменить порядок применения
+    фильтров. Drag начинается с любой точки карточки, кроме интерактивных
+    контролов (чекбокс, слайдер, спинбокс, кнопки, поля ввода).
+
+    Пока чекбокс снят, фильтр визуально и функционально неактивен:
+    контролы параметров выключены, подпись приглушена, отложенные
+    изменения сброшены.
+    """
+
+    deleted = pyqtSignal(object)         # FilterCommand
+    drag_started = pyqtSignal(object)    # FilterCommand
+
+    _DEBOUNCE_MS = 150
+
+    def __init__(self, curve, fc, session, parent=None):
+        super().__init__(parent)
+        self.curve = curve
+        self.fc = fc
+        self.session = session
+        self._pending_params: dict = {}
+        self._param_widgets: list[QWidget] = []
+        self._debounce = QTimer(self)
+        self._debounce.setSingleShot(True)
+        self._debounce.setInterval(self._DEBOUNCE_MS)
+        self._debounce.timeout.connect(self._apply_pending)
+        self._drag_start_pos = None
+        self._build_ui()
+        self._apply_enabled_state()
+
+    # ------------------------------------------------------------------
+    def _build_ui(self) -> None:
+        self.setTitle("")
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(4, 4, 4, 4)
+        outer.setSpacing(3)
+
+        header = QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 0)
+
+        grip = QLabel("⋮⋮")
+        grip.setStyleSheet("color: #888; font-weight: bold; padding: 0 4px;")
+        grip.setCursor(Qt.OpenHandCursor)
+        grip.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Перетащите, чтобы изменить порядок применения фильтров"
+        ))
+        header.addWidget(grip)
+
+        self.enable_check = QCheckBox(self._filter_title())
+        self.enable_check.setChecked(bool(getattr(self.fc, "enabled", True)))
+        self.enable_check.setToolTip(QApplication.translate(
+            "GraphWindow",
+            "Снимите галочку, чтобы исключить фильтр из расчёта, не удаляя его."
+        ))
+        self.enable_check.stateChanged.connect(self._on_enabled_changed)
+        header.addWidget(self.enable_check, 1)
+
+        del_btn = QPushButton("×")
+        del_btn.setFixedWidth(24)
+        del_btn.setToolTip(QApplication.translate("GraphWindow", "Удалить фильтр"))
+        del_btn.clicked.connect(self._on_delete)
+        header.addWidget(del_btn)
+
+        outer.addLayout(header)
+
+        for entry in _FILTER_PARAM_SCHEMA.get(self.fc.filter_type, []):
+            key, label, kind, mn, mx, step, dec, default = entry
+            if key == "cutoff" and self.fc.params.get("btype") == "band":
+                continue
+            current = self.fc.params.get(key, default)
+            row = self._make_slider_row(key, label, kind, mn, mx, step, dec, current)
+            self._param_widgets.append(row)
+            outer.addWidget(row)
+
+    # ------------------------------------------------------------------
+    def _apply_enabled_state(self) -> None:
+        """Привести вид карточки в соответствие с флагом enabled фильтра.
+
+        Когда фильтр выключен:
+          * все контролы параметров становятся недоступны (значения не
+            меняются мышью/клавиатурой);
+          * подпись фильтра приглушается, чтобы карточка читалась как
+            «неактивная»;
+          * отложенные изменения сбрасываются и дебаунс останавливается —
+            менять параметры выключенного фильтра нельзя даже отложенно.
+        """
+        enabled = bool(getattr(self.fc, "enabled", True))
+        for w in self._param_widgets:
+            w.setEnabled(enabled)
+
+        self.enable_check.setStyleSheet("" if enabled else "color: #888;")
+
+        if not enabled:
+            self._debounce.stop()
+            self._pending_params.clear()
+
+    # ------------------------------------------------------------------
+    def _filter_title(self) -> str:
+        names = {
+            "median": "Медианный",
+            "average": "Скользящее среднее",
+            "exp_mean": "Экспоненциальное среднее",
+            "thinning": "Прореживание",
+            "normalize": "Нормировка",
+            "hampel": "Hampel",
+            "savitzky_golay": "Savitzky-Golay",
+            "detrend": "Детренд",
+            "butterworth": "Butterworth",
+            "notch": "Notch",
+            "gaussian_smooth": "Гауссово сглаживание",
+        }
+        base = names.get(self.fc.filter_type, self.fc.filter_type)
+        summary = ", ".join(f"{k}={v}" for k, v in (self.fc.params or {}).items())
+        return f"{base} ({summary})" if summary else base
+
+    # ------------------------------------------------------------------
+    def _make_slider_row(self, key, label, kind, mn, mx, step, dec, value) -> QWidget:
+        w = QWidget()
+        h = QHBoxLayout(w)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(4)
+
+        h.addWidget(QLabel(label))
+
+        if kind == "int":
+            slider = QSlider(Qt.Horizontal)
+            slider.setRange(int(mn), int(mx))
+            slider.setSingleStep(max(1, int(step)))
+            slider.setValue(int(value))
+
+            spin = QSpinBox()
+            spin.setRange(int(mn), int(mx))
+            spin.setSingleStep(max(1, int(step)))
+            spin.setValue(int(value))
+
+            slider.valueChanged.connect(spin.setValue)
+            spin.valueChanged.connect(slider.setValue)
+            spin.valueChanged.connect(lambda v, k=key: self._schedule_update(k, int(v)))
+
+            h.addWidget(slider, 1)
+            h.addWidget(spin)
+        else:
+            scale = 1000 if dec >= 3 else 100
+            slider = QSlider(Qt.Horizontal)
+            slider.setRange(int(mn * scale), int(mx * scale))
+            slider.setSingleStep(max(1, int(step * scale)))
+            slider.setValue(int(value * scale))
+
+            spin = QDoubleSpinBox()
+            spin.setRange(float(mn), float(mx))
+            spin.setDecimals(int(dec))
+            spin.setSingleStep(float(step))
+            spin.setValue(float(value))
+
+            slider.valueChanged.connect(lambda v, s=scale: spin.setValue(v / s))
+            spin.valueChanged.connect(lambda v, s=scale: slider.setValue(int(v * s)))
+            spin.valueChanged.connect(lambda v, k=key: self._schedule_update(k, float(v)))
+
+            h.addWidget(slider, 1)
+            h.addWidget(spin)
+
+        return w
+
+    # ------------------------------------------------------------------
+    def _schedule_update(self, key: str, value) -> None:
+        # Параметры выключенного фильтра не должны меняться.
+        if not getattr(self.fc, "enabled", True):
+            return
+        self._pending_params[key] = value
+        self._debounce.start()
+
+    def _apply_pending(self) -> None:
+        if not self._pending_params:
+            return
+        params = dict(self._pending_params)
+        self._pending_params.clear()
+        self.curve.update_filter_params(self.fc, params)
+
+    def _on_enabled_changed(self, state: int) -> None:
+        enabled = state != 0
+        # Фиксируем накопленные правки до переключения состояния,
+        # чтобы значения слайдеров не разошлись с фактическими params.
+        if self._pending_params:
+            self._apply_pending()
+        self.curve.set_filter_enabled(self.fc, enabled)
+        self._apply_enabled_state()
+
+    def _on_delete(self) -> None:
+        self._debounce.stop()
+        self._pending_params.clear()
+        self.deleted.emit(self.fc)
+
+    # ------------------------------------------------------------------
+    # Drag-and-drop: инициируется самой карточкой
+    # ------------------------------------------------------------------
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            child = self.childAt(event.pos())
+            is_interactive = isinstance(
+                child,
+                (QAbstractButton, QAbstractSlider, QAbstractSpinBox,
+                 QComboBox, QLineEdit),
+            )
+            if not is_interactive:
+                self._drag_start_pos = event.pos()
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if not (event.buttons() & Qt.LeftButton):
+            return
+        if self._drag_start_pos is None:
+            return
+        moved = (event.pos() - self._drag_start_pos).manhattanLength()
+        if moved < QApplication.startDragDistance():
+            return
+
+        self._drag_start_pos = None
+
+        drag = QDrag(self)
+        mime = QMimeData()
+        mime.setData(_MIME_FILTER_CARD, b"1")
+        drag.setMimeData(mime)
+
+        # Полупрозрачный «призрак» карточки под курсором
+        pixmap = self.grab()
+        painter = QPainter(pixmap)
+        painter.setCompositionMode(QPainter.CompositionMode_DestinationIn)
+        painter.fillRect(pixmap.rect(), QColor(0, 0, 0, 160))
+        painter.end()
+        drag.setPixmap(pixmap)
+        drag.setHotSpot(event.pos())
+
+        self.drag_started.emit(self.fc)
+        drag.exec_(Qt.MoveAction)
+
+    def mouseReleaseEvent(self, event):
+        self._drag_start_pos = None
+        super().mouseReleaseEvent(event)
+
 class FiltersTab(QWidget):
     FILTER_NAMES = [
         "Медианный",
@@ -1323,72 +1704,62 @@ class FiltersTab(QWidget):
         super().__init__(parent)
         self.session = session
         self.curves = []
+        self._dragged_fc = None
         self.setup_ui()
 
+    # ------------------------------------------------------------------
     @staticmethod
     def _filter_tooltip(index: int) -> str:
-        """Локализованный tooltip фильтра по индексу в FILTER_NAMES."""
         tips = [
-            QApplication.translate(
-                "GraphWindow",
-                "Медианный фильтр: удаляет одиночные выбросы, сохраняя форму сигнала. "
-                "Окно — нечётное число точек."),
-            QApplication.translate(
-                "GraphWindow",
-                "Скользящее среднее: сглаживает сигнал, подавляя высокочастотный шум. "
-                "Окно — число усредняемых точек."),
-            QApplication.translate(
-                "GraphWindow",
-                "Экспоненциальное среднее: сглаживание с экспоненциально убывающими "
-                "весами. Коэффициент α задаёт скорость забывания старых значений."),
-            QApplication.translate(
-                "GraphWindow",
-                "Прореживание: удаляет заданный процент точек по выбранному правилу "
-                "(равномерно, максимумы, минимумы, с начала или с конца)."),
-            QApplication.translate(
-                "GraphWindow",
-                "Нормировка: приводит значения Y к стандартному диапазону "
-                "(0–1, −1–1, Z-score или robust)."),
-            QApplication.translate(
-                "GraphWindow",
-                "Hampel: устойчивый к выбросам фильтр. Заменяет точки, отклоняющиеся "
-                "от медианы окна больше заданного порога (в робастных σ)."),
-            QApplication.translate(
-                "GraphWindow",
-                "Savitzky-Golay: сглаживание полиномом в скользящем окне. Сохраняет "
-                "форму пиков без sinc-лепестков."),
-            QApplication.translate(
-                "GraphWindow",
-                "Детренд: вычитает из данных полиномиальный тренд, устраняя дрейф "
-                "и низкочастотные «пучности» в спектре."),
-            QApplication.translate(
-                "GraphWindow",
-                "Butterworth: частотный фильтр (low/high/band) с нулевым сдвигом фазы. "
-                "Частота среза задаётся в Гц."),
-            QApplication.translate(
-                "GraphWindow",
-                "Notch: режекторный фильтр для подавления узкополосной наводки "
-                "(обычно 50 Гц). Q задаёт добротность."),
-            QApplication.translate(
-                "GraphWindow",
-                "Гауссово сглаживание: свёртка с гауссовым ядром. σ оценивается "
-                "как window/6."),
+            "Медианный фильтр: удаляет одиночные выбросы, сохраняя форму сигнала. "
+            "Окно — нечётное число точек.",
+            "Скользящее среднее: сглаживает сигнал, подавляя высокочастотный шум. "
+            "Окно — число усредняемых точек.",
+            "Экспоненциальное среднее: сглаживание с экспоненциально убывающими "
+            "весами. Коэффициент α задаёт скорость забывания старых значений.",
+            "Прореживание: удаляет заданный процент точек по выбранному правилу "
+            "(равномерно, максимумы, минимумы, с начала или с конца).",
+            "Нормировка: приводит значения Y к стандартному диапазону "
+            "(0–1, −1–1, Z-score или robust).",
+            "Hampel: устойчивый к выбросам фильтр. Заменяет точки, отклоняющиеся "
+            "от медианы окна больше заданного порога (в робастных σ).",
+            "Savitzky-Golay: сглаживание полиномом в скользящем окне. Сохраняет "
+            "форму пиков без sinc-лепестков.",
+            "Детренд: вычитает из данных полиномиальный тренд, устраняя дрейф "
+            "и низкочастотные «пучности» в спектре.",
+            "Butterworth: частотный фильтр (low/high/band) с нулевым сдвигом фазы. "
+            "Частота среза задаётся в Гц.",
+            "Notch: режекторный фильтр для подавления узкополосной наводки "
+            "(обычно 50 Гц). Q задаёт добротность.",
+            "Гауссово сглаживание: свёртка с гауссовым ядром. σ оценивается "
+            "как window/6.",
         ]
-        if 0 <= index < len(tips):
-            return tips[index]
-        return ""
+        return tips[index] if 0 <= index < len(tips) else ""
 
-    def setup_ui(self):
+    # ------------------------------------------------------------------
+    def setup_ui(self) -> None:
         layout = QVBoxLayout(self)
 
         layout.addWidget(QLabel("Применённые фильтры:"))
-        self.filters_list = QTableWidget()
-        self.filters_list.setColumnCount(3)
-        self.filters_list.setHorizontalHeaderLabels(["Фильтр", "Параметры", "Действия"])
-        self.filters_list.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.filters_list.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.filters_list.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
-        layout.addWidget(self.filters_list)
+        hint = QLabel(QApplication.translate(
+            "GraphWindow",
+            "Порядок карточек = порядок применения. Перетащите карточку, "
+            "чтобы изменить порядок."
+        ))
+        hint.setStyleSheet("color: #888; font-size: 11px;")
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+
+        self.filters_scroll = QScrollArea()
+        self.filters_scroll.setWidgetResizable(True)
+        self.filters_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.filters_container = FiltersContainer()
+        self.filters_container.filter_dropped.connect(self._on_filter_dropped)
+        self.filters_layout = QVBoxLayout(self.filters_container)
+        self.filters_layout.setContentsMargins(0, 0, 0, 0)
+        self.filters_layout.setSpacing(4)
+        self.filters_scroll.setWidget(self.filters_container)
+        layout.addWidget(self.filters_scroll, 1)
 
         self.reset_all_btn = QPushButton("Сбросить все")
         self.reset_all_btn.setToolTip(QApplication.translate(
@@ -1396,6 +1767,7 @@ class FiltersTab(QWidget):
         self.reset_all_btn.clicked.connect(self.reset_all_filters)
         layout.addWidget(self.reset_all_btn)
 
+        # --- Добавление нового фильтра (без изменений) ---
         group = QGroupBox("Добавить фильтр")
         gl = QVBoxLayout(group)
 
@@ -1429,19 +1801,15 @@ class FiltersTab(QWidget):
         gl.addWidget(self.apply_btn)
 
         layout.addWidget(group)
-
+    # ------------------------------------------------------------------
+    # Панели добавления фильтра (без изменений по существу)
+    # ------------------------------------------------------------------
     def _build_median_panel(self):
         w = QWidget()
         f = QFormLayout(w)
         self.median_window = QSpinBox()
         self.median_window.setRange(1, 999)
         self.median_window.setValue(3)
-        self.median_window.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Размер окна медианного фильтра в точках. Обычно 3–7 (нечётное число). "
-            "Чем больше окно, тем сильнее подавление одиночных выбросов, но тем больше "
-            "сглаживается форма сигнала."
-        ))
         f.addRow("Окно:", self.median_window)
         return w
 
@@ -1451,11 +1819,6 @@ class FiltersTab(QWidget):
         self.average_window = QSpinBox()
         self.average_window.setRange(1, 999)
         self.average_window.setValue(3)
-        self.average_window.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Число усредняемых точек. Больше окно — сильнее сглаживание и меньше шума, "
-            "но заметнее размытие быстрых изменений сигнала."
-        ))
         f.addRow("Окно:", self.average_window)
         return w
 
@@ -1466,12 +1829,6 @@ class FiltersTab(QWidget):
         self.exp_alpha.setRange(0.01, 1.0)
         self.exp_alpha.setSingleStep(0.01)
         self.exp_alpha.setValue(0.5)
-        self.exp_alpha.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Коэффициент α экспоненциального сглаживания (0.01–1.0). "
-            "Ближе к 1 — больше веса у свежих значений, слабее сглаживание; "
-            "ближе к 0 — сильнее сглаживание и запаздывание."
-        ))
         f.addRow("Коэффициент α:", self.exp_alpha)
         return w
 
@@ -1481,51 +1838,19 @@ class FiltersTab(QWidget):
         self.thinning_percent = QSpinBox()
         self.thinning_percent.setRange(0, 100)
         self.thinning_percent.setSuffix(" %")
-        self.thinning_percent.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Процент точек, которые будут удалены. При нескольких включённых правилах "
-            "процент делится между ними поровну."
-        ))
         f.addRow("Процент удаления:", self.thinning_percent)
 
         self.thinning_uniform = QCheckBox("Равномерно")
         self.thinning_uniform.setChecked(True)
-        self.thinning_uniform.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Равномерное прореживание: удаляет каждую N-ю точку, сохраняя общую форму сигнала."
-        ))
         f.addRow(self.thinning_uniform)
-
         self.thinning_max = QCheckBox("Удалить максимальные")
-        self.thinning_max.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Удаляет заданный процент точек с наибольшими значениями Y. "
-            "Полезно для подавления положительных выбросов."
-        ))
         f.addRow(self.thinning_max)
-
         self.thinning_min = QCheckBox("Удалить минимальные")
-        self.thinning_min.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Удаляет заданный процент точек с наименьшими значениями Y. "
-            "Полезно для подавления отрицательных выбросов."
-        ))
         f.addRow(self.thinning_min)
-
         self.thinning_first = QCheckBox("Удалить первые %")
-        self.thinning_first.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Удаляет заданный процент точек с начала кривой (по индексу)."
-        ))
         f.addRow(self.thinning_first)
-
         self.thinning_last = QCheckBox("Удалить последние %")
-        self.thinning_last.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Удаляет заданный процент точек с конца кривой (по индексу)."
-        ))
         f.addRow(self.thinning_last)
-
         return w
 
     def _build_normalize_panel(self):
@@ -1533,39 +1858,6 @@ class FiltersTab(QWidget):
         f = QFormLayout(w)
         self.norm_type = QComboBox()
         self.norm_type.addItems(["0-1 (Min-Max)", "-1-1", "Z-score", "Robust (медиана/IQR)"])
-        self.norm_type.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Тип нормировки: 0–1 (min-max), −1–1, Z-score (среднее 0, СКО 1) "
-            "или robust (медиана и межквартильный размах)."
-        ))
-        self.norm_type.setItemData(
-            0,
-            QApplication.translate(
-                "GraphWindow",
-                "Приводит Y к диапазону [0, 1]. Устойчива к выбросам только по границам."),
-            Qt.ToolTipRole,
-        )
-        self.norm_type.setItemData(
-            1,
-            QApplication.translate(
-                "GraphWindow",
-                "Приводит Y к диапазону [−1, 1]. Удобно для симметричных сигналов."),
-            Qt.ToolTipRole,
-        )
-        self.norm_type.setItemData(
-            2,
-            QApplication.translate(
-                "GraphWindow",
-                "Стандартизация: (Y − среднее) / СКО. Среднее 0, СКО 1."),
-            Qt.ToolTipRole,
-        )
-        self.norm_type.setItemData(
-            3,
-            QApplication.translate(
-                "GraphWindow",
-                "Робастная нормировка: (Y − медиана) / IQR. Устойчива к выбросам."),
-            Qt.ToolTipRole,
-        )
         f.addRow("Тип:", self.norm_type)
         return w
 
@@ -1576,21 +1868,11 @@ class FiltersTab(QWidget):
         self.hampel_window.setRange(3, 999)
         self.hampel_window.setSingleStep(2)
         self.hampel_window.setValue(5)
-        self.hampel_window.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Размер окна для оценки локальной медианы и MAD. Нечётное число ≥ 3. "
-            "Окно должно быть больше типичной ширины выброса."
-        ))
         self.hampel_sigmas = QDoubleSpinBox()
         self.hampel_sigmas.setRange(0.5, 10.0)
         self.hampel_sigmas.setSingleStep(0.5)
         self.hampel_sigmas.setDecimals(2)
         self.hampel_sigmas.setValue(3.0)
-        self.hampel_sigmas.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Порог в робастных σ (MAD·1.4826). Точки, отклонившиеся от медианы окна "
-            "сильнее порога, заменяются медианой. 3σ — стандарт."
-        ))
         f.addRow("Окно:", self.hampel_window)
         f.addRow("Порог (σ):", self.hampel_sigmas)
         return w
@@ -1602,19 +1884,9 @@ class FiltersTab(QWidget):
         self.savgol_window.setRange(3, 999)
         self.savgol_window.setSingleStep(2)
         self.savgol_window.setValue(5)
-        self.savgol_window.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Длина окна аппроксимации. Нечётное число ≥ 3 и строго больше степени полинома. "
-            "Больше окно — сильнее сглаживание."
-        ))
         self.savgol_polyorder = QSpinBox()
         self.savgol_polyorder.setRange(1, 10)
         self.savgol_polyorder.setValue(2)
-        self.savgol_polyorder.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Степень аппроксимирующего полинома. Должна быть меньше длины окна. "
-            "2 — парабола, 3 — кубическая и т.д."
-        ))
         f.addRow("Окно:", self.savgol_window)
         f.addRow("Степень полинома:", self.savgol_polyorder)
         return w
@@ -1624,38 +1896,16 @@ class FiltersTab(QWidget):
         f = QFormLayout(w)
         self.detrend_type = QComboBox()
         self.detrend_type.addItems(["linear", "poly"])
-        self.detrend_type.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Тип тренда: linear — прямая, poly — полином заданной степени."
-        ))
-        self.detrend_type.setItemData(
-            0,
-            QApplication.translate("GraphWindow", "Вычитает линейный тренд k·x + b."),
-            Qt.ToolTipRole,
-        )
-        self.detrend_type.setItemData(
-            1,
-            QApplication.translate(
-                "GraphWindow",
-                "Вычитает полиномиальный тренд степени, указанной ниже."),
-            Qt.ToolTipRole,
-        )
         self.detrend_type.currentTextChanged.connect(self._on_detrend_type_changed)
-
         self.detrend_polyorder = QSpinBox()
         self.detrend_polyorder.setRange(1, 10)
         self.detrend_polyorder.setValue(2)
         self.detrend_polyorder.setEnabled(False)
-        self.detrend_polyorder.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Степень полиномиального тренда. Доступно только при типе «poly»."
-        ))
         f.addRow("Тип:", self.detrend_type)
         f.addRow("Степень:", self.detrend_polyorder)
         return w
 
     def _on_detrend_type_changed(self, text):
-        """Активировать степень полинома только для типа «poly»."""
         self.detrend_polyorder.setEnabled(text == "poly")
 
     def _build_butterworth_panel(self):
@@ -1663,60 +1913,18 @@ class FiltersTab(QWidget):
         f = QFormLayout(w)
         self.butter_type = QComboBox()
         self.butter_type.addItems(["low", "high", "band"])
-        self.butter_type.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Тип фильтра: low — нижних частот, high — верхних, band — полосовой."
-        ))
-        self.butter_type.setItemData(
-            0,
-            QApplication.translate(
-                "GraphWindow",
-                "ФНЧ: пропускает частоты ниже среза."),
-            Qt.ToolTipRole,
-        )
-        self.butter_type.setItemData(
-            1,
-            QApplication.translate(
-                "GraphWindow",
-                "ФВЧ: пропускает частоты выше среза."),
-            Qt.ToolTipRole,
-        )
-        self.butter_type.setItemData(
-            2,
-            QApplication.translate(
-                "GraphWindow",
-                "Полосовой: пропускает частоты между нижней и верхней границами."),
-            Qt.ToolTipRole,
-        )
-
         self.butter_cutoff_low = QDoubleSpinBox()
         self.butter_cutoff_low.setRange(0.0, 1e6)
         self.butter_cutoff_low.setDecimals(4)
         self.butter_cutoff_low.setValue(10.0)
-        self.butter_cutoff_low.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Частота среза в Гц. Для band — нижняя граница полосы."
-        ))
-
         self.butter_cutoff_high = QDoubleSpinBox()
         self.butter_cutoff_high.setRange(0.0, 1e6)
         self.butter_cutoff_high.setDecimals(4)
         self.butter_cutoff_high.setValue(100.0)
         self.butter_cutoff_high.setEnabled(False)
-        self.butter_cutoff_high.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Верхняя граница полосы в Гц. Используется только для типа band."
-        ))
-
         self.butter_order = QSpinBox()
         self.butter_order.setRange(1, 10)
         self.butter_order.setValue(4)
-        self.butter_order.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Порядок фильтра. Больше порядок — круче срез, но выше риск нестабильности. "
-            "Типично 2–6."
-        ))
-
         self.butter_type.currentTextChanged.connect(
             lambda t: self.butter_cutoff_high.setEnabled(t == "band")
         )
@@ -1733,21 +1941,10 @@ class FiltersTab(QWidget):
         self.notch_freq.setRange(0.001, 1e6)
         self.notch_freq.setDecimals(2)
         self.notch_freq.setValue(50.0)
-        self.notch_freq.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Частота подавляемой наводки в Гц. Для сети 50 Гц оставьте 50.0."
-        ))
-
         self.notch_q = QDoubleSpinBox()
         self.notch_q.setRange(1.0, 1000.0)
         self.notch_q.setDecimals(1)
         self.notch_q.setValue(30.0)
-        self.notch_q.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Добротность Q: чем больше, тем уже полоса подавления. "
-            "Обычно 20–50."
-        ))
-
         f.addRow("Частота (Гц):", self.notch_freq)
         f.addRow("Q:", self.notch_q)
         return w
@@ -1758,13 +1955,10 @@ class FiltersTab(QWidget):
         self.gaussian_window = QSpinBox()
         self.gaussian_window.setRange(1, 999)
         self.gaussian_window.setValue(5)
-        self.gaussian_window.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Размер окна для оценки σ (σ = window/6). Больше окно — сильнее сглаживание."
-        ))
         f.addRow("Окно (→ σ):", self.gaussian_window)
         return w
 
+    # ------------------------------------------------------------------
     def _build_filter_command(self):
         idx = self.filter_type_combo.currentIndex()
         if idx == 0:
@@ -1833,28 +2027,80 @@ class FiltersTab(QWidget):
         tip = self.filter_type_combo.itemData(idx, Qt.ToolTipRole) or ""
         self.filter_type_combo.setToolTip(tip)
 
-    # --- список применённых ------------------------------------------
+    # ------------------------------------------------------------------
+    # Список применённых фильтров
+    # ------------------------------------------------------------------
     def set_curves(self, curves):
         self.curves = curves
         self.update_filters_list()
 
     def update_filters_list(self):
-        self.filters_list.setRowCount(0)
+        while self.filters_layout.count():
+            item = self.filters_layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.deleteLater()
+
+        if len(self.curves) != 1:
+            self.filters_layout.addStretch()
+            return
+
+        curve = self.curves[0]
+        for fc in list(curve.filters_history):
+            card = AppliedFilterWidget(curve, fc, self.session)
+            card.deleted.connect(self._on_filter_deleted)
+            card.drag_started.connect(self._on_drag_started)
+            self.filters_layout.addWidget(card)
+        self.filters_layout.addStretch()
+
+    def _on_drag_started(self, fc) -> None:
+        self._dragged_fc = fc
+
+    def _on_filter_dropped(self, target_index: int) -> None:
+        fc = self._dragged_fc
+        self._dragged_fc = None
+        if fc is None or len(self.curves) != 1:
+            return
+
+        curve = self.curves[0]
+        history = curve.filters_history
+        if fc not in history:
+            return
+
+        old_index = history.index(fc)
+        # target_index — позиция «вставить перед элементом i» в исходном
+        # списке. После извлечения элемента индексы справа сдвигаются на 1.
+        new_index = target_index
+        if new_index > old_index:
+            new_index -= 1
+        if new_index < 0:
+            new_index = 0
+        if new_index >= len(history):
+            new_index = len(history) - 1
+        if new_index == old_index:
+            return
+
+        cmd = ReorderFiltersCommand(curve, fc, old_index, new_index)
+        self.session.undo_manager.push(cmd, execute=True)
+        self.update_filters_list()
+        _status(
+            self.session,
+            QApplication.translate(
+                "GraphWindow", "Порядок фильтров изменён"
+            ),
+            2000,
+        )
+
+    def _on_filter_deleted(self, fc):
         if len(self.curves) != 1:
             return
         curve = self.curves[0]
-        for i, fc in enumerate(curve.filters_history):
-            self.filters_list.insertRow(i)
-            self.filters_list.setItem(i, 0, QTableWidgetItem(str(fc.filter_type)))
-            self.filters_list.setItem(i, 1, QTableWidgetItem(str(fc.params)))
+        cmd = RemoveFilterCommand(curve, fc)
+        self.session.undo_manager.push(cmd, execute=True)
+        self.update_filters_list()
+        _status(self.session, f"Фильтр удалён: {fc.filter_type}", 2500)
 
-            cell = QWidget()
-            hl = QHBoxLayout(cell); hl.setContentsMargins(0, 0, 0, 0)
-            del_btn = QPushButton("×"); del_btn.setFixedWidth(28)
-            del_btn.clicked.connect(lambda _, c=curve, f=fc: self.remove_filter(c, f))
-            hl.addWidget(del_btn)
-            self.filters_list.setCellWidget(i, 2, cell)
-
+    # ------------------------------------------------------------------
     def apply_filter(self):
         if not self.curves:
             return
@@ -1866,12 +2112,6 @@ class FiltersTab(QWidget):
         self.update_filters_list()
         _status(self.session, f"Фильтр применён: {fc.filter_type}", 2500)
 
-    def remove_filter(self, curve, fc):
-        cmd = RemoveFilterCommand(curve, fc)
-        self.session.undo_manager.push(cmd, execute=True)
-        self.update_filters_list()
-        _status(self.session, f"Фильтр удалён: {fc.filter_type}", 2500)
-
     def reset_all_filters(self):
         if not self.curves:
             return
@@ -1879,8 +2119,6 @@ class FiltersTab(QWidget):
         self.session.undo_manager.push(cmd, execute=True)
         self.update_filters_list()
         _status(self.session, "Фильтры сброшены", 2500)
-
-
 # =====================================================================
 # Вкладка "Инструменты"
 # =====================================================================

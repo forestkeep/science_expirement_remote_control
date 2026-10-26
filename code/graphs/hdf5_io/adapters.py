@@ -182,6 +182,7 @@ class ProjectToHDF5Adapter:
                 description="",
                 filter_type=filter.filter_type,
                 params=filter.params,
+                enabled=getattr(filter, "enabled", True),
             ))
 
         # --- Погрешности: записи и шаблон стиля ---
@@ -622,6 +623,7 @@ class HDF5ToProjectAdapter:
                     filter_type=f.filter_type,
                     params=f.params,
                     filters_instance=filter_instance,
+                    enabled=getattr(f, "enabled", True),
                 )
             )
 

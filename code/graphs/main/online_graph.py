@@ -36,7 +36,7 @@ from PyQt5.QtWidgets import (
 )
 from graphs.ui.empty_state import EmptyStateWidget
 from graphs.main.demo_session import LiveDemoController, StaticDemoLoader
-from graphs.helpers import HelperManager, HelperToolbar, HelperTab
+from graphs.helpers import HelperManager, HelperTab
 from publication.ui.publication_window import PublicationWindow
 
 # --- Локальные модули проекта ---
@@ -392,8 +392,7 @@ class GraphSession(QWidget):
         )
 
         self.helper_manager = HelperManager(self, parent=self)
-        helper_toolbar = HelperToolbar(self.helper_manager)
-        self.graph_main.tab1Layout.addWidget(helper_toolbar)
+
 
         # При смене внешнего вида основного графика — обновить все дочерние
         # (attached-панели и domain-вкладки анализа).

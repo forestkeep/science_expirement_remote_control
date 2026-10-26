@@ -74,6 +74,7 @@ class HDF5Plot(BaseHDF5Entity):
                 entry_group.attrs['name'] = entry.name if entry.name else "filter"
                 entry_group.attrs['description'] = entry.description if entry.description else ""
                 entry_group.attrs['filter_type'] = entry.filter_type
+                entry_group.attrs['enabled'] = bool(getattr(entry, "enabled", True))
 
                 params_group = entry_group.create_group('params')
                 for param_key, param_value in entry.params.items():
@@ -214,6 +215,7 @@ class HDF5Plot(BaseHDF5Entity):
                 entry.name = entry_group.attrs.get('name', '')
                 entry.description = entry_group.attrs.get('description', '')
                 entry.filter_type = entry_group.attrs.get('filter_type', '')
+                entry.enabled = bool(entry_group.attrs.get('enabled', True))
                 entry.params = {}
                 if 'params' in entry_group:
                     params_group = entry_group['params']

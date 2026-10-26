@@ -348,6 +348,24 @@ class RemoveFilterCommand(UndoCommand):
         # set_filter пересоберёт историю и создаст новую запись в дереве
         self.curve.set_filter(self.filter_command)
 
+class ReorderFiltersCommand(UndoCommand):
+    """Изменение порядка применения фильтров у одной кривой."""
+
+    def __init__(self, curve, filter_command, old_index: int, new_index: int):
+        self.curve = curve
+        self.filter_command = filter_command
+        self.old_index = int(old_index)
+        self.new_index = int(new_index)
+
+    def text(self):
+        return _TR("Изменение порядка фильтров")
+
+    def redo(self):
+        self.curve.move_filter(self.filter_command, self.new_index)
+
+    def undo(self):
+        self.curve.move_filter(self.filter_command, self.old_index)
+
 
 class ResetFiltersCommand(UndoCommand):
     def __init__(self, curves: list):

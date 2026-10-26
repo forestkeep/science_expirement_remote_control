@@ -12,18 +12,32 @@ logger = logging.getLogger(__name__)
 
 
 class DemoDataGenerator:
-    """Детерминированный генератор демо-данных.
+    """Детерминированный генератор демо-данных с небольшим шумом.
 
     Каждый канал каждого прибора — своя математическая функция со своим
     именем параметра. Имена попадают в ключ ``device-channel-param``
     внутри ``graphDataManager`` и потом превращаются в подписи на графике,
     легенде и в дереве кривых (после применения алиасов).
+
+    К чистому сигналу добавляется гауссов шум, пропорциональный
+    peak-to-peak амплитуде канала. Это делает демо-данные похожими
+    на реальные измерения и позволяет наглядно показать работу фильтров
+    (медиана, скользящее среднее и т.д.). Шум детерминирован: seed
+    фиксирован, поэтому повторный запуск демо даёт те же данные.
     """
 
     NUM_POINTS = 10000
     TICK_SIZE = 100
     DEVICES = ("Демо-прибор A", "Демо-прибор B")
     CHANNELS = ("Канал 1", "Канал 2", "Канал 3")
+
+    # --- Параметры шума ---
+    # NOISE_RELATIVE — СКО шума как доля от peak-to-peak сигнала канала.
+    #   0.0 — отключить шум; 0.01–0.03 — «небольшой», как в ТЗ.
+    # NOISE_SEED — seed для воспроизводимости. None — шум разный при
+    #   каждом запуске.
+    NOISE_RELATIVE = 0.025
+    NOISE_SEED = 20240513
 
     # device -> channel -> (param_name, callable(t) -> ndarray)
     SERIES = {
@@ -44,14 +58,35 @@ class DemoDataGenerator:
         """Возвращает ``(t, series)``.
 
         ``series[device][channel] = (param_name, y_array)`` — та же форма,
-        что и в ``cls.SERIES``, только вместо лямбд уже посчитанные массивы.
+        что и в ``cls.SERIES``, только вместо лямбд уже посчитанные
+        массивы с наложенным шумом.
+
+        Шум:
+          * гауссов, аддитивный, независимый для каждой точки;
+          * СКО = ``NOISE_RELATIVE * ptp``, где ``ptp`` — peak-to-peak
+            чистого сигнала канала. Так «небольшой» шум остаётся
+            небольшим и на слабых (cos, saw), и на сильных
+            (parabola) каналах;
+          * генерируется из ``np.random.default_rng(cls.NOISE_SEED)``,
+            поэтому при одном и том же seed данные стабильны.
+
+        Для каналов с затухающей амплитудой (damped_sin) шум у хвоста
+        относительно сигнала больше — это физически ожидаемо и как раз
+        демонстрирует пользу фильтров.
         """
         t = np.linspace(0.0, 100.0, cls.NUM_POINTS)
+        rng = np.random.default_rng(cls.NOISE_SEED)
         series = {}
         for device, channels in cls.SERIES.items():
             series[device] = {}
             for channel, (param, func) in channels.items():
-                series[device][channel] = (param, func(t))
+                y_clean = np.asarray(func(t), dtype=float)
+                ptp = float(np.ptp(y_clean))
+                if ptp <= 0:
+                    ptp = 1.0
+                sigma = cls.NOISE_RELATIVE * ptp
+                noise = rng.normal(0.0, sigma, size=y_clean.shape)
+                series[device][channel] = (param, y_clean + noise)
         return t, series
 
     @classmethod
@@ -61,6 +96,8 @@ class DemoDataGenerator:
         ``{device: {channel: {param_name: [y_list, t_list]}}}``
 
         Имя параметра берётся из ``series_slice`` — ``sin``, ``cos``, …
+        Массивы ``y`` здесь уже содержат шум (он был добавлен в
+        ``generate()`` один раз), повторно шум не накладывается.
         """
         batch = {}
         for device, channels in series_slice.items():
@@ -70,7 +107,6 @@ class DemoDataGenerator:
                     param: [list(y), list(t_slice)],
                 }
         return batch
-
 
 def auto_select_first_channel(session_controller, session_id):
     """После первого батча данных выбирает X=time и Y=первый канал.

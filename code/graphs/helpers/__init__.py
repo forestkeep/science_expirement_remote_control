@@ -1,3 +1,3 @@
 from .models import HelperInstance
 from .manager import HelperManager
-from .ui import HelperToolbar, HelperTab
+from .ui import HelperTab
