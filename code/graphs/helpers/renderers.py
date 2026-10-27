@@ -392,10 +392,10 @@ def _create_pin(manager, helper):
     x = p.get("x", cx)
     y = p.get("y", cy)
     text = p.get("text", "")
+    description = p.get("description", "")
     color = p.get("color", "#ff3366")
     size = int(p.get("size", 12))
     symbol = p.get("symbol", "o")
-    # НОВОЕ: отдельный размер шрифта
     text_size = int(p.get("text_size", 12))
 
     item = pg.TargetItem(pos=(x, y), size=size, symbol=symbol,
@@ -407,6 +407,23 @@ def _create_pin(manager, helper):
             lbl.setText(text, color=color, size=f"{text_size}pt")
     except Exception:
         pass
+
+    # Тултип с описанием: наводим на значок — читаем заметку.
+    # Ставим на сам TargetItem и на подпись отдельно: hit-area у подписи
+    # своя (LabelItem — отдельный QGraphicsItem внутри TargetItem),
+    # и без дублирования tooltip не появлялся бы при наведении на текст.
+    if description:
+        try:
+            item.setToolTip(description)
+        except Exception:
+            pass
+        try:
+            lbl = item.label()
+            if lbl is not None:
+                lbl.setToolTip(description)
+        except Exception:
+            pass
+
     _add_item(manager, item)
 
     def update():
@@ -420,6 +437,7 @@ def _create_pin(manager, helper):
 
     helper.params.update({
         "x": x, "y": y, "text": text,
+        "description": description,
         "color": color, "size": size, "symbol": symbol,
         "text_size": text_size,
     })

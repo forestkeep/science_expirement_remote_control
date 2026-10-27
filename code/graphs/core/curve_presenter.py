@@ -130,7 +130,16 @@ class CurvePresenter:
         if value == self.num_showing_points:
             return
         self.num_showing_points = value
-        self._do_refresh() 
+        self._last_rendered_version = -1
+        self._do_refresh()
+
+    def show_all_points(self, state: bool) -> None:
+        state = bool(state)
+        if state == self.is_all_points_showing:
+            return
+        self.is_all_points_showing = state
+        self._last_rendered_version = -1
+        self._do_refresh()
 
     def _selection_style(self) -> LineStyle:
         """Стиль выделения, наследующий dash и символы у saved_style.
@@ -172,12 +181,6 @@ class CurvePresenter:
         for info in self.plot_items.values():
             self._apply_legend_name(info, current_name)
 
-    def show_all_points(self, state: bool) -> None:
-        state = bool(state)
-        if state == self.is_all_points_showing:
-            return
-        self.is_all_points_showing = state
-        self._do_refresh() 
 
     def _apply_style_to_all(self, style: LineStyle, update_tree: bool = True) -> None:
         for info in self.plot_items.values():

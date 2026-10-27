@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit,
     QColorDialog, QLabel, QFormLayout, QGroupBox, QScrollArea,
-    QCheckBox, QSpinBox, QDoubleSpinBox, QComboBox,
+    QCheckBox, QSpinBox, QDoubleSpinBox, QComboBox, QTextEdit
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
@@ -200,7 +200,6 @@ class HelperTab(QWidget):
                     self.manager.update_params(hid, {"size": int(v)}))
             f.addRow("Размер маркера:", size)
 
-            # НОВОЕ: отдельный размер шрифта
             ts = QSpinBox()
             ts.setRange(6, 72)
             ts.setValue(int(helper.params.get("text_size", 12)))
@@ -219,6 +218,32 @@ class HelperTab(QWidget):
                 lambda _i, hid=helper.id, sw=sym:
                     self.manager.update_params(hid, {"symbol": sw.currentText()}))
             f.addRow("Символ:", sym)
+
+            desc_edit = QTextEdit(helper.params.get("description", ""))
+            desc_edit.setPlaceholderText(
+                "Заметка. Появится во всплывающей подсказке при наведении "
+                "на метку."
+            )
+            desc_edit.setMaximumHeight(80)
+            desc_edit.setToolTip(
+                "Текст описания будет показан как tooltip при наведении "
+                "курсора на метку на графике."
+            )
+            f.addRow("Описание:", desc_edit)
+
+            save_desc_btn = QPushButton("Сохранить описание")
+            save_desc_btn.setToolTip(
+                "Изменения описания применяются только по этой кнопке"
+            )
+
+            def _save_description(_checked=False, h=helper, e=desc_edit):
+                new_text = e.toPlainText()
+                if new_text == (h.params.get("description", "")):
+                    return
+                self.manager.update_params(h.id, {"description": new_text})
+
+            save_desc_btn.clicked.connect(_save_description)
+            f.addRow(save_desc_btn)
 
         if t == "threshold":
             prefix = QLineEdit(helper.params.get("prefix", "Порог"))

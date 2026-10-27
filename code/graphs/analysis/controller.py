@@ -1,11 +1,9 @@
 """AnalysisController — центральный Mediator подсистемы анализа."""
-from __future__ import annotations
-
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, QTimer, pyqtSignal
 from PyQt5.QtWidgets import QApplication
 
 from graphs.core.session_mode import SessionMode
@@ -55,7 +53,19 @@ class AnalysisController(QObject):
         self._uncertainty_archive: Dict[str, UncertaintyRecord] = {}
         self._highlighted: set = set()
 
-        # Связь с выделением кривых
+        # --- Авто-пересчёт артефактов и погрешностей при изменении filtered_* ---
+        self._subscribed_curves: Dict[str, Any] = {}
+        self._pending_recompute: Set[str] = set()
+        # Версия данных кривой на момент последнего пересчёта. Используется,
+        # чтобы не запускать пересчёт на холостых data_changed (например,
+        # от изменения uncertainty_records: это метаданные, не данные).
+        self._last_data_version: Dict[str, int] = {}
+        self._recomputing: bool = False
+        self._recompute_timer = QTimer(self)
+        self._recompute_timer.setSingleShot(True)
+        self._recompute_timer.setInterval(150)
+        self._recompute_timer.timeout.connect(self._flush_recompute)
+
         model = getattr(session, "selection_model", None)
         if model is not None:
             model.selection_changed.connect(self._on_selection_changed)
@@ -101,15 +111,28 @@ class AnalysisController(QObject):
             return
         self._active.params.update(params)
 
+    # ------------------------------------------------------------------
+    # Публичный API: apply
+    # ------------------------------------------------------------------
     def apply(self) -> List[str]:
-        """Применить активный инструмент. Идемпотентно: сначала удаляются
-        прежние артефакты этого же инструмента для тех же источников."""
         if self._active is None:
             return []
         tool_id = self._active.tool_id
-        desc = self.registry.get(tool_id)
-        if desc is None:
+        descriptor = self.registry.get(tool_id)
+        if descriptor is None:
             return []
+
+        # КЛЮЧЕВОЕ: снапшоты, взятые в activate_tool(), могли устареть —
+        # пользователь мог применить/снять/изменить фильтры, отредактировать
+        # точки или дождаться нового батча в live-сессии. Пересобираем их
+        # из АКТУАЛЬНЫХ filtered_* данных: поиск пиков, фитинги, FFT и т.д.
+        # должны видеть ту же кривую, которую видит пользователь.
+        source_root_names = [s.root_name for s in self._active.sources]
+        fresh_sources = self._collect_sources(source_root_names)
+        if not fresh_sources:
+            return []
+        self._active.sources = fresh_sources
+
         created: List[str] = []
 
         # --- снести предыдущие артефакты этого инструмента по тем же кривым ---
@@ -119,10 +142,6 @@ class AnalysisController(QObject):
                 self._do_remove(art.id)
 
         if tool_id == "uncertainty.estimate":
-            # Погрешности хранятся прямо в CurveDataStore. При повторном
-            # применении (после смены параметров) сначала сносим старые
-            # записи для тех же кривых — иначе они наслаиваются друг на друга
-            # и смена метода/окна визуально не видна.
             for snap in self._active.sources:
                 curve = self.session.graph_main.get_curve(snap.root_name)
                 if curve is None:
@@ -132,7 +151,6 @@ class AnalysisController(QObject):
                     continue
                 for rec in list(getattr(store, "uncertainty_records", []) or []):
                     self._do_remove_uncertainty(snap.root_name, rec.id)
-            # Добавить новые записи
             for snap in self._active.sources:
                 record = self._compute_uncertainty_record(snap, self._active.params)
                 cmd = ApplyUncertaintyCommand(self, snap.root_name, record)
@@ -157,14 +175,18 @@ class AnalysisController(QObject):
             return []
 
         for i, snap in enumerate(self._active.sources):
-            sub_payload = self._payload_for_source(payload, i)
+            sub_payload = self._payload_for_source(payload, i, snap.root_name)
+            description = self._build_artifact_description(
+                strategy, self._active.params, sub_payload, details,
+                snap.root_name,
+            )
             artifact = AnalysisArtifact(
                 tool_id=tool_id,
                 source_curve_ids=[snap.root_name],
                 params=dict(self._active.params),
-                placement_type=desc.placement_type,
+                placement_type=descriptor.placement_type,
                 payload=sub_payload,
-                description=strategy.describe(self._active.params),
+                description=description,
                 leader_curve_id=snap.root_name,
             )
             cmd = ApplyAnalysisCommand(self, artifact)
@@ -175,15 +197,19 @@ class AnalysisController(QObject):
         return created
 
     def apply_uncertainty_live(self) -> None:
-        """Пересчитать погрешности активного инструмента без undo-команд.
-
-        Используется, когда пользователь меняет параметры «Погрешностей
-        точек» на лету: записи в ``CurveDataStore`` обновляются сразу,
-        но история undo не засоряется промежуточными состояниями.
-        Undo фиксируется только при явном «Применить» (см. ``apply``).
-        """
+        """Пересчитать погрешности активного инструмента без undo-команд."""
         if self._active is None or self._active.tool_id != "uncertainty.estimate":
             return
+
+        # Снапшот мог устареть между активацией и живым редактированием
+        # (например, пользователь менял фильтр до того, как открыл
+        # параметры погрешности). Пересобираем — запись должна считаться
+        # по текущей кривой.
+        source_root_names = [s.root_name for s in self._active.sources]
+        fresh_sources = self._collect_sources(source_root_names)
+        if fresh_sources:
+            self._active.sources = fresh_sources
+
         for snap in self._active.sources:
             curve = self.session.graph_main.get_curve(snap.root_name)
             if curve is None:
@@ -367,28 +393,49 @@ class AnalysisController(QObject):
         self.session.undo_manager.push(cmd, execute=True)
         self.artifacts_changed.emit()
 
-    def update_artifact_params(self, artifact_id: str, params: Dict[str, Any]) -> None:
+    # ------------------------------------------------------------------
+    def update_artifact_params(self, artifact_id: str,
+                               params: Dict[str, Any]) -> None:
         artifact = self.store.get(artifact_id)
         if artifact is None:
             return
         old_params = dict(artifact.params)
         old_payload = artifact.payload
-        # пересчёт
-        desc = self.registry.get(artifact.tool_id)
+        old_description = artifact.description
+
         strategy = self.registry.create_strategy(artifact.tool_id)
         if strategy is None:
             return
+
         snapshots = self._collect_sources(artifact.source_curve_ids)
+        if not snapshots:
+            return
+
         from .strategies.base import AnalysisContext
-        ctx = AnalysisContext(sources=snapshots,
-                              filter_instance=getattr(self.session, "filter_class", None))
-        payload, _ = strategy.compute(ctx, params)
-        new_payload = self._payload_for_source(payload, 0)
-        cmd = UpdateAnalysisParamsCommand(self, artifact_id, old_params, params,
-                                          old_payload, new_payload)
+        ctx = AnalysisContext(
+            sources=snapshots,
+            filter_instance=getattr(self.session, "filter_class", None),
+        )
+        try:
+            payload, details = strategy.compute(ctx, params)
+        except Exception:
+            logger.exception("update_artifact_params: compute failed")
+            return
+
+        source_id = (artifact.source_curve_ids[0]
+                     if artifact.source_curve_ids else None)
+        new_payload = self._payload_for_source(payload, 0, source_id)
+        new_description = self._build_artifact_description(
+            strategy, params, new_payload, details, source_id,
+        )
+
+        cmd = UpdateAnalysisParamsCommand(
+            self, artifact_id, old_params, params,
+            old_payload, new_payload,
+            old_description, new_description,
+        )
         self.session.undo_manager.push(cmd, execute=True)
         self.artifacts_changed.emit()
-
     # ------------------------------------------------------------------
     # Внутренний помощник: артефакты, привязанные к источнику
     # ------------------------------------------------------------------
@@ -441,6 +488,8 @@ class AnalysisController(QObject):
         handle = self.renderer.render(artifact, is_preview=False)
         artifact.handle = handle
         self.renderer.set_visible(handle, artifact.visibility)
+        for root_name in artifact.source_curve_ids:
+            self._subscribe_curve(root_name)
         self.artifact_applied.emit(artifact.id)
 
     def _do_remove(self, artifact_id: str) -> None:
@@ -449,17 +498,261 @@ class AnalysisController(QObject):
             return
         self.renderer.remove(artifact.handle)
         self.store.remove(artifact_id)
+        for root_name in artifact.source_curve_ids:
+            self._maybe_unsubscribe_curve(root_name)
         self.artifact_removed.emit(artifact_id)
 
-    def _do_update_params(self, artifact_id: str, params: Dict[str, Any], payload) -> None:
+
+    # ------------------------------------------------------------------
+    # Описание артефакта — единая точка правды
+    # ------------------------------------------------------------------
+    def _build_artifact_description(self, strategy, params: Dict[str, Any],
+                                    sub_payload, details,
+                                    root_name: Optional[str]) -> str:
+        """Собрать описание с расшифровкой «показано N из M».
+
+        Для аннотаций (пики, впадины) дополняем describe() контекстом:
+        сколько всего найдено и показано. Для прочих типов — просто
+        strategy.describe(params).
+        """
+        base = strategy.describe(params)
+        if getattr(sub_payload, "kind", None) != "annotation":
+            return base
+
+        n = len(getattr(sub_payload, "points", []) or [])
+        total = n
+        for d in (details or []):
+            if root_name is not None and d.get("curve") == root_name:
+                total = d.get("total_found", n)
+                break
+
+        if total > n:
+            tail = f"показано {n} из {total} — увеличьте max_points или min_prominence"
+        elif n == 0:
+            tail = "ничего не найдено — ослабьте фильтры"
+        else:
+            tail = f"найдено: {n}"
+        return f"{base}; {tail}" if base else tail
+
+    # ------------------------------------------------------------------
+    # Подписка/отписка на изменения данных кривой
+    # ------------------------------------------------------------------
+    def _subscribe_curve(self, root_name: str) -> None:
+        if root_name in self._subscribed_curves:
+            return
+        curve = self.session.graph_main.get_curve(root_name)
+        if curve is None:
+            return
+        store = getattr(curve, "store", None)
+        if store is None:
+            return
+        callback = lambda rn=root_name: self._on_source_data_changed(rn)
+        store.on_data_changed(callback)
+        self._subscribed_curves[root_name] = callback
+
+    def _unsubscribe_curve(self, root_name: str) -> None:
+        callback = self._subscribed_curves.pop(root_name, None)
+        if callback is None:
+            return
+        curve = self.session.graph_main.get_curve(root_name)
+        if curve is None:
+            return
+        store = getattr(curve, "store", None)
+        if store is not None:
+            store.off_data_changed(callback)
+
+    # ------------------------------------------------------------------
+    # Дебаунсенный пересчёт
+    # ------------------------------------------------------------------
+    def _on_source_data_changed(self, root_name: str) -> None:
+        """Данные кривой изменились. Артефакты анализа и записи погрешности
+        на этой кривой устарели и должны быть пересчитаны по новым
+        filtered_*.
+
+        Защита от холостых вызовов: ``_notify_changed()`` эмитится не только
+        при изменении filtered-данных, но и при операциях над записями
+        погрешности (добавление/удаление). Отслеживаем ``data_version``:
+        бампается только на реальных изменениях данных, поэтому на
+        uncertainty-операциях version не сдвигается и пересчёт не
+        запускается.
+        """
+        curve = self.session.graph_main.get_curve(root_name)
+        if curve is None:
+            return
+        store = getattr(curve, "store", None)
+        if store is None:
+            return
+
+        current_version = getattr(store, "data_version", 0)
+        if current_version == self._last_data_version.get(root_name, -1):
+            return
+
+        has_artifacts = bool(self.store.for_curve(root_name))
+        has_uncertainty = bool(getattr(store, "uncertainty_records", None))
+        if not (has_artifacts or has_uncertainty):
+            return
+
+        self._last_data_version[root_name] = current_version
+        self._pending_recompute.add(root_name)
+        self._recompute_timer.start()
+
+    def _flush_recompute(self) -> None:
+        if not self._pending_recompute:
+            return
+        pending = list(self._pending_recompute)
+        self._pending_recompute.clear()
+
+        if self._recomputing:
+            self._pending_recompute.update(pending)
+            self._recompute_timer.start()
+            return
+
+        self._recomputing = True
+        try:
+            for root_name in pending:
+                # Погрешности — дешевле (нет remove+render), идут первыми.
+                self._recompute_uncertainty_for(root_name)
+                for artifact in list(self.store.for_curve(root_name)):
+                    self._recompute_artifact(artifact)
+        finally:
+            self._recomputing = False
+        self.artifacts_changed.emit()
+
+    def _recompute_uncertainty_for(self, root_name: str) -> None:
+        """Пересчитать y_err всех записей погрешности кривой.
+
+        Сохраняем identity каждой записи (``id``, ``style``, ``created_at``,
+        ``visibility``) — пересчитываем только геометрию полос. Undo-команду
+        не создаём: пересчёт — следствие изменения фильтра, отмена фильтра
+        автоматически вернёт погрешности к прежнему виду.
+        """
+        curve = self.session.graph_main.get_curve(root_name)
+        if curve is None:
+            return
+        store = getattr(curve, "store", None)
+        if store is None:
+            return
+
+        records = list(getattr(store, "uncertainty_records", []) or [])
+        if not records:
+            return
+
+        x = store.filtered_x_data
+        y = store.filtered_y_data
+        if len(x) == 0 or len(y) == 0:
+            return
+
+        for rec in records:
+            try:
+                fresh = compute_uncertainty(
+                    getattr(rec, "method", "std"),
+                    x, y,
+                    dict(getattr(rec, "params", {}) or {}),
+                )
+            except Exception:
+                logger.exception(
+                    "_recompute_uncertainty_for: compute failed for %s", rec.id
+                )
+                continue
+            # Копируем только геометрию; style/id/created_at остаются
+            # на исходной записи.
+            rec.y_err = fresh.y_err
+            rec.x_err = fresh.x_err
+
+        if hasattr(curve.presenter, "set_error_bars"):
+            try:
+                curve.presenter.set_error_bars(
+                    store.active_uncertainty_records()
+                )
+            except Exception:
+                logger.exception(
+                    "_recompute_uncertainty_for: set_error_bars failed"
+                )
+
+    def _maybe_unsubscribe_curve(self, root_name: str) -> None:
+        """Отписаться от изменений данных кривой, если на ней больше нет
+        ни артефактов анализа, ни записей погрешности.
+        """
+        if self.store.for_curve(root_name):
+            return
+        curve = self.session.graph_main.get_curve(root_name)
+        if curve is None:
+            return
+        store = getattr(curve, "store", None)
+        if store is None:
+            return
+        if getattr(store, "uncertainty_records", None):
+            return
+        self._unsubscribe_curve(root_name)
+
+    def _recompute_artifact(self, artifact: AnalysisArtifact) -> None:
+        """Пересчитать артефакт на актуальных filtered_* данных.
+
+        Undo-команду НЕ создаём: пересчёт — следствие изменения фильтров,
+        а не самостоятельное действие пользователя. Undo фильтра сам
+        вернёт артефакт к прежнему состоянию через обычный recompute.
+        """
+        strategy = self.registry.create_strategy(artifact.tool_id)
+        if strategy is None:
+            return
+
+        snapshots = self._collect_sources(artifact.source_curve_ids)
+        if not snapshots:
+            return
+
+        from .strategies.base import AnalysisContext
+        ctx = AnalysisContext(
+            sources=snapshots,
+            filter_instance=getattr(self.session, "filter_class", None),
+        )
+        params = dict(artifact.params)
+        try:
+            payload, details = strategy.compute(ctx, params)
+        except Exception:
+            logger.exception(
+                "_recompute_artifact: compute failed for %s", artifact.id
+            )
+            return
+
+        source_id = (artifact.source_curve_ids[0]
+                     if artifact.source_curve_ids else None)
+        new_payload = self._payload_for_source(payload, 0, source_id)
+        new_description = self._build_artifact_description(
+            strategy, params, new_payload, details, source_id,
+        )
+        self._do_update_params(artifact.id, params, new_payload, new_description)
+
+    # ------------------------------------------------------------------
+    def _do_update_params(self, artifact_id: str, params: Dict[str, Any],
+                          payload, description: Optional[str] = None) -> None:
         artifact = self.store.get(artifact_id)
         if artifact is None:
             return
+
+        kind = getattr(payload, "kind", None)
+        if kind == "annotation":
+            # Аннотации требуют полного перерендера — точки другие.
+            self.renderer.remove(artifact.handle)
+            artifact.handle = None
+
+            artifact.params = dict(params)
+            artifact.payload = payload
+            if description is not None:
+                artifact.description = description
+
+            handle = self.renderer.render(artifact, is_preview=False)
+            artifact.handle = handle
+            self.renderer.set_visible(handle, artifact.visibility)
+            return
+
         artifact.params = dict(params)
         artifact.payload = payload
+        if description is not None:
+            artifact.description = description
         self.renderer.update(artifact.handle, payload)
 
-    def _do_apply_uncertainty(self, root_name: str, record: UncertaintyRecord) -> None:
+    def _do_apply_uncertainty(self, root_name: str,
+                              record: UncertaintyRecord) -> None:
         curve = self.session.graph_main.get_curve(root_name)
         if curve is None:
             return
@@ -469,17 +762,24 @@ class AnalysisController(QObject):
         self._uncertainty_archive[record.id] = record
         if hasattr(curve.presenter, "set_error_bars"):
             curve.presenter.set_error_bars(store.active_uncertainty_records())
+        # Кривая с погрешностями должна слушать изменения filtered_*,
+        # чтобы после применения фильтра y_err пересчиталась.
+        self._subscribe_curve(root_name)
         store._notify_changed()
 
-    def _do_remove_uncertainty(self, root_name: str, record_id: str) -> None:
+    def _do_remove_uncertainty(self, root_name: str,
+                               record_id: str) -> None:
         curve = self.session.graph_main.get_curve(root_name)
         if curve is None:
             return
         store = curve.store
-        store.uncertainty_records = [r for r in store.uncertainty_records if r.id != record_id]
+        store.uncertainty_records = [
+            r for r in store.uncertainty_records if r.id != record_id
+        ]
         store.active_uncertainty_ids.discard(record_id)
         if hasattr(curve.presenter, "set_error_bars"):
             curve.presenter.set_error_bars(store.active_uncertainty_records())
+        self._maybe_unsubscribe_curve(root_name)
         store._notify_changed()
 
     def _do_restore_uncertainty(self, root_name: str, record_id: str) -> None:
@@ -542,9 +842,17 @@ class AnalysisController(QObject):
                 rec.style = normalize_uncertainty_style(store_style)
         return rec
 
-    def _payload_for_source(self, payload, index: int):
-        """Возвращает payload, содержащий только данные для одного источника."""
+    # ------------------------------------------------------------------
+    def _payload_for_source(self, payload, index: int, source_id: Optional[str] = None):
         kind = getattr(payload, "kind", None)
+
+        if kind == "annotation":
+            pts = list(getattr(payload, "points", []) or [])
+            if source_id is not None:
+                pts = [p for p in pts
+                       if p.get("curve") is None or p.get("curve") == source_id]
+            return type(payload)(points=pts, label=payload.label)
+
         if kind == "overlay":
             xs = getattr(payload, "x", [])
             ys = getattr(payload, "y", [])
@@ -572,7 +880,6 @@ class AnalysisController(QObject):
                 y_label=payload.y_label,
                 tab_title=payload.tab_title,
             )
-        if kind == "annotation":
-            pts = [p for p in getattr(payload, "points", [])]
-            return type(payload)(points=pts, label=payload.label)
+        if kind == "uncertainty":
+            return payload
         return payload

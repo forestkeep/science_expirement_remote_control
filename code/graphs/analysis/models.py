@@ -165,6 +165,70 @@ _RU_TITLES = {
     "analysis.tool.search.valleys.title":    "Поиск минимумов",
     "analysis.tool.search.valleys.tooltip":  "Локальные минимумы",
 
+    # --- Поиск: новые параметры ---
+    "analysis.param.search.peaks.min_prominence":   "Мин. prominence пика",
+    "analysis.param.search.valleys.min_prominence": "Мин. prominence впадины",
+    "analysis.param.search.peaks.min_width":        "Мин. ширина пика",
+    "analysis.param.search.valleys.min_width":      "Мин. ширина впадины",
+    "analysis.param.search.peaks.rel_height":       "Отн. высота для ширины",
+    "analysis.param.search.valleys.rel_height":     "Отн. высота для ширины",
+    "analysis.param.search.peaks.plateau_size":     "Мин. размер плато",
+    "analysis.param.search.valleys.plateau_size":   "Мин. размер плато",
+    "analysis.param.search.peaks.show_labels":      "Показывать значения на графике",
+    "analysis.param.search.valleys.show_labels":    "Показывать значения на графике",
+
+    "analysis.param.search.peaks.min_prominence.tooltip":
+        "Минимальная prominence пика над соседними минимумами. "
+        "0 — без ограничения. Лучший фильтр против шума.",
+    "analysis.param.search.valleys.min_prominence.tooltip":
+        "Минимальная prominence впадины над соседними максимумами. "
+        "0 — без ограничения. Лучший фильтр против шума.",
+    "analysis.param.search.peaks.min_width.tooltip":
+        "Минимальная ширина пика в единицах X. 0 — без ограничения.",
+    "analysis.param.search.valleys.min_width.tooltip":
+        "Минимальная ширина впадины в единицах X. 0 — без ограничения.",
+    "analysis.param.search.peaks.rel_height.tooltip":
+        "Относительная высота (0..1) от prominence, на которой меряется ширина. "
+        "0.5 — FWHM. Используется только при min_width > 0.",
+    "analysis.param.search.valleys.rel_height.tooltip":
+        "Относительная высота (0..1) от prominence, на которой меряется ширина впадины.",
+    "analysis.param.search.peaks.plateau_size.tooltip":
+        "Минимальный размер плоской вершины пика в точках. 0 — без ограничения.",
+    "analysis.param.search.valleys.plateau_size.tooltip":
+        "Минимальный размер плоского дна впадины в точках. 0 — без ограничения.",
+    "analysis.param.search.peaks.show_labels.tooltip":
+        "Показывать подписи x=…, y=… над каждым пиком.",
+    "analysis.param.search.valleys.show_labels.tooltip":
+        "Показывать подписи x=…, y=… над каждой впадиной.",
+
+    "analysis.param.search.peaks.max_points":   "Макс. точек на графике",
+    "analysis.param.search.valleys.max_points": "Макс. точек на графике",
+    "analysis.param.search.peaks.max_points.tooltip":
+        "Если найдено больше — на графике остаются самые значимые по prominence. "
+        "Увеличивает нагрузку на отрисовку при больших значениях.",
+    "analysis.param.search.valleys.max_points.tooltip":
+        "Если найдено больше — на графике остаются самые значимые по prominence.",
+
+    "analysis.param.search.peaks.show_labels":   "Подписи значений",
+    "analysis.param.search.valleys.show_labels": "Подписи значений",
+    "analysis.param.search.peaks.show_labels.tooltip":
+        "Показывать x=…, y=… над точками. Включается только для результатов "
+        "не больше 30 точек — иначе это сильно замедляет отрисовку.",
+    "analysis.param.search.valleys.show_labels.tooltip":
+        "Показывать x=…, y=… над точками (до 30 точек).",
+
+    # --- Поиск: tooltips ---
+    "analysis.param.search.peaks.min_height.tooltip":
+        "Минимальная высота пика в единицах Y. 0 — без ограничения.",
+    "analysis.param.search.valleys.min_height.tooltip":
+        "Минимальная глубина впадины в единицах Y. 0 — без ограничения.",
+    "analysis.param.search.peaks.min_distance.tooltip":
+        "Минимальное расстояние между соседними пиками в точках индекса. "
+        "0/1 — без ограничения.",
+    "analysis.param.search.valleys.min_distance.tooltip":
+        "Минимальное расстояние между соседними впадинами в точках индекса. "
+        "0/1 — без ограничения.",
+
     # --- Дифференциальные ---
     "analysis.tool.diff.derivative.title":   "Производная",
     "analysis.tool.diff.derivative.tooltip": "Численная производная dY/dX",
@@ -196,14 +260,20 @@ _RU_TITLES = {
     # Параметры: tooltips
     "analysis.param.fit.polynomial.degree.tooltip":
         "Степень аппроксимирующего полинома: 2 — парабола, 3 — кубическая, … до 6",
+
     "analysis.param.search.peaks.min_height.tooltip":
-        "Минимальная высота пика: пики ниже порога игнорируются",
-    "analysis.param.search.peaks.min_distance.tooltip":
-        "Минимальное расстояние между соседними пиками (в точках)",
+        "Минимальная высота пика (в единицах Y). 0 — без ограничения "
+        "(находятся пики с любым Y, включая отрицательные).",
     "analysis.param.search.valleys.min_height.tooltip":
-        "Минимальная глубина впадины: впадины меньше порога игнорируются",
+        "Минимальная глубина впадины (в единицах Y). 0 — без ограничения.",
+    "analysis.param.search.peaks.min_distance.tooltip":
+        "Минимальное расстояние между соседними пиками в точках индекса. "
+        "1 — без ограничения.",
     "analysis.param.search.valleys.min_distance.tooltip":
-        "Минимальное расстояние между соседними впадинами (в точках)",
+        "Минимальное расстояние"
+        " между соседними впадинами в точках индекса. "
+        "1 — без ограничения.",
+
     "analysis.param.diff.window.tooltip":
         "Окно сглаживания производной. 0 или 1 — без сглаживания, >1 — скользящее среднее указанного размера",
     "analysis.param.uncertainty.method.tooltip":

@@ -52,24 +52,31 @@ class RemoveAnalysisCommand(_BaseAnalysisCommand):
 class UpdateAnalysisParamsCommand(_BaseAnalysisCommand):
     def __init__(self, controller, artifact_id: str,
                  old_params: Dict[str, Any], new_params: Dict[str, Any],
-                 old_payload: Any, new_payload: Any) -> None:
+                 old_payload: Any, new_payload: Any,
+                 old_description: str = "", new_description: str = "") -> None:
         super().__init__(controller)
         self.artifact_id = artifact_id
         self.old_params = copy.deepcopy(old_params)
         self.new_params = copy.deepcopy(new_params)
         self.old_payload = old_payload
         self.new_payload = new_payload
+        self.old_description = old_description
+        self.new_description = new_description
 
     def text(self) -> str:
         return _TR("Пересчёт результата анализа")
 
     def redo(self) -> None:
-        self.controller._do_update_params(self.artifact_id, self.new_params,
-                                          self.new_payload)
+        self.controller._do_update_params(
+            self.artifact_id, self.new_params,
+            self.new_payload, self.new_description,
+        )
 
     def undo(self) -> None:
-        self.controller._do_update_params(self.artifact_id, self.old_params,
-                                          self.old_payload)
+        self.controller._do_update_params(
+            self.artifact_id, self.old_params,
+            self.old_payload, self.old_description,
+        )
 
 
 class ApplyUncertaintyCommand(_BaseAnalysisCommand):
