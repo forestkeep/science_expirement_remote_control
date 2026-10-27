@@ -3,9 +3,10 @@ import logging
 import os
 
 from PyQt5.QtGui import QKeySequence
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (
-    QAction, QFileDialog, QHBoxLayout, QMainWindow,
-    QMessageBox, QStackedWidget, QWidget,
+    QAction, QFileDialog, QHBoxLayout, QLabel, QMainWindow,
+    QMessageBox, QStackedWidget, QVBoxLayout, QWidget,
 )
 
 from app.sidebar import IconSidebar
@@ -28,19 +29,42 @@ class UnifiedMainWindow(QMainWindow):
         self._installation_page  = None
         self._graphs_page        = None
         self._publication_page   = None
+        self._publication_placeholder = None
 
         self._device_selector   = None
         self._local_devices     = {}
         self._test_commands_win = None
         self._device_creator    = None
 
+        self._bootstrapped = False
+        self._bootstrap_in_progress = False
+
         self.setWindowTitle(f"Experiment Control {version}")
         self.resize(1400, 900)
 
+        # Лёгкий каркас — без installation_class, sessionController,
+        # PublicationWindow, deviceSelector и чтения JSON.
         self._build_ui()
         self._build_menu()
+
+        # Тяжёлая инициализация — после первого прохода event loop,
+        # т.е. уже после show() главного окна.
+        QTimer.singleShot(0, self._deferred_bootstrap)
+
+    def _deferred_bootstrap(self):
+        if self._bootstrapped or self._bootstrap_in_progress:
+            return
         self._bootstrap_pages()
+        self._bootstrapped = True
         self.set_current_page(self.PAGE_INSTALL)
+
+    def _ensure_bootstrapped(self):
+        if self._bootstrapped or self._bootstrap_in_progress:
+            return
+        self._bootstrap_in_progress = True
+        self._bootstrap_pages()
+        self._bootstrapped = True
+        self._bootstrap_in_progress = False
 
     # ============================================================ UI
     def _build_ui(self):
@@ -267,17 +291,17 @@ class UnifiedMainWindow(QMainWindow):
     # ========================================================= Pages
     def _bootstrap_pages(self):
         from installation.Installation_class import installation_class
-        from device_selector import deviceSelector
 
         self._install_ctrl = installation_class(
             settings_manager=self.settings_manager,
             version=self.version_app,
         )
-        self._install_ctrl.device_selector = deviceSelector(self.settings_manager)
+        self._install_ctrl.device_selector = None
 
         self._install_ctrl.reconstruct_installation([], [])
+        self._install_ctrl.start_resource_scanning()
         self._bind_pages_from_controllers()
-
+        
     def _bind_pages_from_controllers(self):
         self._installation_page = self._install_ctrl.installation_window
         if hasattr(self._installation_page, "open_graph_button"):
@@ -290,17 +314,27 @@ class UnifiedMainWindow(QMainWindow):
         self._hide_page_menu(self._graphs_page)
         self.stack.insertWidget(self.PAGE_GRAPHS, self._graphs_page)
 
-        self._publication_page = self._session_ctrl.pub_win
-        self._hide_page_menu(self._publication_page)
-        self.stack.insertWidget(self.PAGE_PUBLICATION, self._publication_page)
+        # Публикация — только заглушка. Реальное окно создаётся при первом
+        # переходе на страницу «Публикация».
+        self._publication_placeholder = QWidget(self.stack)
+        lay = QVBoxLayout(self._publication_placeholder)
+        lay.setContentsMargins(20, 20, 20, 20)
+        label = QLabel(
+            "Страница публикации будет создана при первом открытии",
+            self._publication_placeholder,
+        )
+        label.setAlignment(Qt.AlignCenter)
+        lay.addWidget(label)
+        self._publication_page = self._publication_placeholder
+        self.stack.insertWidget(self.PAGE_PUBLICATION, self._publication_placeholder)
 
-        # Текст пункта «режим разработчика» — по фактическому is_debug.
         if hasattr(self, "act_develop_mode"):
             self.act_develop_mode.setText(
                 "Выключить режим разработчика"
                 if self._install_ctrl.is_debug
-                else "Включить режим разработчика")
-
+                else "Включить режим разработчика"
+            )
+    
     def _hide_page_menu(self, window):
         """Скрыть менюбар встроенной страницы и обнулить ярлыки его действий.
 
@@ -342,6 +376,7 @@ class UnifiedMainWindow(QMainWindow):
                 logger.exception("delete old page failed")
             setattr(self, attr, None)
 
+        self._publication_placeholder = None
         self._bind_pages_from_controllers()
         self.set_current_page(self.PAGE_INSTALL)
 
@@ -379,12 +414,17 @@ class UnifiedMainWindow(QMainWindow):
 
     # ====================================================== Navigation
     def set_current_page(self, index):
-        if index < 0 or index >= self.stack.count():
+        if index < 0 or index > self.PAGE_PUBLICATION:
+            return
+        self._ensure_bootstrapped()
+        if index == self.PAGE_PUBLICATION:
+            self._ensure_publication_page()
+        if index >= self.stack.count():
             return
         self.stack.setCurrentIndex(index)
         self.sidebar.set_active(index)
         self._update_menu_visibility(index)
-
+    
     def _update_menu_visibility(self, index):
         is_install = index == self.PAGE_INSTALL
         is_graphs  = index == self.PAGE_GRAPHS
@@ -413,27 +453,30 @@ class UnifiedMainWindow(QMainWindow):
 
     # ==================================================== Публичные API
     def open_installation_file(self, path):
-        try:
-            self._install_ctrl.stop_scan_thread = True
-            if hasattr(self._install_ctrl, "thread_scan_resources"):
-                self._install_ctrl.thread_scan_resources.join(timeout=2.0)
-        except Exception:
-            logger.exception("stop scan thread failed")
+        self._ensure_bootstrapped()
+        if self._install_ctrl is None:
+            return False
+
+        self._install_ctrl.stop_scan_thread = True
+        thread = getattr(self._install_ctrl, "thread_scan_resources", None)
+        if thread is not None and thread.is_alive():
+            thread.join(timeout=2.0)
 
         status, buffer = self._install_ctrl.extract_saved_installlation(
-            fileName=path)
+            fileName=path
+        )
         if status:
             self._rebind_after_reconstruction()
             self.set_current_page(self.PAGE_INSTALL)
         return status
 
     def open_project_file(self, path):
+        self._ensure_bootstrapped()
         if not self._session_ctrl:
             return False
         self._session_ctrl.load_project(path)
         self.set_current_page(self.PAGE_GRAPHS)
         return True
-
     # ========================================================== Файл
     def _on_open_installation(self):
         if not self._install_ctrl:
@@ -458,6 +501,40 @@ class UnifiedMainWindow(QMainWindow):
         except Exception as e:
             logger.exception("open .ns from menu failed")
             QMessageBox.critical(self, "Ошибка открытия", str(e))
+
+    def _ensure_publication_page(self):
+        if self._session_ctrl is None:
+            return
+        if (self._publication_page is not None
+                and self._publication_page is not self._publication_placeholder):
+            return
+
+        real_win = self._session_ctrl.get_publication_window()
+        if real_win is None:
+            return
+
+        self._hide_page_menu(real_win)
+        idx = self.stack.indexOf(self._publication_placeholder)
+        if idx >= 0:
+            self.stack.removeWidget(self._publication_placeholder)
+            self._publication_placeholder.deleteLater()
+        self.stack.insertWidget(self.PAGE_PUBLICATION, real_win)
+        self._publication_page = real_win
+
+    def _on_validate(self):
+        w = self._pub_widget()
+        if w:
+            w._on_validate()
+
+    def _on_export_pkg(self):
+        w = self._pub_widget()
+        if w:
+            w._on_export()
+
+    def _on_journal_preset(self):
+        w = self._pub_widget()
+        if w and hasattr(w, "_preset_combo"):
+            w._preset_combo.showPopup()
 
     def _on_open_project(self):
         if not self._session_ctrl:
@@ -515,6 +592,7 @@ class UnifiedMainWindow(QMainWindow):
             "Выключить режим разработчика"
             if self._install_ctrl.is_debug
             else "Включить режим разработчика")
+    
     def _on_convert_buf(self):
         if not self._install_ctrl:
             return
@@ -635,27 +713,13 @@ class UnifiedMainWindow(QMainWindow):
 
     # ===================================================== Публикация
     def _pub_widget(self):
-        if self._publication_page and hasattr(self._publication_page, "widget"):
-            try:
-                return self._publication_page.widget()
-            except Exception:
-                return None
+        self._ensure_publication_page()
+        if (self._publication_page is not None
+                and self._publication_page is not self._publication_placeholder
+                and hasattr(self._publication_page, "widget")):
+            return self._publication_page.widget()
         return None
-
-    def _on_validate(self):
-        w = self._pub_widget()
-        if w:
-            w._on_validate()
-
-    def _on_export_pkg(self):
-        w = self._pub_widget()
-        if w:
-            w._on_export()
-
-    def _on_journal_preset(self):
-        w = self._pub_widget()
-        if w and hasattr(w, "_preset_combo"):
-            w._preset_combo.showPopup()
+    
 
     # ======================================================= Настройки
     def _on_toggle_theme(self):

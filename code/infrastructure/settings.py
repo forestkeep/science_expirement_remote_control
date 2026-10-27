@@ -256,114 +256,124 @@ class ExperimentSettings:
         self.persistent_settings = [
             {
                 'attr': 'is_exp_run_anywhere',
-                'name': QApplication.translate('exp_settings',"Продолжать эксперимент при ошибке опроса прибора"),
-                'tooltip': QApplication.translate('exp_settings',"При активации этого пункта в случае ошибки опроса прибора эксперимент продолжается"),
+                'name': QApplication.translate('exp_settings', "Продолжать эксперимент при ошибке опроса прибора"),
+                'tooltip': QApplication.translate('exp_settings', "При активации этого пункта в случае ошибки опроса прибора эксперимент продолжается"),
                 'widget': QCheckBox,
                 'default': downloaded_settings.get('is_exp_run_anywhere', False)
             },
             {
                 'attr': 'is_delete_buf_file',
-                'name': QApplication.translate('exp_settings',"Удалить буфферный файл после завершения эксперимента"),
-                'tooltip': QApplication.translate('exp_settings',"При активации этого пункта в случае успешного сохранения данных буферный файл будет перемещен в корзину"),
+                'name': QApplication.translate('exp_settings', "Удалить буфферный файл после завершения эксперимента"),
+                'tooltip': QApplication.translate('exp_settings', "При активации этого пункта в случае успешного сохранения данных буферный файл будет перемещен в корзину"),
                 'widget': QCheckBox,
                 'default': downloaded_settings.get('is_delete_buf_file', False)
             },
             {
                 'attr': 'should_prompt_for_session_name',
-                'name': QApplication.translate('exp_settings',"Запрашивать имя и описание сессии измерений после окончания эксперимента"),
-                'tooltip': QApplication.translate('exp_settings',"При активации этого пункта после завершения эксперимента программа всегда будет запрашивать имя измерений и описание"),
+                'name': QApplication.translate('exp_settings', "Запрашивать имя и описание сессии измерений после окончания эксперимента"),
+                'tooltip': QApplication.translate('exp_settings', "При активации этого пункта после завершения эксперимента программа всегда будет запрашивать имя измерений и описание"),
                 'widget': QCheckBox,
                 'default': downloaded_settings.get('should_prompt_for_session_name', True)
             }
         ]
-        
+
         self.default_settings = [
             {
                 'attr': 'way_to_save',
-                'name': QApplication.translate('exp_settings',"Путь сохранения результатов"),
-                'tooltip': QApplication.translate('exp_settings',""),
+                'name': QApplication.translate('exp_settings', "Путь сохранения результатов"),
+                'tooltip': QApplication.translate('exp_settings', ""),
                 'widget': QLineEdit,
                 'default': None,
                 'callback': self.set_way_save
             },
             {
                 'attr': 'repeat_exp',
-                'name': QApplication.translate('exp_settings',"Количество повторов эксперимента"),
-                'tooltip': QApplication.translate('exp_settings',"Процедура эксперимента будет повторяться указанное количество раз"),
+                'name': QApplication.translate('exp_settings', "Количество повторов эксперимента"),
+                'tooltip': QApplication.translate('exp_settings', "Процедура эксперимента будет повторяться указанное количество раз"),
                 'widget': QSpinBox,
                 'default': 1
             },
             {
                 'attr': 'repeat_meas',
-                'name': QApplication.translate('exp_settings',"Количество измерений в точке"),
-                'tooltip': QApplication.translate('exp_settings',"Выберите количество измерений в точке, измерения будут происходить без остановки заданное количество раз"),
+                'name': QApplication.translate('exp_settings', "Количество измерений в точке"),
+                'tooltip': QApplication.translate('exp_settings', "Выберите количество измерений в точке, измерения будут происходить без остановки заданное количество раз"),
                 'widget': QSpinBox,
                 'default': 1
             }
         ]
-        
+
         self.add_type_key(self.persistent_settings, is_persistent=True)
         self.add_type_key(self.default_settings, is_persistent=False)
-        self.__settings_config = self.setup_widget_config(self.persistent_settings + self.default_settings)
+        self.__settings_config = self.setup_widget_config(
+            self.persistent_settings + self.default_settings
+        )
 
-        self.window = ConfigDialog(self.__settings_config)
+        self.window = None
+        self.values = {}
+        self.values_persistent = {}
 
-        self.values, self.values_persistent = self.window.get_values()
+        for config in self.__settings_config:
+            attr = config['attr']
+            default = config['default']
+            self.values[attr] = default
+            if config['is_persistent']:
+                self.values_persistent[attr] = default
 
         self.type_file = None
+
+    def _ensure_window(self):
+        if self.window is not None:
+            return
+        self.window = ConfigDialog(self.__settings_config)
+        for config in self.__settings_config:
+            attr = config['attr']
+            widget = getattr(self.window, attr, None)
+            if widget is not None:
+                config['setter'](widget, self.values.get(attr, config['default']))
+
     def set_settings(self, settings):
         for key, value in settings.items():
-            if self.values.get(key) is not None:
+            if key in self.values:
                 self.values[key] = value
-                widget = getattr(self.window, key)
-                setter = self.search_config(key)['setter']
-                setter(widget, value)
-
-            if self.values_persistent.get(key) is not None:
+            if key in self.values_persistent:
                 self.values_persistent[key] = value
-                widget = getattr(self.window, key)
-                setter = self.search_config(key)['setter']
-                setter(widget, value)
+
+            if self.window is not None:
+                config = self.search_config(key)
+                if config is not None:
+                    widget = getattr(self.window, config['attr'], None)
+                    if widget is not None:
+                        config['setter'](widget, value)
 
     def add_type_key(self, configs, is_persistent):
         for config in configs:
             config['is_persistent'] = is_persistent
 
     def search_config(self, filt_value):
-        """
-        Search for config in self.__settings_config where value equal filt_value.
-
-        Parameters
-        ----------
-        filt_value : Any
-            Value to search.
-
-        Returns
-        -------
-        dict or None
-            Config if found, None otherwise.
-        """
         for config in self.__settings_config:
             for value in config.values():
                 if value == filt_value:
                     return config
         return None
 
-    def show(self) -> dict:
+    def show(self) -> tuple:
+        self._ensure_window()
         if self.window.exec_():
             self.values, self.values_persistent = self.window.get_values()
+        return self.values, self.values_persistent
 
-        return self.values, self.values_persistent
-    
     def get_settings(self):
-        self.values, self.values_persistent = self.window.get_values()
+        if self.window is not None:
+            self.values, self.values_persistent = self.window.get_values()
         return self.values, self.values_persistent
-    
+
     def set_way_save(self):
+        self._ensure_window()
+
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         filters = "Книга Excel (*.xlsx);;Text Files(*.txt);;Origin (*.opju)"
-        
+
         file_name, selected_filter = QFileDialog.getSaveFileName(
             self.window,
             QApplication.translate('set exp window', "Укажите путь сохранения"),
@@ -378,7 +388,7 @@ class ExperimentSettings:
                 "Text": (".txt", type_save_file.txt),
                 "Origin": (".opju", type_save_file.origin)
             }
-            
+
             for key, (ext, file_type) in ext_map.items():
                 if key in selected_filter:
                     if not file_name.endswith(ext):
@@ -387,45 +397,35 @@ class ExperimentSettings:
                     break
 
             config = self.search_config(self.set_way_save)
-
-            focus_widget =getattr(self.window, config['attr'])
-
-            config['setter'](focus_widget, file_name)
+            if config is not None:
+                focus_widget = getattr(self.window, config['attr'])
+                config['setter'](focus_widget, file_name)
+                self.values[config['attr']] = file_name
 
     def setup_widget_config(self, configs):
-        """Добавляет геттеры, сеттеры и сигналы в конфиг на основе типа виджета.
-        
-        Args:
-            configs (list[dict]): Список словарей с настройками виджетов.
-        """
         for config in configs:
             widget_type = config.get('widget')
-            
             if not widget_type:
                 continue
 
             config.setdefault('callback')
-            
+
             if issubclass(widget_type, QCheckBox):
                 config.setdefault('setter', lambda w, v: w.setChecked(bool(v)))
                 config.setdefault('getter', lambda w: w.isChecked())
                 config.setdefault('signal', 'stateChanged')
-            
             elif issubclass(widget_type, QLineEdit):
                 config.setdefault('setter', lambda w, v: w.setText(str(v) if v is not None else ""))
                 config.setdefault('getter', lambda w: w.text())
                 config.setdefault('signal', 'textChanged')
-            
             elif issubclass(widget_type, QComboBox):
                 config.setdefault('setter', lambda w, v: w.setCurrentText(str(v)))
                 config.setdefault('getter', lambda w: w.currentText())
                 config.setdefault('signal', 'currentIndexChanged')
-            
             elif issubclass(widget_type, (QSpinBox, QDoubleSpinBox)):
                 config.setdefault('setter', lambda w, v: w.setValue(v))
                 config.setdefault('getter', lambda w: w.value())
                 config.setdefault('signal', 'valueChanged')
-            
 
         return configs
 

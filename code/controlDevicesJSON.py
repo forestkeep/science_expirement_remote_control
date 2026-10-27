@@ -22,12 +22,18 @@ class devFile:
     status: bool
     json_data: dict
 
-def validate_json_schema(file_path, templates):
-    try:
-        with open(file_path, 'r') as file:
-            data = json.load(file)
-    except FileNotFoundError:
-        return False, f"Файл {file_path} не был найден", None
+def validate_json_schema(file_path, templates, data=None):
+    if data is None:
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+        except FileNotFoundError:
+            return False, f"Файл {file_path} не был найден", None
+        except (OSError, json.JSONDecodeError) as exc:
+            return False, f"Ошибка чтения JSON: {exc}", None
+
+    if not isinstance(data, dict):
+        return False, "JSON должен быть объектом", data
 
     device_type = data.get("device_type")
     if device_type not in templates:
@@ -35,50 +41,104 @@ def validate_json_schema(file_path, templates):
 
     template = templates[device_type]
 
-    # Сравнение полей
     for key in template.keys():
         if key not in data:
             return False, f"Отсутствует поле: {key}", data
 
         if isinstance(template[key], dict):
+            if not isinstance(data.get(key), dict):
+                return False, f"Поле {key} должно быть объектом", data
             for sub_key in template[key].keys():
                 if sub_key not in data[key]:
                     return False, f"Отсутствует подполе: {sub_key} в поле {key}", data
 
-    return (True, "JSON валиден", data)
-
+    return True, "JSON валиден", data
 
 def get_new_JSON_devs(directory) -> dict:
-        new_devs = {}
-        json_devices = search_devices_json(directory)
-        for device, file_path in json_devices.items():
-            result, message, data = validate_json_schema(file_path, templates)
-            new_devs[device] = devFile(path=file_path, name=device, message=message, status=result, json_data=data)
+    new_devs = {}
+
+    if not os.path.isdir(directory):
         return new_devs
 
-def search_devices_json(directory) -> dict:
-    """
-    Scans the specified directory for .json files.
-    
-    For each found .json file, it searches for the "device_name" field 
-    and stores its value in a dictionary where the key is the value 
-    from the "device_name" field, and the value is the path to that file.
-    
-    Parameters:
-    directory (str): The path to the directory to be scanned.
-
-    Returns:
-    dict: A dictionary with device names and corresponding file paths.
-    """
-    result = {}
     for filename in os.listdir(directory):
-        if filename.endswith('.json'):
-            file_path = os.path.join(directory, filename)
-            with open(file_path, 'r') as file:
+        if not filename.endswith('.json'):
+            continue
+
+        file_path = os.path.join(directory, filename)
+        data = None
+        message = ""
+        status = False
+
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
-                device_name = data.get('device_name')
-                if device_name:
-                    result[device_name] = file_path
+        except (OSError, json.JSONDecodeError) as exc:
+            message = f"Ошибка чтения JSON: {exc}"
+            new_devs[filename] = devFile(
+                path=file_path,
+                name=filename,
+                message=message,
+                status=False,
+                json_data={},
+            )
+            continue
+
+        if not isinstance(data, dict):
+            new_devs[filename] = devFile(
+                path=file_path,
+                name=filename,
+                message="JSON должен быть объектом",
+                status=False,
+                json_data={},
+            )
+            continue
+
+        device_name = data.get('device_name')
+        if not device_name:
+            new_devs[filename] = devFile(
+                path=file_path,
+                name=filename,
+                message="Отсутствует device_name",
+                status=False,
+                json_data=data,
+            )
+            continue
+
+        status, message, _ = validate_json_schema(file_path, templates, data)
+        new_devs[device_name] = devFile(
+            path=file_path,
+            name=device_name,
+            message=message,
+            status=status,
+            json_data=data,
+        )
+
+    return new_devs
+
+
+def search_devices_json(directory) -> dict:
+    result = {}
+
+    if not os.path.isdir(directory):
+        return result
+
+    for filename in os.listdir(directory):
+        if not filename.endswith('.json'):
+            continue
+
+        file_path = os.path.join(directory, filename)
+
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+        except (OSError, json.JSONDecodeError):
+            continue
+
+        if isinstance(data, dict):
+            device_name = data.get('device_name')
+            if device_name:
+                result[device_name] = file_path
+
     return result
 
 if __name__ == "__main__":

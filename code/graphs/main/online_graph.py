@@ -37,7 +37,6 @@ from PyQt5.QtWidgets import (
 from graphs.ui.empty_state import EmptyStateWidget
 from graphs.main.demo_session import LiveDemoController, StaticDemoLoader
 from graphs.helpers import HelperManager, HelperTab
-from publication.ui.publication_window import PublicationWindow
 
 # --- Локальные модули проекта ---
 from functions import open_log_file
@@ -58,7 +57,6 @@ from graphs.core.undo_commands import (
     RenameSessionCommand,
 )
 from common.undo.manager import SessionUndoManager
-from graphs.export.save_excell import ExcelSaver
 from graphs.hdf5_io.adapters import HDF5ToProjectAdapter
 from graphs.hdf5_io.facade import HDF5Facade
 from graphs.hdf5_io.models import FieldSettings
@@ -67,7 +65,6 @@ from graphs.main.graph_main import manageGraph
 from graphs.main.test_main_graph import test_graph
 from common.actions.registry import ActionRegistry
 from graphs.ui.buttons_panel import ButtonsControl
-from graphs.ui.filters_win import filtersClass
 from graphs.ui.notification import NotificationWidget
 from graphs.ui.osc_selector import OscilloscopeSelector
 from graphs.ui.osc_wave_graph import graphOsc
@@ -320,6 +317,7 @@ class GraphSession(QWidget):
         self.up_lay = QHBoxLayout(self)
 
         if not simple:
+            from graphs.ui.filters_win import filtersClass
             self.filter_class = filtersClass()
             self.tree_class = treeWin(
                 main_class=self,
@@ -677,8 +675,7 @@ class sessionController():
         self.alias_manager = ParameterAliasManager()
         self.action_registry = ActionRegistry(parent=self.alias_manager)
 
-        self.pub_win = PublicationWindow(self)   # self — sessionController
-        self.pub_win.show()
+        self._pub_win = None
 
         # --- undo/redo через реестр ---
         self.undo_action = self.action_registry.register(
@@ -759,6 +756,12 @@ class sessionController():
         self.status_bar.set_permanent("Готово")
 
         self._refresh_empty_state()
+
+    def get_publication_window(self):
+        if self._pub_win is None:
+            from publication.ui.publication_window import PublicationWindow
+            self._pub_win = PublicationWindow(self)
+        return self._pub_win
 
     # ------------------------------------------------------------------
     # Undo/redo: центральные слоты
@@ -932,6 +935,8 @@ class sessionController():
             logger.warning(f"Неизвестный фильтр при сохранении: {selectedFilter}")
 
     def _save_excel(self, filepath: str):
+        from graphs.export.save_excell import ExcelSaver
+
         self.temp_excell_file_path = filepath
         self.excel_saver = ExcelSaver()
         sessions = list(self.graph_sessions.values())
@@ -949,7 +954,7 @@ class sessionController():
             self.excel_saver.add_sheet(
                 sheet_name=session.session_name,
                 sheet_data=sheet_dict,
-                description=session.description
+                description=session.description,
             )
 
         self.excel_saver.enable_statistics()
@@ -961,7 +966,6 @@ class sessionController():
 
         self.saving_excell_timer = QTimer()
         self.saving_excell_timer.setInterval(1000)
-
         self.saving_excell_timer.timeout.connect(self.update_progress_saver)
         self.saving_excell_timer.start()
 

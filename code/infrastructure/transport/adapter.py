@@ -207,6 +207,8 @@ class Adapter:
             raise AdapterException("unknown resource")
 
 class instrument:
+    _visa_backend = None
+    _visa_backend_name = None
 
     @staticmethod
     def get_com_ports() -> list:
@@ -226,39 +228,55 @@ class instrument:
                 ports.append(port.device)
                 ser.close()
                 del ser
-            except Exception as e:
+            except Exception:
                 pass
         return ports
 
-    @staticmethod
-    def get_visa_resourses() -> list:
-        try:
-            res = pyvisa.ResourceManager('@ivi').list_resources()
-        except:
-            res = pyvisa.ResourceManager('@py').list_resources()
-        return res
-    
-    @staticmethod
-    def get_type_visa_backend():
-        try:
-            backend = pyvisa.ResourceManager('@ivi')
-        except:
-            backend = pyvisa.ResourceManager('@py')
-        return backend
+    @classmethod
+    def _ensure_visa_backend(cls):
+        if cls._visa_backend is not None:
+            return cls._visa_backend
 
-    @staticmethod
-    def get_resourses() -> list:
-        """return all available resourses"""
-        resourses = instrument.get_available_com_ports()
-        res_vis = instrument.get_visa_resourses()
+        try:
+            cls._visa_backend = pyvisa.ResourceManager('@ivi')
+            cls._visa_backend_name = '@ivi'
+            return cls._visa_backend
+        except Exception:
+            pass
+
+        try:
+            cls._visa_backend = pyvisa.ResourceManager('@py')
+            cls._visa_backend_name = '@py'
+        except Exception:
+            cls._visa_backend = None
+            cls._visa_backend_name = ''
+        return cls._visa_backend
+
+    @classmethod
+    def get_visa_resourses(cls) -> list:
+        backend = cls._ensure_visa_backend()
+        if backend is None:
+            return []
+        try:
+            return backend.list_resources()
+        except Exception:
+            return []
+
+    @classmethod
+    def get_type_visa_backend(cls):
+        cls._ensure_visa_backend()
+        return cls._visa_backend_name or ""
+
+    @classmethod
+    def get_resourses(cls) -> list:
+        resourses = cls.get_available_com_ports()
+        res_vis = cls.get_visa_resourses()
         for res in res_vis:
             if "ASRL" in res:
-                pass
-            else:
-                resourses.append(res)
-                
+                continue
+            resourses.append(res)
         return resourses
-
+    
 class AdapterException(Exception):
     def __init__(self, message):
         super().__init__(message)

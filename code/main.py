@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QTranslator
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtGui import QColor, QPalette
+from PyQt5.QtCore import QTimer
 
 import pyvisa
 import qdarktheme
@@ -183,7 +184,10 @@ if __name__ == "__main__":
     window.show()
 
     # --------- открытие файла из командной строки ---------
-    if file_path:
+    def _open_startup_file():
+        if not file_path:
+            return
+        from open_file_controller import FileTypeChecker
         checker = FileTypeChecker(file_path)
         ok, msg = checker.validate()
         if ok:
@@ -199,5 +203,7 @@ if __name__ == "__main__":
                 QMessageBox.critical(window, "Ошибка открытия", str(e))
         else:
             QMessageBox.critical(window, "Ошибка открытия", msg)
+
+    QTimer.singleShot(0, _open_startup_file)
 
     sys.exit(app.exec_())

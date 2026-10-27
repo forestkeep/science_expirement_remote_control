@@ -25,14 +25,13 @@ from Devices.base.Classes import (not_ready_style_background,
                              not_ready_style_border, ready_style_border)
 
 from interface.Message import messageDialog
-from saving_data.Parse_data import savingController, type_save_file
 
 from functions import get_active_ch_and_device, ExperimentState
 
 logger = logging.getLogger(__name__)
 
 class baseInstallation:
-    def __init__(self, way_to_save_installation_file = None) -> None:
+    def __init__(self, way_to_save_installation_file=None) -> None:
         self.way_to_save_installation_file = way_to_save_installation_file
         self.save_results_now = False
         self.is_search_resources = True
@@ -42,6 +41,8 @@ class baseInstallation:
         self.bright = 50
         self.is_experiment_endless = False
         self.pbar_percent = 0
+
+        from saving_data.Parse_data import savingController, type_save_file
         self.type_file_for_result = type_save_file.excel
 
         self.dict_active_device_class = {}
@@ -49,20 +50,41 @@ class baseInstallation:
         self._current_state = None
 
         self.list_resources = []
-        self.thread_scan_resources = threading.Thread(target=self._search_resources)
-        self.thread_scan_resources.daemon = True
+        self.list_visa_resources = []
+        self.visa_backend = ""
+
+        self.thread_scan_resources = None
+        self._scan_started = False
         self.stop_scan_thread = False
 
         self.experiment_process = None
 
-        self.list_resources = []
-        self.list_visa_resources = []
-        self.visa_backend = ""
-
         self.saving_controller = savingController()
-        self.saving_controller.set_info_callback( self.add_text_to_log )
+        self.saving_controller.set_info_callback(self.add_text_to_log)
 
+    def start_resource_scanning(self):
+        if self._scan_started:
+            return
+        self.stop_scan_thread = False
+        self.thread_scan_resources = threading.Thread(
+            target=self._search_resources,
+            daemon=True,
+        )
         self.thread_scan_resources.start()
+        self._scan_started = True
+
+    def show_window_installation(self):
+        logger.debug("вызвана функция показать окно установки")
+        self.installation_window.show()
+        self.start_resource_scanning()
+
+    def _search_resources(self):
+        while not self.stop_scan_thread:
+            if self.is_search_resources and not self.is_experiment_running():
+                self.list_resources = instrument.get_resourses()
+                self.list_visa_resources = instrument.get_visa_resourses()
+                self.visa_backend = instrument.get_type_visa_backend()
+            time.sleep(1)
 
     def show_information_window(self, message):
         msg = QtWidgets.QMessageBox()
@@ -142,10 +164,6 @@ class baseInstallation:
         logger.debug(f"set_state_text {text}")
         self.installation_window.label_state.setText(text)
 
-    def show_window_installation(self):
-        logger.debug(f"вызвана функция показать окно установки")
-        self.installation_window.show()
-
     def close_window_installation(self):
         try:
             self.installation_window.close()
@@ -153,14 +171,6 @@ class baseInstallation:
             logger.debug("окно установки закрыто")
         except Exception as e:
             logger.warning(f"ошибка: {str(e)}")
-
-    def _search_resources(self):
-        while  not self.stop_scan_thread:
-            if self.is_search_resources and not self.is_experiment_running():
-                self.list_resources = instrument.get_resourses()
-                self.list_visa_resources = instrument.get_visa_resourses()
-                self.visa_backend = instrument.get_type_visa_backend()
-                time.sleep(1)
 
     def get_list_resources(self) -> list:
         return self.list_resources

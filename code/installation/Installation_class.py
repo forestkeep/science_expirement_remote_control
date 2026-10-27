@@ -30,7 +30,6 @@ from infrastructure.pubsub import messageBroker
 from installation.ui.installation_window import Ui_Installation
 from installation.schematic.construct_diagramexp import expDiagram
 from installation.schematic.actions_diagram import actDiagram
-from saving_data.Parse_data import type_save_file
 from Devices.available_devices import dict_device_class, JSON_dict_device_class
 from meas_session_data import measSession
 from infrastructure.visual.color_manager import ColorManager
@@ -381,21 +380,6 @@ class installation_class( ExperimentBridge, analyse):
     def close_app(self, event):
         self.close_other_windows()
         event.accept()
-
-    def close_other_windows(self):
-        self.stop_scan_thread = True
-        self.thread_scan_resources.join()
-
-        if self.is_experiment_running():
-            self.pipe_exp.send(["close", 1])
-
-            self.experiment_process.join(timeout=3)
-            if self.experiment_process.is_alive():
-                self.experiment_process.terminate()
-                self.experiment_process.join(timeout=1)
-                
-        self.saving_controller.terminate_saving_processes()
-        self.graph_controller.close()
 
     def delete_device(self, device):
         if self.is_experiment_running() is False:
@@ -774,14 +758,30 @@ class installation_class( ExperimentBridge, analyse):
 
     def timer_open_timeout(self, buffer, fileName):
         self.add_parameter_devices(buffer, fileName)
-        self.installation_window.setWindowTitle("Experiment control - " + fileName + " " + self.version_app)
+        self.installation_window.setWindowTitle(
+            "Experiment control - " + fileName + " " + self.version_app
+        )
         self.way_to_save_installation_file = fileName
 
-        self.thread_scan_resources = threading.Thread(target=self._search_resources)
-        self.thread_scan_resources.daemon = True
-        self.stop_scan_thread = False
+        # Сканирование запускается после показа окна установки.
+        self.start_resource_scanning()
 
-        self.thread_scan_resources.start()
+    def close_other_windows(self):
+        self.stop_scan_thread = True
+        thread = getattr(self, "thread_scan_resources", None)
+        if thread is not None and thread.is_alive():
+            thread.join(timeout=2.0)
+
+        if self.is_experiment_running():
+            self.pipe_exp.send(["close", 1])
+
+            self.experiment_process.join(timeout=3)
+            if self.experiment_process.is_alive():
+                self.experiment_process.terminate()
+                self.experiment_process.join(timeout=1)
+
+        self.saving_controller.terminate_saving_processes()
+        self.graph_controller.close()
 
     def write_data_to_save_installation_file(self, file_path: str) -> bool:
 
@@ -919,6 +919,7 @@ class installation_class( ExperimentBridge, analyse):
         self.preparation_experiment()
 
     def convert_buf_file(self):
+        from saving_data.Parse_data import type_save_file
         default_path_buf = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")
 
         options = QtWidgets.QFileDialog.Options()
