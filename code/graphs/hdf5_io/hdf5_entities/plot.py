@@ -76,9 +76,13 @@ class HDF5Plot(BaseHDF5Entity):
                 entry_group.attrs['filter_type'] = entry.filter_type
                 entry_group.attrs['enabled'] = bool(getattr(entry, "enabled", True))
 
-                params_group = entry_group.create_group('params')
-                for param_key, param_value in entry.params.items():
-                    params_group.attrs[param_key] = str(param_value)
+                try:
+                    entry_group.attrs['params'] = json.dumps(
+                        entry.params or {}, ensure_ascii=False, default=str
+                    )
+                except Exception:
+                    logger.exception("write filter params failed")
+                    entry_group.attrs['params'] = '{}'
 
         # --- Погрешности ---
         if 'uncertainty' in self._hdf5_object:
@@ -141,8 +145,6 @@ class HDF5Plot(BaseHDF5Entity):
         linear_data_group.create_dataset('filtered_x_data', data=plot.linear_data.filtered_x_data, dtype=float, compression='gzip')
         linear_data_group.create_dataset('filtered_y_data', data=plot.linear_data.filtered_y_data, dtype=float, compression='gzip')
 
-        if 'tree_item_data' in linear_data_group:
-            del linear_data_group['tree_item_data']
         tree_item_group = linear_data_group.create_group('tree_item_data')
 
         tree_item_attrs = {
@@ -155,12 +157,13 @@ class HDF5Plot(BaseHDF5Entity):
         for key, value in tree_item_attrs.items():
             tree_item_group.attrs[key] = value
 
-        if 'parameters' in tree_item_group:
-            del tree_item_group['parameters']
-        if plot.linear_data.tree_item_data.parameters:
-            params_group = tree_item_group.create_group('parameters')
-            for key, value in plot.linear_data.tree_item_data.parameters.items():
-                params_group.attrs[key] = str(value)
+        try:
+            tree_item_group.attrs['parameters'] = json.dumps(
+                plot.linear_data.tree_item_data.parameters or {},
+                ensure_ascii=False, default=str,
+            )
+        except Exception:
+            tree_item_group.attrs['parameters'] = '{}'
 
 
     def read(self) -> Plot:
@@ -216,11 +219,22 @@ class HDF5Plot(BaseHDF5Entity):
                 entry.description = entry_group.attrs.get('description', '')
                 entry.filter_type = entry_group.attrs.get('filter_type', '')
                 entry.enabled = bool(entry_group.attrs.get('enabled', True))
-                entry.params = {}
-                if 'params' in entry_group:
-                    params_group = entry_group['params']
-                    for param_name in params_group.attrs:
-                        value_str = params_group.attrs[param_name]
+
+                raw = entry_group.attrs.get('params', '{}')
+                if isinstance(raw, bytes):
+                    raw = raw.decode('utf-8', errors='replace')
+                try:
+                    entry.params = json.loads(raw) if raw else {}
+                except Exception:
+                    logger.exception(
+                        "read filter params failed: %r", raw
+                    )
+                    entry.params = {}
+
+                if not entry.params and 'params' in entry_group:
+                    legacy = entry_group['params']
+                    for param_name in legacy.attrs:
+                        value_str = legacy.attrs[param_name]
                         if isinstance(value_str, bytes):
                             value_str = value_str.decode('utf-8', errors='replace')
                         if value_str.lower() == 'true':
@@ -275,11 +289,21 @@ class HDF5Plot(BaseHDF5Entity):
                 tree_item_data.color_info = tree_item_group.attrs.get('color_info', '#ff30ea')
                 tree_item_data.col_font_info = tree_item_group.attrs.get('col_font_info', '15')
 
-                if 'parameters' in tree_item_group:
-                    params_group = tree_item_group['parameters']
+                raw_params = tree_item_group.attrs.get('parameters', '{}')
+                if isinstance(raw_params, bytes):
+                    raw_params = raw_params.decode('utf-8', errors='replace')
+                try:
+                    tree_item_data.parameters = json.loads(raw_params) if raw_params else {}
+                except Exception:
+                    logger.exception("read tree item params failed: %r", raw_params)
                     tree_item_data.parameters = {}
-                    for attr_name in params_group.attrs:
-                        tree_item_data.parameters[attr_name] = params_group.attrs[attr_name]
+
+                # Backward-compat: старый формат — подгруппа 'parameters'.
+                if not tree_item_data.parameters and 'parameters' in tree_item_group:
+                    legacy = tree_item_group['parameters']
+                    tree_item_data.parameters = {}
+                    for attr_name in legacy.attrs:
+                        tree_item_data.parameters[attr_name] = legacy.attrs[attr_name]
 
                 linear_data.tree_item_data = tree_item_data
 

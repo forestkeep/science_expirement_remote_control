@@ -171,6 +171,8 @@ class GraphFieldSettings:
     legend_enabled: bool = True
     legend_text_color: str = "#DD1010"
     legend_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
+    legend_pos: Tuple[float, float] = (10.0, 10.0)      # X, Y относительно родителя
+    legend2_pos: Tuple[float, float] = (50.0, 10.0)     # для второй оси
     
     antialiasing: bool = True
     is_second_axis_enabled: bool = False

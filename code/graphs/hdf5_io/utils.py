@@ -110,6 +110,15 @@ def extract_plot_widget_settings(plot_widget) -> GraphFieldSettings:
         except Exception:
             pass
 
+        # --- СОХРАНЕНИЕ ПОЗИЦИЙ ЛЕГЕНД ---
+        if plot_widget.legend is not None:
+            pos = plot_widget.legend.pos()
+            settings.legend_pos = (pos.x(), pos.y())
+        if hasattr(plot_widget, 'legend2') and plot_widget.legend2 is not None:
+            pos2 = plot_widget.legend2.pos()
+            settings.legend2_pos = (pos2.x(), pos2.y())
+        # ---------------------------------
+
         lc = getattr(plot_widget, "legend_color", None)
         if lc is not None:
             try:
@@ -136,6 +145,8 @@ def settings_to_dict(settings: GraphFieldSettings) -> Dict[str, Any]:
         'y_grid_enabled': getattr(settings, 'y_grid_enabled', settings.grid_enabled),
         'grid_color': settings.grid_color,
         'grid_alpha': settings.grid_alpha,
+        'legend_pos': settings.legend_pos,
+        'legend2_pos': settings.legend2_pos,
         'common_axis_style': {
             'text_font': settings.common_axis_style.text_font,
             'tick_font': settings.common_axis_style.tick_font,

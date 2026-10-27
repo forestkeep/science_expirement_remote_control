@@ -19,7 +19,30 @@ class HelperManager(QObject):
 
     def add_helper(self, helper_type: str, params: Optional[dict] = None) -> Optional[HelperInstance]:
         from .renderers import create_helper
-        helper = HelperInstance(helper_type=helper_type, params=params or {})
+        # Получаем текущий пресет из графика
+        preset = {}
+        if hasattr(self.session.graph_main, "graphView"):
+            gv = self.session.graph_main.graphView
+            if hasattr(gv, "preset_styles") and gv.preset_styles:
+                preset = gv.preset_styles[0]  # можно хранить активный пресет, пока берём первый
+
+        merged_params = {}
+        # Применяем стили хелперов из пресета, если пользователь не задал свои
+        if "helper_line_color" in preset:
+            merged_params["color"] = preset["helper_line_color"]
+        if "helper_line_width" in preset:
+            merged_params["width"] = preset["helper_line_width"]
+        if "helper_text_color" in preset:
+            merged_params["text_color"] = preset["helper_text_color"]
+        if "helper_font_size" in preset:
+            merged_params["font_size"] = preset["helper_font_size"]
+        if "helper_marker_color" in preset:
+            merged_params["marker_color"] = preset["helper_marker_color"]
+
+        if params:
+            merged_params.update(params)  # пользовательские параметры имеют приоритет
+
+        helper = HelperInstance(helper_type=helper_type, params=merged_params)
         items = create_helper(self, helper)
         if not items:
             return None

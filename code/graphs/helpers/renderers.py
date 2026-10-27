@@ -282,38 +282,37 @@ def _create_text(manager, helper):
     color = p.get("color", "#ffffff")
     font_size = int(p.get("font_size", 12))
 
+    # TargetItem — только drag-handle (без встроенного label).
+    # Встроенный TargetLabel в разных версиях pyqtgraph не даёт
+    # применить цвет: ни через setAttr (метода нет), ни через
+    # setText(color=...) (не перерисовывает текст).
     anchor = pg.TargetItem(
         pos=(x, y), size=6, symbol="s",
         pen=(200, 200, 200, 80),
         brush=(200, 200, 200, 80),
-        label=text,
     )
-    # ВАЖНО: pyqtgraph LabelItem применяет цвет/размер через setText(**opts),
-    # а не setAttr — setAttr ставит опцию, но не перерисовывает LabelItem.
-    try:
-        lbl = anchor.label()
-        if lbl is not None:
-            lbl.setFont(QtGui.QFont("Arial", font_size))
-            lbl.setText(text, color=color, size=f"{font_size}pt")
-    except Exception:
-        pass
+
+    # Отдельный TextItem — полный контроль над цветом и шрифтом.
+    # ignoreBounds — чтобы текст не растягивал auto-range.
+    text_item = pg.TextItem(text=text, color=color, anchor=(0.5, 1.2))
+    text_item.setFont(QtGui.QFont("Arial", font_size))
+    text_item.setPos(x, y)
 
     _add_item(manager, anchor)
+    _add_item(manager, text_item, ignore_bounds=True)
 
     def update():
         pos = anchor.pos()
+        text_item.setPos(pos.x(), pos.y())
         helper.params.update({"x": pos.x(), "y": pos.y()})
 
-    try:
-        anchor.sigPositionChanged.connect(update)
-    except Exception:
-        pass
+    anchor.sigPositionChanged.connect(update)
 
     helper.params.update({
         "text": text, "x": x, "y": y,
         "color": color, "font_size": font_size,
     })
-    return [anchor]
+    return [anchor, text_item]
 
 
 # ---------------------------------------------------------------------------

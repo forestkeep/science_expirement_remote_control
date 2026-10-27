@@ -504,6 +504,19 @@ class HDF5ToProjectAdapter:
             graph_widget.legend.setVisible(graph_settings.legend_enabled)
             graph_widget.legend2.setVisible(graph_settings.legend_enabled)
 
+            # --- ВОССТАНОВЛЕНИЕ ПОЗИЦИЙ ЛЕГЕНД ---
+            if hasattr(graph_settings, 'legend_pos') and graph_widget.legend is not None:
+                graph_widget.legend.setPos(
+                    graph_settings.legend_pos[0],
+                    graph_settings.legend_pos[1]
+                )
+            if hasattr(graph_settings, 'legend2_pos') and graph_widget.legend2 is not None:
+                graph_widget.legend2.setPos(
+                    graph_settings.legend2_pos[0],
+                    graph_settings.legend2_pos[1]
+                )
+            # -------------------------------------
+
             if hasattr(graph_widget, 'set_legend_color'):
                 graph_widget.set_legend_color(graph_settings.legend_text_color)
 

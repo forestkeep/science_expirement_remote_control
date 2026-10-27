@@ -72,12 +72,67 @@ class PatchedPlotWidget(pg.PlotWidget):
         super().__init__(*args, **kwargs)
 
         self.preset_styles = [
-            {"name": "Светлый", "bg": (255,255,255), "text": (0,0,0), "grid": (200,200,200), "legend": (0,0,0)},
-            {"name": "Тёмный", "bg": (0,0,0), "text": (255,255,255), "grid": (80,80,80), "legend": (255,255,255)},
-            {"name": "Серый", "bg": (240,240,240), "text": (0,0,0), "grid": (180,180,180), "legend": (0,0,0)},
-            {"name": "Высококонтрастный", "bg": (255,255,255), "text": (0,0,0), "grid": (0,0,0), "legend": (0,0,0)},
-            {"name": "Минималистичный", "bg": (255,255,255), "text": (50,50,50), "grid": (230,230,230), "legend": (50,50,50)},
-        ]
+                                {
+                                    "name": "Nature",
+                                    "bg": (255, 255, 255),
+                                    "text": (0, 0, 0),
+                                    "grid": (200, 200, 200),
+                                    "legend": (0, 0, 0),
+                                    "helper_line_color": "#000000",
+                                    "helper_line_width": 1,
+                                    "helper_text_color": "#000000",
+                                    "helper_font_size": 8,
+                                    "helper_marker_color": "#000000",
+                                },
+                                {
+                                    "name": "Science",
+                                    "bg": (255, 255, 255),
+                                    "text": (0, 0, 0),
+                                    "grid": (200, 200, 200),
+                                    "legend": (0, 0, 0),
+                                    "helper_line_color": "#000000",
+                                    "helper_line_width": 1,
+                                    "helper_text_color": "#000000",
+                                    "helper_font_size": 8,
+                                    "helper_marker_color": "#000000",
+                                },
+                                {
+                                    "name": "APA",
+                                    "bg": (255, 255, 255),
+                                    "text": (0, 0, 0),
+                                    "grid": (200, 200, 200),
+                                    "legend": (0, 0, 0),
+                                    "helper_line_color": "#000000",
+                                    "helper_line_width": 1,
+                                    "helper_text_color": "#000000",
+                                    "helper_font_size": 10,
+                                    "helper_marker_color": "#000000",
+                                },
+                                {
+                                    "name": "IEEE",
+                                    "bg": (255, 255, 255),
+                                    "text": (0, 0, 0),
+                                    "grid": (200, 200, 200),
+                                    "legend": (0, 0, 0),
+                                    "helper_line_color": "#000000",
+                                    "helper_line_width": 1,
+                                    "helper_text_color": "#000000",
+                                    "helper_font_size": 8,
+                                    "helper_marker_color": "#000000",
+                                },
+                                {
+                                    "name": "ACS",
+                                    "bg": (255, 255, 255),
+                                    "text": (0, 0, 0),
+                                    "grid": (200, 200, 200),
+                                    "legend": (0, 0, 0),
+                                    "helper_line_color": "#000000",
+                                    "helper_line_width": 1,
+                                    "helper_text_color": "#000000",
+                                    "helper_font_size": 8,
+                                    "helper_marker_color": "#000000",
+                                },
+                            ]
 
         self.is_second_axis = False
         self.inf_lines = []
@@ -87,7 +142,6 @@ class PatchedPlotWidget(pg.PlotWidget):
 
         self.legend = self._create_legend(offset=(10, 10))
         self.legend2 = self._create_legend(offset=(50, 10))
-        self.tooltip = pg.TextItem("X:0,Y:0", color=(255, 255, 255), anchor=(0,0))
 
         self.setAntialiasing(False)
         self.scene().sigMouseMoved.connect(self.showToolTip)
@@ -129,7 +183,6 @@ class PatchedPlotWidget(pg.PlotWidget):
 
         self.legend.setParentItem(self.plots_lay)
         self.legend2.setParentItem(self.second_graphView)
-        self.tooltip.setParentItem(self.plots_lay)
 
         self.set_second_axis(False)
 
@@ -368,10 +421,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.second_graphView.linkedViewChanged(self.plots_lay.vb, self.second_graphView.XAxis)
 
     def showToolTip(self, pos):
-        if self.plots_lay.vb.sceneBoundingRect().contains(pos):
-            mouse_point = self.plots_lay.vb.mapSceneToView(pos)
-            x, y = mouse_point.x(), mouse_point.y()
-            self.tooltip.setText(f"X: {x:.2f}, Y: {y:.2f}")
+        return
             
     def set_second_axis(self, state: bool):
         """Включение/выключение второй оси"""
@@ -592,7 +642,6 @@ class PatchedPlotWidget(pg.PlotWidget):
             color = QtGui.QColor(*color)
         self.setBackground(color)
         tooltip_color = self.get_max_contrast_color(color)
-        self.tooltip.setColor(tooltip_color)
 
         self.background_color = color
 
