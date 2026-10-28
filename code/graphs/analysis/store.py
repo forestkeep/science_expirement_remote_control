@@ -33,10 +33,3 @@ class SessionAnalysisStore:
 
     def for_curve(self, root_name: str) -> List[AnalysisArtifact]:
         return [a for a in self.all() if root_name in a.source_curve_ids]
-
-    def for_tool(self, tool_id: str) -> List[AnalysisArtifact]:
-        return [a for a in self.all() if a.tool_id == tool_id]
-
-    def clear(self) -> None:
-        self._artifacts.clear()
-        self._order.clear()

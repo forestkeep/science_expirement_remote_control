@@ -242,7 +242,7 @@ class graphSelectAdapter:
         self.graph.set_second_axis(state)
 
     def multiple_changed(self, state):
-        self.graph.set_multiple_mode(state)
+        pass
 
     def update_params(self, parameters):
         list_parameters = parameters[self.type_data]

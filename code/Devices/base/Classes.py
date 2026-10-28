@@ -531,34 +531,6 @@ class base_device():
             answer = ch_response_to_step.End_list_of_steps  # след шага нет
         return answer
 
-    def sin_wave(self, freq, amplitude, phase_shift, sample_rate):
-            t = 0
-            while True:
-                value = amplitude * math.sin(2 * math.pi * freq * t + phase_shift)
-                yield str(value)
-                t += 1 / sample_rate
-
-    def natural_log_generator(self):
-        x = 0
-        while True:
-            yield str(math.log(1 + x))
-            x+=1
-
-    def exponential_function_generator(self):
-        x = 1
-        try:
-            while True:
-                yield str(math.exp(x))
-                x += 1
-        except GeneratorExit:
-            return 1
-        
-    def multiple_function_generator(self, degree):
-        x = 0
-        while True:
-            yield str(x**degree)
-            x+=1
-
     def get_name(self) -> str:
         return str(self.name)
 

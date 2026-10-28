@@ -188,21 +188,6 @@ class PatchedPlotWidget(pg.PlotWidget):
 
         view_rect = self.plots_lay.vb.viewRect()
 
-    
-
-
-    
-
-
-    def _apply_legend_text_size(self, legend):
-        if legend is None:
-            return
-        opts = getattr(legend, "opts", None)
-        if not isinstance(opts, dict):
-            return
-        opts["labelTextSize"] = f"{self.legend_font.pointSize()}pt"
-
-
     def _collect_legend_entries(self, legend):
         if legend is None:
             return []

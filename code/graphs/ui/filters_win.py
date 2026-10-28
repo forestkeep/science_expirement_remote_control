@@ -24,38 +24,9 @@ logger = logging.getLogger(__name__)
 class filtersClass():
     def __init__(self):
         self.filters_callbacks = []
-        self.thinning_callbacks = []
 
     def set_filter_slot(self, slot_func):
         self.filters_callbacks.append(slot_func)
-    
-    def set_thinning_slot(self, slot_func):
-        self.thinning_callbacks.append(slot_func)
-
-    def prepare_filters(self, filter_type):
-        params = {}
-        if filter_type == 'median':
-            params['window'] = int(self.filt_window.spin_median.value())
-        elif filter_type == 'average':
-            params['window'] = int(self.filt_window.spin_average.value())
-        elif filter_type == 'exp_mean':
-            params['alpha'] = float(self.filt_window.spin_exp_mean.value())
-        elif filter_type == 'thinning':
-            params['percent'] = int(self.filt_window.spin_thinning.value())
-            params['uniform'] = self.filt_window.check_uniform.isChecked()
-            params['max'] = self.filt_window.check_max.isChecked()
-            params['min'] = self.filt_window.check_min.isChecked()
-            params['first'] = self.filt_window.check_first.isChecked()
-            params['last'] = self.filt_window.check_last.isChecked()
-        elif filter_type == 'normalize':
-            params['norm_type'] = self.filt_window.combo_norm_type.currentText()
-        else:
-            logger.error(f"Unknown filter type: {filter_type}")
-
-        filter_command = FilterCommand(filter_type=filter_type, params=params, filters_instance=self)
-
-        for callback in self.filters_callbacks:
-            callback(filter_command)
     
     def med_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray], window: int) -> Tuple[np.ndarray, np.ndarray, str]:
         """
@@ -118,9 +89,6 @@ class filtersClass():
         x_data = x[-len(ema_array):]
 
         return x_data, ema_array, QApplication.translate("GraphWindow", "экспоненциальное среднее(alpha = {})").format( round(alpha, 2) )
-
-    def calman_filt(self, data):
-        return data
 
     def average_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray], window: int) -> Tuple[np.ndarray, np.ndarray, str]:
         """
@@ -625,11 +593,3 @@ class filtersClass():
             logger.error(f"gaussian_smooth_filt failed: {e}")
             return x_arr.copy(), y_arr.copy(), QApplication.translate("GraphWindow", "Gaussian: ошибка")
         
-if __name__ == '__main__':
-    import sys
-    app = QApplication(sys.argv)
-    
-    widget = filtersClass()
-    widget.filt_window.setWindowTitle("Фильтры данных")
-    widget.filt_window.show()
-    sys.exit(app.exec_())

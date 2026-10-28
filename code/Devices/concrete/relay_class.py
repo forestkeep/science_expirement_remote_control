@@ -491,22 +491,7 @@ class chMeasPR(base_ch):
 
         self.dict_settable_parameters = copy.deepcopy(self.dict_buf_parameters)
 
-def decode_raw_data(raw_data):
-    decoded_values = []
-    for i in range(0, len(raw_data), 5):
-        if i + 5 <= len(raw_data):
-            # Извлекаем 5 байтов
-            segment = raw_data[i:i + 5]
-            sign = segment[0]
-            integer_part = segment[1]
-            tenths = segment[2]
-            hundredths = segment[3]
-            thousandths = segment[4]
-            # Собираем число
-            decoded_number = (1 if sign == 1 else -1) * (integer_part + tenths / 10 + hundredths / 100 + thousandths / 1000)
-            decoded_values.append(decoded_number)
 
-    return decoded_values
 
 
 """

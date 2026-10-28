@@ -62,9 +62,6 @@ class manageGraph(QObject):
 
         self.focus_axis = None
 
-        self.legends_main = []
-        self.legends_second = []
-
         self.__stack_curve = {}
 
         self.inf_lines = []
@@ -139,15 +136,8 @@ class manageGraph(QObject):
         self.page.subscribe_to_key_press(key = Qt.Key_Enter, callback = self.click_enter_key)
         self.page.subscribe_to_key_press(key = Qt.Key_Return, callback = self.click_enter_key)
 
-        self.retranslateUi(self.page)
     def set_second_axis(self, state: bool):
         self.graphView.set_second_axis(state)
-
-    def _add_vertical_line_undoable(self):
-        self.graphView.apply_appearance_change(self.graphView.add_vertical_line)
-
-    def _add_horizontal_line_undoable(self):
-        self.graphView.apply_appearance_change(self.graphView.add_horizontal_line)
 
     def get_list_curves(self):
         return list(self.__stack_curve.values())
@@ -372,9 +362,6 @@ class manageGraph(QObject):
     def hide_curve(self, curve_data_obj:linearData):
         curve_data_obj.delete_curve_from_graph()
         
-    def set_multiple_mode(self, is_multiple):
-        self.__is_multiple = is_multiple
-
     def get_curve(self, name):
         return self.__stack_curve.get(name)
 
@@ -456,7 +443,5 @@ class manageGraph(QObject):
 
         self._apply_window_state_to_curve(curve_data_obj)
 
-    def retranslateUi(self, GraphWindow):
-        _translate = QApplication.translate
 
         

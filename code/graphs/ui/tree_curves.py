@@ -605,7 +605,7 @@ class treeWin(QWidget):
 
             if isinstance(item, AnalysisTreeItem):
                 context_menu = QMenu(self)
-                hide_action = QAction(_("Скрыть") if True else "Скрыть", self)
+                hide_action = QAction(QApplication.translate("GraphWindow", "Скрыть"), self)
                 del_action = QAction("Удалить", self)
                 props_action = QAction("Свойства", self)
                 hide_action.triggered.connect(

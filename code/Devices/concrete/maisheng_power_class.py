@@ -76,25 +76,6 @@ class maishengPowerClass(power_supply):
         )
         return response
 
-    def _set_frequency(self, ch_num, frequency) -> bool:
-        """удаленная настройка выходной частоты в Гц"""
-        high = 0
-        if frequency > 65535:
-            high = 1
-        frequency = frequency - 65535 - 1
-        response = self._write_reg(
-            address=int("0043", 16), count=2, slave=self.dict_settable_parameters["slave_id"], values=[high, frequency]
-        )
-        return response
-
-    def _set_duty_cycle(self, ch_num, duty_cycle) -> bool:
-        if duty_cycle > 100 or duty_cycle < 1:
-            return False
-        response = self._write_reg(
-            address=int("0044", 16), count=2, slave=self.dict_settable_parameters["slave_id"], values=[0, duty_cycle]
-        )
-        return response
-
     def _write_reg(self, address, count, slave, values) -> bool:
         if self.is_test == True:
             return self.client.write_registers(
@@ -191,13 +172,6 @@ class maishengPowerClass(power_supply):
             response = response[1] / 100
         return response
 
-    def _get_setting_frequency(self, ch_num):
-        response = self._read_setting_parameters(
-            address=int("0043", 16), count=2, slave=self.dict_settable_parameters["slave_id"])
-        if response != False:
-            pass
-            # TODO читаем параметры и кладем их в респонсе
-        return response
 
     def _get_setting_state(self, ch_num):
         response = self._read_setting_parameters(

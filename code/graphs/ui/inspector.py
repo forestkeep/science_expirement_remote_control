@@ -2396,17 +2396,3 @@ class CollapsibleGroupBox(QWidget):
     def contentLayout(self) -> QVBoxLayout:
         return self.content_layout
 
-# =====================================================================
-# Вкладка "Инструменты"
-# =====================================================================
-class ToolsTab(QWidget):
-    def __init__(self, session, parent=None):
-        super().__init__(parent)
-        self.session = session
-        layout = QVBoxLayout(self)
-        self.label = QLabel("Выберите инструмент в меню «Анализ»")
-        self.label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.label)
-
-    def set_curves(self, curves):
-        pass

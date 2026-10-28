@@ -62,7 +62,6 @@ from graphs.hdf5_io.facade import HDF5Facade
 from graphs.hdf5_io.models import FieldSettings
 from graphs.hdf5_io.utils import extract_plot_widget_settings
 from graphs.main.graph_main import manageGraph
-from graphs.main.test_main_graph import test_graph
 from common.actions.registry import ActionRegistry
 from graphs.ui.buttons_panel import ButtonsControl
 from graphs.ui.notification import NotificationWidget
@@ -349,10 +348,6 @@ class GraphSession(QWidget):
         if not simple:
             splitter.addWidget(self.tree_class)
         splitter.addWidget(self.tabWidget)
-
-        if not simple:
-            pass
-            #splitter.addWidget(self.filter_class.filt_window)
 
         splitter.setHandleWidth(1)
         splitter.setStretchFactor(0, 3)
@@ -661,40 +656,6 @@ class GraphSession(QWidget):
                 gs.edit_all_axes_check.setChecked(
                     bool(getattr(gf, "edit_all_axes", True))
                 )
-
-class running_exp_test(QWidget):
-
-    def __init__(self, graph_class, max_points, periodsec):
-        super().__init__()
-        self.test1 = test_graph(is_sine_wave=True)
-        self.test2 = test_graph()
-        self.gen1 = self.test1.append_values()
-        self.gen2 = self.test2.append_values()
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.gen_new_data)
-        self.counter_test = 0
-        self.max_points = max_points
-        self.periodsec = periodsec
-        self.graph_class = graph_class
-
-    def run(self):
-        self.id = self.graph_class.start_new_session("test", is_experiment_running=True, use_timestamps=True)
-        self.timer.start(int(self.periodsec * 1000))
-
-    def gen_new_data(self):
-        """функция раз в n секунд генерирует словарь и обновляет данные"""
-        if random.random() < 0.5:
-            gen = self.gen1
-        else:
-            gen = self.gen2
-        self.graph_class.update_session_data(self.id, (next(gen)))
-        self.counter_test += 1
-
-        if self.counter_test >= self.max_points:
-            self.counter_test = 0
-            self.timer.stop()
-            self.graph_class.stop_session_running(self.id)
-
 
 class sessionController():
     def __init__(self, current_version=None):

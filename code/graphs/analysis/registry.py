@@ -33,14 +33,9 @@ class AnalysisToolRegistry:
     def list_all(self) -> List[AnalysisToolDescriptor]:
         return list(self._tools.values())
 
-    def list_by_category(self, category: ToolCategory) -> List[AnalysisToolDescriptor]:
-        return [d for d in self._tools.values() if d.category == category]
 
     def create_strategy(self, tool_id: str):
         d = self._tools.get(tool_id)
         if d is None or d.strategy_factory is None:
             return None
         return d.strategy_factory()
-
-    def clear(self) -> None:
-        self._tools.clear()

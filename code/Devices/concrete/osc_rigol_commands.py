@@ -452,69 +452,6 @@ class oscRigolCommands:
         plt.grid(True)
         plt.show()
 
-def derivative_at_each_point(x, dx):
-    derivative = np.zeros_like(x)
-
-    for i in range(1, len(x) - 1):
-        derivative[i] = (x[i + 1] - x[i - 1]) / (2 * dx)
-
-    # Вычисление производной на краях массива с использованием односторонних разностей
-    derivative[0] = (x[1] - x[0]) / dx
-    derivative[-1] = (x[-1] - x[-2]) / dx
-
-    return derivative
-
-def find_sign_change(derivative):
-    sign_changes = []
-    for i in range(1, len(derivative)):
-        if (
-            np.sign(derivative[i]) != np.sign(derivative[i - 1])
-            and np.sign(derivative[i]) > 0
-        ):
-            sign_changes.append(i)  # Индекс точки, где происходит смена знака
-    return sign_changes
-
-def test():
-    x = np.linspace(0, 6 * np.pi, 100)  # Создание массива x от 0 до 2π
-    y = np.sin(x)  # Вычисление значений синуса в каждой точке
-
-    # Вычисление производной синуса в каждой точке
-    dx = x[1] - x[0]  # Рассчитываем шаг
-    dy_dx = derivative_at_each_point(y, dx)
-
-    # Находим точки, где производная меняет знак
-    sign_change_indices = find_sign_change(dy_dx)
-
-    # Печатаем точки, где производная меняет знак
-    # print("Точки, в которых производная меняет знак:", x[sign_change_indices])
-
-    # Вывод графика функции и ее производной
-    plt.figure(figsize=(10, 5))
-
-    # График функции синуса
-    plt.subplot(1, 2, 1)
-    plt.plot(x, y, label="sin(x)", color="blue")
-    plt.title("Функция синуса")
-    plt.xlabel("x")
-    plt.ylabel("sin(x)")
-    plt.grid()
-    plt.axhline(0, color="black", lw=0.5, ls="--")
-    plt.axvline(0, color="black", lw=0.5, ls="--")
-    plt.legend()
-
-    # График производной
-    plt.subplot(1, 2, 2)
-    plt.plot(x, dy_dx, label="sin'(x)", color="orange")
-    plt.title("Производная функции синуса")
-    plt.xlabel("x")
-    plt.ylabel("sin'(x)")
-    plt.grid()
-    plt.axhline(0, color="black", lw=0.5, ls="--")
-    plt.axvline(0, color="black", lw=0.5, ls="--")
-    plt.legend()
-
-    plt.tight_layout()
-    plt.show()
 
 if __name__ == "__main__":
 

@@ -437,10 +437,6 @@ class sr830Class(base_device):
             # ===Действия при подтверждении параметров от класса установки, приготовления к старту===
             self.command = commandsSR830(self)
 
-            #self.get_sin = self.sin_wave(freq=1, amplitude=1, phase_shift=0, sample_rate=100)
-            #self.get_ln = self.natural_log_generator()
-            #self.get_exp = self.exponential_function_generator()
-            #self.get_mult = self.multiple_function_generator(3)
             # ==========end==========
         else:
             pass

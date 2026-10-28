@@ -126,15 +126,6 @@ class AnalysisArtifact:
     leader_curve_id: Optional[str] = None
     extras: Dict[str, Any] = field(default_factory=dict)
 
-    def clone_with_new_id(self) -> "AnalysisArtifact":
-        import copy
-        new = copy.copy(self)
-        new.id = uuid.uuid4().hex
-        new.handle = None
-        new.created_at = datetime.now()
-        return new
-
-
 @dataclass
 class AnalysisToolDescriptor:
     tool_id: str
