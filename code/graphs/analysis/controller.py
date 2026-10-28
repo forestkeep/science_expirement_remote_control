@@ -170,8 +170,8 @@ class AnalysisController(QObject):
         )
         try:
             payload, details = strategy.compute(ctx, self._active.params)
-        except Exception:
-            logger.exception("apply: compute failed")
+        except (ValueError, TypeError, RuntimeError, KeyError) as exc:
+            logger.warning("apply: compute failed: %s", exc)
             return []
 
         for i, snap in enumerate(self._active.sources):
@@ -230,24 +230,17 @@ class AnalysisController(QObject):
         self.artifacts_changed.emit()
 
     def on_source_name_changed(self, root_name: str) -> None:
-        """Кривая переименована — обновить подписи её артефактов в легендах.
-
-        Данные и handle'ы не трогаем — только текст в LegendItem.
-        """
+        """Кривая переименована — обновить подписи её артефактов в легендах."""
         for art in self._artifacts_for_source(root_name):
             try:
                 self.renderer.update_legend_names(art)
-            except Exception:
-                logger.exception(
-                    "on_source_name_changed: %s failed", art.id
+            except (AttributeError, RuntimeError, KeyError) as exc:
+                logger.warning(
+                    "on_source_name_changed: %s failed: %s", art.id, exc
                 )
 
     def on_source_style_changed(self, root_name: str) -> None:
-        """Кривая изменила стиль — перерисовать её артефакты (производная,
-        интеграл, FFT, фитинги, …) и error-bars, чтобы они подхватили
-        новый цвет/толщину/маркер.
-        """
-        # 1. Артефакты анализа
+        """Кривая изменила стиль — перерисовать артефакты и error-bars."""
         for art in list(self.store.for_curve(root_name)):
             try:
                 old_handle = art.handle
@@ -257,21 +250,20 @@ class AnalysisController(QObject):
                 art.handle = new_handle
                 if new_handle is not None:
                     self.renderer.set_visible(new_handle, art.visibility)
-            except Exception:
-                logger.exception(
-                    "on_source_style_changed: re-render %s failed", art.id
+            except (AttributeError, RuntimeError, KeyError) as exc:
+                logger.warning(
+                    "on_source_style_changed: re-render %s failed: %s", art.id, exc
                 )
 
-        # 2. Полосы погрешностей на самой кривой (uncertainty)
         curve = self.session.graph_main.get_curve(root_name)
         if curve is not None:
             store = getattr(curve, "store", None)
             if store is not None and hasattr(curve.presenter, "set_error_bars"):
                 try:
                     curve.presenter.set_error_bars(store.active_uncertainty_records())
-                except Exception:
-                    logger.exception(
-                        "on_source_style_changed: error bars failed"
+                except (AttributeError, RuntimeError) as exc:
+                    logger.warning(
+                        "on_source_style_changed: error bars failed: %s", exc
                     )
 
         self.artifacts_changed.emit()
@@ -301,8 +293,8 @@ class AnalysisController(QObject):
                 created = self.apply()
                 if created or tool_id == "uncertainty.estimate":
                     applied += 1
-            except Exception:
-                logger.exception("apply_preset: tool %s failed", tool_id)
+            except (ValueError, TypeError, RuntimeError, KeyError) as exc:
+                logger.warning("apply_preset: tool %s failed: %s", tool_id, exc)
             finally:
                 self._active = None
 
@@ -376,14 +368,22 @@ class AnalysisController(QObject):
                 self._highlighted.add(art.id)
                 try:
                     self.renderer.set_highlighted(art.handle, True)
-                except Exception:
-                    pass
+                except (AttributeError, RuntimeError, KeyError) as exc:
+                    # Косметика: не считаем ошибкой, но и не молчим.
+                    logger.debug(
+                        "_on_selection_changed: highlight on failed for %s: %s",
+                        art.id, exc,
+                    )
             elif not is_sel and art.id in self._highlighted:
                 self._highlighted.discard(art.id)
                 try:
                     self.renderer.set_highlighted(art.handle, False)
-                except Exception:
-                    pass
+                except (AttributeError, RuntimeError, KeyError) as exc:
+                    logger.debug(
+                        "_on_selection_changed: highlight off failed for %s: %s",
+                        art.id, exc,
+                    )
+
 
     def remove_artifact(self, artifact_id: str) -> None:
         artifact = self.store.get(artifact_id)
@@ -418,8 +418,11 @@ class AnalysisController(QObject):
         )
         try:
             payload, details = strategy.compute(ctx, params)
-        except Exception:
-            logger.exception("update_artifact_params: compute failed")
+        except (ValueError, TypeError, RuntimeError, KeyError) as exc:
+            logger.warning(
+                "update_artifact_params: compute failed for %s: %s",
+                artifact_id, exc,
+            )
             return
 
         source_id = (artifact.source_curve_ids[0]
@@ -443,22 +446,25 @@ class AnalysisController(QObject):
         return [art for art in self.store.all() if root_name in art.source_curve_ids]
 
     def on_source_hidden(self, root_name: str) -> None:
-        """Источник скрыт — все его артефакты физически удаляются из легенды
-        и скрываются на графике, независимо от их чекбоксов."""
         for art in self._artifacts_for_source(root_name):
             try:
                 self.renderer.set_visible(art.handle, False)
-            except Exception:
-                logger.exception("on_source_hidden: set_visible failed")
+            except (AttributeError, RuntimeError, KeyError) as exc:
+                logger.warning(
+                    "on_source_hidden: set_visible failed for %s: %s",
+                    art.id, exc,
+                )
         self.artifacts_changed.emit()
 
     def on_source_shown(self, root_name: str) -> None:
-        """Источник показан — видимость артефактов возвращается к их чекбоксам."""
         for art in self._artifacts_for_source(root_name):
             try:
                 self.renderer.set_visible(art.handle, bool(art.visibility))
-            except Exception:
-                logger.exception("on_source_shown: set_visible failed")
+            except (AttributeError, RuntimeError, KeyError) as exc:
+                logger.warning(
+                    "on_source_shown: set_visible failed for %s: %s",
+                    art.id, exc,
+                )
         self.artifacts_changed.emit()
 
     def set_artifact_visibility(self, artifact_id: str, visible: bool) -> None:
@@ -619,13 +625,6 @@ class AnalysisController(QObject):
         self.artifacts_changed.emit()
 
     def _recompute_uncertainty_for(self, root_name: str) -> None:
-        """Пересчитать y_err всех записей погрешности кривой.
-
-        Сохраняем identity каждой записи (``id``, ``style``, ``created_at``,
-        ``visibility``) — пересчитываем только геометрию полос. Undo-команду
-        не создаём: пересчёт — следствие изменения фильтра, отмена фильтра
-        автоматически вернёт погрешности к прежнему виду.
-        """
         curve = self.session.graph_main.get_curve(root_name)
         if curve is None:
             return
@@ -649,24 +648,21 @@ class AnalysisController(QObject):
                     x, y,
                     dict(getattr(rec, "params", {}) or {}),
                 )
-            except Exception:
-                logger.exception(
-                    "_recompute_uncertainty_for: compute failed for %s", rec.id
+            except (ValueError, TypeError, ZeroDivisionError, FloatingPointError) as exc:
+                logger.warning(
+                    "_recompute_uncertainty_for: compute failed for %s: %s",
+                    rec.id, exc,
                 )
                 continue
-            # Копируем только геометрию; style/id/created_at остаются
-            # на исходной записи.
             rec.y_err = fresh.y_err
             rec.x_err = fresh.x_err
 
         if hasattr(curve.presenter, "set_error_bars"):
             try:
-                curve.presenter.set_error_bars(
-                    store.active_uncertainty_records()
-                )
-            except Exception:
-                logger.exception(
-                    "_recompute_uncertainty_for: set_error_bars failed"
+                curve.presenter.set_error_bars(store.active_uncertainty_records())
+            except (AttributeError, RuntimeError) as exc:
+                logger.warning(
+                    "_recompute_uncertainty_for: set_error_bars failed: %s", exc
                 )
 
     def _maybe_unsubscribe_curve(self, root_name: str) -> None:
@@ -686,12 +682,6 @@ class AnalysisController(QObject):
         self._unsubscribe_curve(root_name)
 
     def _recompute_artifact(self, artifact: AnalysisArtifact) -> None:
-        """Пересчитать артефакт на актуальных filtered_* данных.
-
-        Undo-команду НЕ создаём: пересчёт — следствие изменения фильтров,
-        а не самостоятельное действие пользователя. Undo фильтра сам
-        вернёт артефакт к прежнему состоянию через обычный recompute.
-        """
         strategy = self.registry.create_strategy(artifact.tool_id)
         if strategy is None:
             return
@@ -708,14 +698,15 @@ class AnalysisController(QObject):
         params = dict(artifact.params)
         try:
             payload, details = strategy.compute(ctx, params)
-        except Exception:
-            logger.exception(
-                "_recompute_artifact: compute failed for %s", artifact.id
+        except (ValueError, TypeError, RuntimeError, KeyError) as exc:
+            logger.warning(
+                "_recompute_artifact: compute failed for %s: %s",
+                artifact.id, exc,
             )
             return
 
         source_id = (artifact.source_curve_ids[0]
-                     if artifact.source_curve_ids else None)
+                    if artifact.source_curve_ids else None)
         new_payload = self._payload_for_source(payload, 0, source_id)
         new_description = self._build_artifact_description(
             strategy, params, new_payload, details, source_id,

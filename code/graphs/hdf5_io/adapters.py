@@ -65,26 +65,31 @@ class ProjectToHDF5Adapter:
         field_settings = core_session.get_field_settings()
 
         plots = {}
+        failed_plots: list[str] = []
         for plot_name, core_plot in core_session.graph_main.get_curves().items():
             try:
                 plot = self.convert_plot(core_plot)
-            except Exception:
-                logger.exception("convert_plot failed for %s", plot_name)
+            except (ValueError, TypeError, KeyError, AttributeError) as exc:
+                failed_plots.append(
+                    f"{plot_name} ({type(exc).__name__}: {exc})"
+                )
                 continue
             plots[plot_name.replace('\\', '_').replace('/', '_')] = plot
+        if failed_plots:
+            logger.warning(
+                "convert_session: %d plot(s) failed: %s",
+                len(failed_plots), ", ".join(failed_plots),
+            )
 
         helpers: list[dict] = []
         hm = getattr(core_session, "helper_manager", None)
         if hm is not None:
-            try:
-                for h in hm.get_helpers():
-                    helpers.append({
-                        "helper_type": h.helper_type,
-                        "params": dict(h.params or {}),
-                        "visible": bool(h.visible),
-                    })
-            except Exception:
-                logger.exception("save helpers failed")
+            for h in hm.get_helpers():
+                helpers.append({
+                    "helper_type": h.helper_type,
+                    "params": dict(h.params or {}),
+                    "visible": bool(h.visible),
+                })
 
         return Session(
             name=core_session.session_name,
@@ -127,10 +132,7 @@ class ProjectToHDF5Adapter:
     def convert_plot(self, core_plot) -> Plot:
         style_settings = self.from_graph_item(graph_item=core_plot)
 
-        try:
-            core_plot.ensure_stats_fresh()
-        except Exception:
-            logger.exception("convert_plot: ensure_stats_fresh failed")
+        core_plot.ensure_stats_fresh()
 
         stats = Statistics(
             mean=core_plot.tree_item.parameters.get('mean', 0.0),
@@ -138,16 +140,22 @@ class ProjectToHDF5Adapter:
             std_dev=core_plot.tree_item.parameters.get('std', 0.0),
         )
 
-        try:
-            note_description = core_plot.tree_item.get_description() or ""
-        except Exception:
-            note_description = ""
+        note_description = core_plot.tree_item.get_description() or ""
 
         tree_item_data = CurveTreeItemData(
             parameters=core_plot.tree_item.parameters.copy(),
-            font_info=f"Italic,{core_plot.tree_item.font.pointSize()}" if hasattr(core_plot.tree_item, 'font') else "Italic,10",
-            color_info=core_plot.tree_item.foreground(1).color().name() if core_plot.tree_item.foreground(1) else "#ff30ea",
-            col_font_info=f"{core_plot.tree_item.col_font.pointSize()}" if hasattr(core_plot.tree_item, 'col_font') else "15",
+            font_info=(
+                f"Italic,{core_plot.tree_item.font.pointSize()}"
+                if hasattr(core_plot.tree_item, 'font') else "Italic,10"
+            ),
+            color_info=(
+                core_plot.tree_item.foreground(1).color().name()
+                if core_plot.tree_item.foreground(1) else "#ff30ea"
+            ),
+            col_font_info=(
+                f"{core_plot.tree_item.col_font.pointSize()}"
+                if hasattr(core_plot.tree_item, 'col_font') else "15"
+            ),
             description=note_description,
         )
 
@@ -161,7 +169,6 @@ class ProjectToHDF5Adapter:
             x_name=core_plot.rel_data.x_root_name,
             y_name=core_plot.rel_data.y_root_name,
             curve_name=core_plot.curve_name,
-
             is_name_customized=core_plot.is_name_curve_customized,
             number=core_plot.number,
             number_axis=core_plot.number_axis,
@@ -185,28 +192,26 @@ class ProjectToHDF5Adapter:
                 enabled=getattr(filter, "enabled", True),
             ))
 
-        # --- Погрешности: записи и шаблон стиля ---
         uncertainty_records = []
         uncertainty_style = {}
         store_ref = getattr(core_plot, "store", None)
         if store_ref is not None:
-            try:
-                uncertainty_style = dict(
-                    getattr(store_ref, "uncertainty_style", {}) or {})
-                active_ids = set(
-                    getattr(store_ref, "active_uncertainty_ids", set()) or set())
-                for rec in getattr(store_ref, "uncertainty_records", []) or []:
-                    uncertainty_records.append(UncertaintyEntry(
-                        id=str(getattr(rec, "id", "")),
-                        method=str(getattr(rec, "method", "std")),
-                        params=dict(getattr(rec, "params", {}) or {}),
-                        x_err=getattr(rec, "x_err", None),
-                        y_err=getattr(rec, "y_err", None),
-                        active=(getattr(rec, "id", None) in active_ids),
-                        style=dict(getattr(rec, "style", {}) or {}),
-                    ))
-            except Exception:
-                logger.exception("convert_plot: uncertainty records failed")
+            uncertainty_style = dict(
+                getattr(store_ref, "uncertainty_style", {}) or {}
+            )
+            active_ids = set(
+                getattr(store_ref, "active_uncertainty_ids", set()) or set()
+            )
+            for rec in getattr(store_ref, "uncertainty_records", []) or []:
+                uncertainty_records.append(UncertaintyEntry(
+                    id=str(getattr(rec, "id", "")),
+                    method=str(getattr(rec, "method", "std")),
+                    params=dict(getattr(rec, "params", {}) or {}),
+                    x_err=getattr(rec, "x_err", None),
+                    y_err=getattr(rec, "y_err", None),
+                    active=(getattr(rec, "id", None) in active_ids),
+                    style=dict(getattr(rec, "style", {}) or {}),
+                ))
 
         return Plot(
             status="active",
@@ -263,35 +268,51 @@ class HDF5ToProjectAdapter:
     def _convert_session(self, session: Session, core_session):
         """Восстановить сессию без лишних сигналов и повторных пересборок данных."""
         logger.info(f"Converting session {session.name}")
-        uuid = session.parameters.uuid
-        use_timestamp = 'time' in session.data_manager.parameter_data.keys()
+
+        parameters = session.parameters
+        if parameters is None or not parameters.uuid:
+            logger.warning(
+                "convert_session: session %r has no uuid, skipped", session.name
+            )
+            return
+
+        uuid = parameters.uuid
+        dm = session.data_manager
+        use_timestamp = dm is not None and 'time' in dm.parameter_data
+
         session_id = core_session.start_new_session(
             session_name=session.name, use_timestamps=use_timestamp, uuid=uuid
         )
         if not session_id:
-            logger.warning(f"Failed to start session {session.name=} {uuid=}, convert session skipped")
+            logger.warning(
+                f"Failed to start session {session.name=} {uuid=}, "
+                f"convert session skipped"
+            )
             return
 
-        core_session.update_session_description(session_id, session.description)
+        core_session.update_session_description(session_id, session.description or "")
 
         sess = core_session.graph_sessions[session_id]
         core_manager = sess.data_manager
         select_ctrl = sess.select_controller
 
         # --- 1. Данные ---
-        self._convert_data_manager(core_manager, session.data_manager)
+        self._convert_data_manager(core_manager, dm)
         core_manager.mark_stopped_silently()
 
-        # --- 2. Кривые + сбор selection-модели ---
-        # Генерируемые кривые (is_gen) в селекторе не участвуют — их не собираем.
+        # --- 2. Кривые ---
         selection_x_param = None
         selection_y_first_params: list = []
         selection_y_second_params: list = []
 
+        failed_curves: list[str] = []
         for plot in session.plots.values():
             axis = plot.axis
             if axis not in (1, 2):
-                logger.warning(f"Unknown axis {axis} for plot {plot.name}")
+                logger.warning(
+                    "convert_session: unknown axis %r for plot %r",
+                    axis, plot.name,
+                )
                 continue
 
             try:
@@ -300,8 +321,10 @@ class HDF5ToProjectAdapter:
                     alias_manager=core_session.alias_manager,
                     filter_instance=sess.filter_class,
                 )
-            except Exception:
-                logger.exception(f"Failed to restore curve {plot.name!r}")
+            except (ValueError, KeyError, TypeError, AttributeError) as exc:
+                failed_curves.append(
+                    f"{plot.name} ({type(exc).__name__}: {exc})"
+                )
                 continue
 
             curve_obj.number_axis = axis
@@ -313,7 +336,6 @@ class HDF5ToProjectAdapter:
                 curve_obj.delete_curve_from_graph()
                 continue
 
-            # Генерируемые кривые не должны засветиться в селекторе.
             if getattr(plot, "is_gen", False):
                 continue
 
@@ -336,205 +358,217 @@ class HDF5ToProjectAdapter:
                 if y_alias not in selection_y_second_params:
                     selection_y_second_params.append(y_alias)
 
-        # --- 3. Скорректировать field_settings под фактический выбор ----------
-        gf = session.field_settings.graph_field
+        if failed_curves:
+            logger.warning(
+                "convert_session: failed to restore %d curve(s): %s",
+                len(failed_curves), ", ".join(failed_curves),
+            )
 
-        # Если в сессии есть кривые на правой оси — флаг должен быть включён.
-        if selection_y_second_params:
-            gf.is_second_axis_enabled = True
+        # --- 3. Скорректировать field_settings под фактический выбор ---------
+        field_settings = session.field_settings
+        gf = field_settings.graph_field if field_settings is not None else None
+        if gf is None:
+            logger.warning(
+                "convert_session: session %r has no field_settings.graph_field",
+                session.name,
+            )
+        else:
+            if selection_y_second_params:
+                gf.is_second_axis_enabled = True
+            if len(selection_y_first_params) > 1:
+                gf.is_multiple_y1_enabled = True
+                gf.is_multiple_selection_enabled = True
+            if len(selection_y_second_params) > 1:
+                gf.is_multiple_y2_enabled = True
 
-        # Если на какой-либо оси несколько кривых — multiple-mode обязателен.
-        if len(selection_y_first_params) > 1:
-            gf.is_multiple_y1_enabled = True
-            gf.is_multiple_selection_enabled = True
-        if len(selection_y_second_params) > 1:
-            gf.is_multiple_y2_enabled = True
-
-        # --- 4. Восстановление настроек поля без побочного эмита --------------
-        # «Замораживаем» текущее (пустое) состояние модели, чтобы эмиты
-        # apply_field_settings (через set_second_check_box → activation_changed
-        # → _emit_parameters_updated) не выстрелили parameters_updated и не снесли
-        # восстановленные кривые через graphSelectAdapter.parameters_choised.
+        # --- 4. «Замораживаем» состояние модели ---
         select_ctrl._last_emitted_state = (
             select_ctrl.curent_x_parameter,
             tuple(select_ctrl.curent_y_first_parameters),
             tuple(select_ctrl.curent_y_second_parameters),
         )
 
-        # Применяем настройки: active-флаги (Y2), multiple-modes, стили.
-        # Это может эмитнуть state_second_axis_changed — что корректно:
-        # правая ось включится на графике.
-        sess.apply_field_settings(session.field_settings)
+        if field_settings is not None:
+            sess.apply_field_settings(field_settings)
 
-        # --- 5. Установить selection-модель и синхронизировать UI -------------
+        # --- 5. Установить selection-модель ---
         select_ctrl.curent_x_parameter = selection_x_param
         select_ctrl.curent_y_first_parameters = list(selection_y_first_params)
         select_ctrl.curent_y_second_parameters = list(selection_y_second_params)
         select_ctrl._enforce_invariants()
         select_ctrl._sync_view_from_model()
 
-        # Фиксируем финальное состояние — последующие случайные эмиты
-        # (например, от повторной активации осей) станут no-op.
         select_ctrl._last_emitted_state = (
             select_ctrl.curent_x_parameter,
             tuple(select_ctrl.curent_y_first_parameters),
             tuple(select_ctrl.curent_y_second_parameters),
         )
 
-        # --- 6. Хелперы -------------------------------------------------------
-        try:
-            hm = getattr(sess, "helper_manager", None)
-            if hm is not None:
-                hm.remove_all()
-                for h_data in getattr(session, "helpers", []) or []:
+        # --- 6. Хелперы ---
+        hm = getattr(sess, "helper_manager", None)
+        if hm is not None:
+            hm.remove_all()
+            helpers_failed: list[str] = []
+            for h_data in getattr(session, "helpers", []) or []:
+                helper_type = h_data.get("helper_type", "")
+                if not helper_type:
+                    continue
+                try:
                     new_helper = hm.add_helper(
-                        h_data.get("helper_type", ""),
-                        dict(h_data.get("params") or {}),
+                        helper_type, dict(h_data.get("params") or {})
                     )
-                    if new_helper is not None and not h_data.get("visible", True):
-                        hm.set_visible(new_helper.id, False)
-        except Exception:
-            logger.exception("restore helpers failed")
+                except (KeyError, ValueError, AttributeError) as exc:
+                    helpers_failed.append(
+                        f"{helper_type} ({type(exc).__name__}: {exc})"
+                    )
+                    continue
+                if new_helper is not None and not h_data.get("visible", True):
+                    hm.set_visible(new_helper.id, False)
+            if helpers_failed:
+                logger.warning(
+                    "convert_session: failed to restore %d helper(s): %s",
+                    len(helpers_failed), ", ".join(helpers_failed),
+                )
 
-        # --- 7. Артефакты анализа ---------------------------------------------
-        try:
+        # --- 7. Артефакты анализа ---
+        if hasattr(sess, "analysis_controller") and session.analysis_artifacts:
             from graphs.analysis.commands import ApplyAnalysisCommand
-            if hasattr(sess, "analysis_controller") and session.analysis_artifacts:
-                for art in session.analysis_artifacts:
+            artifacts_failed: list[str] = []
+            for art in session.analysis_artifacts:
+                try:
                     cmd = ApplyAnalysisCommand(sess.analysis_controller, art)
                     sess.undo_manager.push(cmd, execute=True)
-        except Exception:
-            logger.exception("restore analysis artifacts failed")
+                except (KeyError, ValueError, AttributeError) as exc:
+                    artifacts_failed.append(
+                        f"{getattr(art, 'id', '?')} "
+                        f"({type(exc).__name__}: {exc})"
+                    )
+            if artifacts_failed:
+                logger.warning(
+                    "convert_session: failed to restore %d artifact(s): %s",
+                    len(artifacts_failed), ", ".join(artifacts_failed),
+                )
 
 
-    def apply_graph_settings(self, graph_widget: PatchedPlotWidget, settings: FieldSettings) -> None:
-        """
-        Применяет настройки к графику.
-        
-        Args:
-            graph_widget: Объект графика PatchedPlotWidget
-            settings: Настройки графика FieldSettings
-        """
+    def apply_graph_settings(self, graph_widget: PatchedPlotWidget,
+                         settings: FieldSettings) -> None:
+        """Применяет настройки к графику."""
+        if settings is None or settings.graph_field is None:
+            logger.warning("apply_graph_settings: empty settings, skipped")
+            return
+
         graph_settings = settings.graph_field
-        
-        graph_widget.setTitle(graph_settings.title)
-        graph_widget.setCustomBackgroundColor(color = QtGui.QColor(graph_settings.background_color))
-        
+
+        graph_widget.setTitle(graph_settings.title or "")
+        graph_widget.setCustomBackgroundColor(
+            color=QtGui.QColor(graph_settings.background_color)
+        )
+
         # --- Сетка: X / Y независимо, alpha отдельно от цвета ---
+        bottom_axis = graph_widget.plotItem.getAxis("bottom")
+        left_axis = graph_widget.plotItem.getAxis("left")
+        grid_color = QtGui.QColor(graph_settings.grid_color)
         try:
-            bottom_axis = graph_widget.plotItem.getAxis("bottom")
-            left_axis = graph_widget.plotItem.getAxis("left")
-            grid_color = QtGui.QColor(graph_settings.grid_color)
-            try:
-                grid_alpha = int(round(float(graph_settings.grid_alpha) * 255))
-            except (TypeError, ValueError):
-                grid_alpha = 128
+            grid_alpha = int(round(float(graph_settings.grid_alpha) * 255))
+        except (TypeError, ValueError):
+            grid_alpha = 128
 
-            bottom_axis.setPen(grid_color)
-            left_axis.setPen(grid_color)
+        bottom_axis.setPen(grid_color)
+        left_axis.setPen(grid_color)
 
-            x_on = bool(getattr(graph_settings, "x_grid_enabled",
-                                graph_settings.grid_enabled))
-            y_on = bool(getattr(graph_settings, "y_grid_enabled",
-                                graph_settings.grid_enabled))
+        x_on = bool(getattr(graph_settings, "x_grid_enabled",
+                            graph_settings.grid_enabled))
+        y_on = bool(getattr(graph_settings, "y_grid_enabled",
+                            graph_settings.grid_enabled))
 
-            bottom_axis.setGrid(grid_alpha if x_on else False)
-            left_axis.setGrid(grid_alpha if y_on else False)
+        bottom_axis.setGrid(grid_alpha if x_on else False)
+        left_axis.setGrid(grid_alpha if y_on else False)
 
-            graph_widget.is_grid_shown = bool(x_on or y_on)
-        except Exception:
-            logger.exception("apply_graph_settings: grid apply failed")
-        
+        graph_widget.is_grid_shown = bool(x_on or y_on)
+
         common_style = axisStyle(
             text_font=string_to_qfont(graph_settings.common_axis_style.text_font),
-            
             tick_font=string_to_qfont(graph_settings.common_axis_style.tick_font),
-            color=string_to_color(graph_settings.common_axis_style.color)
+            color=string_to_color(graph_settings.common_axis_style.color),
         )
         graph_widget.common_style = common_style
-        
+
+        log_x = False
+        log_y = False
         for axis_name, axis_settings in graph_settings.axes.items():
-            if axis_name in graph_widget.axises:
-                axis_controller = graph_widget.axises[axis_name]
-                
-                axis_controller.settings.label = axis_settings.label
-                axis_controller.settings.is_visible = axis_settings.is_visible
-                axis_controller.settings.is_inverted = axis_settings.is_inverted
-                
-                if axis_settings.is_visible:
-                    axis_controller.show()
-                else:
-                    axis_controller.hide()
-                
-                if axis_name == 'bottom':
-                    graph_widget.invert_x_axis(axis_settings.is_inverted)
-                elif axis_name in ['left', 'right']:
-                    if axis_name == 'left':
-                        graph_widget.invert_y_axis(axis_settings.is_inverted)
-                    else:
-                        graph_widget.invert_y2_axis(axis_settings.is_inverted)
-                
-                custom_style = axisStyle(
-                        text_font=string_to_qfont(axis_settings.custom_style.text_font),
-                        tick_font=string_to_qfont(axis_settings.custom_style.tick_font),
-                        color=string_to_color(axis_settings.custom_style.color)
-                    )
-                if axis_settings.is_style_customized:
-                    axis_controller.set_custom_style(custom_style)
-                else:
-                    axis_controller.set_common_style(common_style)
+            if axis_name == "bottom":
+                log_x = bool(axis_settings.log_mode)
+            elif axis_name == "left":
+                log_y = bool(axis_settings.log_mode)
 
-                # Лог-шкала применяется к PlotItem, не к AxisItem
-                log_x = False
-                log_y = False
-                for axis_name, axis_settings in graph_settings.axes.items():
-                    if axis_name == "bottom":
-                        log_x = bool(axis_settings.log_mode)
-                    elif axis_name == "left":
-                        log_y = bool(axis_settings.log_mode)
-                try:
-                    graph_widget.plotItem.setLogMode(x=log_x, y=log_y)
-                except Exception:
-                    logger.exception("apply_graph_settings: setLogMode failed")
+            if axis_name not in graph_widget.axises:
+                continue
 
-                if not axis_settings.auto_range and axis_settings.range:
-                    axis_controller.setRange(*axis_settings.range)
-        
+            axis_controller = graph_widget.axises[axis_name]
+
+            axis_controller.settings.label = axis_settings.label or ""
+            axis_controller.settings.is_visible = axis_settings.is_visible
+            axis_controller.settings.is_inverted = axis_settings.is_inverted
+
+            if axis_settings.is_visible:
+                axis_controller.show()
+            else:
+                axis_controller.hide()
+
+            if axis_name == 'bottom':
+                graph_widget.invert_x_axis(axis_settings.is_inverted)
+            elif axis_name == 'left':
+                graph_widget.invert_y_axis(axis_settings.is_inverted)
+            elif axis_name == 'right':
+                graph_widget.invert_y2_axis(axis_settings.is_inverted)
+
+            custom_style = axisStyle(
+                text_font=string_to_qfont(axis_settings.custom_style.text_font),
+                tick_font=string_to_qfont(axis_settings.custom_style.tick_font),
+                color=string_to_color(axis_settings.custom_style.color),
+            )
+            if axis_settings.is_style_customized:
+                axis_controller.set_custom_style(custom_style)
+            else:
+                axis_controller.set_common_style(common_style)
+
+            if not axis_settings.auto_range and axis_settings.range:
+                axis_controller.setRange(*axis_settings.range)
+
+        try:
+            graph_widget.plotItem.setLogMode(x=log_x, y=log_y)
+        except (AttributeError, ValueError) as exc:
+            logger.debug("apply_graph_settings: setLogMode failed: %s", exc)
+
         if hasattr(graph_widget, 'legend'):
             graph_widget.legend.setVisible(graph_settings.legend_enabled)
             graph_widget.legend2.setVisible(graph_settings.legend_enabled)
 
-            # --- ВОССТАНОВЛЕНИЕ ПОЗИЦИЙ ЛЕГЕНД ---
-            if hasattr(graph_settings, 'legend_pos') and graph_widget.legend is not None:
-                graph_widget.legend.setPos(
-                    graph_settings.legend_pos[0],
-                    graph_settings.legend_pos[1]
-                )
-            if hasattr(graph_settings, 'legend2_pos') and graph_widget.legend2 is not None:
-                graph_widget.legend2.setPos(
-                    graph_settings.legend2_pos[0],
-                    graph_settings.legend2_pos[1]
-                )
-            # -------------------------------------
+            if getattr(graph_settings, "legend_pos", None) is not None:
+                pos = graph_settings.legend_pos
+                if (isinstance(pos, (tuple, list)) and len(pos) == 2):
+                    graph_widget.legend.setPos(pos[0], pos[1])
+            if getattr(graph_settings, "legend2_pos", None) is not None:
+                pos2 = graph_settings.legend2_pos
+                if (isinstance(pos2, (tuple, list)) and len(pos2) == 2):
+                    graph_widget.legend2.setPos(pos2[0], pos2[1])
 
             if hasattr(graph_widget, 'set_legend_color'):
                 graph_widget.set_legend_color(graph_settings.legend_text_color)
 
-            if (hasattr(graph_widget, 'set_legend_font')
-                    and graph_settings.legend_font):
-                try:
-                    font = string_to_qfont(graph_settings.legend_font)
+            if hasattr(graph_widget, 'set_legend_font') and graph_settings.legend_font:
+                font = string_to_qfont(graph_settings.legend_font)
+                if font is not None:
                     graph_widget.set_legend_font(font)
-                except Exception:
-                    logger.exception("apply_graph_settings: legend_font failed")
-        
+
         graph_widget.setAntialiasing(graph_settings.antialiasing)
         if hasattr(graph_widget, "style_changed"):
             try:
                 graph_widget.style_changed.emit()
-            except Exception:
-                pass
-
+            except (TypeError, RuntimeError) as exc:
+                logger.debug(
+                    "apply_graph_settings: style_changed.emit failed: %s", exc
+                )
 
     def prepare_data_dict(self, data_items):
             level_3 = {}
@@ -579,7 +613,9 @@ class HDF5ToProjectAdapter:
                 if data_dict:
                     core_manager.add_measurement_data(data_dict)
 
-    def restore_curve_from_model(self, plot_model: Plot, alias_manager, filter_instance) -> linearData:
+    def restore_curve_from_model(self, plot_model: Plot,
+                             alias_manager, filter_instance) -> linearData:
+        """Восстановить linearData из Plot. Битые поля — с warning, не с except."""
         logger.info("Restoring curve from model")
 
         def _strip_prefix(full: str, dev: str, ch: str) -> str:
@@ -588,8 +624,15 @@ class HDF5ToProjectAdapter:
                 return full[len(prefix):]
             return full or ""
 
-        x_dev = plot_model.linear_data.device or ""
-        x_ch = plot_model.linear_data.channel or ""
+        linear_data = plot_model.linear_data
+        if linear_data is None:
+            raise ValueError(
+                f"restore_curve_from_model: plot {plot_model.name!r} "
+                f"has no linear_data"
+            )
+
+        x_dev = linear_data.device or ""
+        x_ch = linear_data.channel or ""
         y_dev = x_dev
         y_ch = x_ch
 
@@ -599,37 +642,32 @@ class HDF5ToProjectAdapter:
         is_gen = bool(getattr(plot_model, "is_gen", False))
 
         x_meas = measTimeData(
-            device=x_dev,
-            ch=x_ch,
-            param=x_param_only,
-            par_val=plot_model.linear_data.raw_data_x,
-            num_or_time=np.arange(len(plot_model.linear_data.raw_data_x)),
+            device=x_dev, ch=x_ch, param=x_param_only,
+            par_val=linear_data.raw_data_x,
+            num_or_time=np.arange(len(linear_data.raw_data_x)),
         )
         y_meas = measTimeData(
-            device=y_dev,
-            ch=y_ch,
-            param=y_param_only,
-            par_val=plot_model.linear_data.raw_data_y,
-            num_or_time=np.arange(len(plot_model.linear_data.raw_data_y)),
+            device=y_dev, ch=y_ch, param=y_param_only,
+            par_val=linear_data.raw_data_y,
+            num_or_time=np.arange(len(linear_data.raw_data_y)),
         )
         rel_data = relationData(x_meas, y_meas, is_gen=is_gen)
 
         new_data = linearData(data=rel_data, alias_manager=alias_manager)
 
-        new_data.device = plot_model.linear_data.device
-        new_data.channel = plot_model.linear_data.channel
-        new_data.number = plot_model.linear_data.number
+        new_data.device = linear_data.device
+        new_data.channel = linear_data.channel
+        new_data.number = linear_data.number
 
-        new_data.store.raw_data_x = np.asarray(plot_model.linear_data.raw_data_x)
-        new_data.store.raw_data_y = np.asarray(plot_model.linear_data.raw_data_y)
-        new_data.store.filtered_x_data = np.asarray(plot_model.linear_data.filtered_x_data)
-        new_data.store.filtered_y_data = np.asarray(plot_model.linear_data.filtered_y_data)
+        new_data.store.raw_data_x = np.asarray(linear_data.raw_data_x)
+        new_data.store.raw_data_y = np.asarray(linear_data.raw_data_y)
+        new_data.store.filtered_x_data = np.asarray(linear_data.filtered_x_data)
+        new_data.store.filtered_y_data = np.asarray(linear_data.filtered_y_data)
 
         style = self.transform_line_style(plot_model.style)
         new_data.presenter.saved_style = style
         new_data.presenter.preselection_style = style
 
-        # Восстановить историю фильтров БЕЗ повторного применения
         for f in plot_model.history:
             new_data.store.filters_history.append(
                 FilterCommand(
@@ -639,51 +677,47 @@ class HDF5ToProjectAdapter:
                     enabled=getattr(f, "enabled", True),
                 )
             )
-
-        # filtered_* уже восстановлены из файла — не пересобирать
         new_data.store._filtered_dirty = False
 
-        if plot_model.linear_data.is_name_customized:
-            new_data.change_name(plot_model.linear_data.curve_name)
+        if linear_data.is_name_customized:
+            new_data.change_name(linear_data.curve_name)
         else:
             new_data.reset_name()
 
-        try:
-            desc = plot_model.linear_data.tree_item_data.description or ""
-        except Exception:
-            desc = ""
+        # Описание — через .get, без страховки try/except
+        tree_item_data = linear_data.tree_item_data
+        desc = (getattr(tree_item_data, "description", "") or "") \
+            if tree_item_data is not None else ""
         if desc:
             block_name = QApplication.translate("GraphWindow", "Разное")
             key = QApplication.translate("GraphWindow", "Описание")
             if not new_data.tree_item.update_block_data(block_name, {key: desc}):
                 new_data.tree_item.add_new_block(block_name, {key: desc})
 
-        # --- Восстановление погрешностей и их стиля ---
-        try:
-            from graphs.analysis.uncertainty import UncertaintyRecord
-            store = new_data.store
-            store.uncertainty_style = dict(
-                getattr(plot_model, "uncertainty_style", {}) or {})
-            for entry in getattr(plot_model, "uncertainty_records", []) or []:
-                kwargs = dict(
-                    method=entry.method or "std",
-                    params=dict(entry.params or {}),
-                    x_err=entry.x_err,
-                    y_err=entry.y_err,
-                    style=dict(entry.style or {}),
-                )
-                if getattr(entry, "id", ""):
-                    kwargs["id"] = entry.id
-                rec = UncertaintyRecord(**kwargs)
-                store.uncertainty_records.append(rec)
-                if entry.active:
-                    store.active_uncertainty_ids.add(rec.id)
-                else:
-                    store.active_uncertainty_ids.discard(rec.id)
-            if store.uncertainty_records and hasattr(new_data.presenter, "set_error_bars"):
-                new_data.presenter.set_error_bars(store.active_uncertainty_records())
-        except Exception:
-            logger.exception("restore_curve_from_model: uncertainty failed")
+        # Погрешности — записи опциональны, поля читаем через .get
+        from graphs.analysis.uncertainty import UncertaintyRecord
+        store = new_data.store
+        store.uncertainty_style = dict(
+            getattr(plot_model, "uncertainty_style", {}) or {}
+        )
+        for entry in getattr(plot_model, "uncertainty_records", []) or []:
+            kwargs = dict(
+                method=getattr(entry, "method", "std") or "std",
+                params=dict(getattr(entry, "params", {}) or {}),
+                x_err=getattr(entry, "x_err", None),
+                y_err=getattr(entry, "y_err", None),
+                style=dict(getattr(entry, "style", {}) or {}),
+            )
+            if getattr(entry, "id", ""):
+                kwargs["id"] = entry.id
+            rec = UncertaintyRecord(**kwargs)
+            store.uncertainty_records.append(rec)
+            if getattr(entry, "active", True):
+                store.active_uncertainty_ids.add(rec.id)
+            else:
+                store.active_uncertainty_ids.discard(rec.id)
+        if store.uncertainty_records and hasattr(new_data.presenter, "set_error_bars"):
+            new_data.presenter.set_error_bars(store.active_uncertainty_records())
 
         return new_data
     

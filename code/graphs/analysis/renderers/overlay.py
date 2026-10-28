@@ -370,17 +370,17 @@ class OverlayRenderer(BaseRenderer):
         try:
             for item in (handle or []):
                 self._original_pens.pop(id(item), None)
-                # В легенде может не быть — removeItem это корректно обрабатывает,
-                # но проверка экономит dict lookup'ы.
                 if legend is not None and getattr(item, "_legend_name", None):
                     try:
                         legend.removeItem(item)
-                    except Exception:
-                        pass
+                    except (AttributeError, RuntimeError) as exc:
+                        logger.debug(
+                            "OverlayRenderer.remove: legend remove: %s", exc
+                        )
                 try:
                     graph_view.removeItem(item)
-                except Exception:
-                    logger.exception("OverlayRenderer.remove failed")
+                except (AttributeError, RuntimeError) as exc:
+                    logger.warning("OverlayRenderer.remove failed: %s", exc)
         finally:
             if was_auto:
                 plot_item.vb.enableAutoRange()

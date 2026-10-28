@@ -502,8 +502,8 @@ class PatchedPlotWidget(pg.PlotWidget):
                     opts = getattr(legend, "opts", None)
                     if isinstance(opts, dict):
                         opts["labelTextColor"] = color
-                except Exception:
-                    pass
+                except (AttributeError, TypeError) as exc:
+                    logger.debug("set_legend_color: opts update failed: %s", exc)
         finally:
             self._emit_style_changed()
 

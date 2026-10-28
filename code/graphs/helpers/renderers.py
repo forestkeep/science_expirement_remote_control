@@ -1,7 +1,8 @@
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+import logging
+logger = logging.getLogger(__name__)
 
 _QT_STYLE = {
     "solid":   QtCore.Qt.SolidLine,
@@ -46,8 +47,8 @@ def _add_item(manager, item, ignore_bounds: bool = False):
 def _remove_item(manager, item):
     try:
         manager.graph_view.removeItem(item)
-    except Exception:
-        pass
+    except (AttributeError, RuntimeError) as exc:
+        logger.debug("helper remove: %s", exc)
 
 
 class _DraggableText(pg.TextItem):

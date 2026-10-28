@@ -106,10 +106,9 @@ class AttachedRenderer(BaseRenderer):
         for item in items:
             try:
                 item.setVisible(bool(visible))
-            except Exception:
-                pass
+            except (AttributeError, RuntimeError) as exc:
+                logger.debug("AttachedRenderer.set_visible: setVisible: %s", exc)
 
-        # Синхронизируем легенду панели: removeItem при скрытии, addItem при показе.
         for info in self._panels.values():
             legend = getattr(info.get("plot"), "legend", None)
             if legend is None:
@@ -126,9 +125,10 @@ class AttachedRenderer(BaseRenderer):
                             legend.addItem(item, name)
                     else:
                         legend.removeItem(item)
-                except Exception:
-                    logger.exception(
-                        "AttachedRenderer.set_visible: legend update failed"
+                except (AttributeError, RuntimeError, TypeError) as exc:
+                    logger.warning(
+                        "AttachedRenderer.set_visible: legend update failed: %s",
+                        exc,
                     )
 
         for tool_id in list(self._panels.keys()):
@@ -173,17 +173,20 @@ class AttachedRenderer(BaseRenderer):
             for item in (handle or []):
                 if item in info["handles"]:
                     info["handles"].remove(item)
-                    try:
-                        # удаляем из легенды
-                        legend = getattr(info["plot"], "legend", None)
-                        if legend is not None:
+                    legend = getattr(info["plot"], "legend", None)
+                    if legend is not None:
+                        try:
                             legend.removeItem(item)
-                    except Exception:
-                        pass
+                        except (AttributeError, RuntimeError) as exc:
+                            logger.debug(
+                                "AttachedRenderer.remove: legend: %s", exc
+                            )
                     try:
                         info["plot"].removeItem(item)
-                    except Exception:
-                        pass
+                    except (AttributeError, RuntimeError) as exc:
+                        logger.debug(
+                            "AttachedRenderer.remove: removeItem: %s", exc
+                        )
             if not info["handles"]:
                 parent = info["container"].parent()
                 if parent is not None and parent.layout() is not None:

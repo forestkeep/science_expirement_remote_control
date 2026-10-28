@@ -233,9 +233,9 @@ class linearData:
             return
         try:
             ctrl.on_source_name_changed(self.store.rel_data.root_name)
-        except Exception:
-            logger.exception(
-                "linearData: analysis name change notification failed"
+        except (AttributeError, RuntimeError, KeyError) as exc:
+            logger.warning(
+                "linearData: analysis name change notification failed: %s", exc
             )
 
     def setData(self, data: relationData):
@@ -335,12 +335,12 @@ class linearData:
         try:
             self.store._detached = True
             self.store._rebuild_scheduled = False
-        except Exception:
-            pass
+        except (AttributeError, RuntimeError) as exc:
+            logger.debug("linearData.detach: store flag update failed: %s", exc)
         try:
             self.alias_manager.aliases_updated.disconnect(self._alias_changed)
-        except (TypeError, RuntimeError):
-            pass
+        except (TypeError, RuntimeError) as exc:
+            logger.debug("linearData.detach: alias disconnect: %s", exc)
         self.presenter.detach()
 
 

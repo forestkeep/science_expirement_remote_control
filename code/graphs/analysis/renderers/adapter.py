@@ -57,9 +57,11 @@ class AnalysisRendererAdapter:
         for r in (self._overlay, self._attached, self._domain):
             try:
                 r.set_visible(handle, visible)
-            except Exception:
-                pass
-
+            except (AttributeError, RuntimeError) as exc:
+                logger.debug(
+                    "AnalysisRendererAdapter.set_visible: %s: %s",
+                    type(r).__name__, exc,
+                )
     def update_legend_names(self, artifact) -> None:
         """Обновить подпись артефакта в легенде после переименования источника."""
         ptype = artifact.placement_type

@@ -210,30 +210,36 @@ def string_to_color(color_string: str):
         return color_string
     
 def save_dict_to_hdf5_with_subgroups(group, data_dict):
-    """Сохраняет словарь в HDF5 группу, создавая подгруппы для вложенных словарей"""
+    """Сохраняет словарь в HDF5-группу, создавая подгруппы для вложенных словарей."""
     for key, value in data_dict.items():
         if value is None:
             value = ''
-        
+
         if isinstance(value, dict):
-            # Создаем подгруппу для словаря
             try:
                 subgroup = group.create_group(key)
-                save_dict_to_hdf5_with_subgroups(subgroup, value)
-            except Exception as e:
-                # Fallback: сохраняем как JSON строку
+            except (TypeError, ValueError, OSError) as exc:
+                logger.warning(
+                    "save_dict_to_hdf5_with_subgroups: cannot create "
+                    "subgroup %r: %s", key, exc,
+                )
                 try:
                     group.attrs[key] = json.dumps(value)
-                except:
+                except (TypeError, ValueError):
                     group.attrs[key] = str(value)
+                continue
+            save_dict_to_hdf5_with_subgroups(subgroup, value)
         else:
-            # Простые значения сохраняем как атрибуты
             try:
                 if isinstance(value, (list, tuple)):
                     group.attrs[key] = json.dumps(value)
                 else:
                     group.attrs[key] = value
-            except Exception as e:
+            except (TypeError, ValueError) as exc:
+                logger.warning(
+                    "save_dict_to_hdf5_with_subgroups: cannot write "
+                    "attr %r: %s", key, exc,
+                )
                 group.attrs[key] = str(value)
 
 def load_dict_from_hdf5_group(group):
@@ -315,10 +321,24 @@ def dict_to_graph_field_settings(data_dict: Dict[str, Any]) -> GraphFieldSetting
         
         # Обрабатываем range (может быть списком/кортежем)
         range_data = axis_data.get('range')
-        if range_data is not None and isinstance(range_data, (list, tuple)) and len(range_data) == 2:
-            range_tuple = (float(range_data[0]), float(range_data[1]))
-        else:
+        if range_data is None:
             range_tuple = None
+        elif (not isinstance(range_data, (list, tuple))
+                or len(range_data) != 2):
+            logger.warning(
+                "dict_to_graph_field_settings: invalid range for axis %r: %r",
+                axis_name, range_data,
+            )
+            range_tuple = None
+        else:
+            try:
+                range_tuple = (float(range_data[0]), float(range_data[1]))
+            except (TypeError, ValueError):
+                logger.warning(
+                    "dict_to_graph_field_settings: non-numeric range "
+                    "for axis %r: %r", axis_name, range_data,
+                )
+                range_tuple = None
         
         # Создаем настройки оси
         axis_settings = AxisSettings(

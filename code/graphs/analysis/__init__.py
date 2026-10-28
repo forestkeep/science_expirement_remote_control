@@ -27,7 +27,9 @@ def ensure_tools_registered() -> None:
         return
     try:
         from . import strategies as _s  # noqa: F401
-    except Exception:
+    except ImportError as exc:
         import logging
-        logging.getLogger(__name__).exception("strategies import failed")
+        logging.getLogger(__name__).warning(
+            "ensure_tools_registered: strategies import failed: %s", exc
+        )
     _initialized = True

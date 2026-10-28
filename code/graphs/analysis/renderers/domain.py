@@ -38,34 +38,58 @@ class DomainRenderer(BaseRenderer):
         return info
 
     def _apply_axis_labels(self, plot, x_label: str, y_label: str) -> None:
-        """Перезаписать подписи осей и заголовок, скопированные с главного графика.
-
-        ``apply_main_graph_style`` копирует весь внешний вид главного
-        графика, включая заголовок и тексты осей. Для DOMAIN-вкладок
-        (спектр, автокорреляция) оси несут совсем другой смысл — подписи
-        берём из payload. Заголовок внутри поля очищаем, поскольку он
-        дублирует текст вкладки.
-        """
         try:
             plot.setTitle("")
-        except Exception:
-            logger.exception("DomainRenderer: setTitle failed")
+        except (AttributeError, RuntimeError) as exc:
+            logger.warning("DomainRenderer: setTitle failed: %s", exc)
 
         for axis_name, label in (("bottom", x_label), ("left", y_label)):
             try:
                 plot.setLabel(axis_name, label or "")
-            except Exception:
-                logger.exception("DomainRenderer: setLabel(%s) failed", axis_name)
+            except (AttributeError, RuntimeError) as exc:
+                logger.warning(
+                    "DomainRenderer: setLabel(%s) failed: %s", axis_name, exc
+                )
 
-            # Синхронизируем внутреннее состояние контроллера оси, чтобы
-            # extract_plot_widget_settings сохранял именно наши подписи.
             ctrl = getattr(plot, "axises", {}).get(axis_name)
             if ctrl is not None:
                 try:
                     ctrl.settings.label = label or ""
-                except Exception:
-                    pass
+                except (AttributeError, RuntimeError) as exc:
+                    logger.debug(
+                        "DomainRenderer: ctrl.settings.label: %s", exc
+                    )
 
+
+    def set_visible(self, handle, visible: bool) -> None:
+        items = list(handle or [])
+        for item in items:
+            try:
+                item.setVisible(bool(visible))
+            except (AttributeError, RuntimeError) as exc:
+                logger.debug("DomainRenderer.set_visible: setVisible: %s", exc)
+
+        for info in self._tabs.values():
+            legend = getattr(info.get("plot"), "legend", None)
+            if legend is None:
+                continue
+            for item in items:
+                if item not in info["handles"]:
+                    continue
+                try:
+                    if visible:
+                        if legend.getLabel(item) is None:
+                            name = getattr(item, "_legend_name", None) or item.name()
+                            if name is None:
+                                continue
+                            legend.addItem(item, name)
+                    else:
+                        legend.removeItem(item)
+                except (AttributeError, RuntimeError, TypeError) as exc:
+                    logger.warning(
+                        "DomainRenderer.set_visible: legend update failed: %s",
+                        exc,
+                    )
     def reapply_labels(self) -> None:
         """Пере-применить подписи осей для всех открытых DOMAIN-вкладок.
 
@@ -147,35 +171,6 @@ class DomainRenderer(BaseRenderer):
                 legend.addItem(item, new_name)
             except Exception:
                 logger.exception("DomainRenderer.update_legend_names failed")
-
-    def set_visible(self, handle, visible: bool) -> None:
-        items = list(handle or [])
-        for item in items:
-            try:
-                item.setVisible(bool(visible))
-            except Exception:
-                pass
-
-        for info in self._tabs.values():
-            legend = getattr(info.get("plot"), "legend", None)
-            if legend is None:
-                continue
-            for item in items:
-                if item not in info["handles"]:
-                    continue
-                try:
-                    if visible:
-                        if legend.getLabel(item) is None:
-                            name = getattr(item, "_legend_name", None) or item.name()
-                            if name is None:
-                                continue
-                            legend.addItem(item, name)
-                    else:
-                        legend.removeItem(item)
-                except Exception:
-                    logger.exception(
-                        "DomainRenderer.set_visible: legend update failed"
-                    )
 
     def update(self, handle, payload) -> None:
         xs = getattr(payload, "x", None)

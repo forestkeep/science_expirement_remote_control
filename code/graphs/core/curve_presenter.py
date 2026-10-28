@@ -336,21 +336,32 @@ class CurvePresenter:
             for eb in info.get('error_bars') or []:
                 try:
                     graph_field.removeItem(eb)
-                except Exception:
-                    pass
+                except (AttributeError, RuntimeError) as exc:
+                    logger.debug(
+                        "delete_curve_from_graph: removeItem(eb): %s", exc
+                    )
             try:
                 graph_field.removeItem(info['item'])
-            finally:
-                legend = info.get('legend')
-                if legend is not None:
+            except (AttributeError, RuntimeError) as exc:
+                logger.debug(
+                    "delete_curve_from_graph: removeItem(item): %s", exc
+                )
+            legend = info.get('legend')
+            if legend is not None:
+                try:
+                    legend.removeItem(info['item'])
+                except (AttributeError, RuntimeError) as exc:
+                    logger.debug(
+                        "delete_curve_from_graph: legend.removeItem(item): %s",
+                        exc,
+                    )
                     try:
-                        legend.removeItem(info['item'])
-                    except Exception:
-                        try:
-                            legend.removeItem(self.store.legend.current_name)
-                        except Exception:
-                            pass
-                    force_legend_layout(legend)
+                        legend.removeItem(self.store.legend.current_name)
+                    except (AttributeError, RuntimeError) as exc2:
+                        logger.debug(
+                            "delete_curve_from_graph: legend fallback: %s", exc2
+                        )
+                force_legend_layout(legend)
         self.plot_items.clear()
 
     def refresh(self) -> None:

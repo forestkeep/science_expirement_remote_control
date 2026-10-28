@@ -7,7 +7,8 @@ from ..models import (
     Plot, GraphStyle, Statistics, FilterEntry, LinearData,
     CurveTreeItemData, UncertaintyEntry,
 )
-
+from graphs.utils.parsing import to_best_number
+from graphs.utils.parsing import parse_int_or_none
 logger = logging.getLogger(__name__)
 
 class HDF5Plot(BaseHDF5Entity):
@@ -80,8 +81,8 @@ class HDF5Plot(BaseHDF5Entity):
                     entry_group.attrs['params'] = json.dumps(
                         entry.params or {}, ensure_ascii=False, default=str
                     )
-                except Exception:
-                    logger.exception("write filter params failed")
+                except (TypeError, ValueError) as exc:
+                    logger.warning("write filter params failed: %s", exc)
                     entry_group.attrs['params'] = '{}'
 
         # --- Погрешности ---
@@ -115,10 +116,10 @@ class HDF5Plot(BaseHDF5Entity):
                     logger.exception("write uncertainty y_err failed")
             if entry.x_err is not None:
                 try:
-                    eg.create_dataset('x_err', data=np.asarray(entry.x_err),
-                                      dtype=float, compression='gzip')
-                except Exception:
-                    logger.exception("write uncertainty x_err failed")
+                    eg.create_dataset('y_err', data=np.asarray(entry.y_err),
+                                    dtype=float, compression='gzip')
+                except (TypeError, ValueError, OSError) as exc:
+                    logger.warning("write uncertainty y_err failed: %s", exc)
 
         if 'linear_data' in self._hdf5_object:
             del self._hdf5_object['linear_data']
@@ -165,18 +166,27 @@ class HDF5Plot(BaseHDF5Entity):
         except Exception:
             tree_item_group.attrs['parameters'] = '{}'
 
-
     def read(self) -> Plot:
         """Читает график из HDF5 и возвращает объект Plot."""
-        name = self._hdf5_object.attrs.get('name', '')
-        description = self._hdf5_object.attrs.get('description', '')
-        status = self._hdf5_object.attrs.get('status', 'active')
-        is_draw = bool(self._hdf5_object.attrs.get('is_draw', False))
-        is_gen = bool(self._hdf5_object.attrs.get('is_gen', False))
-        is_curve_selected = bool(self._hdf5_object.attrs.get('is_curve_selected', False))
-        x_name = self._hdf5_object.attrs.get('x_name', 'X_default')
-        y_name = self._hdf5_object.attrs.get('y_name', 'Y_default')
-        axis = int(self._hdf5_object.attrs.get('axis', 1))
+        path = self._hdf5_object.name
+        attrs = self._hdf5_object.attrs
+
+        name = attrs.get('name', '')
+        description = attrs.get('description', '')
+        status = attrs.get('status', 'active')
+        is_draw = bool(attrs.get('is_draw', False))
+        is_gen = bool(attrs.get('is_gen', False))
+        is_curve_selected = bool(attrs.get('is_curve_selected', False))
+        x_name = attrs.get('x_name', 'X_default')
+        y_name = attrs.get('y_name', 'Y_default')
+
+        axis_raw = attrs.get('axis', 1)
+        axis = parse_int_or_none(axis_raw)
+        if axis is None or axis not in (1, 2):
+            logger.warning(
+                "HDF5Plot.read: invalid axis %r at %s, using 1", axis_raw, path
+            )
+            axis = 1
 
         style = GraphStyle()
         if 'style' in self._hdf5_object:
@@ -225,30 +235,15 @@ class HDF5Plot(BaseHDF5Entity):
                     raw = raw.decode('utf-8', errors='replace')
                 try:
                     entry.params = json.loads(raw) if raw else {}
-                except Exception:
-                    logger.exception(
-                        "read filter params failed: %r", raw
+                except (json.JSONDecodeError, TypeError) as exc:
+                    logger.warning(
+                        "HDF5Plot.read: invalid filter params at %s/%s: %s",
+                        path, entry_name, exc,
                     )
                     entry.params = {}
 
-                if not entry.params and 'params' in entry_group:
-                    legacy = entry_group['params']
-                    for param_name in legacy.attrs:
-                        value_str = legacy.attrs[param_name]
-                        if isinstance(value_str, bytes):
-                            value_str = value_str.decode('utf-8', errors='replace')
-                        if value_str.lower() == 'true':
-                            entry.params[param_name] = True
-                        elif value_str.lower() == 'false':
-                            entry.params[param_name] = False
-                        else:
-                            try:
-                                entry.params[param_name] = int(value_str)
-                            except ValueError:
-                                try:
-                                    entry.params[param_name] = float(value_str)
-                                except ValueError:
-                                    entry.params[param_name] = value_str
+                if not entry.params:
+                    entry.params = self._read_filter_params_legacy(entry_group)
                 history.append(entry)
 
         linear_data = LinearData()
@@ -257,13 +252,26 @@ class HDF5Plot(BaseHDF5Entity):
             linear_data.device = linear_data_group.attrs.get('device', '')
             linear_data.channel = linear_data_group.attrs.get('channel', '')
             linear_data.curve_name = linear_data_group.attrs.get('curve_name', '')
-            linear_data.is_name_customized = bool(linear_data_group.attrs.get('is_name_customized', False))
-            number = linear_data_group.attrs.get('number', -1)
-            linear_data.number = int(number) if number != -1 else None
-            number_axis = linear_data_group.attrs.get('number_axis', -1)
-            linear_data.number_axis = int(number_axis) if number_axis != -1 else None
+            linear_data.is_name_customized = bool(
+                linear_data_group.attrs.get('is_name_customized', False)
+            )
+
+            number_raw = linear_data_group.attrs.get('number', -1)
+            number = parse_int_or_none(number_raw)
+            linear_data.number = (
+                number if number not in (None, -1) else None
+            )
+
+            number_axis_raw = linear_data_group.attrs.get('number_axis', -1)
+            number_axis = parse_int_or_none(number_axis_raw)
+            linear_data.number_axis = (
+                number_axis if number_axis not in (None, -1) else None
+            )
+
             linear_data.is_draw = bool(linear_data_group.attrs.get('is_draw', False))
-            linear_data.is_curve_selected = bool(linear_data_group.attrs.get('is_curve_selected', False))
+            linear_data.is_curve_selected = bool(
+                linear_data_group.attrs.get('is_curve_selected', False)
+            )
             linear_data.name = linear_data_group.attrs.get('name', '')
             linear_data.description = linear_data_group.attrs.get('description', '')
             linear_data.tip = linear_data_group.attrs.get('tip', 'linear')
@@ -285,25 +293,37 @@ class HDF5Plot(BaseHDF5Entity):
                 if isinstance(_desc, bytes):
                     _desc = _desc.decode('utf-8', errors='replace')
                 tree_item_data.description = _desc or ''
-                tree_item_data.font_info = tree_item_group.attrs.get('font_info', 'Italic,10')
-                tree_item_data.color_info = tree_item_group.attrs.get('color_info', '#ff30ea')
-                tree_item_data.col_font_info = tree_item_group.attrs.get('col_font_info', '15')
+                tree_item_data.font_info = tree_item_group.attrs.get(
+                    'font_info', 'Italic,10'
+                )
+                tree_item_data.color_info = tree_item_group.attrs.get(
+                    'color_info', '#ff30ea'
+                )
+                tree_item_data.col_font_info = tree_item_group.attrs.get(
+                    'col_font_info', '15'
+                )
 
                 raw_params = tree_item_group.attrs.get('parameters', '{}')
                 if isinstance(raw_params, bytes):
                     raw_params = raw_params.decode('utf-8', errors='replace')
                 try:
-                    tree_item_data.parameters = json.loads(raw_params) if raw_params else {}
-                except Exception:
-                    logger.exception("read tree item params failed: %r", raw_params)
+                    tree_item_data.parameters = (
+                        json.loads(raw_params) if raw_params else {}
+                    )
+                except (json.JSONDecodeError, TypeError) as exc:
+                    logger.warning(
+                        "HDF5Plot.read: invalid tree params at %s/%s: %s",
+                        path, 'tree_item_data', exc,
+                    )
                     tree_item_data.parameters = {}
 
-                # Backward-compat: старый формат — подгруппа 'parameters'.
                 if not tree_item_data.parameters and 'parameters' in tree_item_group:
                     legacy = tree_item_group['parameters']
                     tree_item_data.parameters = {}
                     for attr_name in legacy.attrs:
-                        tree_item_data.parameters[attr_name] = legacy.attrs[attr_name]
+                        tree_item_data.parameters[attr_name] = to_best_number(
+                            legacy.attrs[attr_name]
+                        )
 
                 linear_data.tree_item_data = tree_item_data
 
@@ -311,13 +331,18 @@ class HDF5Plot(BaseHDF5Entity):
         uncertainty_style = {}
         if 'uncertainty' in self._hdf5_object:
             ug = self._hdf5_object['uncertainty']
+            raw_style = ug.attrs.get('default_style', '{}')
+            if isinstance(raw_style, bytes):
+                raw_style = raw_style.decode('utf-8', errors='replace')
             try:
-                raw_style = ug.attrs.get('default_style', '{}')
-                if isinstance(raw_style, bytes):
-                    raw_style = raw_style.decode('utf-8', errors='replace')
                 uncertainty_style = json.loads(raw_style) if raw_style else {}
-            except Exception:
+            except (json.JSONDecodeError, TypeError) as exc:
+                logger.warning(
+                    "HDF5Plot.read: invalid uncertainty style at %s: %s",
+                    path, exc,
+                )
                 uncertainty_style = {}
+
             for name in ug:
                 eg = ug[name]
                 entry = UncertaintyEntry()
@@ -335,14 +360,14 @@ class HDF5Plot(BaseHDF5Entity):
                     if isinstance(p_raw, bytes):
                         p_raw = p_raw.decode('utf-8', errors='replace')
                     entry.params = json.loads(p_raw) if p_raw else {}
-                except Exception:
+                except (json.JSONDecodeError, TypeError):
                     entry.params = {}
                 try:
                     s_raw = eg.attrs.get('style', '{}')
                     if isinstance(s_raw, bytes):
                         s_raw = s_raw.decode('utf-8', errors='replace')
                     entry.style = json.loads(s_raw) if s_raw else {}
-                except Exception:
+                except (json.JSONDecodeError, TypeError):
                     entry.style = {}
                 if 'y_err' in eg:
                     entry.y_err = eg['y_err'][:]
@@ -367,3 +392,15 @@ class HDF5Plot(BaseHDF5Entity):
             uncertainty_records=uncertainty_records,
             uncertainty_style=uncertainty_style,
         )
+
+
+    def _read_filter_params_legacy(self, entry_group) -> dict:
+        """Разбор старого формата: подгруппа 'params' с атрибутами-строками."""
+        legacy = entry_group.get('params') if hasattr(entry_group, 'get') else None
+        if legacy is None:
+            return {}
+        params = {}
+        for param_name in legacy.attrs:
+            params[param_name] = to_best_number(legacy.attrs[param_name])
+        return params
+            

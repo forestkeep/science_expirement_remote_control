@@ -87,14 +87,6 @@ def dict_to_artifact(d: Dict[str, Any], payload_arrays: Dict[str, Any]) -> Analy
         description=d.get("description", ""),
     )
 
-
-def _to_ndarray(v):
-    try:
-        return np.asarray(v)
-    except Exception:
-        return v
-
-
 def _jsonable(obj: Any):
     if isinstance(obj, dict):
         return {k: _jsonable(v) for k, v in obj.items()}
@@ -122,14 +114,22 @@ def save_artifacts(store, h5_session_group) -> None:
                     payload_group.attrs[k] = v
                 elif isinstance(v, list):
                     for i, arr in enumerate(v):
-                        payload_group.create_dataset(f"{k}_{i}", data=np.asarray(arr), compression="gzip")
+                        payload_group.create_dataset(
+                            f"{k}_{i}", data=np.asarray(arr), compression="gzip"
+                        )
                 else:
                     try:
-                        payload_group.create_dataset(k, data=np.asarray(v), compression="gzip")
-                    except Exception:
+                        payload_group.create_dataset(
+                            k, data=np.asarray(v), compression="gzip"
+                        )
+                    except (TypeError, ValueError) as exc:
+                        logger.warning(
+                            "save_artifacts: cannot store %r as dataset: %s",
+                            k, exc,
+                        )
                         payload_group.attrs[k] = str(v)
-    except Exception:
-        logger.exception("save_artifacts failed")
+    except (OSError, ValueError, TypeError, KeyError, RuntimeError) as exc:
+        logger.warning("save_artifacts failed: %s", exc)
 
 
 def load_artifacts(h5_session_group):
@@ -151,6 +151,15 @@ def load_artifacts(h5_session_group):
                 payload_arrays[k] = ds[:]
         try:
             result.append(dict_to_artifact(d, payload_arrays))
-        except Exception:
-            logger.exception("artifact %s load failed", art_name)
+        except (KeyError, ValueError, TypeError, json.JSONDecodeError) as exc:
+            logger.warning(
+                "artifact %s load failed: %s", art_name, exc
+            )
     return result
+
+def _to_ndarray(v):
+    try:
+        return np.asarray(v)
+    except (TypeError, ValueError) as exc:
+        logger.debug("_to_ndarray: cannot convert %r: %s", type(v), exc)
+        return v

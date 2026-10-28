@@ -95,72 +95,64 @@ class graphSelectAdapter:
         self.graph.show_all_points(True)
 
     def _refresh_all_curves_data(self):
-        """
-        Обновляет raw/filtered данные всех кривых текущей сессии из data_manager.
-
-        - не добавляет и не удаляет plot_items: скрытые кривые остаются скрытыми,
-        видимые получают свежие данные через presenter.refresh();
-        - генерируемые кривые (rel_data.is_gen) пропускаем — у них нет источника
-        в data_manager;
-        - фильтры пересобираются автоматически внутри CurveDataStore.set_data()
-        (через filters_history). В live-режиме история фильтров пуста, так что
-        этот шаг для активной сессии фактически no-op.
+        """Обновляет raw/filtered данные всех кривых текущей сессии.
         """
         curves = self.graph.get_curves()
         if not curves:
             return
 
+        failed: list[str] = []
         for root_name, curve in list(curves.items()):
+            if getattr(curve.rel_data, "is_gen", False):
+                continue
+
+            x_name = curve.rel_data.x_root_name
+            y_name = curve.rel_data.y_root_name
+            axis = curve.number_axis or 1
+
+            first, second = ([y_name], []) if axis == 1 else ([], [y_name])
             try:
-                if getattr(curve.rel_data, "is_gen", False):
-                    continue
-
-                x_name = curve.rel_data.x_root_name
-                y_name = curve.rel_data.y_root_name
-                axis = curve.number_axis or 1
-
-                first, second = ([y_name], []) if axis == 1 else ([], [y_name])
                 data_first, data_second = self.data_manager.get_relation_data(
                     x_name, first, second, self.type_data
                 )
-                relations = data_first + data_second
-                if not relations:
-                    logger.warning(
-                        f"_refresh_all_curves_data: no data for {root_name} "
-                        f"({x_name}/{y_name}, axis={axis})"
-                    )
-                    continue
+            except (KeyError, ValueError, AttributeError) as exc:
+                failed.append(f"{root_name} (get_relation_data: {type(exc).__name__}: {exc})")
+                continue
 
-                # setData внутри store:
-                #   - копирует свежие raw_data_x/y,
-                #   - пересобирает filtered_* из filters_history,
-                #   - уведомляет подписчиков (presenter.refresh обновит plot_items
-                #     только у видимых кривых; у скрытых словарь plot_items пуст).
-                curve.setData(relations[0])
-
-            except Exception:
-                logger.exception(
-                    f"_refresh_all_curves_data: failed to refresh curve {root_name}"
+            relations = data_first + data_second
+            if not relations:
+                logger.warning(
+                    f"_refresh_all_curves_data: no data for {root_name} "
+                    f"({x_name}/{y_name}, axis={axis})"
                 )
+                continue
+
+            try:
+                curve.setData(relations[0])
+            except (ValueError, TypeError, AttributeError, RuntimeError) as exc:
+                failed.append(f"{root_name} (setData: {type(exc).__name__}: {exc})")
+
+        if failed:
+            logger.warning(
+                "_refresh_all_curves_data: failed to refresh %d curve(s): %s",
+                len(failed), ", ".join(failed),
+            )
+
 
     def destroy_curve(self, curve_data_obj: linearData):
-        # 1. Убрать все артефакты анализа, производные от этой кривой
-        #    (фитинги, спектры, интегралы, автокорреляции, attached/domain-панели).
         ctrl = getattr(self.main_class, "analysis_controller", None)
         if ctrl is not None:
             root_name = curve_data_obj.rel_data.root_name
             for art in list(ctrl.get_artifacts_for_curve(root_name)):
-                # физическое удаление без новой undo-команды:
-                # undo-восстановление уже обеспечивает DeleteCurveCommand
                 try:
                     ctrl._do_remove(art.id)
-                except Exception:
-                    logger.exception(
-                        "destroy_curve: failed to remove artifact %s", art.id
+                except (KeyError, ValueError, AttributeError, RuntimeError) as exc:
+                    logger.warning(
+                        "destroy_curve: failed to remove artifact %s: %s",
+                        art.id, exc,
                     )
             ctrl.artifacts_changed.emit()
 
-        # 2. Убрать кривую с графика и из стека
         if curve_data_obj.is_draw:
             self.hide_curve(curve_data_obj)
         self.graph.destroy_curve(curve_data_obj)

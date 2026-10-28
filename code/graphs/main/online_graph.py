@@ -460,34 +460,39 @@ class GraphSession(QWidget):
         """Скопировать стиль основного графика во все дочерние поля анализа."""
         if self.sender() is not self.graph_main.graphView:
             return
+
+        from graphs.analysis.renderers.base import apply_main_graph_style
+        ctrl = getattr(self, "analysis_controller", None)
+        if ctrl is None:
+            return
+        renderer = getattr(ctrl, "renderer", None)
+        if renderer is None:
+            return
+
+        failed: list[str] = []
+        for kind, items in (
+            ("attached", getattr(renderer._attached, "_panels", {})),
+            ("domain", getattr(renderer._domain, "_tabs", {})),
+        ):
+            for key, info in items.items():
+                plot = info.get("plot")
+                if plot is None:
+                    continue
+                try:
+                    apply_main_graph_style(self, plot)
+                except (AttributeError, RuntimeError, KeyError) as exc:
+                    failed.append(f"{kind}:{key} ({type(exc).__name__}: {exc})")
+
         try:
-            from graphs.analysis.renderers.base import apply_main_graph_style
-            ctrl = getattr(self, "analysis_controller", None)
-            if ctrl is None:
-                return
-            renderer = getattr(ctrl, "renderer", None)
-            if renderer is None:
-                return
+            renderer._domain.reapply_labels()
+        except (AttributeError, RuntimeError, KeyError) as exc:
+            failed.append(f"domain labels: {type(exc).__name__}: {exc}")
 
-            for info in getattr(renderer._attached, "_panels", {}).values():
-                plot = info.get("plot")
-                if plot is not None:
-                    apply_main_graph_style(self, plot)
-
-            for info in getattr(renderer._domain, "_tabs", {}).values():
-                plot = info.get("plot")
-                if plot is not None:
-                    apply_main_graph_style(self, plot)
-
-            # apply_main_graph_style перезаписал подписи осей domain-вкладок
-            # стилем главного графика. Восстанавливаем «смысловые» подписи
-            # (Частота / |A| для FFT, Лаг / ACF для автокорреляции).
-            try:
-                renderer._domain.reapply_labels()
-            except Exception:
-                logger.exception("_on_main_style_changed: reapply_labels failed")
-        except Exception:
-            logger.exception("_on_main_style_changed failed")
+        if failed:
+            logger.warning(
+                "_on_main_style_changed: %d sub-graph(s) failed: %s",
+                len(failed), ", ".join(failed),
+            )
 
     def show_tooltip(self, message, show_while_not_click=False, timeout=3000):
         if self.notification is None:

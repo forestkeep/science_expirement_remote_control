@@ -139,6 +139,7 @@ class HDF5Session(BaseHDF5Entity):
     
     def read(self) -> Session:
         """Читает сессию из HDF5 и возвращает объект Session."""
+        path = self._hdf5_object.name
         name = self._hdf5_object.attrs.get('name', '')
         description = self._hdf5_object.attrs.get('description', '')
 
@@ -146,12 +147,22 @@ class HDF5Session(BaseHDF5Entity):
         parameters = SessionParameters()
         if 'parameters' in self._hdf5_object:
             params_group = self._hdf5_object['parameters']
-            parameters.name = params_group.attrs['name']
+            parameters.name = params_group.attrs.get('name', '')
             parameters.description = params_group.attrs.get('description', '')
-            parameters.uuid = params_group.attrs['uuid']
+            parameters.uuid = params_group.attrs.get('uuid', '')
+            if not parameters.uuid:
+                logger.warning(
+                    "HDF5Session.read: session %s has no uuid", path
+                )
             exp_date_str = params_group.attrs.get('experiment_date', '')
             if exp_date_str:
-                parameters.experiment_date = datetime.fromisoformat(exp_date_str)
+                try:
+                    parameters.experiment_date = datetime.fromisoformat(exp_date_str)
+                except (TypeError, ValueError) as exc:
+                    logger.warning(
+                        "HDF5Session.read: invalid experiment_date %r at %s: %s",
+                        exp_date_str, path, exc,
+                    )
             parameters.operator = params_group.attrs.get('operator', '')
             parameters.comment = params_group.attrs.get('comment', '')
 
@@ -166,28 +177,40 @@ class HDF5Session(BaseHDF5Entity):
                 oscillogram_data_group = data_manager_group['oscillogram_data']
                 for data_name in oscillogram_data_group:
                     data_entity_group = oscillogram_data_group[data_name]
+                    if ('data_values' not in data_entity_group
+                            or 'time_values' not in data_entity_group):
+                        logger.warning(
+                            "HDF5Session.read: osc data %s at %s missing "
+                            "data_values/time_values, skipped",
+                            data_name, data_entity_group.name,
+                        )
+                        continue
                     data = OscillogramData()
                     data.device = data_entity_group.attrs.get('device', '')
                     data.channel = data_entity_group.attrs.get('channel', '')
                     data.parameter = data_entity_group.attrs.get('parameter', '')
-                    if 'time_values' in data_entity_group:
-                        data.time_values = data_entity_group['time_values'][:]
-                    if 'data_values' in data_entity_group:
-                        data.data_values = data_entity_group['data_values'][:]
+                    data.time_values = data_entity_group['time_values'][:]
+                    data.data_values = data_entity_group['data_values'][:]
                     data_manager.oscillogram_data[data_name] = data
 
             if 'parameters_data' in data_manager_group:
                 parameters_data_group = data_manager_group['parameters_data']
                 for data_name in parameters_data_group:
                     data_entity_group = parameters_data_group[data_name]
+                    if ('data_values' not in data_entity_group
+                            or 'time_values' not in data_entity_group):
+                        logger.warning(
+                            "HDF5Session.read: param data %s at %s missing "
+                            "data_values/time_values, skipped",
+                            data_name, data_entity_group.name,
+                        )
+                        continue
                     data = ParameterData()
                     data.device = data_entity_group.attrs.get('device', '')
                     data.channel = data_entity_group.attrs.get('channel', '')
                     data.parameter = data_entity_group.attrs.get('parameter', '')
-                    if 'time_values' in data_entity_group:
-                        data.time_values = data_entity_group['time_values'][:]
-                    if 'data_values' in data_entity_group:
-                        data.data_values = data_entity_group['data_values'][:]
+                    data.time_values = data_entity_group['time_values'][:]
+                    data.data_values = data_entity_group['data_values'][:]
                     data_manager.parameter_data[data_name] = data
 
         logger.info("reading plots")
@@ -196,11 +219,17 @@ class HDF5Session(BaseHDF5Entity):
             plots_group = self._hdf5_object['plots']
             for plot_name in plots_group:
                 plot_entity_group = plots_group[plot_name]
-                plot_entity = HDF5Plot(plot_entity_group)
-                plot = plot_entity.read()
+                try:
+                    plot_entity = HDF5Plot(plot_entity_group)
+                    plot = plot_entity.read()
+                except (KeyError, ValueError, AttributeError) as exc:
+                    logger.warning(
+                        "HDF5Session.read: failed to read plot %s at %s: %s",
+                        plot_name, plot_entity_group.name, exc,
+                    )
+                    continue
                 plots[plot_name] = plot
 
-        # --- helpers ---
         helpers = []
         if 'helpers' in self._hdf5_object:
             helpers_group = self._hdf5_object['helpers']
@@ -210,12 +239,26 @@ class HDF5Session(BaseHDF5Entity):
                 if isinstance(params_raw, bytes):
                     params_raw = params_raw.decode('utf-8', errors='replace')
                 try:
-                    params = json.loads(params_raw) if isinstance(params_raw, str) else {}
-                except Exception:
+                    params = (
+                        json.loads(params_raw)
+                        if isinstance(params_raw, str) and params_raw else {}
+                    )
+                except (json.JSONDecodeError, TypeError) as exc:
+                    logger.warning(
+                        "HDF5Session.read: invalid helper params at %s: %s",
+                        h_group.name, exc,
+                    )
                     params = {}
+
                 ht = h_group.attrs.get('helper_type', '')
                 if isinstance(ht, bytes):
                     ht = ht.decode('utf-8', errors='replace')
+                if not ht:
+                    logger.warning(
+                        "HDF5Session.read: helper at %s has no helper_type, skipped",
+                        h_group.name,
+                    )
+                    continue
                 helpers.append({
                     'helper_type': ht,
                     'params': params,
@@ -235,8 +278,10 @@ class HDF5Session(BaseHDF5Entity):
         try:
             from graphs.analysis.io.serializer import load_artifacts
             session.analysis_artifacts = load_artifacts(self._hdf5_object)
-        except Exception:
-            logger.exception("read analysis artifacts failed")
+        except ImportError as exc:
+            logger.warning(
+                "HDF5Session.read: artifacts loader unavailable: %s", exc
+            )
             session.analysis_artifacts = []
 
         return session
