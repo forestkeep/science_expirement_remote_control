@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
     QStackedWidget, QScrollArea, QApplication,
     QColorDialog, QTextEdit, QFontDialog, QSlider,
     QAbstractButton, QAbstractSlider, QAbstractSpinBox,
-    QSizePolicy,
+    QSizePolicy, QToolButton,
 )
 from PyQt5.QtGui import QPainter, QColor, QPen, QFont
 from PyQt5.QtCore import Qt
@@ -168,13 +168,40 @@ class GraphSettingsWidget(QWidget):
 
         main.addWidget(self._build_general_group())
         main.addWidget(self._build_grid_group())
-        for key in ("bottom", "left", "right"):
-            main.addWidget(self._build_axis_group(key))
+
+        self.axes_container = self._build_axes_container()
+        main.addWidget(self.axes_container)
+
+        self.common_axis_group = self._build_common_axis_style_group()
+        self.common_axis_group.setVisible(False)
+        main.addWidget(self.common_axis_group)
+
         main.addWidget(self._build_legend_group())
         main.addStretch()
 
         scroll.setWidget(content)
         outer.addWidget(scroll)
+
+    def _on_edit_all_axes_toggled(self, state):
+        if self._suppress:
+            return
+        enabled = state != 0
+        self.axes_container.setVisible(not enabled)
+        self.common_axis_group.setVisible(enabled)
+        if enabled:
+            self._load_common_axis_style()
+        else:
+            self.update_settings()
+
+    def _make_group(self, title: str, expanded: bool = True):
+        box = CollapsibleGroupBox(title, expanded=expanded)
+        form = QFormLayout()
+        form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        form.setRowWrapPolicy(QFormLayout.WrapLongRows)
+        form.setLabelAlignment(Qt.AlignLeft)
+        form.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
+        box.contentLayout().addLayout(form)
+        return box, form
 
     @staticmethod
     def _make_color_btn():
@@ -185,8 +212,7 @@ class GraphSettingsWidget(QWidget):
         return btn
 
     def _build_general_group(self):
-        g = QGroupBox("График")
-        f = QFormLayout(g)
+        box, f = self._make_group("График")
 
         self.title_edit = QLineEdit()
         self.title_edit.editingFinished.connect(self.apply_general)
@@ -207,7 +233,49 @@ class GraphSettingsWidget(QWidget):
         self.antialias_check.stateChanged.connect(self.apply_general)
         f.addRow(self.antialias_check)
 
-        return g
+        self.edit_all_axes_check = QCheckBox("Редактировать стиль для всех")
+        self.edit_all_axes_check.setToolTip(
+            "Редактировать цвет и шрифты осей X, Y1, Y2 одновременно. "
+            "Изменение любого параметра применяется ко всем осям только в "
+            "момент подтверждения в диалоге."
+        )
+        self.edit_all_axes_check.setChecked(True)
+        self.edit_all_axes_check.stateChanged.connect(self._on_edit_all_axes_toggled)
+        f.addRow(self.edit_all_axes_check)
+
+        return box
+
+    def _load_common_axis_style(self):
+        controller = self.graph_view.axises.get("bottom")
+        if controller is None:
+            return
+
+        prev = self._suppress
+        self._suppress = True
+        try:
+            try:
+                color = controller.axis.textPen().color().name()
+            except Exception:
+                color = "#000000"
+            self._set_btn_color(self.common_axis_color_btn, color)
+
+            try:
+                ps = controller.label.font().pointSize()
+                if ps > 0:
+                    self.common_axis_font_size.setValue(ps)
+            except Exception:
+                pass
+
+            try:
+                tick_font = controller.axis.style.get("tickFont")
+                if tick_font is not None:
+                    tps = tick_font.pointSize()
+                    if tps > 0:
+                        self.common_axis_tick_font_size.setValue(tps)
+            except Exception:
+                pass
+        finally:
+            self._suppress = prev
 
     def apply_preset(self, name):
         if self._suppress or name == "—":
@@ -227,8 +295,7 @@ class GraphSettingsWidget(QWidget):
                 return
 
     def _build_grid_group(self):
-        g = QGroupBox("Сетка")
-        f = QFormLayout(g)
+        box, f = self._make_group("Сетка")
 
         self.grid_x_check = QCheckBox("Показывать сетку по X")
         self.grid_x_check.stateChanged.connect(self.apply_grid)
@@ -250,11 +317,10 @@ class GraphSettingsWidget(QWidget):
         self.grid_alpha.valueChanged.connect(self.apply_grid)
         f.addRow("Интенсивность:", self.grid_alpha)
 
-        return g
+        return box
 
     def _build_axis_group(self, key: str):
-        g = QGroupBox(self.AXIS_TITLES[key])
-        f = QFormLayout(g)
+        box, f = self._make_group(self.AXIS_TITLES[key])
         w = {}
 
         w["label"] = QLineEdit()
@@ -289,11 +355,10 @@ class GraphSettingsWidget(QWidget):
             w["log"] = None
 
         self._axis_widgets[key] = w
-        return g
+        return box
 
     def _build_legend_group(self):
-        g = QGroupBox("Легенда")
-        f = QFormLayout(g)
+        box, f = self._make_group("Легенда")
 
         self.legend_check = QCheckBox("Показывать легенду")
         self.legend_check.stateChanged.connect(self.apply_legend)
@@ -314,8 +379,9 @@ class GraphSettingsWidget(QWidget):
         self.legend_font_size_spin.valueChanged.connect(self.apply_legend_font)
         f.addRow("Размер шрифта:", self.legend_font_size_spin)
 
-        return g
-
+        return box
+    
+    
     # ==================================================================
     # Синхронизация UI с текущим состоянием виджета
     # ==================================================================
@@ -376,6 +442,9 @@ class GraphSettingsWidget(QWidget):
 
             self.legend_check.setChecked(bool(settings.legend_enabled))
             self._set_btn_color(self.legend_color_btn, settings.legend_text_color)
+
+            if self.edit_all_axes_check.isChecked():
+                self._load_common_axis_style()
         finally:
             self._suppress = False
 
@@ -490,6 +559,116 @@ class GraphSettingsWidget(QWidget):
         gv_main.apply_appearance_change(mutate)
         _status(self.session, "Легенда обновлена", 2000)
 
+    _AXIS_KEYS = ("bottom", "left", "right")
+
+    def _choose_common_axis_color(self):
+        c = QColorDialog.getColor(QColor(self._color_from_btn(self.common_axis_color_btn)))
+        if not c.isValid():
+            return
+        self._set_btn_color(self.common_axis_color_btn, c.name())
+        gv = self.graph_view
+        color_name = c.name()
+
+        def mutate():
+            for key in self._AXIS_KEYS:
+                ctrl = gv.axises.get(key)
+                if ctrl is None:
+                    continue
+                ctrl.custom_style.color = color_name
+                ctrl.set_custom_style(ctrl.custom_style)
+
+        gv.apply_appearance_change(mutate)
+        _status(self.session, "Цвет всех осей обновлён", 2000)
+
+    def _choose_common_axis_font(self):
+        controller = self.graph_view.axises.get("bottom")
+        if controller is None:
+            return
+        current = controller.label.font()
+        font, ok = QFontDialog.getFont(current, self, "Шрифт подписи оси")
+        if not ok:
+            return
+        family = font.family()
+        gv = self.graph_view
+
+        def mutate():
+            for key in self._AXIS_KEYS:
+                ctrl = gv.axises.get(key)
+                if ctrl is None:
+                    continue
+                new_font = QFont(ctrl.label.font())
+                new_font.setFamily(family)
+                ctrl.custom_style.text_font = new_font
+                ctrl.set_custom_style(ctrl.custom_style)
+
+        gv.apply_appearance_change(mutate)
+        _status(self.session, "Шрифт подписей осей обновлён", 2000)
+
+    def _apply_common_axis_font_size(self, size):
+        if self._suppress:
+            return
+        size = int(size)
+        gv = self.graph_view
+
+        def mutate():
+            for key in self._AXIS_KEYS:
+                ctrl = gv.axises.get(key)
+                if ctrl is None:
+                    continue
+                new_font = QFont(ctrl.label.font())
+                new_font.setPointSize(size)
+                ctrl.custom_style.text_font = new_font
+                ctrl.set_custom_style(ctrl.custom_style)
+
+        gv.apply_appearance_change(mutate)
+        _status(self.session, "Размер шрифта подписей осей обновлён", 2000)
+
+    def _choose_common_axis_tick_font(self):
+        controller = self.graph_view.axises.get("bottom")
+        if controller is None:
+            return
+        current = controller.axis.style.get("tickFont") or QFont()
+        font, ok = QFontDialog.getFont(current, self, "Шрифт делений оси")
+        if not ok:
+            return
+        family = font.family()
+        gv = self.graph_view
+
+        def mutate():
+            for key in self._AXIS_KEYS:
+                ctrl = gv.axises.get(key)
+                if ctrl is None:
+                    continue
+                cur = ctrl.axis.style.get("tickFont") or QFont()
+                new_font = QFont(cur)
+                new_font.setFamily(family)
+                ctrl.custom_style.tick_font = new_font
+                ctrl.set_custom_style(ctrl.custom_style)
+
+        gv.apply_appearance_change(mutate)
+        _status(self.session, "Шрифт делений осей обновлён", 2000)
+
+    def _apply_common_axis_tick_font_size(self, size):
+        if self._suppress:
+            return
+        size = int(size)
+        gv = self.graph_view
+
+        def mutate():
+            for key in self._AXIS_KEYS:
+                ctrl = gv.axises.get(key)
+                if ctrl is None:
+                    continue
+                cur = ctrl.axis.style.get("tickFont") or QFont()
+                new_font = QFont(cur)
+                new_font.setPointSize(size)
+                ctrl.custom_style.tick_font = new_font
+                ctrl.set_custom_style(ctrl.custom_style)
+
+        gv.apply_appearance_change(mutate)
+        _status(self.session, "Размер шрифта делений осей обновлён", 2000)
+
+
     # ==================================================================
     # Диалоги выбора цвета / шрифтов (тоже через undo-обёртку)
     # ==================================================================
@@ -516,19 +695,14 @@ class GraphSettingsWidget(QWidget):
         if not c.isValid():
             return
         self._set_btn_color(w["color_btn"], c.name())
-
-        controller = self.graph_view.axises.get(key)
-        if controller is None:
-            return
         gv = self.graph_view
 
         def mutate():
-            try:
-                # через custom_style — чтобы undo корректно считывал цвет
-                controller.custom_style.color = c.name()
-                controller.set_custom_style(controller.custom_style)
-            except Exception:
-                logger.exception("choose_axis_color failed")
+            ctrl = gv.axises.get(key)
+            if ctrl is None:
+                return
+            ctrl.custom_style.color = c.name()
+            ctrl.set_custom_style(ctrl.custom_style)
 
         gv.apply_appearance_change(mutate)
         _status(self.session, f"Цвет оси {key} обновлён", 2000)
@@ -537,22 +711,18 @@ class GraphSettingsWidget(QWidget):
         controller = self.graph_view.axises.get(key)
         if controller is None:
             return
-        try:
-            current = controller.label.font()
-        except Exception:
-            current = None
-
+        current = controller.label.font()
         font, ok = QFontDialog.getFont(current, self, "Шрифт подписи оси")
         if not ok:
             return
         gv = self.graph_view
 
         def mutate():
-            try:
-                controller.custom_style.text_font = font
-                controller.set_custom_style(controller.custom_style)
-            except Exception:
-                logger.exception("choose_axis_font failed")
+            ctrl = gv.axises.get(key)
+            if ctrl is None:
+                return
+            ctrl.custom_style.text_font = font
+            ctrl.set_custom_style(ctrl.custom_style)
 
         gv.apply_appearance_change(mutate)
         _status(self.session, f"Шрифт подписи оси {key} обновлён", 2000)
@@ -561,27 +731,65 @@ class GraphSettingsWidget(QWidget):
         controller = self.graph_view.axises.get(key)
         if controller is None:
             return
-
-        # Прямое обращение к AxisItem, без __getattr__
-        axis_item = controller.axis
-        current = axis_item.style.get('tickFont')  # может быть None
-        if current is None:
-            current = QFont()  # безопасный fallback
-
+        current = controller.axis.style.get("tickFont") or QFont()
         font, ok = QFontDialog.getFont(current, self, "Шрифт делений оси")
         if not ok:
             return
         gv = self.graph_view
 
         def mutate():
-            try:
-                axis_item.setTickFont(font)
-                controller.custom_style.tick_font = font
-            except Exception:
-                logger.exception("choose_axis_tick_font failed")
+            ctrl = gv.axises.get(key)
+            if ctrl is None:
+                return
+            ctrl.custom_style.tick_font = font
+            ctrl.set_custom_style(ctrl.custom_style)
 
         gv.apply_appearance_change(mutate)
         _status(self.session, f"Шрифт делений оси {key} обновлён", 2000)
+
+    def _build_axes_container(self) -> QWidget:
+        container = QWidget()
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(14)
+        for key in ("bottom", "left", "right"):
+            layout.addWidget(self._build_axis_group(key))
+        return container
+
+    def _build_common_axis_style_group(self):
+        box, f = self._make_group("Стиль всех осей")
+
+        self.common_axis_color_btn = self._make_color_btn()
+        self.common_axis_color_btn.clicked.connect(self._choose_common_axis_color)
+        f.addRow("Цвет оси и делений:", self.common_axis_color_btn)
+
+        self.common_axis_font_btn = QPushButton("Шрифт подписи")
+        self.common_axis_font_btn.clicked.connect(self._choose_common_axis_font)
+        f.addRow(self.common_axis_font_btn)
+
+        self.common_axis_font_size = QSpinBox()
+        self.common_axis_font_size.setRange(6, 72)
+        self.common_axis_font_size.setSuffix(" pt")
+        self.common_axis_font_size.valueChanged.connect(
+            self._apply_common_axis_font_size
+        )
+        f.addRow("Размер шрифта подписи:", self.common_axis_font_size)
+
+        self.common_axis_tick_font_btn = QPushButton("Шрифт делений")
+        self.common_axis_tick_font_btn.clicked.connect(
+            self._choose_common_axis_tick_font
+        )
+        f.addRow(self.common_axis_tick_font_btn)
+
+        self.common_axis_tick_font_size = QSpinBox()
+        self.common_axis_tick_font_size.setRange(6, 72)
+        self.common_axis_tick_font_size.setSuffix(" pt")
+        self.common_axis_tick_font_size.valueChanged.connect(
+            self._apply_common_axis_tick_font_size
+        )
+        f.addRow("Размер шрифта делений:", self.common_axis_tick_font_size)
+
+        return box
 
 
     def choose_legend_color(self):
@@ -2119,6 +2327,53 @@ class FiltersTab(QWidget):
         self.session.undo_manager.push(cmd, execute=True)
         self.update_filters_list()
         _status(self.session, "Фильтры сброшены", 2500)
+
+
+class CollapsibleGroupBox(QWidget):
+    def __init__(self, title: str, parent=None, expanded: bool = True):
+        super().__init__(parent)
+        self._title = title
+        self._expanded = bool(expanded)
+
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        self.header = QToolButton()
+        self.header.setText(title)
+        self.header.setCheckable(True)
+        self.header.setChecked(self._expanded)
+        self.header.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.header.setArrowType(Qt.DownArrow if self._expanded else Qt.RightArrow)
+        self.header.setStyleSheet(
+            "QToolButton { border: none; font-weight: bold; text-align: left; padding: 4px; }"
+        )
+        self.header.clicked.connect(self._toggle)
+        outer.addWidget(self.header)
+
+        self.content = QWidget()
+        self.content_layout = QVBoxLayout(self.content)
+        self.content_layout.setContentsMargins(4, 4, 4, 4)
+        self.content_layout.setSpacing(6)
+        outer.addWidget(self.content)
+
+        self.content.setVisible(self._expanded)
+
+    def _toggle(self):
+        self.set_expanded(self.header.isChecked())
+
+    def set_expanded(self, expanded: bool):
+        self._expanded = bool(expanded)
+        self.header.setChecked(self._expanded)
+        self.header.setArrowType(Qt.DownArrow if self._expanded else Qt.RightArrow)
+        self.content.setVisible(self._expanded)
+
+    def is_expanded(self) -> bool:
+        return self._expanded
+
+    def contentLayout(self) -> QVBoxLayout:
+        return self.content_layout
+
 # =====================================================================
 # Вкладка "Инструменты"
 # =====================================================================
