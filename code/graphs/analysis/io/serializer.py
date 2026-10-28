@@ -97,40 +97,35 @@ def _jsonable(obj: Any):
     return str(obj)
 
 
-def save_artifacts(store, h5_session_group) -> None:
-    """Записывает артефакты в HDF5-группу сессии."""
-    try:
-        if "analysis_artifacts" in h5_session_group:
-            del h5_session_group["analysis_artifacts"]
-        group = h5_session_group.create_group("analysis_artifacts")
-        for art in store.all():
-            data = artifact_to_dict(art)
-            art_group = group.create_group(art.id)
-            for k, v in data["attrs"].items():
-                art_group.attrs[k] = v
-            payload_group = art_group.create_group("payload")
-            for k, v in data["payload"].items():
-                if k == "kind" or isinstance(v, str):
-                    payload_group.attrs[k] = v
-                elif isinstance(v, list):
-                    for i, arr in enumerate(v):
-                        payload_group.create_dataset(
-                            f"{k}_{i}", data=np.asarray(arr), compression="gzip"
-                        )
-                else:
-                    try:
-                        payload_group.create_dataset(
-                            k, data=np.asarray(v), compression="gzip"
-                        )
-                    except (TypeError, ValueError) as exc:
-                        logger.warning(
-                            "save_artifacts: cannot store %r as dataset: %s",
-                            k, exc,
-                        )
-                        payload_group.attrs[k] = str(v)
-    except (OSError, ValueError, TypeError, KeyError, RuntimeError) as exc:
-        logger.warning("save_artifacts failed: %s", exc)
+def save_artifacts_list(artifacts, h5_session_group) -> None:
+    """Запись артефактов из списка (расширение HDF5Session)."""
+    if "analysis_artifacts" in h5_session_group:
+        del h5_session_group["analysis_artifacts"]
+    group = h5_session_group.create_group("analysis_artifacts")
+    for art in artifacts:
+        data = artifact_to_dict(art)
+        art_group = group.create_group(art.id)
+        for k, v in data["attrs"].items():
+            art_group.attrs[k] = v
+        payload_group = art_group.create_group("payload")
+        for k, v in data["payload"].items():
+            if k == "kind" or isinstance(v, str):
+                payload_group.attrs[k] = v
+            elif isinstance(v, list):
+                for i, arr in enumerate(v):
+                    payload_group.create_dataset(
+                        f"{k}_{i}", data=np.asarray(arr), compression="gzip"
+                    )
+            else:
+                try:
+                    payload_group.create_dataset(k, data=np.asarray(v), compression="gzip")
+                except (TypeError, ValueError) as exc:
+                    logger.warning(
+                        "save_artifacts_list: cannot store %r: %s", k, exc)
+                    payload_group.attrs[k] = str(v)
 
+def save_artifacts(store, h5_session_group) -> None:
+    save_artifacts_list(store.all(), h5_session_group)
 
 def load_artifacts(h5_session_group):
     """Возвращает список AnalysisArtifact из HDF5-группы."""

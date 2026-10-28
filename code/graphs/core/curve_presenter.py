@@ -65,6 +65,25 @@ class LineStyle:
             symbol_color=self.symbol_color, fill_color=self.fill_color,
         )
 
+    @classmethod
+    def from_graph_style(cls, gs) -> "LineStyle":
+        from PyQt5 import QtCore
+        if gs is None:
+            return cls()
+        line_style = gs.line_style if gs.line_style is not None else QtCore.Qt.SolidLine
+        sym = gs.symbol
+        if sym in (None, "", "None"):
+            sym = None
+        return cls(
+            color=gs.color or "#ffffff",
+            line_style=line_style,
+            line_width=int(gs.line_width or 1),
+            symbol=sym,
+            symbol_size=int(gs.symbol_size or 1),
+            symbol_color=gs.symbol_color or "#ffffff",
+            fill_color=gs.fill_color or "#ffffff",
+        )
+
     def apply_to_curve(self, plot_data_item) -> None:
         """Применить стиль к элементу, не перестраивая путь данных без необходимости."""
         pen = self.to_pen()

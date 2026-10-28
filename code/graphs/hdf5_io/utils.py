@@ -270,6 +270,8 @@ def load_dict_from_hdf5_group(group):
 def dict_to_graph_field_settings(data_dict: Dict[str, Any]) -> GraphFieldSettings:
     """Преобразование словаря в объект GraphFieldSettings"""
     # Создаем базовый объект
+    from .migrations import migrate
+    data_dict = migrate(data_dict, from_version=0)   # idempotent
     settings = GraphFieldSettings()
     
     # Заполняем простые поля
@@ -285,18 +287,11 @@ def dict_to_graph_field_settings(data_dict: Dict[str, Any]) -> GraphFieldSetting
     settings.legend_font = data_dict.get('legend_font', 'Arial,10,-1,5,50,0,0,0,0,0')
     settings.antialiasing = data_dict.get('antialiasing', True)
     settings.is_second_axis_enabled = data_dict.get('is_second_axis_enabled', False)
-    # legacy-поле читаем всегда — от него зависит fallback для новых полей
-    settings.is_multiple_selection_enabled = data_dict.get(
-        'is_multiple_selection_enabled', False
-    )
-    settings.is_multiple_y1_enabled = bool(data_dict.get(
-        'is_multiple_y1_enabled',
-        settings.is_multiple_selection_enabled,     # старый файл → Y1
-    ))
-    settings.is_multiple_y2_enabled = bool(data_dict.get(
-        'is_multiple_y2_enabled',
-        False,                                      # старый файл → Y2 single
-    ))
+
+    settings.is_multiple_selection_enabled = bool(data_dict.get(
+        'is_multiple_selection_enabled', False))
+    settings.is_multiple_y1_enabled = bool(data_dict.get('is_multiple_y1_enabled', False))
+    settings.is_multiple_y2_enabled = bool(data_dict.get('is_multiple_y2_enabled', False))
     
     # Обрабатываем common_axis_style
     common_axis_style_data = data_dict.get('common_axis_style', {})

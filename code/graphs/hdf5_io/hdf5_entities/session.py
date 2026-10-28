@@ -1,328 +1,49 @@
-# hdf5_entities/session.py
-import h5py
+"""Spec-driven HDF5-сущность сессии.
+
+Пишет/читает только `name`, `description`, `parameters` через схему;
+всё остальное (field_settings, data_manager, plots, helpers,
+analysis_artifacts) — расширения через реестр `extensions.py`.
+"""
+from __future__ import annotations
+
 from typing import Optional
-import datetime
+
+import h5py
+
 from .base import BaseHDF5Entity
-from ..models import Session, SessionParameters, FieldSettings, DataManager, OscilloscopeFieldSettings, OscillogramData, ParameterData
-from .plot import HDF5Plot
-from ..utils import settings_to_dict, save_dict_to_hdf5_with_subgroups, load_dict_from_hdf5_group, dict_to_graph_field_settings
+from ..extensions import SessionExtensionRegistry
+from ..extras import read_attrs, write_attrs
 from ..load_strategies.base import BaseLoadStrategy
-import logging
-import json
-
-logger = logging.getLogger(__name__)
-
-def print_nested(data, indent=0):
-    for key, value in data.items():
-        if isinstance(value, dict):
-            print(' ' * indent + f'{key}:')
-            print_nested(value, indent + 2)
-        else:
-            print(' ' * indent + f'{key}: {value}')
+from ..models import Session, SessionParameters
+from ..schema import SESSION_PARAMETERS_SPEC, SESSION_SPEC
 
 
 class HDF5Session(BaseHDF5Entity):
-    """Представление сессии в HDF5."""
-    
-    def __init__(self, hdf5_object: h5py.Group, load_strategy: Optional[BaseLoadStrategy] = None):
+    def __init__(self, hdf5_object: h5py.Group,
+                 load_strategy: Optional[BaseLoadStrategy] = None):
         super().__init__(hdf5_object)
         self.load_strategy = load_strategy
-    
-    def write(self, session: Session):
-        """Записывает сессию в HDF5."""
-        attributes = {
-            'name': session.name,
-            'description': session.description
-        }
-        self._write_attributes(attributes)
-        
-        if 'parameters' not in self._hdf5_object:
-            self._hdf5_object.create_group('parameters')
-        params_group = self._hdf5_object['parameters']
-        
-        params_attrs = {
-            'name': session.parameters.name,
-            'description': session.parameters.description,
-            'uuid': session.parameters.uuid,
-            'experiment_date': session.parameters.experiment_date.isoformat() if session.parameters.experiment_date else None,
-            'operator': session.parameters.operator,
-            'comment': session.parameters.comment
-        }
-        for key, value in params_attrs.items():
-            if value is not None:
-                params_group.attrs[key] = value
-        
-        if 'field_settings' not in self._hdf5_object:
-            self._hdf5_object.create_group('field_settings')
-        field_settings_group = self._hdf5_object['field_settings']
-        
-        if 'graph_field' not in field_settings_group:
-            field_settings_group.create_group('graph_field')
-        graph_field_group = field_settings_group['graph_field']
-        
-        graph_field_attrs = settings_to_dict(session.field_settings.graph_field)
-        save_dict_to_hdf5_with_subgroups(graph_field_group, graph_field_attrs)
-        
-        if 'oscilloscope_field' not in field_settings_group:
-            field_settings_group.create_group('oscilloscope_field')
-        oscilloscope_field_group = field_settings_group['oscilloscope_field']
-        
-        oscilloscope_field_attrs = settings_to_dict(session.field_settings.oscilloscope_field)
 
-        save_dict_to_hdf5_with_subgroups(oscilloscope_field_group, oscilloscope_field_attrs)
-        
-        if 'data_manager' not in self._hdf5_object:
-            self._hdf5_object.create_group('data_manager')
-        data_manager_group = self._hdf5_object['data_manager']
-        
-        if 'oscillogram_data' not in data_manager_group:
-            data_manager_group.create_group('oscillogram_data')
-        oscillogram_data_group = data_manager_group['oscillogram_data']
-        
-        for data_name, data in session.data_manager.oscillogram_data.items():
-            if data_name in oscillogram_data_group:
-                del oscillogram_data_group[data_name]
-            data_entity_group = oscillogram_data_group.create_group(data_name)
-            
-            from .oscillogram_data import HDF5OscillogramData
-            data_entity = HDF5OscillogramData(data_entity_group)
-            data_entity.write(data)
-
-        if 'parameters_data' not in data_manager_group:
-            data_manager_group.create_group('parameters_data')
-        parameters_data_group = data_manager_group['parameters_data']
-        
-        for data_name, data in session.data_manager.parameter_data.items():
-            if '/' in data_name:
-                data_name = data_name.replace('/', '_')
-            if data_name in parameters_data_group:
-                del parameters_data_group[data_name]
-            data_entity_group = parameters_data_group.create_group(data_name)
-            
-            from .oscillogram_data import HDF5OscillogramData
-            data_entity = HDF5OscillogramData(data_entity_group)
-            data_entity.write(data)
-        
-        if 'plots' not in self._hdf5_object:
-            self._hdf5_object.create_group('plots')
-        plots_group = self._hdf5_object['plots']
-        
-        for plot_name, plot in session.plots.items():
-            if plot_name in plots_group:
-                del plots_group[plot_name]
-            plot_entity_group = plots_group.create_group(plot_name)
-            plot_entity = HDF5Plot(plot_entity_group)
-            plot_entity.write(plot)
-
-        # --- Хелперы ---
-        if 'helpers' in self._hdf5_object:
-            del self._hdf5_object['helpers']
-        helpers_group = self._hdf5_object.create_group('helpers')
-        for i, h in enumerate(getattr(session, 'helpers', []) or []):
-            h_group = helpers_group.create_group(f"h{i}")
-            h_group.attrs['helper_type'] = h.get('helper_type', '')
-            h_group.attrs['visible'] = bool(h.get('visible', True))
-            try:
-                h_group.attrs['params'] = json.dumps(h.get('params', {}), ensure_ascii=False)
-            except Exception:
-                h_group.attrs['params'] = '{}'
-
-         # --- Артефакты анализа ---
-        try:
-            from graphs.analysis.io.serializer import save_artifacts
-            # Хук: если сессия ядра передана через session.analysis_controller,
-            # пишем артефакты. Здесь мы не имеем ссылки на GraphSession,
-            # поэтому сохранение артефактов выполняется отдельно из SessionController
-            # (см. save_project в hdf5_io/facade.py).
-        except Exception:
-            logger.exception("write analysis artifacts failed")
-    
-    def read(self) -> Session:
-        """Читает сессию из HDF5 и возвращает объект Session."""
-        path = self._hdf5_object.name
-        name = self._hdf5_object.attrs.get('name', '')
-        description = self._hdf5_object.attrs.get('description', '')
-
-        logger.info("reading parameters")
-        parameters = SessionParameters()
-        if 'parameters' in self._hdf5_object:
-            params_group = self._hdf5_object['parameters']
-            parameters.name = params_group.attrs.get('name', '')
-            parameters.description = params_group.attrs.get('description', '')
-            parameters.uuid = params_group.attrs.get('uuid', '')
-            if not parameters.uuid:
-                logger.warning(
-                    "HDF5Session.read: session %s has no uuid", path
-                )
-            exp_date_str = params_group.attrs.get('experiment_date', '')
-            if exp_date_str:
-                try:
-                    parameters.experiment_date = datetime.fromisoformat(exp_date_str)
-                except (TypeError, ValueError) as exc:
-                    logger.warning(
-                        "HDF5Session.read: invalid experiment_date %r at %s: %s",
-                        exp_date_str, path, exc,
-                    )
-            parameters.operator = params_group.attrs.get('operator', '')
-            parameters.comment = params_group.attrs.get('comment', '')
-
-        field_settings = self.read_field_settings()
-
-        logger.info("reading data manager")
-        data_manager = DataManager()
-        if 'data_manager' in self._hdf5_object:
-            data_manager_group = self._hdf5_object['data_manager']
-
-            if 'oscillogram_data' in data_manager_group:
-                oscillogram_data_group = data_manager_group['oscillogram_data']
-                for data_name in oscillogram_data_group:
-                    data_entity_group = oscillogram_data_group[data_name]
-                    if ('data_values' not in data_entity_group
-                            or 'time_values' not in data_entity_group):
-                        logger.warning(
-                            "HDF5Session.read: osc data %s at %s missing "
-                            "data_values/time_values, skipped",
-                            data_name, data_entity_group.name,
-                        )
-                        continue
-                    data = OscillogramData()
-                    data.device = data_entity_group.attrs.get('device', '')
-                    data.channel = data_entity_group.attrs.get('channel', '')
-                    data.parameter = data_entity_group.attrs.get('parameter', '')
-                    data.time_values = data_entity_group['time_values'][:]
-                    data.data_values = data_entity_group['data_values'][:]
-                    data_manager.oscillogram_data[data_name] = data
-
-            if 'parameters_data' in data_manager_group:
-                parameters_data_group = data_manager_group['parameters_data']
-                for data_name in parameters_data_group:
-                    data_entity_group = parameters_data_group[data_name]
-                    if ('data_values' not in data_entity_group
-                            or 'time_values' not in data_entity_group):
-                        logger.warning(
-                            "HDF5Session.read: param data %s at %s missing "
-                            "data_values/time_values, skipped",
-                            data_name, data_entity_group.name,
-                        )
-                        continue
-                    data = ParameterData()
-                    data.device = data_entity_group.attrs.get('device', '')
-                    data.channel = data_entity_group.attrs.get('channel', '')
-                    data.parameter = data_entity_group.attrs.get('parameter', '')
-                    data.time_values = data_entity_group['time_values'][:]
-                    data.data_values = data_entity_group['data_values'][:]
-                    data_manager.parameter_data[data_name] = data
-
-        logger.info("reading plots")
-        plots = {}
-        if 'plots' in self._hdf5_object:
-            plots_group = self._hdf5_object['plots']
-            for plot_name in plots_group:
-                plot_entity_group = plots_group[plot_name]
-                try:
-                    plot_entity = HDF5Plot(plot_entity_group)
-                    plot = plot_entity.read()
-                except (KeyError, ValueError, AttributeError) as exc:
-                    logger.warning(
-                        "HDF5Session.read: failed to read plot %s at %s: %s",
-                        plot_name, plot_entity_group.name, exc,
-                    )
-                    continue
-                plots[plot_name] = plot
-
-        helpers = []
-        if 'helpers' in self._hdf5_object:
-            helpers_group = self._hdf5_object['helpers']
-            for h_name in helpers_group:
-                h_group = helpers_group[h_name]
-                params_raw = h_group.attrs.get('params', '{}')
-                if isinstance(params_raw, bytes):
-                    params_raw = params_raw.decode('utf-8', errors='replace')
-                try:
-                    params = (
-                        json.loads(params_raw)
-                        if isinstance(params_raw, str) and params_raw else {}
-                    )
-                except (json.JSONDecodeError, TypeError) as exc:
-                    logger.warning(
-                        "HDF5Session.read: invalid helper params at %s: %s",
-                        h_group.name, exc,
-                    )
-                    params = {}
-
-                ht = h_group.attrs.get('helper_type', '')
-                if isinstance(ht, bytes):
-                    ht = ht.decode('utf-8', errors='replace')
-                if not ht:
-                    logger.warning(
-                        "HDF5Session.read: helper at %s has no helper_type, skipped",
-                        h_group.name,
-                    )
-                    continue
-                helpers.append({
-                    'helper_type': ht,
-                    'params': params,
-                    'visible': bool(h_group.attrs.get('visible', True)),
-                })
-
-        session = Session(
-            name=name,
-            description=description,
-            parameters=parameters,
-            field_settings=field_settings,
-            data_manager=data_manager,
-            plots=plots,
-            helpers=helpers,
+    def write(self, session: Session) -> None:
+        write_attrs(self._hdf5_object, session, SESSION_SPEC)
+        if "parameters" in self._hdf5_object:
+            del self._hdf5_object["parameters"]
+        write_attrs(
+            self._hdf5_object.create_group("parameters"),
+            session.parameters, SESSION_PARAMETERS_SPEC,
         )
+        SessionExtensionRegistry.instance().save_all(session, self._hdf5_object)
 
-        try:
-            from graphs.analysis.io.serializer import load_artifacts
-            session.analysis_artifacts = load_artifacts(self._hdf5_object)
-        except ImportError as exc:
-            logger.warning(
-                "HDF5Session.read: artifacts loader unavailable: %s", exc
-            )
-            session.analysis_artifacts = []
-
+    def read(self) -> Session:
+        values, extras = read_attrs(self._hdf5_object, SESSION_SPEC)
+        session = Session(
+            name=values.get("name", "") or "",
+            description=values.get("description", "") or "",
+            extras=extras,
+        )
+        if "parameters" in self._hdf5_object:
+            p_values, p_extras = read_attrs(
+                self._hdf5_object["parameters"], SESSION_PARAMETERS_SPEC)
+            session.parameters = SessionParameters(**p_values, extras=p_extras)
+        SessionExtensionRegistry.instance().load_all(self._hdf5_object, session)
         return session
-    
-    def read_field_settings(self) -> FieldSettings:
-        field_settings = FieldSettings()
-        if 'field_settings' in self._hdf5_object:
-            field_settings_group = self._hdf5_object['field_settings']
-            
-            if 'graph_field' in field_settings_group:
-                graph_field_group = field_settings_group['graph_field']
-                
-                graph_field_data = load_dict_from_hdf5_group(graph_field_group)
-                graph_field_settings = dict_to_graph_field_settings(graph_field_data)
-                field_settings.graph_field = graph_field_settings
-            
-            if 'oscilloscope_field' in field_settings_group:
-                oscilloscope_field_group = field_settings_group['oscilloscope_field']
-                oscilloscope_field = OscilloscopeFieldSettings()
-                oscilloscope_field.name = oscilloscope_field_group.attrs.get('name', '')
-                oscilloscope_field.description = oscilloscope_field_group.attrs.get('description', '')
-                oscilloscope_field.title = oscilloscope_field_group.attrs.get('title', '')
-                oscilloscope_field.background_color = oscilloscope_field_group.attrs.get('background_color', '#FFFFFF')
-                oscilloscope_field.foreground_color = oscilloscope_field_group.attrs.get('foreground_color', '#000000')
-                oscilloscope_field.grid_enabled = bool(oscilloscope_field_group.attrs.get('grid_enabled', True))
-                oscilloscope_field.grid_color = oscilloscope_field_group.attrs.get('grid_color', '#CCCCCC')
-                oscilloscope_field.grid_alpha = float(oscilloscope_field_group.attrs.get('grid_alpha', 0.5))
-                oscilloscope_field.x_label = oscilloscope_field_group.attrs.get('x_label', 'X Axis')
-                oscilloscope_field.y_label = oscilloscope_field_group.attrs.get('y_label', 'Y Axis')
-                oscilloscope_field.x_log_mode = bool(oscilloscope_field_group.attrs.get('x_log_mode', False))
-                oscilloscope_field.y_log_mode = bool(oscilloscope_field_group.attrs.get('y_log_mode', False))
-                oscilloscope_field.x_auto_range = bool(oscilloscope_field_group.attrs.get('x_auto_range', True))
-                oscilloscope_field.y_auto_range = bool(oscilloscope_field_group.attrs.get('y_auto_range', True))
-                
-                x_range = oscilloscope_field_group.attrs.get('x_range', None)
-                y_range = oscilloscope_field_group.attrs.get('y_range', None)
-                oscilloscope_field.x_range = tuple(x_range) if x_range is not None else None
-                oscilloscope_field.y_range = tuple(y_range) if y_range is not None else None
-                
-                oscilloscope_field.legend_enabled = bool(oscilloscope_field_group.attrs.get('legend_enabled', True))
-                oscilloscope_field.antialiasing = bool(oscilloscope_field_group.attrs.get('antialiasing', True))
-                field_settings.oscilloscope_field = oscilloscope_field
-        
-        return field_settings
