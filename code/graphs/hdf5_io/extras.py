@@ -1,10 +1,3 @@
-"""Чтение/запись HDF5-атрибутов с сохранением «extras».
-
-Неизвестные атрибуты (например, из более новой версии файла) при чтении
-попадают в ``model.extras``, при записи возвращаются обратно. Это даёт
-forward/backward-совместимость: новый файл, открытый старым кодом и
-пересохранённый, не теряет данных.
-"""
 from __future__ import annotations
 
 import json
@@ -18,7 +11,6 @@ from .codec import get_codec
 from .schema import Attr, Schema
 
 logger = logging.getLogger(__name__)
-
 
 _MISSING = object()
 
@@ -47,8 +39,9 @@ def _encode_unknown(value: Any) -> Any:
         return str(value)
 
 
-def _read_value(group, attr: Attr) -> Any:
+def _read_value(group: h5py.Group, attr: Attr) -> Any:
     key = attr.hdf5_key()
+
     if attr.nested_schema is not None:
         if key not in group:
             return attr.default
@@ -63,15 +56,58 @@ def _read_value(group, attr: Attr) -> Any:
             obj.extras = extras
         return obj
 
+    if attr.mapping_schema is not None:
+        if key not in group:
+            return attr.default
+        source = group[key]
+        result = {}
+        for name in source:
+            item = source[name]
+            if not isinstance(item, h5py.Group):
+                continue
+            values, extras = read_attrs(item, attr.mapping_schema)
+            try:
+                obj = attr.mapping_schema.target(**values)
+            except TypeError as exc:
+                logger.warning("read_attrs: cannot build mapping item %s: %s",
+                               name, exc)
+                continue
+            if hasattr(obj, "extras"):
+                obj.extras = extras
+            result[name] = obj
+        return result
+
+    if attr.is_list and attr.type == "ndarray":
+        if key in group and isinstance(group[key], h5py.Group):
+            item_group = group[key]
+            count = int(item_group.attrs.get("count", 0))
+            items = []
+            for index in range(count):
+                item_key = f"item_{index}"
+                if item_key in item_group:
+                    items.append(np.asarray(item_group[item_key][:]))
+            return items
+
+        legacy = []
+        index = 0
+        while f"{key}_{index}" in group:
+            legacy.append(np.asarray(group[f"{key}_{index}"][:]))
+            index += 1
+        if legacy:
+            return legacy
+
+        if key in group:
+            return [np.asarray(group[key][:])]
+
+        return attr.default
+
     if attr.is_dataset:
         if key not in group:
             return attr.default
         try:
             return get_codec(attr.type).decode(group[key][:])
         except (OSError, ValueError, TypeError) as exc:
-            logger.warning("read_attrs: %s.%s dataset: %s",
-                           attr.nested_schema or type(group).__name__,
-                           attr.name, exc)
+            logger.warning("read_attrs: %s dataset: %s", attr.name, exc)
             return attr.default
 
     if key not in group.attrs:
@@ -80,8 +116,8 @@ def _read_value(group, attr: Attr) -> Any:
     try:
         return get_codec(attr.type).decode(raw)
     except (ValueError, TypeError) as exc:
-        logger.warning("read_attrs: %s invalid value %r for %s: %s",
-                       attr.name, raw, getattr(group, "name", "?"), exc)
+        logger.warning("read_attrs: %s invalid value %r: %s",
+                       attr.name, raw, exc)
         return attr.default
 
 
@@ -111,9 +147,36 @@ def write_attrs(group: h5py.Group, obj: Any, schema: Schema) -> None:
         if attr.nested_schema is not None:
             if value is None:
                 continue
-            if key not in group:
-                group.create_group(key)
-            write_attrs(group[key], value, attr.nested_schema)
+            if key in group:
+                del group[key]
+            write_attrs(group.create_group(key), value, attr.nested_schema)
+            continue
+
+        if attr.mapping_schema is not None:
+            if key in group:
+                del group[key]
+            mapping_group = group.create_group(key)
+            for map_key, map_value in (value or {}).items():
+                safe_key = str(map_key)
+                write_attrs(
+                    mapping_group.create_group(safe_key),
+                    map_value,
+                    attr.mapping_schema,
+                )
+            continue
+
+        if attr.is_list and attr.type == "ndarray":
+            if key in group:
+                del group[key]
+            list_group = group.create_group(key)
+            items = list(value or [])
+            list_group.attrs["count"] = len(items)
+            for index, item in enumerate(items):
+                list_group.create_dataset(
+                    f"item_{index}",
+                    data=np.asarray(item),
+                    compression="gzip",
+                )
             continue
 
         try:

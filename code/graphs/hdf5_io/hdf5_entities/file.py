@@ -5,7 +5,6 @@ from typing import Optional
 
 import h5py
 
-from .base import BaseHDF5Entity
 from ..extras import read_attrs, write_attrs
 from ..load_strategies.base import BaseLoadStrategy
 from ..models import ProjectFile, Session
@@ -13,14 +12,13 @@ from ..schema import PROJECT_FILE_SPEC
 from .session import HDF5Session
 
 
-class HDF5File(BaseHDF5Entity):
+class HDF5File:
     def __init__(self, file_path: str, mode: str = "a",
                  load_strategy: Optional[BaseLoadStrategy] = None):
         self.file_path = file_path
         self.mode = mode
         self._h5file = h5py.File(file_path, mode)
         self.load_strategy = load_strategy
-        super().__init__(self._h5file)
 
     def close(self) -> None:
         self._h5file.close()
@@ -31,7 +29,8 @@ class HDF5File(BaseHDF5Entity):
     def read_file_attributes(self) -> tuple[dict, dict]:
         return read_attrs(self._h5file, PROJECT_FILE_SPEC)
 
-    def write_session(self, session: Session, session_id: Optional[str] = None) -> None:
+    def write_session(self, session: Session,
+                      session_id: Optional[str] = None) -> None:
         uuid = session.parameters.uuid
         if uuid in self._h5file:
             del self._h5file[uuid]

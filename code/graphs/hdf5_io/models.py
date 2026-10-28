@@ -1,8 +1,7 @@
 """Модели данных HDF5-сериализации.
 
 `BaseModel` содержит поле `extras` — сюда при чтении складываются
-неизвестные атрибуты, при записи они возвращаются обратно. Это
-обеспечивает forward/backward-совместимость без потери данных.
+неизвестные атрибуты, при записи они возвращаются обратно.
 
 `Plot.from_core` / `Plot.to_core` — единственное место конверсии
 между `linearData` и `Plot`; адаптеры превращаются в тонких делегатов.
@@ -29,7 +28,7 @@ class BaseModel:
 @dataclass
 class GraphStyle(BaseModel):
     color: str = "#ffffff"
-    line_style: Any = QtCore.Qt.SolidLine          # Qt.PenStyle — кодек сериализует
+    line_style: Any = QtCore.Qt.SolidLine
     line_width: int = 1
     symbol: Optional[str] = None
     symbol_size: int = 1
@@ -154,14 +153,12 @@ class LinearData(BaseModel):
         )
 
 
-# ---------------------------------------------------------------------------
-# Вспомогательные модели
-# ---------------------------------------------------------------------------
 @dataclass
 class AxisStyle:
     text_font: str = "Arial,13,-1,5,50,0,0,0,0,0"
     tick_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
     color: str = "#000000"
+    extras: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_qfont_color(cls, text_font, tick_font, color) -> "AxisStyle":
@@ -188,8 +185,8 @@ class AxisSettings:
     auto_range: bool = True
     range: Optional[Tuple[float, float]] = None
     custom_style: AxisStyle = field(default_factory=AxisStyle)
+    extras: Dict[str, Any] = field(default_factory=dict)
     current_style_type: str = field(default="common", init=False)
-
 
 
 @dataclass
@@ -214,8 +211,9 @@ class OscilloscopeFieldSettings(BaseModel):
                 "right": AxisSettings(label="Y2", is_visible=False),
             }
 
+
 @dataclass
-class GraphFieldSettings:
+class GraphFieldSettings(BaseModel):
     title: str = ""
     background_color: str = "#070707"
     grid_enabled: bool = True
@@ -236,7 +234,7 @@ class GraphFieldSettings:
     is_multiple_y1_enabled: bool = False
     is_multiple_y2_enabled: bool = False
     applied_preset_name: str = "—"
-    edit_all_axes: bool = True            # ← НОВОЕ
+    edit_all_axes: bool = True
 
     def __post_init__(self):
         if not self.axes:
@@ -250,7 +248,9 @@ class GraphFieldSettings:
 @dataclass
 class FieldSettings(BaseModel):
     graph_field: GraphFieldSettings = field(default_factory=GraphFieldSettings)
-    oscilloscope_field: OscilloscopeFieldSettings = field(default_factory=OscilloscopeFieldSettings)
+    oscilloscope_field: OscilloscopeFieldSettings = field(
+        default_factory=OscilloscopeFieldSettings
+    )
 
 
 @dataclass
@@ -429,7 +429,6 @@ class Plot(BaseModel):
         if ld.tree_item_data is not None:
             new_data.tree_item.parameters.update(ld.tree_item_data.parameters or {})
 
-        # Сохраняем формулу и source_curve_ids в параметрах дерева
         if self.formula:
             new_data.tree_item.parameters["formula"] = self.formula
             block_name = QApplication.translate("GraphWindow", "Разное")
@@ -469,13 +468,7 @@ class Plot(BaseModel):
 
 
 @dataclass
-class Session(BaseModel):
-    parameters: SessionParameters = field(default_factory=SessionParameters)
-    field_settings: FieldSettings = field(default_factory=FieldSettings)
-    data_manager: DataManager = field(default_factory=DataManager)
-    plots: Dict[str, Plot] = field(default_factory=dict)
-    analysis_artifacts: list = field(default_factory=list)
-    helpers: list = field(default_factory=list)
+class SessionUIState(BaseModel):
     active_tab: int = 0
     show_only_active_curves: bool = False
     inspector_current_widget: str = "no_selection"
@@ -485,6 +478,92 @@ class Session(BaseModel):
     main_inf_lines: List[dict] = field(default_factory=list)
     osc_inf_lines: List[dict] = field(default_factory=list)
     osc_loop_inf_lines: List[dict] = field(default_factory=list)
+    applied_preset_name: str = "—"
+    edit_all_axes: bool = True
+
+
+@dataclass
+class Session(BaseModel):
+    parameters: SessionParameters = field(default_factory=SessionParameters)
+    field_settings: FieldSettings = field(default_factory=FieldSettings)
+    data_manager: DataManager = field(default_factory=DataManager)
+    plots: Dict[str, Plot] = field(default_factory=dict)
+    analysis_artifacts: list = field(default_factory=list)
+    helpers: list = field(default_factory=list)
+    ui_state: SessionUIState = field(default_factory=SessionUIState)
+
+    # Обратная совместимость — старые обращения sess.active_tab и т.п.
+    @property
+    def active_tab(self) -> int:
+        return self.ui_state.active_tab
+
+    @active_tab.setter
+    def active_tab(self, value: int) -> None:
+        self.ui_state.active_tab = int(value)
+
+    @property
+    def show_only_active_curves(self) -> bool:
+        return self.ui_state.show_only_active_curves
+
+    @show_only_active_curves.setter
+    def show_only_active_curves(self, value: bool) -> None:
+        self.ui_state.show_only_active_curves = bool(value)
+
+    @property
+    def inspector_current_widget(self) -> str:
+        return self.ui_state.inspector_current_widget
+
+    @inspector_current_widget.setter
+    def inspector_current_widget(self, value: str) -> None:
+        self.ui_state.inspector_current_widget = value
+
+    @property
+    def inspector_curve_tab(self) -> int:
+        return self.ui_state.inspector_curve_tab
+
+    @inspector_curve_tab.setter
+    def inspector_curve_tab(self, value: int) -> None:
+        self.ui_state.inspector_curve_tab = int(value)
+
+    @property
+    def inspector_no_selection_tab(self) -> int:
+        return self.ui_state.inspector_no_selection_tab
+
+    @inspector_no_selection_tab.setter
+    def inspector_no_selection_tab(self, value: int) -> None:
+        self.ui_state.inspector_no_selection_tab = int(value)
+
+    @property
+    def active_analysis_tool(self) -> str:
+        return self.ui_state.active_analysis_tool
+
+    @active_analysis_tool.setter
+    def active_analysis_tool(self, value: str) -> None:
+        self.ui_state.active_analysis_tool = value
+
+    @property
+    def main_inf_lines(self) -> List[dict]:
+        return self.ui_state.main_inf_lines
+
+    @main_inf_lines.setter
+    def main_inf_lines(self, value: List[dict]) -> None:
+        self.ui_state.main_inf_lines = list(value or [])
+
+    @property
+    def osc_inf_lines(self) -> List[dict]:
+        return self.ui_state.osc_inf_lines
+
+    @osc_inf_lines.setter
+    def osc_inf_lines(self, value: List[dict]) -> None:
+        self.ui_state.osc_inf_lines = list(value or [])
+
+    @property
+    def osc_loop_inf_lines(self) -> List[dict]:
+        return self.ui_state.osc_loop_inf_lines
+
+    @osc_loop_inf_lines.setter
+    def osc_loop_inf_lines(self, value: List[dict]) -> None:
+        self.ui_state.osc_loop_inf_lines = list(value or [])
 
 
 @dataclass

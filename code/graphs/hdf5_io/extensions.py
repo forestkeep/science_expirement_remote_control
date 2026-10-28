@@ -1,16 +1,19 @@
-"""Реестр расширений сессии: новая фича = новый модуль.
-
-Каждое расширение получает (session_model, h5_group) и делает всё,
-что нужно. Фасад и HDF5Session.write/read превращаются в тривиальные
-циклы по реестру.
-"""
 from __future__ import annotations
 
+import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable
 
 import h5py
+
+from .extras import read_attrs, write_attrs
+from .hdf5_entities.analysis_artifact import HDF5Artifact
+from .hdf5_entities.data_manager import HDF5DataManager
+from .hdf5_entities.field_settings import HDF5FieldSettings
+from .hdf5_entities.plot import HDF5Plot
+from .models import DataManager, SessionUIState
+from .schema import SESSION_UI_STATE_SPEC
 
 logger = logging.getLogger(__name__)
 
@@ -62,11 +65,7 @@ def register_session_extension(name, save, load, order=100) -> None:
     SessionExtensionRegistry.instance().register(name, save, load, order)
 
 
-# ---------------------------------------------------------------------------
-# Built-in extensions
-# ---------------------------------------------------------------------------
 def _save_helpers(session, group):
-    import json
     if "helpers" in group:
         del group["helpers"]
     hg = group.create_group("helpers")
@@ -81,7 +80,6 @@ def _save_helpers(session, group):
 
 
 def _load_helpers(group, session):
-    import json
     if "helpers" not in group:
         return
     result = []
@@ -110,142 +108,169 @@ def _load_helpers(group, session):
 
 
 def _save_field_settings(session, group):
-    from .utils import settings_to_dict, save_dict_to_hdf5_with_subgroups
     if session.field_settings is None:
         return
     if "field_settings" in group:
         del group["field_settings"]
-    fs_group = group.create_group("field_settings")
-    gf = session.field_settings.graph_field
-    of = session.field_settings.oscilloscope_field
-    if gf is not None:
-        save_dict_to_hdf5_with_subgroups(
-            fs_group.create_group("graph_field"), settings_to_dict(gf))
-    if of is not None:
-        save_dict_to_hdf5_with_subgroups(
-            fs_group.create_group("oscilloscope_field"), settings_to_dict(of))
+    HDF5FieldSettings(group.create_group("field_settings")).write(
+        session.field_settings
+    )
 
 
 def _load_field_settings(group, session):
-    from .utils import load_dict_from_hdf5_group, dict_to_graph_field_settings
-    from .migrations import migrate
-    from .models import FieldSettings, OscilloscopeFieldSettings
     if "field_settings" not in group:
         return
-    fs_group = group["field_settings"]
-    fs = FieldSettings()
-    if "graph_field" in fs_group:
-        data = load_dict_from_hdf5_group(fs_group["graph_field"])
-        data = migrate(data, from_version=0)     # идемпотентно
-        fs.graph_field = dict_to_graph_field_settings(data)
-    if "oscilloscope_field" in fs_group:
-        og = fs_group["oscilloscope_field"]
-        of = OscilloscopeFieldSettings()
-        for f in ("name", "description", "title", "background_color",
-                  "foreground_color", "grid_color", "x_label", "y_label"):
-            setattr(of, f, og.attrs.get(f, getattr(of, f, "")))
-        for f in ("grid_enabled", "x_log_mode", "y_log_mode",
-                  "x_auto_range", "y_auto_range", "legend_enabled",
-                  "antialiasing"):
-            setattr(of, f, bool(og.attrs.get(f, getattr(of, f, True))))
-        for f in ("grid_alpha",):
-            try:
-                setattr(of, f, float(og.attrs.get(f, getattr(of, f, 0.5))))
-            except (TypeError, ValueError):
-                pass
-        fs.oscilloscope_field = of
-    session.field_settings = fs
+    session.field_settings = HDF5FieldSettings(group["field_settings"]).read()
 
 
 def _save_data_manager(session, group):
-    from .models import DataManager
-    from .hdf5_entities.oscillogram_data import HDF5OscillogramData
     if "data_manager" in group:
         del group["data_manager"]
-    dm = session.data_manager or DataManager()
-    dm_group = group.create_group("data_manager")
-    od = dm_group.create_group("oscillogram_data")
-    for name, data in dm.oscillogram_data.items():
-        if name in od:
-            del od[name]
-        HDF5OscillogramData(od.create_group(name)).write(data)
-    pd_ = dm_group.create_group("parameters_data")
-    for name, data in dm.parameter_data.items():
-        safe = name.replace("/", "_") if isinstance(name, str) else str(name)
-        if safe in pd_:
-            del pd_[safe]
-        HDF5OscillogramData(pd_.create_group(safe)).write(data)
+    data_manager = session.data_manager or DataManager()
+    HDF5DataManager(group.create_group("data_manager")).write(data_manager)
 
 
 def _load_data_manager(group, session):
-    from .models import DataManager, OscillogramData, ParameterData
-    dm = DataManager()
     if "data_manager" not in group:
-        session.data_manager = dm
+        session.data_manager = DataManager()
         return
-    dmg = group["data_manager"]
-    for name in dmg.get("oscillogram_data", {}):
-        eg = dmg["oscillogram_data"][name]
-        if "data_values" not in eg or "time_values" not in eg:
-            continue
-        d = OscillogramData()
-        d.device = eg.attrs.get("device", "")
-        d.channel = eg.attrs.get("channel", "")
-        d.parameter = eg.attrs.get("parameter", "")
-        d.time_values = eg["time_values"][:]
-        d.data_values = eg["data_values"][:]
-        dm.oscillogram_data[name] = d
-    for name in dmg.get("parameters_data", {}):
-        eg = dmg["parameters_data"][name]
-        if "data_values" not in eg or "time_values" not in eg:
-            continue
-        d = ParameterData()
-        d.device = eg.attrs.get("device", "")
-        d.channel = eg.attrs.get("channel", "")
-        d.parameter = eg.attrs.get("parameter", "")
-        d.time_values = eg["time_values"][:]
-        d.data_values = eg["data_values"][:]
-        dm.parameter_data[name] = d
-    session.data_manager = dm
+    session.data_manager = HDF5DataManager(group["data_manager"]).read()
 
 
 def _save_plots(session, group):
-    from .hdf5_entities.plot import HDF5Plot
     if "plots" in group:
         del group["plots"]
-    pg = group.create_group("plots")
+    plots_group = group.create_group("plots")
     for name, plot in (session.plots or {}).items():
-        if name in pg:
-            del pg[name]
-        HDF5Plot(pg.create_group(name)).write(plot)
+        HDF5Plot(plots_group.create_group(name)).write(plot)
 
 
 def _load_plots(group, session):
-    from .hdf5_entities.plot import HDF5Plot
     if "plots" not in group:
         return
     result = {}
-    pg = group["plots"]
-    for name in pg:
+    plots_group = group["plots"]
+    for name in plots_group:
         try:
-            result[name] = HDF5Plot(pg[name]).read()
+            result[name] = HDF5Plot(plots_group[name]).read()
         except (KeyError, ValueError, TypeError, AttributeError) as exc:
             logger.warning("plot %r load failed: %s", name, exc)
     session.plots = result
 
 
 def _save_analysis_artifacts(session, group):
-    from graphs.analysis.io.serializer import save_artifacts_list
-    save_artifacts_list(session.analysis_artifacts or [], group)
+    if "analysis_artifacts" in group:
+        del group["analysis_artifacts"]
+    artifacts_group = group.create_group("analysis_artifacts")
+    for artifact in session.analysis_artifacts or []:
+        HDF5Artifact(artifacts_group.create_group(artifact.id)).write(artifact)
 
 
 def _load_analysis_artifacts(group, session):
-    from graphs.analysis.io.serializer import load_artifacts
-    session.analysis_artifacts = load_artifacts(group)
+    if "analysis_artifacts" not in group:
+        session.analysis_artifacts = []
+        return
+    result = []
+    artifacts_group = group["analysis_artifacts"]
+    for name in artifacts_group:
+        try:
+            result.append(HDF5Artifact(artifacts_group[name]).read())
+        except (KeyError, ValueError, TypeError, OSError) as exc:
+            logger.warning("artifact %r load failed: %s", name, exc)
+    session.analysis_artifacts = result
+
+
+def _attr_int(group, name: str, default: int) -> int:
+    raw = group.attrs.get(name, default)
+    if isinstance(raw, bytes):
+        raw = raw.decode("utf-8", errors="replace")
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return default
+
+
+def _attr_bool(group, name: str, default: bool) -> bool:
+    raw = group.attrs.get(name, default)
+    if isinstance(raw, bytes):
+        raw = raw.decode("utf-8", errors="replace")
+    if isinstance(raw, str):
+        return raw.lower() in ("1", "true", "yes", "on")
+    return bool(raw)
+
+
+def _attr_str(group, name: str, default: str) -> str:
+    raw = group.attrs.get(name, default)
+    if isinstance(raw, bytes):
+        return raw.decode("utf-8", errors="replace")
+    return "" if raw is None else str(raw)
+
+
+def _attr_json(group, name: str, default):
+    raw = group.attrs.get(name, None)
+    if raw is None:
+        return default
+    if isinstance(raw, bytes):
+        raw = raw.decode("utf-8", errors="replace")
+    if isinstance(raw, str):
+        if not raw:
+            return default
+        try:
+            return json.loads(raw)
+        except (json.JSONDecodeError, TypeError):
+            return default
+    return raw
+
+
+def _save_ui_state(session, group):
+    if "ui_state" in group:
+        del group["ui_state"]
+    write_attrs(
+        group.create_group("ui_state"),
+        session.ui_state,
+        SESSION_UI_STATE_SPEC,
+    )
+
+
+def _load_ui_state(group, session):
+    if "ui_state" in group:
+        values, extras = read_attrs(group["ui_state"], SESSION_UI_STATE_SPEC)
+        session.ui_state = SessionUIState(**values, extras=extras)
+        return
+
+    ui = SessionUIState()
+    ui.active_tab = _attr_int(group, "active_tab", 0)
+    ui.show_only_active_curves = _attr_bool(
+        group, "show_only_active_curves", False
+    )
+    ui.inspector_current_widget = _attr_str(
+        group, "inspector_current_widget", "no_selection"
+    )
+    ui.inspector_curve_tab = _attr_int(group, "inspector_curve_tab", 0)
+    ui.inspector_no_selection_tab = _attr_int(
+        group, "inspector_no_selection_tab", 0
+    )
+    ui.active_analysis_tool = _attr_str(group, "active_analysis_tool", "")
+    ui.main_inf_lines = _attr_json(group, "main_inf_lines", [])
+    ui.osc_inf_lines = _attr_json(group, "osc_inf_lines", [])
+    ui.osc_loop_inf_lines = _attr_json(group, "osc_loop_inf_lines", [])
+    ui.applied_preset_name = "—"
+    ui.edit_all_axes = True
+    session.ui_state = ui
 
 
 register_session_extension("helpers", _save_helpers, _load_helpers, order=10)
-register_session_extension("field_settings", _save_field_settings, _load_field_settings, order=20)
-register_session_extension("data_manager", _save_data_manager, _load_data_manager, order=30)
+register_session_extension("ui_state", _save_ui_state, _load_ui_state, order=15)
+register_session_extension(
+    "field_settings", _save_field_settings, _load_field_settings, order=20
+)
+register_session_extension(
+    "data_manager", _save_data_manager, _load_data_manager, order=30
+)
 register_session_extension("plots", _save_plots, _load_plots, order=40)
-register_session_extension("analysis_artifacts", _save_analysis_artifacts, _load_analysis_artifacts, order=50)
+register_session_extension(
+    "analysis_artifacts",
+    _save_analysis_artifacts,
+    _load_analysis_artifacts,
+    order=50,
+)

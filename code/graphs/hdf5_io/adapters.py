@@ -11,7 +11,7 @@ from ..core.curve_data import LineStyle
 from ..ui.customPlotWidget import PatchedPlotWidget, axisStyle
 from .models import (
     DataManager, FieldSettings, OscillogramData, ParameterData, Plot,
-    Session, SessionParameters,
+    Session, SessionParameters,SessionUIState
 )
 from .utils import string_to_qfont, string_to_color
 
@@ -111,50 +111,75 @@ class ProjectToHDF5Adapter:
         hm = getattr(core_session, "helper_manager", None)
         if hm is not None:
             helpers = [
-                {"helper_type": h.helper_type,
-                 "params": dict(h.params or {}),
-                 "visible": bool(h.visible)}
+                {
+                    "helper_type": h.helper_type,
+                    "params": dict(h.params or {}),
+                    "visible": bool(h.visible),
+                }
                 for h in hm.get_helpers()
             ]
+
+        field_settings = core_session.get_field_settings()
+
+        ui_state = SessionUIState()
+        ui_state.active_tab = getattr(core_session, "active_tab_index", 0)
+        if hasattr(core_session, "tree_class") and core_session.tree_class is not None:
+            ui_state.show_only_active_curves = (
+                core_session.tree_class.visibility_button.isChecked()
+            )
+
+        inspector = getattr(core_session, "inspector", None)
+        if inspector is not None:
+            if inspector.stack.currentWidget() is inspector.curve_inspector:
+                ui_state.inspector_current_widget = "curve"
+                ui_state.inspector_curve_tab = (
+                    inspector.curve_inspector.tabs.currentIndex()
+                )
+            else:
+                ui_state.inspector_current_widget = "no_selection"
+                ui_state.inspector_no_selection_tab = (
+                    inspector.no_selection_tabs.currentIndex()
+                )
+
+            tools_tab = getattr(inspector.curve_inspector, "tools_tab", None)
+            if tools_tab is not None:
+                ui_state.active_analysis_tool = (
+                    tools_tab.tool_combo.currentData() or ""
+                )
+
+        ui_state.main_inf_lines = [
+            _serialize_inf_line(line)
+            for line in core_session.graph_main.graphView.inf_lines
+        ]
+        if hasattr(core_session, "graph_wave"):
+            ui_state.osc_inf_lines = [
+                _serialize_inf_line(line)
+                for line in core_session.graph_wave.graphView.inf_lines
+            ]
+            if getattr(core_session.graph_wave, "graphView_loop", None) is not None:
+                ui_state.osc_loop_inf_lines = [
+                    _serialize_inf_line(line)
+                    for line in core_session.graph_wave.graphView_loop.inf_lines
+                ]
+
+        ui_state.applied_preset_name = getattr(
+            field_settings.graph_field, "applied_preset_name", "—"
+        )
+        ui_state.edit_all_axes = bool(
+            getattr(field_settings.graph_field, "edit_all_axes", True)
+        )
 
         session = Session(
             name=core_session.session_name,
             description=core_session.description,
             parameters=parameters,
-            field_settings=core_session.get_field_settings(),
+            field_settings=field_settings,
             data_manager=self._convert_data_manager(core_session.data_manager),
             plots=plots,
             analysis_artifacts=artifacts,
             helpers=helpers,
+            ui_state=ui_state,
         )
-
-        session.active_tab = getattr(core_session, "active_tab_index", 0)
-        if hasattr(core_session, "tree_class") and core_session.tree_class is not None:
-            session.show_only_active_curves = core_session.tree_class.visibility_button.isChecked()
-
-        inspector = getattr(core_session, "inspector", None)
-        if inspector is not None:
-            if inspector.stack.currentWidget() is inspector.curve_inspector:
-                session.inspector_current_widget = "curve"
-                session.inspector_curve_tab = inspector.curve_inspector.tabs.currentIndex()
-            else:
-                session.inspector_current_widget = "no_selection"
-                session.inspector_no_selection_tab = inspector.no_selection_tabs.currentIndex()
-            tools_tab = getattr(inspector.curve_inspector, "tools_tab", None)
-            if tools_tab is not None:
-                session.active_analysis_tool = tools_tab.tool_combo.currentData() or ""
-
-        session.main_inf_lines = [
-            _serialize_inf_line(l) for l in core_session.graph_main.graphView.inf_lines
-        ]
-        if hasattr(core_session, "graph_wave"):
-            session.osc_inf_lines = [
-                _serialize_inf_line(l) for l in core_session.graph_wave.graphView.inf_lines
-            ]
-            if getattr(core_session.graph_wave, "graphView_loop", None) is not None:
-                session.osc_loop_inf_lines = [
-                    _serialize_inf_line(l) for l in core_session.graph_wave.graphView_loop.inf_lines
-                ]
 
         return session
 
@@ -206,7 +231,8 @@ class HDF5ToProjectAdapter:
         dm = session.data_manager
         use_timestamp = dm is not None and "time" in dm.parameter_data
         session_id = core_session.start_new_session(
-            session_name=session.name, use_timestamps=use_timestamp,
+            session_name=session.name,
+            use_timestamps=use_timestamp,
             uuid=parameters.uuid,
         )
         if not session_id:
@@ -218,47 +244,67 @@ class HDF5ToProjectAdapter:
         self._convert_data_manager(core_manager, dm)
         core_manager.mark_stopped_silently()
 
-        # --- метаданные сессии ---
+        ui = session.ui_state
+
         sess.operator = parameters.operator
         sess.comment = parameters.comment
-        sess.active_tab_index = session.active_tab
+        sess.active_tab_index = ui.active_tab
 
-        # --- UI-состояние ---
-        sess.tabWidget.setCurrentIndex(session.active_tab)
+        sess.tabWidget.setCurrentIndex(ui.active_tab)
 
         if hasattr(sess, "tree_class") and sess.tree_class is not None:
-            sess.tree_class.visibility_button.setChecked(session.show_only_active_curves)
+            sess.tree_class.visibility_button.setChecked(
+                ui.show_only_active_curves
+            )
             sess.tree_class.update_visible()
 
         inspector = getattr(sess, "inspector", None)
         if inspector is not None:
-            if session.inspector_current_widget == "curve":
+            if ui.inspector_current_widget == "curve":
                 inspector.stack.setCurrentWidget(inspector.curve_inspector)
-                inspector.curve_inspector.tabs.setCurrentIndex(session.inspector_curve_tab)
+                inspector.curve_inspector.tabs.setCurrentIndex(
+                    ui.inspector_curve_tab
+                )
             else:
                 inspector.stack.setCurrentWidget(inspector.no_selection_tabs)
-                inspector.no_selection_tabs.setCurrentIndex(session.inspector_no_selection_tab)
-            if session.active_analysis_tool:
+                inspector.no_selection_tabs.setCurrentIndex(
+                    ui.inspector_no_selection_tab
+                )
+
+            if ui.active_analysis_tool:
                 tools_tab = inspector.curve_inspector.tools_tab
-                idx = tools_tab.tool_combo.findData(session.active_analysis_tool)
+                idx = tools_tab.tool_combo.findData(ui.active_analysis_tool)
                 if idx >= 0:
                     tools_tab.tool_combo.setCurrentIndex(idx)
 
-        # --- бесконечные линии ---
-        for desc in session.main_inf_lines:
+            graph_settings = getattr(inspector, "graph_settings", None)
+            if graph_settings is not None:
+                graph_settings.edit_all_axes_check.setChecked(
+                    bool(ui.edit_all_axes)
+                )
+
+        sess.graph_main.graphView.applied_preset_name = (
+            ui.applied_preset_name or "—"
+        )
+
+        for desc in ui.main_inf_lines:
             _create_inf_line_no_signal(desc, sess.graph_main.graphView)
+
         if hasattr(sess, "graph_wave"):
-            for desc in session.osc_inf_lines:
+            for desc in ui.osc_inf_lines:
                 _create_inf_line_no_signal(desc, sess.graph_wave.graphView)
             if getattr(sess.graph_wave, "graphView_loop", None) is not None:
-                for desc in session.osc_loop_inf_lines:
-                    _create_inf_line_no_signal(desc, sess.graph_wave.graphView_loop)
+                for desc in ui.osc_loop_inf_lines:
+                    _create_inf_line_no_signal(
+                        desc, sess.graph_wave.graphView_loop
+                    )
 
         if parameters.experiment_date is not None:
             sess.experiment_date = parameters.experiment_date
 
         selection_x = None
         selection_y1, selection_y2 = [], []
+
         for plot in (session.plots or {}).values():
             axis = plot.axis
             if axis not in (1, 2):
@@ -269,7 +315,9 @@ class HDF5ToProjectAdapter:
                 logger.warning("plot %r restore failed: %s", plot.name, exc)
                 continue
             curve.number_axis = axis
-            sess.graph_main.add_curve(curve, type_axis="left" if axis == 1 else "right")
+            sess.graph_main.add_curve(
+                curve, type_axis="left" if axis == 1 else "right"
+            )
             if not plot.is_draw:
                 curve.delete_curve_from_graph()
                 continue
@@ -306,33 +354,44 @@ class HDF5ToProjectAdapter:
         ctrl.curent_y_second_parameters = list(selection_y2)
         ctrl._enforce_invariants()
         ctrl._sync_view_from_model()
-        ctrl._last_emitted_state = (selection_x, tuple(selection_y1), tuple(selection_y2))
+        ctrl._last_emitted_state = (
+            selection_x,
+            tuple(selection_y1),
+            tuple(selection_y2),
+        )
 
         hm = getattr(sess, "helper_manager", None)
         if hm is not None:
             hm.remove_all()
-            for h in session.helpers or []:
-                ht = h.get("helper_type")
-                if not ht:
+            for helper in session.helpers or []:
+                helper_type = helper.get("helper_type")
+                if not helper_type:
                     continue
                 try:
-                    instance = hm.add_helper(ht, dict(h.get("params") or {}))
+                    instance = hm.add_helper(
+                        helper_type, dict(helper.get("params") or {})
+                    )
                 except (KeyError, ValueError, AttributeError) as exc:
-                    logger.warning("helper %r restore failed: %s", ht, exc)
+                    logger.warning("helper %r restore failed: %s", helper_type, exc)
                     continue
-                if instance is not None and not h.get("visible", True):
+                if instance is not None and not helper.get("visible", True):
                     hm.set_visible(instance.id, False)
 
         ctrl_analysis = getattr(sess, "analysis_controller", None)
         if ctrl_analysis is not None and session.analysis_artifacts:
             from graphs.analysis.commands import ApplyAnalysisCommand
-            for art in session.analysis_artifacts:
+            for artifact in session.analysis_artifacts:
                 try:
                     sess.undo_manager.push(
-                        ApplyAnalysisCommand(ctrl_analysis, art), execute=True)
+                        ApplyAnalysisCommand(ctrl_analysis, artifact),
+                        execute=True,
+                    )
                 except (KeyError, ValueError, AttributeError) as exc:
-                    logger.warning("artifact %r restore failed: %s",
-                                   getattr(art, "id", "?"), exc)
+                    logger.warning(
+                        "artifact %r restore failed: %s",
+                        getattr(artifact, "id", "?"),
+                        exc,
+                    )
 
     def _convert_data_manager(self, core_manager, model: DataManager) -> None:
         if model is None:

@@ -78,7 +78,6 @@ from graphs.analysis.registry import AnalysisToolRegistry
 from graphs.analysis.models import tr_analysis
 
 from graphs.analysis import AnalysisController
-from graphs.analysis.io.serializer import save_artifacts, load_artifacts
 
 logger = logging.getLogger(__name__)
 

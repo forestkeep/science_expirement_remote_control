@@ -7,6 +7,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
+
 class PlacementType(Enum):
     OVERLAY = "overlay"
     ATTACHED = "attached"
@@ -51,6 +52,7 @@ class OverlayPayload:
     x: Any = None
     y: Any = None
     style_hint: Dict[str, Any] = field(default_factory=dict)
+    extras: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -60,6 +62,7 @@ class AttachedPayload:
     y: Any = None
     y_label: str = ""
     panel_title: str = ""
+    extras: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -70,6 +73,7 @@ class DomainPayload:
     x_label: str = ""
     y_label: str = ""
     tab_title: str = ""
+    extras: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -77,6 +81,7 @@ class AnnotationPayload:
     kind: str = "annotation"
     points: List[Dict[str, Any]] = field(default_factory=list)
     label: str = ""
+    extras: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -86,6 +91,7 @@ class UncertaintyPayload:
     y_err: Any = None
     method: str = ""
     params: Dict[str, Any] = field(default_factory=dict)
+    extras: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -116,8 +122,9 @@ class AnalysisArtifact:
     preset_id: Optional[str] = None
     active_uncertainty_id: Optional[str] = None
     description: str = ""
-    handle: Any = None            # renderer handle (не сериализуется)
+    handle: Any = None
     leader_curve_id: Optional[str] = None
+    extras: Dict[str, Any] = field(default_factory=dict)
 
     def clone_with_new_id(self) -> "AnalysisArtifact":
         import copy
@@ -144,12 +151,9 @@ class AnalysisToolDescriptor:
 
 
 # ---------------------------------------------------------------------
-# Локализация. Русский текст — источник перевода для QApplication.translate.
-# При наличии .qm файла перевод подхватится автоматически, иначе вернётся
-# русский текст по умолчанию.
+# Локализация. Русский текст — источник перевода.
 # ---------------------------------------------------------------------
 _RU_TITLES = {
-    # --- Интерполяция (показываются первыми в выпадающем списке) ---
     "analysis.tool.fit.linear.title":        "Линейная интерполяция",
     "analysis.tool.fit.linear.tooltip":      "Прямая y = k·x + b",
     "analysis.tool.fit.polynomial.title":    "Полиномиальная интерполяция",
@@ -159,13 +163,11 @@ _RU_TITLES = {
     "analysis.tool.fit.lorentz.title":       "Лоренцева интерполяция",
     "analysis.tool.fit.lorentz.tooltip":     "Лоренцева кривая (пики)",
 
-    # --- Поиск ---
     "analysis.tool.search.peaks.title":      "Поиск максимумов",
     "analysis.tool.search.peaks.tooltip":    "Локальные максимумы",
     "analysis.tool.search.valleys.title":    "Поиск минимумов",
     "analysis.tool.search.valleys.tooltip":  "Локальные минимумы",
 
-    # --- Поиск: новые параметры ---
     "analysis.param.search.peaks.min_prominence":   "Мин. prominence пика",
     "analysis.param.search.valleys.min_prominence": "Мин. prominence впадины",
     "analysis.param.search.peaks.min_width":        "Мин. ширина пика",
@@ -217,7 +219,6 @@ _RU_TITLES = {
     "analysis.param.search.valleys.show_labels.tooltip":
         "Показывать x=…, y=… над точками (до 30 точек).",
 
-    # --- Поиск: tooltips ---
     "analysis.param.search.peaks.min_height.tooltip":
         "Минимальная высота пика в единицах Y. 0 — без ограничения.",
     "analysis.param.search.valleys.min_height.tooltip":
@@ -229,23 +230,19 @@ _RU_TITLES = {
         "Минимальное расстояние между соседними впадинами в точках индекса. "
         "0/1 — без ограничения.",
 
-    # --- Дифференциальные ---
     "analysis.tool.diff.derivative.title":   "Производная",
     "analysis.tool.diff.derivative.tooltip": "Численная производная dY/dX",
     "analysis.tool.diff.integral.title":     "Интеграл",
     "analysis.tool.diff.integral.tooltip":   "Численный интеграл ∫Y dX",
 
-    # --- Спектральные ---
     "analysis.tool.spectral.fft.title":      "Спектр (FFT)",
     "analysis.tool.spectral.fft.tooltip":    "Быстрое преобразование Фурье",
     "analysis.tool.spectral.autocorr.title": "Автокорреляция",
     "analysis.tool.spectral.autocorr.tooltip":"Автокорреляционная функция",
 
-    # --- Статистика ---
     "analysis.tool.uncertainty.estimate.title":   "Погрешности точек",
     "analysis.tool.uncertainty.estimate.tooltip": "Полосы погрешностей (error bars) на точках кривой",
 
-    # --- Параметры ---
     "analysis.param.fit.polynomial.degree":        "Степень полинома",
     "analysis.param.search.peaks.min_height":      "Мин. высота пика",
     "analysis.param.search.peaks.min_distance":    "Мин. расстояние между пиками",
@@ -257,7 +254,6 @@ _RU_TITLES = {
     "analysis.param.uncertainty.level":            "Уровень доверия",
     "analysis.param.uncertainty.iterations":       "Число итераций",
     "analysis.param.uncertainty.y_err":            "Y-погрешность (вручную)",
-    # Параметры: tooltips
     "analysis.param.fit.polynomial.degree.tooltip":
         "Степень аппроксимирующего полинома: 2 — парабола, 3 — кубическая, … до 6",
 
@@ -287,13 +283,13 @@ _RU_TITLES = {
     "analysis.param.uncertainty.y_err.tooltip":
         "Фиксированное значение Y-погрешности для метода «Вручную»",
 
-    # Подписи для выбора метода
     "analysis.param.uncertainty.method.std":       "Стандартное отклонение (СКО)",
     "analysis.param.uncertainty.method.sem":       "Стандартная ошибка среднего",
     "analysis.param.uncertainty.method.ci95":      "Доверительный интервал 95 %",
     "analysis.param.uncertainty.method.bootstrap": "Бутстрап",
     "analysis.param.uncertainty.method.manual":    "Вручную (фиксированная)",
 }
+
 
 def tr_analysis(key: str, default: str = "") -> str:
     """Локализовать строку. Источник — русский текст (fallback)."""
