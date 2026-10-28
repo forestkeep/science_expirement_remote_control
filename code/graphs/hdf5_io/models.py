@@ -154,6 +154,137 @@ class LinearData(BaseModel):
         )
 
 
+# ---------------------------------------------------------------------------
+# Вспомогательные модели
+# ---------------------------------------------------------------------------
+@dataclass
+class AxisStyle:
+    text_font: str = "Arial,13,-1,5,50,0,0,0,0,0"
+    tick_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
+    color: str = "#000000"
+
+    @classmethod
+    def from_qfont_color(cls, text_font, tick_font, color) -> "AxisStyle":
+        def f_to_s(f):
+            return f.toString() if hasattr(f, "toString") else str(f)
+
+        def c_to_s(c):
+            if hasattr(c, "name"):
+                return c.name()
+            if isinstance(c, (tuple, list)):
+                return f"#{int(c[0]):02x}{int(c[1]):02x}{int(c[2]):02x}"
+            return str(c)
+
+        return cls(f_to_s(text_font), f_to_s(tick_font), c_to_s(color))
+
+
+@dataclass
+class AxisSettings:
+    label: str = ""
+    is_style_customized: bool = False
+    is_inverted: bool = False
+    is_visible: bool = True
+    log_mode: bool = False
+    auto_range: bool = True
+    range: Optional[Tuple[float, float]] = None
+    custom_style: AxisStyle = field(default_factory=AxisStyle)
+    current_style_type: str = field(default="common", init=False)
+
+
+
+@dataclass
+class OscilloscopeFieldSettings(BaseModel):
+    title: str = ""
+    background_color: str = "#000000"
+    grid_enabled: bool = True
+    grid_color: str = "#FFFFFF"
+    grid_alpha: float = 0.5
+    common_axis_style: AxisStyle = field(default_factory=AxisStyle)
+    axes: Dict[str, AxisSettings] = field(default_factory=dict)
+    legend_enabled: bool = True
+    legend_text_color: str = "#F00B0B"
+    legend_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
+    antialiasing: bool = True
+
+    def __post_init__(self):
+        if not self.axes:
+            self.axes = {
+                "left": AxisSettings(label="Y"),
+                "bottom": AxisSettings(label="X"),
+                "right": AxisSettings(label="Y2", is_visible=False),
+            }
+
+@dataclass
+class GraphFieldSettings:
+    title: str = ""
+    background_color: str = "#070707"
+    grid_enabled: bool = True
+    x_grid_enabled: bool = True
+    y_grid_enabled: bool = True
+    grid_color: str = "#CCCCCC"
+    grid_alpha: float = 0.5
+    common_axis_style: AxisStyle = field(default_factory=AxisStyle)
+    axes: Dict[str, AxisSettings] = field(default_factory=dict)
+    legend_enabled: bool = True
+    legend_text_color: str = "#DD1010"
+    legend_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
+    legend_pos: Tuple[float, float] = (10.0, 10.0)
+    legend2_pos: Tuple[float, float] = (50.0, 10.0)
+    antialiasing: bool = True
+    is_second_axis_enabled: bool = False
+    is_multiple_selection_enabled: bool = False
+    is_multiple_y1_enabled: bool = False
+    is_multiple_y2_enabled: bool = False
+    applied_preset_name: str = "—"
+    edit_all_axes: bool = True            # ← НОВОЕ
+
+    def __post_init__(self):
+        if not self.axes:
+            self.axes = {
+                "left": AxisSettings(label="Y"),
+                "bottom": AxisSettings(label="X"),
+                "right": AxisSettings(label="Y2", is_visible=False),
+            }
+
+
+@dataclass
+class FieldSettings(BaseModel):
+    graph_field: GraphFieldSettings = field(default_factory=GraphFieldSettings)
+    oscilloscope_field: OscilloscopeFieldSettings = field(default_factory=OscilloscopeFieldSettings)
+
+
+@dataclass
+class OscillogramData(BaseModel):
+    device: str = ""
+    channel: str = ""
+    parameter: str = ""
+    time_values: np.ndarray = field(default_factory=lambda: np.empty(0))
+    data_values: np.ndarray = field(default_factory=lambda: np.empty(0))
+
+
+@dataclass
+class ParameterData(BaseModel):
+    device: str = ""
+    channel: str = ""
+    parameter: str = ""
+    time_values: np.ndarray = field(default_factory=lambda: np.empty(0))
+    data_values: np.ndarray = field(default_factory=lambda: np.empty(0))
+
+
+@dataclass
+class DataManager(BaseModel):
+    oscillogram_data: Dict[str, OscillogramData] = field(default_factory=dict)
+    parameter_data: Dict[str, ParameterData] = field(default_factory=dict)
+
+
+@dataclass
+class SessionParameters(BaseModel):
+    uuid: str = ""
+    experiment_date: Optional[datetime] = None
+    operator: str = ""
+    comment: str = ""
+
+
 @dataclass
 class Plot(BaseModel):
     status: str = "active"
@@ -169,10 +300,9 @@ class Plot(BaseModel):
     y_name: str = ""
     uncertainty_records: List[UncertaintyEntry] = field(default_factory=list)
     uncertainty_style: Dict[str, Any] = field(default_factory=dict)
+    formula: str = ""
+    source_curve_ids: List[str] = field(default_factory=list)
 
-    # ------------------------------------------------------------------
-    # core → model
-    # ------------------------------------------------------------------
     @classmethod
     def from_core(cls, core_plot) -> "Plot":
         if hasattr(core_plot, "ensure_stats_fresh"):
@@ -228,11 +358,10 @@ class Plot(BaseModel):
             y_name=rel.y_root_name,
             uncertainty_records=uncertainty_records,
             uncertainty_style=uncertainty_style,
+            formula=params.get("formula", ""),
+            source_curve_ids=params.get("source_curve_ids", []),
         )
 
-    # ------------------------------------------------------------------
-    # model → core
-    # ------------------------------------------------------------------
     def to_core(self, alias_manager, filter_instance):
         from graphs.core.curve_data import linearData, LineStyle
         from graphs.core.dataManager import measTimeData, relationData
@@ -296,11 +425,19 @@ class Plot(BaseModel):
         else:
             new_data.reset_name()
 
-        # tip: единый источник правды — LinearData.tip, но пишется и в
-        # tree_item.parameters, чтобы старый код видел его там же.
         new_data.tree_item.parameters["tip"] = ld.tip
         if ld.tree_item_data is not None:
             new_data.tree_item.parameters.update(ld.tree_item_data.parameters or {})
+
+        # Сохраняем формулу и source_curve_ids в параметрах дерева
+        if self.formula:
+            new_data.tree_item.parameters["formula"] = self.formula
+            block_name = QApplication.translate("GraphWindow", "Разное")
+            key = QApplication.translate("GraphWindow", "Формула")
+            if not new_data.tree_item.update_block_data(block_name, {key: self.formula}):
+                new_data.tree_item.add_new_block(block_name, {key: self.formula})
+        if self.source_curve_ids:
+            new_data.tree_item.parameters["source_curve_ids"] = self.source_curve_ids
 
         desc = (ld.tree_item_data.description if ld.tree_item_data else "") or ""
         if desc:
@@ -331,135 +468,6 @@ class Plot(BaseModel):
         return new_data
 
 
-# ---------------------------------------------------------------------------
-# Вспомогательные модели
-# ---------------------------------------------------------------------------
-@dataclass
-class AxisStyle:
-    text_font: str = "Arial,13,-1,5,50,0,0,0,0,0"
-    tick_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
-    color: str = "#000000"
-
-    @classmethod
-    def from_qfont_color(cls, text_font, tick_font, color) -> "AxisStyle":
-        def f_to_s(f):
-            return f.toString() if hasattr(f, "toString") else str(f)
-
-        def c_to_s(c):
-            if hasattr(c, "name"):
-                return c.name()
-            if isinstance(c, (tuple, list)):
-                return f"#{int(c[0]):02x}{int(c[1]):02x}{int(c[2]):02x}"
-            return str(c)
-
-        return cls(f_to_s(text_font), f_to_s(tick_font), c_to_s(color))
-
-
-@dataclass
-class AxisSettings:
-    label: str = ""
-    is_style_customized: bool = False
-    is_inverted: bool = False
-    is_visible: bool = True
-    log_mode: bool = False
-    auto_range: bool = True
-    range: Optional[Tuple[float, float]] = None
-    custom_style: AxisStyle = field(default_factory=AxisStyle)
-    current_style_type: str = field(default="common", init=False)
-
-
-@dataclass
-class GraphFieldSettings:
-    title: str = ""
-    background_color: str = "#070707"
-    grid_enabled: bool = True
-    x_grid_enabled: bool = True
-    y_grid_enabled: bool = True
-    grid_color: str = "#CCCCCC"
-    grid_alpha: float = 0.5
-    common_axis_style: AxisStyle = field(default_factory=AxisStyle)
-    axes: Dict[str, AxisSettings] = field(default_factory=dict)
-    legend_enabled: bool = True
-    legend_text_color: str = "#DD1010"
-    legend_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
-    legend_pos: Tuple[float, float] = (10.0, 10.0)
-    legend2_pos: Tuple[float, float] = (50.0, 10.0)
-    antialiasing: bool = True
-    is_second_axis_enabled: bool = False
-    is_multiple_selection_enabled: bool = False
-    is_multiple_y1_enabled: bool = False
-    is_multiple_y2_enabled: bool = False
-
-    def __post_init__(self):
-        if not self.axes:
-            self.axes = {
-                "left": AxisSettings(label="Y"),
-                "bottom": AxisSettings(label="X"),
-                "right": AxisSettings(label="Y2", is_visible=False),
-            }
-
-
-@dataclass
-class OscilloscopeFieldSettings(BaseModel):
-    title: str = ""
-    background_color: str = "#000000"
-    grid_enabled: bool = True
-    grid_color: str = "#FFFFFF"
-    grid_alpha: float = 0.5
-    common_axis_style: AxisStyle = field(default_factory=AxisStyle)
-    axes: Dict[str, AxisSettings] = field(default_factory=dict)
-    legend_enabled: bool = True
-    legend_text_color: str = "#F00B0B"
-    legend_font: str = "Arial,10,-1,5,50,0,0,0,0,0"
-    antialiasing: bool = True
-
-    def __post_init__(self):
-        if not self.axes:
-            self.axes = {
-                "left": AxisSettings(label="Y"),
-                "bottom": AxisSettings(label="X"),
-                "right": AxisSettings(label="Y2", is_visible=False),
-            }
-
-
-@dataclass
-class FieldSettings(BaseModel):
-    graph_field: GraphFieldSettings = field(default_factory=GraphFieldSettings)
-    oscilloscope_field: OscilloscopeFieldSettings = field(default_factory=OscilloscopeFieldSettings)
-
-
-@dataclass
-class OscillogramData(BaseModel):
-    device: str = ""
-    channel: str = ""
-    parameter: str = ""
-    time_values: np.ndarray = field(default_factory=lambda: np.empty(0))
-    data_values: np.ndarray = field(default_factory=lambda: np.empty(0))
-
-
-@dataclass
-class ParameterData(BaseModel):
-    device: str = ""
-    channel: str = ""
-    parameter: str = ""
-    time_values: np.ndarray = field(default_factory=lambda: np.empty(0))
-    data_values: np.ndarray = field(default_factory=lambda: np.empty(0))
-
-
-@dataclass
-class DataManager(BaseModel):
-    oscillogram_data: Dict[str, OscillogramData] = field(default_factory=dict)
-    parameter_data: Dict[str, ParameterData] = field(default_factory=dict)
-
-
-@dataclass
-class SessionParameters(BaseModel):
-    uuid: str = ""
-    experiment_date: Optional[datetime] = None
-    operator: str = ""
-    comment: str = ""
-
-
 @dataclass
 class Session(BaseModel):
     parameters: SessionParameters = field(default_factory=SessionParameters)
@@ -468,6 +476,15 @@ class Session(BaseModel):
     plots: Dict[str, Plot] = field(default_factory=dict)
     analysis_artifacts: list = field(default_factory=list)
     helpers: list = field(default_factory=list)
+    active_tab: int = 0
+    show_only_active_curves: bool = False
+    inspector_current_widget: str = "no_selection"
+    inspector_curve_tab: int = 0
+    inspector_no_selection_tab: int = 0
+    active_analysis_tool: str = ""
+    main_inf_lines: List[dict] = field(default_factory=list)
+    osc_inf_lines: List[dict] = field(default_factory=list)
+    osc_loop_inf_lines: List[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -477,3 +494,5 @@ class ProjectFile(BaseModel):
     schema_version: int = CURRENT_SCHEMA_VERSION
     sessions: Dict[str, Session] = field(default_factory=dict)
     aliases: Dict[str, str] = field(default_factory=dict)
+    session_order: List[str] = field(default_factory=list)
+    active_session_id: str = ""

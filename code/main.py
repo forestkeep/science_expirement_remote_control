@@ -113,7 +113,8 @@ if __name__ == "__main__":
     file_handler.setFormatter(logging.Formatter(FORMAT))
 
     logging.basicConfig(handlers=[file_handler, console],
-                        level=log_level_file)
+                        level=log_level_file,
+                        encoding="utf-8",)
 
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme(corner_shape="sharp")

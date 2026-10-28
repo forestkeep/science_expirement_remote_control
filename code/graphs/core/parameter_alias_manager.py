@@ -59,7 +59,7 @@ class ParameterAliasManager(QObject):
     
     def get_alias(self, original_name: str) -> str:
         """Возвращает псевдоним или оригинальное имя если псевдоним не задан"""
-        logger.info(f"get_alias {original_name=} alias = {self._original_to_alias.get(original_name, original_name)}")
+        logger.debug(f"get_alias {original_name=} alias = {self._original_to_alias.get(original_name, original_name)}")
         return self._original_to_alias.get(original_name, original_name)
     
     def get_original_name(self, alias_or_original: str) -> str:

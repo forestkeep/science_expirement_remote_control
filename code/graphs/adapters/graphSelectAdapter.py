@@ -221,6 +221,12 @@ class graphSelectAdapter:
                 QApplication.translate("GraphWindow", "Разное"), blocks
             )
 
+        # Сохраняем происхождение сгенерированной кривой в параметрах дерева
+        if formula:
+            curve.tree_item.parameters["formula"] = formula
+        if hasattr(data, "source_curve_ids"):
+            curve.tree_item.parameters["source_curve_ids"] = data.source_curve_ids
+
         session = self.main_class
         if session is None or not hasattr(session, "undo_manager"):
             return
@@ -231,7 +237,7 @@ class graphSelectAdapter:
         cmd = AddCurveCommand(session=session, root_name=data.root_name)
         if cmd.bind_after_creation():
             session.undo_manager.push(cmd)
-
+            
     def state_second_axis_changed(self, state):
         self.graph.set_second_axis(state)
 

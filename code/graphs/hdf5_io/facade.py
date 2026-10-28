@@ -42,7 +42,7 @@ class HDF5Facade:
             logger.info("project saved: %s", file_path)
 
     def load_project(self, file_path: str, core_project_class,
-                     load_strategy: Optional[BaseLoadStrategy] = None):
+                 load_strategy: Optional[BaseLoadStrategy] = None):
         strategy = load_strategy or self.default_load_strategy
         with HDF5File(file_path, "r", strategy) as h5:
             values, extras = h5.read_file_attributes()
@@ -53,6 +53,8 @@ class HDF5Facade:
                 creation_date=_parse_dt(values.get("creation_date")),
                 schema_version=int(values.get("schema_version", 0) or 0),
                 extras=extras,
+                session_order=list(values.get("session_order", []) or []),
+                active_session_id=values.get("active_session_id", "") or "",
             )
             if project_file.version_app != getattr(core_project_class, "version_app", None):
                 logger.warning(
@@ -61,8 +63,21 @@ class HDF5Facade:
                     getattr(core_project_class, "version_app", "?"),
                 )
             project_file.aliases = h5.read_aliases()
-            for session_id in h5.get_session_uuids():
-                if session_id == "aliases":
-                    continue
+
+            existing = set(h5.get_session_uuids())
+            existing.discard("aliases")
+
+            # 1) сначала — сессии в порядке сохранения;
+            # 2) затем — остальные (старые файлы без session_order).
+            session_ids: list[str] = []
+            for sid in project_file.session_order:
+                if sid in existing and sid not in session_ids:
+                    session_ids.append(sid)
+            for sid in existing:
+                if sid not in session_ids:
+                    session_ids.append(sid)
+
+            for session_id in session_ids:
                 project_file.sessions[session_id] = h5.read_session(session_id)
+
             return self.hdf5_to_core.convert(project_file, core_project_class)

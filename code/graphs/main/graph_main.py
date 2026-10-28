@@ -284,49 +284,11 @@ class manageGraph(QObject):
 
     def click_scene_main_graph(self, event):
         if event.double():
-            is_checked_axis = False
-            for item in self.graphView.scene().itemsNearEvent(event):
-                if item is self.graphView.plotItem.getAxis("left"):
-                    axis = self.graphView.plotItem.getAxis("left")
-                    self.focus_axis = axis
-                    shift_x = 50
-                    shift_y = 0
-                    is_checked_axis = True
-                    break
-                    
-                elif item is self.graphView.plotItem.getAxis("bottom"):
-                    axis = self.graphView.plotItem.getAxis("bottom")
-                    self.focus_axis = axis
-                    shift_x = 0
-                    shift_y = -50
-                    is_checked_axis = True
-                    break
-
-                elif item is self.graphView.plotItem.getAxis("right"):
-                    if event.scenePos().x() - event.pos().x() > self.graphView.size().width()*0.9:
-                        axis = self.graphView.plotItem.getAxis("right")
-                        self.focus_axis = axis
-                        shift_x = -100
-                        shift_y = 0
-                        is_checked_axis = True
-                        break
-
-            if is_checked_axis:
-                text = self.focus_axis.label.toPlainText()
-                self.axislabel_line_edit.setText(text)
-                self.axislabel_line_edit.setGeometry(int(event.scenePos().x() + shift_x), int(event.scenePos().y() + shift_y), 100, 20)
-                self.axislabel_line_edit.setFocus()
-                self.axislabel_line_edit.setVisible(True)
-            else:
-                self.focus_axis = None
-                self.axislabel_line_edit.setVisible(False)
-        else:
-            self.__callback_click_scene( self.__stack_curve.values() )
-
-            if self.axislabel_line_edit.isVisible():
-                self.axislabel_line_edit.setVisible(False)
-                self.focus_axis = None
-
+            return
+        self.__callback_click_scene(self.__stack_curve.values())
+        if self.axislabel_line_edit.isVisible():
+            self.axislabel_line_edit.setVisible(False)
+            self.focus_axis = None
         self.hide_second_line_grid()
 
     def get_curves(self):

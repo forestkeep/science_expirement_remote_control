@@ -39,6 +39,8 @@ def artifact_to_dict(artifact: AnalysisArtifact) -> Dict[str, Any]:
             arrays[attr] = getattr(payload, attr, "")
         if hasattr(payload, "points"):
             arrays["points"] = json.dumps(payload.points)
+        if hasattr(payload, "style_hint"):
+            arrays["style_hint"] = json.dumps(payload.style_hint)
     return {"attrs": d, "payload": arrays}
 
 
@@ -46,8 +48,15 @@ def dict_to_artifact(d: Dict[str, Any], payload_arrays: Dict[str, Any]) -> Analy
     from ..models import OverlayPayload, AttachedPayload, DomainPayload, AnnotationPayload, UncertaintyPayload
     kind = payload_arrays.get("kind", "overlay")
     if kind == "overlay":
+        style_hint = {}
+        if "style_hint" in payload_arrays:
+            try:
+                style_hint = json.loads(payload_arrays["style_hint"])
+            except (json.JSONDecodeError, TypeError):
+                pass
         payload = OverlayPayload(
-            x=payload_arrays.get("x", []), y=payload_arrays.get("y", []))
+            x=payload_arrays.get("x", []), y=payload_arrays.get("y", []),
+            style_hint=style_hint)
     elif kind == "attached":
         payload = AttachedPayload(
             x=payload_arrays.get("x", []), y=payload_arrays.get("y", []),

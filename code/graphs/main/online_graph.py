@@ -245,6 +245,11 @@ class GraphSession(QWidget):
         self._simple_mode = simple_mode
         self.selection_model = SelectionModel(parent=self)
 
+        self.description = None
+        self.operator = ""
+        self.comment = ""
+        self.active_tab_index = 0
+
         # per-session undo manager
         self.undo_manager = SessionUndoManager(parent=self)
         self.analysis_controller = AnalysisController(self, parent=self)
@@ -373,6 +378,8 @@ class GraphSession(QWidget):
         self.tabWidget.addTab(self.tab1, QApplication.translate("GraphWindow", "Графики"))
         self.tabWidget.addTab(self.tab2, QApplication.translate("GraphWindow", "Осциллограммы"))
 
+        self.tabWidget.currentChanged.connect(self._on_tab_changed)
+
         self.selector_osc = OscilloscopeSelector()
 
         self.graph_main = manageGraph(
@@ -438,6 +445,9 @@ class GraphSession(QWidget):
             gv.appearance_undo_callback = self._on_appearance_changed
 
         self.tabWidget.setCurrentIndex(0)
+
+    def _on_tab_changed(self, index: int) -> None:
+        self.active_tab_index = index
 
     def _on_tree_selection_changed(self) -> None:
         """Синхронизировать выделение дерева с SelectionModel."""
@@ -620,15 +630,21 @@ class GraphSession(QWidget):
         y2_mult = self.select_win.y2_group.multiple_check.isChecked()
         fs.graph_field.is_multiple_y1_enabled = y1_mult
         fs.graph_field.is_multiple_y2_enabled = y2_mult
-        # legacy: пишем Y1, чтобы старый софт видел хоть что-то осмысленное
         fs.graph_field.is_multiple_selection_enabled = y1_mult
+
+        inspector = getattr(self, "inspector", None)
+        if inspector is not None:
+            gs = getattr(inspector, "graph_settings", None)
+            if gs is not None:
+                fs.graph_field.edit_all_axes = bool(
+                    gs.edit_all_axes_check.isChecked()
+                )
         return fs
 
     def apply_field_settings(self, settings: FieldSettings) -> None:
         """Применяет настройки к UI."""
         adapter = HDF5ToProjectAdapter()
         adapter.apply_graph_settings(self.graph_main.graphView, settings)
-        # аналогично для осциллограмм, если нужно
         self.select_win.set_second_check_box(settings.graph_field.is_second_axis_enabled)
 
         gf = settings.graph_field
@@ -638,6 +654,14 @@ class GraphSession(QWidget):
         y2_mult = getattr(gf, 'is_multiple_y2_enabled', False)
         self.select_win.set_multiple_mode_y1(y1_mult)
         self.select_win.set_multiple_mode_y2(y2_mult)
+
+        inspector = getattr(self, "inspector", None)
+        if inspector is not None:
+            gs = getattr(inspector, "graph_settings", None)
+            if gs is not None:
+                gs.edit_all_axes_check.setChecked(
+                    bool(getattr(gf, "edit_all_axes", True))
+                )
 
 class running_exp_test(QWidget):
 

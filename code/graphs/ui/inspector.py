@@ -181,17 +181,30 @@ class GraphSettingsWidget(QWidget):
 
         scroll.setWidget(content)
         outer.addWidget(scroll)
+        self._sync_edit_all_axes_visibility(
+            self.edit_all_axes_check.isChecked()
+        )
 
     def _on_edit_all_axes_toggled(self, state):
         if self._suppress:
             return
         enabled = state != 0
-        self.axes_container.setVisible(not enabled)
-        self.common_axis_group.setVisible(enabled)
+        self._sync_edit_all_axes_visibility(enabled)
         if enabled:
             self._load_common_axis_style()
         else:
             self.update_settings()
+
+    def _sync_edit_all_axes_visibility(self, enabled: bool) -> None:
+        """Показать либо группу «Стиль всех осей», либо отдельные оси.
+
+        Идемпотентна — можно вызывать из init, из update_settings,
+        из восстановления проекта. Содержимое полей не перезагружает.
+        """
+        if self.axes_container is None or self.common_axis_group is None:
+            return
+        self.axes_container.setVisible(not enabled)
+        self.common_axis_group.setVisible(enabled)
 
     def _make_group(self, title: str, expanded: bool = True):
         box = CollapsibleGroupBox(title, expanded=expanded)
@@ -445,8 +458,21 @@ class GraphSettingsWidget(QWidget):
 
             if self.edit_all_axes_check.isChecked():
                 self._load_common_axis_style()
+
+            preset_name = getattr(settings, 'applied_preset_name', '—')
+            idx = self.preset_combo.findText(preset_name)
+            if idx >= 0:
+                self.preset_combo.blockSignals(True)
+                self.preset_combo.setCurrentIndex(idx)
+                self.preset_combo.blockSignals(False)
         finally:
             self._suppress = False
+
+        self._sync_edit_all_axes_visibility(
+            self.edit_all_axes_check.isChecked()
+        )
+        if self.edit_all_axes_check.isChecked():
+            self._load_common_axis_style()
 
     # ==================================================================
     # Мутации (каждая оборачивается в undo-команду и пишет в статус-бар)
@@ -1388,27 +1414,23 @@ class StyleTab(QWidget):
         _status(self.session, "Стиль кривой изменён", 2000)
 
     def apply_preset(self, name):
-        if self._suppress_apply:
+        if self._suppress or name == "—":
             return
-        if name not in PRESETS_LINE:
-            return
-        preset = PRESETS_LINE[name]
-        self._suppress_apply = True
-        try:
-            self._set_btn_color(self.color_btn, preset["color"])
-            self._set_btn_color(self.symbol_color_btn, preset["symbol_color"])
-            self._set_btn_color(self.fill_color_btn, preset["fill_color"])
-            self.width_spin.setValue(int(preset["line_width"]))
-            self.symbol_size.setValue(int(preset["symbol_size"]))
-            self.style_combo.setCurrentText(_LINE_STYLE_NAMES.get(preset["line_style"], "Solid"))
-            sym = preset["symbol"] if preset["symbol"] else "None"
-            idx = self.symbol_combo.findText(sym)
-            if idx >= 0:
-                self.symbol_combo.setCurrentIndex(idx)
-        finally:
-            self._suppress_apply = False
-        self.apply_style()
-        _status(self.session, f"Применён пресет: {name}", 2500)
+        for preset in getattr(self.graph_view, "preset_styles", []):
+            if preset.get("name") == name:
+                gv_main = self.graph_view
+                def mutate():
+                    for gv in self._all_graph_views():
+                        try:
+                            gv.apply_preset_style(preset)
+                            gv.applied_preset_name = name
+                        except Exception:
+                            logger.exception("apply_preset: %r", gv)
+                gv_main.apply_appearance_change(mutate)
+                self.graph_view.applied_preset_name = name
+                self.update_settings()
+                _status(self.session, f"Пресет применён: {name}", 2500)
+                return
 
     def choose_color(self):
         c = QColorDialog.getColor(QColor(self._color_from_btn(self.color_btn)))

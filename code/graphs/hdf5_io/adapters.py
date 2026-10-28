@@ -17,6 +17,49 @@ from .utils import string_to_qfont, string_to_color
 
 logger = logging.getLogger(__name__)
 
+def _serialize_inf_line(line):
+    pen = getattr(line, "pen", None)
+    label = getattr(line, "label", None)
+    label_text = getattr(label, "text", "") if label else ""
+    label_opts = dict(getattr(line, "labelOpts", {}) or {})
+    return {
+        "angle": getattr(line, "angle", 90),
+        "pos": line.value(),
+        "pen": {
+            "color": pen.color().name() if pen else "#ffffff",
+            "width": pen.width() if pen else 1,
+            "style": int(pen.style()) if pen else 0,
+        },
+        "label": label_text,
+        "labelOpts": label_opts,
+    }
+
+
+def _create_inf_line_no_signal(desc, graph_view):
+    from graphs.ui.custom_inf_line import RemovableInfiniteLine
+    import pyqtgraph as pg
+    from PyQt5 import QtCore
+    pen_desc = desc.get("pen", {})
+    pen = pg.mkPen(
+        color=pen_desc.get("color", "#ffffff"),
+        width=pen_desc.get("width", 1),
+        style=pen_desc.get("style", QtCore.Qt.SolidLine),
+    )
+    line = RemovableInfiniteLine(
+        movable=True,
+        angle=desc.get("angle", 90),
+        pen=pen,
+        hoverPen=(0, 200, 0),
+        label=desc.get("label", ""),
+        labelOpts=desc.get("labelOpts", {}),
+        pos=desc.get("pos", 0),
+    )
+    line.removeRequested.connect(graph_view.remove_inf_line)
+    graph_view.inf_lines.append(line)
+    graph_view.addItem(line)
+    return line
+
+
 
 class ProjectToHDF5Adapter:
     def convert_project(self, core_project) -> "ProjectFile":
@@ -32,6 +75,14 @@ class ProjectToHDF5Adapter:
         pf.aliases = core_project.alias_manager.get_all_aliases()
         for session_id, core_session in core_project.graph_sessions.items():
             pf.sessions[session_id] = self.convert_session(core_session)
+
+        if hasattr(core_project, "session_selector"):
+            pf.session_order = [s['id'] for s in core_project.session_selector.sessions]
+        active_widget = core_project.graphics_win.stack.currentWidget()
+        for sid, sess in core_project.graph_sessions.items():
+            if sess is active_widget:
+                pf.active_session_id = sid
+                break
         return pf
 
     def convert_session(self, core_session) -> Session:
@@ -66,7 +117,7 @@ class ProjectToHDF5Adapter:
                 for h in hm.get_helpers()
             ]
 
-        return Session(
+        session = Session(
             name=core_session.session_name,
             description=core_session.description,
             parameters=parameters,
@@ -76,6 +127,36 @@ class ProjectToHDF5Adapter:
             analysis_artifacts=artifacts,
             helpers=helpers,
         )
+
+        session.active_tab = getattr(core_session, "active_tab_index", 0)
+        if hasattr(core_session, "tree_class") and core_session.tree_class is not None:
+            session.show_only_active_curves = core_session.tree_class.visibility_button.isChecked()
+
+        inspector = getattr(core_session, "inspector", None)
+        if inspector is not None:
+            if inspector.stack.currentWidget() is inspector.curve_inspector:
+                session.inspector_current_widget = "curve"
+                session.inspector_curve_tab = inspector.curve_inspector.tabs.currentIndex()
+            else:
+                session.inspector_current_widget = "no_selection"
+                session.inspector_no_selection_tab = inspector.no_selection_tabs.currentIndex()
+            tools_tab = getattr(inspector.curve_inspector, "tools_tab", None)
+            if tools_tab is not None:
+                session.active_analysis_tool = tools_tab.tool_combo.currentData() or ""
+
+        session.main_inf_lines = [
+            _serialize_inf_line(l) for l in core_session.graph_main.graphView.inf_lines
+        ]
+        if hasattr(core_session, "graph_wave"):
+            session.osc_inf_lines = [
+                _serialize_inf_line(l) for l in core_session.graph_wave.graphView.inf_lines
+            ]
+            if getattr(core_session.graph_wave, "graphView_loop", None) is not None:
+                session.osc_loop_inf_lines = [
+                    _serialize_inf_line(l) for l in core_session.graph_wave.graphView_loop.inf_lines
+                ]
+
+        return session
 
     def _convert_data_manager(self, core_manager) -> DataManager:
         dm = DataManager()
@@ -104,6 +185,18 @@ class HDF5ToProjectAdapter:
         for _, session_model in project.sessions.items():
             self._convert_session(session_model, core_session)
 
+        if project.session_order:
+            by_id = {s['id']: s for s in core_session.session_selector.sessions}
+            ordered = [by_id[sid] for sid in project.session_order if sid in by_id]
+            for s in core_session.session_selector.sessions:
+                if s not in ordered:
+                    ordered.append(s)
+            core_session.session_selector.sessions = ordered
+            core_session.session_selector.update_view()
+
+        if project.active_session_id and project.active_session_id in core_session.graph_sessions:
+            core_session.change_session(project.active_session_id)
+
     def _convert_session(self, session: Session, core_session) -> None:
         parameters = session.parameters
         if parameters is None or not parameters.uuid:
@@ -124,6 +217,42 @@ class HDF5ToProjectAdapter:
         core_manager = sess.data_manager
         self._convert_data_manager(core_manager, dm)
         core_manager.mark_stopped_silently()
+
+        # --- метаданные сессии ---
+        sess.operator = parameters.operator
+        sess.comment = parameters.comment
+        sess.active_tab_index = session.active_tab
+
+        # --- UI-состояние ---
+        sess.tabWidget.setCurrentIndex(session.active_tab)
+
+        if hasattr(sess, "tree_class") and sess.tree_class is not None:
+            sess.tree_class.visibility_button.setChecked(session.show_only_active_curves)
+            sess.tree_class.update_visible()
+
+        inspector = getattr(sess, "inspector", None)
+        if inspector is not None:
+            if session.inspector_current_widget == "curve":
+                inspector.stack.setCurrentWidget(inspector.curve_inspector)
+                inspector.curve_inspector.tabs.setCurrentIndex(session.inspector_curve_tab)
+            else:
+                inspector.stack.setCurrentWidget(inspector.no_selection_tabs)
+                inspector.no_selection_tabs.setCurrentIndex(session.inspector_no_selection_tab)
+            if session.active_analysis_tool:
+                tools_tab = inspector.curve_inspector.tools_tab
+                idx = tools_tab.tool_combo.findData(session.active_analysis_tool)
+                if idx >= 0:
+                    tools_tab.tool_combo.setCurrentIndex(idx)
+
+        # --- бесконечные линии ---
+        for desc in session.main_inf_lines:
+            _create_inf_line_no_signal(desc, sess.graph_main.graphView)
+        if hasattr(sess, "graph_wave"):
+            for desc in session.osc_inf_lines:
+                _create_inf_line_no_signal(desc, sess.graph_wave.graphView)
+            if getattr(sess.graph_wave, "graphView_loop", None) is not None:
+                for desc in session.osc_loop_inf_lines:
+                    _create_inf_line_no_signal(desc, sess.graph_wave.graphView_loop)
 
         if parameters.experiment_date is not None:
             sess.experiment_date = parameters.experiment_date
@@ -157,7 +286,6 @@ class HDF5ToProjectAdapter:
                 if y_alias not in selection_y2:
                     selection_y2.append(y_alias)
 
-        # Согласовать field_settings с фактическим выделением
         fs = session.field_settings
         gf = fs.graph_field if fs is not None else None
         if gf is not None:
@@ -180,7 +308,6 @@ class HDF5ToProjectAdapter:
         ctrl._sync_view_from_model()
         ctrl._last_emitted_state = (selection_x, tuple(selection_y1), tuple(selection_y2))
 
-        # Хелперы
         hm = getattr(sess, "helper_manager", None)
         if hm is not None:
             hm.remove_all()
@@ -196,7 +323,6 @@ class HDF5ToProjectAdapter:
                 if instance is not None and not h.get("visible", True):
                     hm.set_visible(instance.id, False)
 
-        # Артефакты анализа
         ctrl_analysis = getattr(sess, "analysis_controller", None)
         if ctrl_analysis is not None and session.analysis_artifacts:
             from graphs.analysis.commands import ApplyAnalysisCommand
@@ -240,6 +366,8 @@ class HDF5ToProjectAdapter:
         if settings is None or settings.graph_field is None:
             return
         gs = settings.graph_field
+
+        graph_widget.applied_preset_name = getattr(gs, "applied_preset_name", "—")
 
         graph_widget.setTitle(gs.title or "")
         graph_widget.setCustomBackgroundColor(color=QtGui.QColor(gs.background_color))

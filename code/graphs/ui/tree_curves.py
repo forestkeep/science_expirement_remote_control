@@ -514,6 +514,9 @@ class treeWin(QWidget):
             y_meas = measTimeData(device="", ch="", param=self.buf_new_curve_name, par_val=result, num_or_time=all_x[0])
             buf_rel_data = relationData(x_meas, y_meas, is_gen=True)
 
+            buf_rel_data.source_curve_ids = list(choised_curves.keys())
+            buf_rel_data.formula = self.buf_formula
+
             self.curve_created.emit(buf_rel_data, self.buf_formula, self.buf_description)
 
             #если построение успешно, то очищаем буфер

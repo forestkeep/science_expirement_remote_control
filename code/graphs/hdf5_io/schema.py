@@ -116,18 +116,6 @@ UNCERTAINTY_ENTRY_SPEC = Schema(UncertaintyEntry, [
     Attr("y_err", "ndarray", None, is_dataset=True),
 ])
 
-PLOT_SPEC = Schema(Plot, [
-    Attr("name", "str", ""),
-    Attr("description", "str", ""),
-    Attr("status", "str", "active"),
-    Attr("is_draw", "bool", False),
-    Attr("is_gen", "bool", False),
-    Attr("is_curve_selected", "bool", False),
-    Attr("x_name", "str", ""),
-    Attr("y_name", "str", ""),
-    Attr("axis", "int_axis", 1),
-])
-
 SESSION_PARAMETERS_SPEC = Schema(SessionParameters, [
     Attr("name", "str", ""),
     Attr("description", "str", ""),
@@ -140,6 +128,29 @@ SESSION_PARAMETERS_SPEC = Schema(SessionParameters, [
 SESSION_SPEC = Schema(Session, [
     Attr("name", "str", ""),
     Attr("description", "str", ""),
+    Attr("active_tab", "int", 0),
+    Attr("show_only_active_curves", "bool", False),
+    Attr("inspector_current_widget", "str", "no_selection"),
+    Attr("inspector_curve_tab", "int", 0),
+    Attr("inspector_no_selection_tab", "int", 0),
+    Attr("active_analysis_tool", "str", ""),
+    Attr("main_inf_lines", "json", []),
+    Attr("osc_inf_lines", "json", []),
+    Attr("osc_loop_inf_lines", "json", []),
+])
+
+PLOT_SPEC = Schema(Plot, [
+    Attr("name", "str", ""),
+    Attr("description", "str", ""),
+    Attr("status", "str", "active"),
+    Attr("is_draw", "bool", False),
+    Attr("is_gen", "bool", False),
+    Attr("is_curve_selected", "bool", False),
+    Attr("x_name", "str", ""),
+    Attr("y_name", "str", ""),
+    Attr("axis", "int_axis", 1),
+    Attr("formula", "str", ""),
+    Attr("source_curve_ids", "json", []),
 ])
 
 PROJECT_FILE_SPEC = Schema(ProjectFile, [
@@ -148,6 +159,8 @@ PROJECT_FILE_SPEC = Schema(ProjectFile, [
     Attr("version_app", "str", "undefined"),
     Attr("creation_date", "datetime", None),
     Attr("schema_version", "int", 0),
+    Attr("session_order", "json", []),
+    Attr("active_session_id", "str", ""),
 ])
 
 # схема для группы «uncertainty» — там нет отдельной dataclass'ы, но
