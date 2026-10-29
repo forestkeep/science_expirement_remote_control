@@ -1,19 +1,11 @@
-"""Валидатор. Все правила берутся из constraints пресета журнала.
-
-Что проверяем:
-  - min_font_pt: минимальный размер шрифта в фигуре.
-  - min_line_pt: минимальная толщина линии.
-  - dpi_min: минимальный DPI.
-  - margin_mm: содержимое не выходит за поля.
-  - colorblind_safe: если требует журнал — предупредить о палитре.
-  - размер колонки: ширина/высота панелей не должна превышать колонку.
-  - unresolved data-bound overrides: warning.
-"""
+"""Валидатор. Все правила берутся из constraints пресета журнала."""
 from __future__ import annotations
 from typing import Dict, List
 
 from .rules import Issue, Report
 from ..core.sentinel import MISSING
+from ..presets.builtin import OKABE_ITO
+from ..renderers.colors import resolve_line_color
 
 
 class Validator:
@@ -36,25 +28,17 @@ class Validator:
         self._check_unresolved(report)
         return report
 
-    # --------------------------------------------------------------- helpers
-    def _issue(self, sev: str, code: str, msg: str,
-               panel_id=None, element_id=None) -> Issue:
+    def _issue(self, sev, code, msg, panel_id=None, element_id=None) -> Issue:
         return Issue(severity=sev, code=code, message=msg,
                      panel_id=panel_id, element_id=element_id)
 
-    # --------------------------------------------------------------- rules
-    def _check_font(self, report: Report):
+    def _check_font(self, report):
         min_pt = self.constraints.get("min_font_pt")
         if min_pt is None:
             return
-        sizes = [
-            ("figure.font.size", None),
-            ("panel.title_size", None),
-            ("annotation.text_size", None),
-            ("figure.axes.tick_size", None),
-            ("figure.axes.label_size", None),
-        ]
-        for path, pid in sizes:
+        for path in ("figure.font.size", "panel.title_size",
+                     "annotation.text_size", "figure.axes.tick_size",
+                     "figure.axes.label_size"):
             v = self.stack.resolve(path)
             if v is MISSING:
                 continue
@@ -62,12 +46,12 @@ class Validator:
                 if float(v) < float(min_pt):
                     report.warnings.append(self._issue(
                         "warning", "font.size",
-                        f"{path}={v} < min_font_pt={min_pt}", panel_id=pid,
+                        f"{path}={v} < min_font_pt={min_pt}",
                     ))
             except (TypeError, ValueError):
                 pass
 
-    def _check_line_width(self, report: Report):
+    def _check_line_width(self, report):
         min_pt = self.constraints.get("min_line_pt")
         if min_pt is None:
             return
@@ -86,7 +70,7 @@ class Validator:
             except (TypeError, ValueError):
                 pass
 
-    def _check_dpi(self, report: Report):
+    def _check_dpi(self, report):
         min_dpi = self.constraints.get("dpi_min")
         if min_dpi is None:
             return
@@ -99,7 +83,7 @@ class Validator:
                 f"figure.dpi={dpi} < dpi_min={min_dpi}",
             ))
 
-    def _check_margins(self, report: Report):
+    def _check_margins(self, report):
         margin = self.constraints.get("margin_mm")
         if margin is None:
             return
@@ -126,8 +110,7 @@ class Validator:
                     panel_id=p.id,
                 ))
 
-    def _check_column_size(self, report: Report):
-        # Проверить, что панели не выходят за пределы ширины колонки
+    def _check_column_size(self, report):
         col = getattr(self.preset, "column", {}) or {}
         cw = float(col.get("width_mm", 0.0))
         if cw <= 0:
@@ -140,20 +123,33 @@ class Validator:
                     panel_id=p.id,
                 ))
 
-    def _check_colorblind(self, report: Report):
+    def _check_colorblind(self, report):
         if not self.constraints.get("colorblind_safe"):
             return
-        palette = self.stack.resolve("color.palette")
-        if palette is MISSING or palette == "okabe_ito":
-            return
-        report.warnings.append(self._issue(
-            "warning", "palette.colorblind",
-            f"palette={palette} not colorblind-safe; use 'okabe_ito'",
-        ))
+        palette = set(OKABE_ITO)
+        for panel in self.spec.panels:
+            if not panel.visible:
+                continue
+            for idx, slot in enumerate(panel.curves):
+                if not slot.visible:
+                    continue
+                line_style = None
+                if slot.data_ref is not None and slot.data_ref.style is not None:
+                    line_style = slot.data_ref.style.line_style
+                try:
+                    color = resolve_line_color(slot, idx, panel, line_style)
+                except Exception:
+                    continue
+                if color not in palette:
+                    report.hints.append(self._issue(
+                        "hint", "palette.colorblind",
+                        f"панель {panel.id}, кривая #{idx + 1}: цвет {color} вне палитры журнала; "
+                        f"включите \"Использовать палитру пресета\" для соответствия",
+                        panel_id=panel.id,
+                        element_id=slot.data_ref.series_root_name if slot.data_ref else None,
+                    ))
 
-    def _check_overrides(self, report: Report):
-        # Если у пользователя есть override поверх отсутствующей аннотации —
-        # это unresolved, но мы не рендерим, только предупреждаем.
+    def _check_overrides(self, report):
         for ann_id, ov in self.spec.data_bound_overrides.items():
             if ov.resolved is False:
                 report.warnings.append(self._issue(
@@ -162,26 +158,22 @@ class Validator:
                     element_id=ann_id,
                 ))
 
-    def _check_unresolved(self, report: Report):
-        """Проверить, что все overrides ссылаются на существующие аннотации.
-
-        Если data_resolver доступен — спросим у него актуальные id для
-        каждой панели.
-        """
+    def _check_unresolved(self, report):
         if self.data_resolver is None:
             return
         present_ids = set()
         for p in self.spec.panels:
-            if p.data_ref is None:
-                continue
-            try:
-                data = self.data_resolver(p, p.data_ref)
-            except Exception:
-                continue
-            if not data:
-                continue
-            for ann in data.get("panel_annotations", []) or []:
-                present_ids.add(ann["id"])
+            for slot in p.curves:
+                if slot.data_ref is None or slot.data_ref.is_empty():
+                    continue
+                try:
+                    data = self.data_resolver(p, slot.data_ref)
+                except Exception:
+                    continue
+                if not data:
+                    continue
+                for ann in data.get("panel_annotations", []) or []:
+                    present_ids.add(ann["id"])
         for ann_id, ov in self.spec.data_bound_overrides.items():
             if ann_id not in present_ids and ov.resolved:
                 report.warnings.append(self._issue(

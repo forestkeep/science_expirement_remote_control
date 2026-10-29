@@ -83,8 +83,7 @@ def _resolve_dpi(stack: StyleStack) -> int:
     return 300 if dpi is MISSING else int(dpi)
 
 
-def _demo_provider(panel: PanelSpec, data_ref: DataRef) -> Optional[Dict[str, Any]]:
-    """Синтетические данные — для запуска примера без реальной сессии."""
+def _demo_provider(panel, data_ref):
     if data_ref is None or data_ref.is_empty():
         return None
     try:
@@ -95,8 +94,9 @@ def _demo_provider(panel: PanelSpec, data_ref: DataRef) -> Optional[Dict[str, An
     y = np.sin(x * (1 + seed * 0.5)) + 0.05 * np.cos(x * 20)
     return {
         "x": x, "y": y,
-        "curve_name": data_ref.series_root_name,
         "x_name": "t, s", "y_name": "U, V",
-        "saved_style": None,
-        "panel_annotations": [],
+        "curve_name": data_ref.series_root_name,
+        "style": None,
+        "stale": False,
+        "orphan": False,
     }

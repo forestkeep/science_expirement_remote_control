@@ -1,15 +1,11 @@
-"""FigureSpec — дерево Figure → Panels → Annotations + overrides.
-
-Не хранит data-bound аннотации целиком (только overrides). Данные
-резолвятся в момент рендера через DataResolver.
-"""
+"""FigureSpec — дерево Figure → Panels → Annotations + overrides."""
 from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from .annotations import DataBoundOverride, PresentationAnnotation
-from .panel import PanelSpec
+from .panel import CurveSlot, PanelSpec
 from .session_ref import DataRef
 from ..core.ids import IdGen
 from ..core.sentinel import MISSING
@@ -36,8 +32,8 @@ class FigureSpec:
     _panel_gen: IdGen = field(default_factory=lambda: IdGen("pn"), repr=False, compare=False)
     _annot_gen: IdGen = field(default_factory=lambda: IdGen("ann"), repr=False, compare=False)
 
-    # -------------------------------------------------------------- panels
     def add_panel(self, data_ref: Optional[DataRef] = None,
+                  curves: Optional[List[CurveSlot]] = None,
                   x_mm: float = 5.0, y_mm: float = 5.0,
                   w_mm: float = 40.0, h_mm: float = 30.0,
                   title: str = "", **kwargs) -> PanelSpec:
@@ -47,7 +43,11 @@ class FigureSpec:
             if pid not in existing:
                 break
         panel = PanelSpec(id=pid, x_mm=x_mm, y_mm=y_mm, w_mm=w_mm, h_mm=h_mm,
-                          data_ref=data_ref, title=title, **kwargs)
+                          title=title, **kwargs)
+        if curves is not None:
+            panel.curves = list(curves)
+        elif data_ref is not None:
+            panel.curves = [CurveSlot(data_ref=data_ref)]
         panel.z = len(self.panels) + 1
         self.panels.append(panel)
         return panel
@@ -67,10 +67,8 @@ class FigureSpec:
         return len(self.panels) != before
 
     def sorted_panels(self) -> List[PanelSpec]:
-        """Детерминированный z-order: сначала z, потом id (стабильно)."""
         return sorted(self.panels, key=lambda p: (int(p.z), p.id))
 
-    # ----------------------------------------------------------- annotations
     def add_presentation(self, kind: str = "text",
                          coordinate_space: str = "figure_mm",
                          panel_id: Optional[str] = None,
@@ -95,7 +93,6 @@ class FigureSpec:
                 return a
         return None
 
-    # ---------------------------------------------------------------- overrides
     def get_data_bound_override(self, ann_id: str) -> DataBoundOverride:
         ov = self.data_bound_overrides.get(ann_id)
         if ov is None:
@@ -103,10 +100,8 @@ class FigureSpec:
             self.data_bound_overrides[ann_id] = ov
         return ov
 
-    # ------------------------------------------------------------- serialization
     def to_dict(self) -> Dict[str, Any]:
-        from ..core.sentinel import MISSING as _M
-        fig_ov = {k: v for k, v in self.figure_overrides.items() if v is not _M}
+        fig_ov = {k: v for k, v in self.figure_overrides.items() if v is not MISSING}
         return {
             "schema_version": int(self.schema_version),
             "id": self.id,
@@ -114,12 +109,8 @@ class FigureSpec:
             "width_mm": float(self.width_mm),
             "height_mm": float(self.height_mm),
             "panels": [p.to_dict() for p in self.panels],
-            "presentation_annotations": [
-                a.to_dict() for a in self.presentation_annotations
-            ],
-            "data_bound_overrides": {
-                k: v.to_dict() for k, v in self.data_bound_overrides.items()
-            },
+            "presentation_annotations": [a.to_dict() for a in self.presentation_annotations],
+            "data_bound_overrides": {k: v.to_dict() for k, v in self.data_bound_overrides.items()},
             "figure_overrides": fig_ov,
             "style_profile_id": self.style_profile_id,
             "journal_preset_id": self.journal_preset_id,
@@ -150,7 +141,6 @@ class FigureSpec:
             for k, v in (d.get("data_bound_overrides") or {}).items()
         }
         spec.figure_overrides = dict(d.get("figure_overrides") or {})
-        # восстановить счётчики из занятых ID
         max_panel = 0
         for p in spec.panels:
             try:

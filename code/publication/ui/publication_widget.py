@@ -1,4 +1,4 @@
-"""Основной UI-компонент (без окна). Работает и в QMainWindow, и в QDockWidget."""
+"""Основной UI-компонент публикации."""
 from __future__ import annotations
 import json
 import logging
@@ -16,8 +16,8 @@ from ..bus.source_bus import SourceBus
 from ..bus.session_loader import SessionDataLoader
 from ..core.json_io import load_spec, save_spec
 from ..model.figure_model import FigureSpec
-from ..model.panel import PanelSpec
-from ..model.session_ref import DataRef
+from ..model.panel import PanelSpec, CurveSlot
+from ..model.session_ref import DataRef, DataSnapshot, StyleSnapshot
 from ..model.stylestack import StyleStack, list_overrides
 from ..presets.builtin import SAFE_DEFAULTS
 from ..presets.loader import (
@@ -29,9 +29,8 @@ from ..renderers.mpl_renderer import MatplotlibRenderer
 from ..validation.validator import Validator
 from ..export.exporter import Exporter, BackgroundExporter
 from .canvas import PublicationCanvas
-from .context_menus import build_canvas_menu, ImportSessionDialog
+from .context_menus import ImportSessionDialog
 from .inspector import FigureInspector
-from .style_editor import PresetEditorDialog
 from .tree_view import FigureTree
 
 logger = logging.getLogger(__name__)
@@ -48,7 +47,10 @@ class PublicationWidget(QWidget):
         self.preset = None
         self.style_stack = None
         self.renderer = MatplotlibRenderer()
-        self.data_loader = SessionDataLoader(session_controller)
+        self.data_loader = SessionDataLoader(
+            session_controller,
+            artifacts_provider=self._artifacts_for_curve,
+        )
         self.source_bus = SourceBus(session_controller, parent=self)
         self.source_bus.source_changed.connect(self._schedule_render)
         self.source_bus.artifacts_changed.connect(self._schedule_render)
@@ -70,7 +72,6 @@ class PublicationWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # --- top toolbar ---
         bar = QWidget()
         bar_layout = QHBoxLayout(bar)
         bar_layout.setContentsMargins(4, 4, 4, 4)
@@ -83,6 +84,16 @@ class PublicationWidget(QWidget):
         self._preset_combo.currentIndexChanged.connect(self._on_preset_changed)
         bar_layout.addWidget(QLabel("Пресет:"))
         bar_layout.addWidget(self._preset_combo)
+
+        self._add_panel_btn = QPushButton("+ Панель")
+        self._add_panel_btn.setToolTip("Добавить новую пустую панель")
+        self._add_panel_btn.clicked.connect(self._add_panel)
+        bar_layout.addWidget(self._add_panel_btn)
+
+        self._import_btn = QPushButton("Импорт в панель")
+        self._import_btn.setToolTip("Импортировать кривую сессии в выбранную (или новую) панель")
+        self._import_btn.clicked.connect(self._import_session_to_panel)
+        bar_layout.addWidget(self._import_btn)
 
         self._validate_btn = QPushButton("Валидировать")
         self._validate_btn.clicked.connect(self._on_validate)
@@ -105,7 +116,6 @@ class PublicationWidget(QWidget):
         bar_layout.addStretch()
         layout.addWidget(bar)
 
-        # --- main splitter: tree | canvas | inspector ---
         splitter = QSplitter(Qt.Horizontal)
         self._tree = FigureTree()
         self._tree.selection_changed.connect(self._on_tree_selection)
@@ -119,8 +129,11 @@ class PublicationWidget(QWidget):
         self._canvas.selection_cleared.connect(self._on_canvas_selection_cleared)
         self._canvas.annotation_selected.connect(self._on_annotation_selected_by_canvas)
         self._canvas.annotation_geometry_changed.connect(self._on_annotation_geometry_changed)
-        self._canvas.setContextMenuPolicy(Qt.CustomContextMenu)
-        self._canvas.customContextMenuRequested.connect(self._on_canvas_context_menu)
+        self._canvas.refresh_data_requested.connect(self._on_refresh_data_requested)
+        self._canvas.refresh_style_requested.connect(self._on_refresh_style_requested)
+        self._canvas.enable_live_requested.connect(self._on_enable_live_requested)
+        self._canvas.add_panel_requested.connect(self._add_panel)
+        self._canvas.delete_panel_requested.connect(self._delete_panel)
         splitter.addWidget(self._canvas)
 
         self._inspector = FigureInspector(self._get_stack)
@@ -135,12 +148,26 @@ class PublicationWidget(QWidget):
         splitter.setStretchFactor(1, 1)
         layout.addWidget(splitter, 1)
 
-        # --- bottom: validation status ---
         self._status_label = QLabel("—")
         self._status_label.setStyleSheet("padding: 4px; color: #333;")
         layout.addWidget(self._status_label)
 
-    # -------------------------------------------------------------- preset
+    # ---------------------------------------------------------------- helpers
+    def _artifacts_for_curve(self, curve):
+        sess = getattr(curve, "_publication_session", None)
+        if sess is None:
+            for s in (getattr(self.session_controller, "graph_sessions", {}) or {}).values():
+                gm = getattr(s, "graph_main", None)
+                if gm is not None and gm.get_curve(curve.rel_data.root_name) is curve:
+                    sess = s
+                    break
+        if sess is None:
+            return []
+        ac = getattr(sess, "analysis_controller", None)
+        if ac is None:
+            return []
+        return ac.get_artifacts_for_curve(curve.rel_data.root_name)
+
     def _load_preset(self, preset_id: str):
         self.preset = load_journal_preset(preset_id, self.preset_store)
         self.spec.journal_preset_id = self.preset.id
@@ -167,16 +194,14 @@ class PublicationWidget(QWidget):
     def _get_stack(self):
         return self.style_stack
 
-    # --------------------------------------------------------------- render
+    # ---------------------------------------------------------------- render
     def _schedule_render(self, *args, fast: bool = False):
-        """Дебаунс 400 мс; во время drag — 50 мс для отзывчивости."""
         self._debounce_timer.setInterval(50 if fast else self.DEBOUNCE_MS)
         self._debounce_timer.start()
 
     def _render_now(self):
         self._render_generation += 1
         gen = self._render_generation
-        # снапшот-проверка поколения после долгой операции
         if gen != self._render_generation:
             return
         try:
@@ -191,8 +216,14 @@ class PublicationWidget(QWidget):
         except Exception:
             logger.exception("Publication render failed")
             self._status_label.setText("Ошибка рендера. См. лог.")
-        # Обновить unresolved статусы в overrides
         self._update_override_resolution()
+        self._update_stale_badges()
+
+    def _update_stale_badges(self):
+        try:
+            self._canvas._widget.update()
+        except Exception:
+            logger.exception("update stale badges failed")
 
     def _resolve_data(self, panel, data_ref):
         return self.data_loader.resolve(panel, data_ref)
@@ -203,11 +234,12 @@ class PublicationWidget(QWidget):
     def _update_override_resolution(self):
         present = set()
         for p in self.spec.panels:
-            data = self.data_loader.resolve(p, p.data_ref)
-            if not data:
-                continue
-            for ann in data.get("panel_annotations", []) or []:
-                present.add(ann["id"])
+            for slot in p.curves:
+                data = self.data_loader.resolve(p, slot.data_ref)
+                if not data:
+                    continue
+                for ann in data.get("panel_annotations", []) or []:
+                    present.add(ann["id"])
         for ann_id, ov in self.spec.data_bound_overrides.items():
             if ann_id in present:
                 ov.resolved = True
@@ -216,32 +248,30 @@ class PublicationWidget(QWidget):
                 ov.resolved = False
                 ov.unresolved_reason = "annotation not present in source"
 
-    # --------------------------------------------------------------- tree/canvas
+    # ---------------------------------------------------------------- tree/canvas
     def _refresh_tree(self):
         self._tree.set_spec(self.spec)
 
     def _on_tree_selection(self, panel_id: str):
         self._current_panel_id = panel_id or None
+        self._canvas.set_selected_panel(panel_id or None)
         self._inspector.select_panel(panel_id)
-        if panel_id:
-            p = self.spec.find_panel(panel_id)
-            if p:
-                # подсветить на канвасе — простой способ: выбрать в дереве
-                pass
 
     def _on_annotation_selected(self, ann_id: str):
         self._current_panel_id = None
+        self._canvas.set_selected_panel(None)
         self._inspector.select_panel("")
 
     def _on_canvas_panel_selected(self, panel_id: str, additive: bool):
         self._current_panel_id = panel_id
+        self._canvas.set_selected_panel(panel_id)
         self._inspector.select_panel(panel_id)
 
     def _on_canvas_selection_cleared(self):
         self._current_panel_id = None
+        self._canvas.set_selected_panel(None)
         self._inspector.select_panel("")
 
-    #----------------------
     def _on_panel_geometry_changed(self, panel_id, x, y, w, h):
         p = self.spec.find_panel(panel_id)
         if p is None:
@@ -251,12 +281,9 @@ class PublicationWidget(QWidget):
         if self._current_panel_id == panel_id:
             self._inspector.select_panel(panel_id)
 
-    def _on_canvas_panel_selected(self, panel_id: str, additive: bool):
-        self._current_panel_id = panel_id
-        self._inspector.select_panel(panel_id)
-
     def _on_annotation_selected_by_canvas(self, ann_id: str):
         self._current_panel_id = None
+        self._canvas.set_selected_panel(None)
         self._inspector.select_panel("")
 
     def _on_annotation_geometry_changed(self, ann_id: str, coords: tuple):
@@ -269,35 +296,70 @@ class PublicationWidget(QWidget):
     def _on_inspector_geometry_changed(self, panel_id, x, y, w, h):
         self._on_panel_geometry_changed(panel_id, x, y, w, h)
 
-    #----------------------
+    # ---------------------------------------------------------------- refresh/delete
+    def _on_refresh_data_requested(self, panel_id: str):
+        panel = self.spec.find_panel(panel_id)
+        if panel is None:
+            return
+        for slot in panel.curves:
+            if slot.data_ref is None or slot.data_ref.is_empty():
+                continue
+            sess, curve = self.data_loader._get_curve(
+                slot.data_ref.session_id, slot.data_ref.series_root_name
+            )
+            if curve is None:
+                continue
+            slot.data_ref.data = DataSnapshot.take(curve)
+            slot.data_ref.stale_data = False
+        self._schedule_render()
 
-    def _on_inspector_geometry_changed(self, panel_id, x, y, w, h):
-        self._on_panel_geometry_changed(panel_id, x, y, w, h)
+    def _on_refresh_style_requested(self, panel_id: str):
+        panel = self.spec.find_panel(panel_id)
+        if panel is None:
+            return
+        for slot in panel.curves:
+            if slot.data_ref is None or slot.data_ref.is_empty():
+                continue
+            sess, curve = self.data_loader._get_curve(
+                slot.data_ref.session_id, slot.data_ref.series_root_name
+            )
+            if curve is None:
+                continue
+            slot.data_ref.style = StyleSnapshot.take(
+                curve, lambda c: self._artifacts_for_curve(c)
+            )
+            slot.data_ref.stale_style = False
+        self._schedule_render()
 
-    # --------------------------------------------------------------- context
-    def _on_canvas_context_menu(self, pos):
-        from PyQt5.QtGui import QCursor
-        menu = self._build_context_menu()
-        menu.exec_(self._canvas.mapToGlobal(pos))
+    def _on_enable_live_requested(self, panel_id: str):
+        panel = self.spec.find_panel(panel_id)
+        if panel is None:
+            return
+        for slot in panel.curves:
+            if slot.data_ref is not None:
+                slot.data_ref.refresh_policy = "live"
+                slot.data_ref.stale_data = False
+        self._schedule_render()
 
-    def _build_context_menu(self):
-        from PyQt5.QtWidgets import QMenu
-        menu = QMenu(self._canvas)
-        menu.addAction("Добавить панель", self._add_panel)
-        menu.addAction("Импортировать сессию в панель", self._import_session_to_panel)
-        pres = menu.addMenu("Presentation-элементы")
-        for kind in ("text", "panel_label", "scale_bar", "bracket", "arrow"):
-            pres.addAction(kind, lambda k=kind: self._add_presentation(k))
-        align = menu.addMenu("Выровнять")
-        for mode in ("left", "right", "top", "bottom", "center_h", "center_v"):
-            align.addAction(mode, lambda m=mode: self._align_panel(m))
-        menu.addSeparator()
-        menu.addAction("Z-order: на передний план", self._zorder_front)
-        menu.addAction("Z-order: на задний план", self._zorder_back)
-        return menu
+    def _delete_panel(self, panel_id: str):
+        if not panel_id:
+            return
+        removed = self.spec.remove_panel(panel_id)
+        if not removed:
+            return
+        if self._current_panel_id == panel_id:
+            self._current_panel_id = None
+            self._canvas.set_selected_panel(None)
+            self._inspector.select_panel("")
+        self._refresh_tree()
+        self._schedule_render()
 
+    # ---------------------------------------------------------------- add panel
     def _add_panel(self):
-        self.spec.add_panel(x_mm=5.0, y_mm=5.0, w_mm=40.0, h_mm=30.0)
+        panel = self.spec.add_panel(x_mm=5.0, y_mm=5.0, w_mm=40.0, h_mm=30.0)
+        self._current_panel_id = panel.id
+        self._canvas.set_selected_panel(panel.id)
+        self._inspector.select_panel(panel.id)
         self._refresh_tree()
         self._schedule_render()
 
@@ -308,94 +370,38 @@ class PublicationWidget(QWidget):
         ref = dialog.get_data_ref()
         if not ref.session_id or not ref.series_root_name:
             return
+        sess, curve = self.data_loader._get_curve(ref.session_id, ref.series_root_name)
+        if curve is not None:
+            ref.data = DataSnapshot.take(curve)
+            ref.style = StyleSnapshot.take(curve, lambda c: self._artifacts_for_curve(c))
+            ref.refresh_policy = "snapshot"
+        slot = CurveSlot(data_ref=ref, axis="y1", visible=True)
         if self._current_panel_id:
             panel = self.spec.find_panel(self._current_panel_id)
             if panel is not None:
-                panel.data_ref = ref
-        else:
-            self.spec.add_panel(data_ref=ref)
+                panel.curves.append(slot)
+                self._refresh_tree()
+                self._schedule_render()
+                return
+        # нет выделенной панели — создаём новую
+        panel = self.spec.add_panel(curves=[slot],
+                                    x_mm=5.0, y_mm=5.0, w_mm=40.0, h_mm=30.0)
+        self._current_panel_id = panel.id
+        self._canvas.set_selected_panel(panel.id)
+        self._inspector.select_panel(panel.id)
         self._refresh_tree()
         self._schedule_render()
 
-    def _add_presentation(self, kind: str):
-        panel_id = self._current_panel_id
-        if kind == "panel_label":
-            text = "a"
-            # авто-инкремент буквы
-            used = {a.text for a in self.spec.presentation_annotations
-                    if a.kind == "panel_label"}
-            for cand in "abcdefghijklmnopqrstuvwxyz":
-                if cand not in used:
-                    text = cand
-                    break
-        else:
-            text = {"text": "Текст", "scale_bar": "1 мм",
-                    "bracket": "*", "arrow": ""}.get(kind, "")
-        ann = self.spec.add_presentation(
-            kind=kind,
-            coordinate_space="panel_mm" if panel_id else "figure_mm",
-            panel_id=panel_id,
-            coords=(-10.0, -2.0) if kind == "panel_label" else (3.0, 3.0),
-            text=text,
-        )
-        self._refresh_tree()
-        self._schedule_render()
-
-    def _align_panel(self, mode: str):
-        if not self._current_panel_id:
-            return
-        p = self.spec.find_panel(self._current_panel_id)
-        if p is None:
-            return
-        margin = float(self.preset.constraints.get("margin_mm", 3.0))
-        if mode == "left":
-            p.x_mm = margin
-        elif mode == "right":
-            p.x_mm = self.spec.width_mm - p.w_mm - margin
-        elif mode == "top":
-            p.y_mm = margin
-        elif mode == "bottom":
-            p.y_mm = self.spec.height_mm - p.h_mm - margin
-        elif mode == "center_h":
-            p.x_mm = (self.spec.width_mm - p.w_mm) / 2.0
-        elif mode == "center_v":
-            p.y_mm = (self.spec.height_mm - p.h_mm) / 2.0
-        self._schedule_render()
-        self._inspector.select_panel(p.id)
-
-    def _zorder_front(self):
-        if not self._current_panel_id:
-            return
-        max_z = max((p.z for p in self.spec.panels), default=0)
-        p = self.spec.find_panel(self._current_panel_id)
-        if p is not None:
-            p.z = max_z + 1
-            self._schedule_render()
-
-    def _zorder_back(self):
-        if not self._current_panel_id:
-            return
-        min_z = min((p.z for p in self.spec.panels), default=0)
-        p = self.spec.find_panel(self._current_panel_id)
-        if p is not None:
-            p.z = min_z - 1
-            self._schedule_render()
-
-    # --------------------------------------------------------------- reload
+    # ---------------------------------------------------------------- reload/zoom
     def _on_reload(self):
-        """Перепривязать все сессии, сохраняя overrides и presentation-only."""
         self.source_bus.ensure_all_attached()
-        # Проверить, что серии всё ещё существуют; если нет — DataRef остаётся,
-        # но data_resolver вернёт None, и панель отрисуется "(no data)".
-        # Overrides data-bound остаются в spec.
         self._schedule_render()
         self._refresh_tree()
 
-    # --------------------------------------------------------------- zoom
     def _on_zoom_toggled(self, checked: bool):
         self._canvas.set_real_size(checked)
 
-    # --------------------------------------------------------------- validate/export
+    # ---------------------------------------------------------------- validate/export
     def _on_validate(self):
         report = Validator(self.spec, self.preset, self.style_stack,
                            self._resolve_data).validate()
@@ -407,7 +413,6 @@ class PublicationWidget(QWidget):
             self._status_label.setText(f"{n_warn} предупреждений")
         else:
             self._status_label.setText("Валидация пройдена")
-        self._last_report = report
         if report.all_issues:
             lines = []
             for issue in report.all_issues[:20]:
@@ -418,7 +423,6 @@ class PublicationWidget(QWidget):
             QMessageBox.information(self, "Валидация", "\n".join(lines))
 
     def _on_export(self):
-        # валидация перед экспортом
         report = Validator(self.spec, self.preset, self.style_stack,
                            self._resolve_data).validate()
         if not report.ok:
@@ -429,11 +433,9 @@ class PublicationWidget(QWidget):
                                        QMessageBox.Yes | QMessageBox.No)
             if ans != QMessageBox.Yes:
                 return
-
         dir_path = QFileDialog.getExistingDirectory(self, "Каталог пакета экспорта")
         if not dir_path:
             return
-        # проверить, что каталог пуст, либо создать подкаталог
         if os.listdir(dir_path):
             import time
             dir_path = os.path.join(dir_path, f"pub_export_{int(time.time())}")
@@ -444,24 +446,25 @@ class PublicationWidget(QWidget):
         )
         bg = BackgroundExporter(exporter, self)
         self._status_label.setText("Экспорт...")
-        bg.start(
-            dir_path, include_png=False,
-            on_finished=lambda p: self._on_export_done(p),
-            on_failed=lambda m: self._status_label.setText(f"Ошибка экспорта: {m}"),
-        )
+        bg.start(dir_path, include_png=False,
+                 on_finished=lambda p: self._on_export_done(p),
+                 on_failed=lambda m: self._status_label.setText(f"Ошибка экспорта: {m}"))
 
     def _on_export_done(self, path: str):
         self._status_label.setText(f"Экспорт завершён: {path}")
         QMessageBox.information(self, "Экспорт", f"Готово:\n{path}")
 
-    # --------------------------------------------------------------- file io
+    # ---------------------------------------------------------------- file io
     def save_to_file(self, path: str):
         save_spec(self.spec, path)
 
     def load_from_file(self, path: str):
         self.spec = load_spec(path)
+        self._current_panel_id = None
         self._canvas.set_spec(self.spec)
+        self._canvas.set_selected_panel(None)
         self._inspector.set_spec(self.spec)
+        self._inspector.select_panel("")
         self._load_preset(self.spec.journal_preset_id or "nature_double")
         self._refresh_tree()
         self._schedule_render()

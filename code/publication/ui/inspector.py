@@ -1,16 +1,19 @@
-"""Инспектор: геометрия в мм + стиль с индикатором «переопределено»."""
+"""Инспектор: геометрия, стиль, кривые, анализ, палитра."""
 from __future__ import annotations
 import logging
 from typing import Optional
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (
-    QComboBox, QDoubleSpinBox, QFormLayout, QHBoxLayout, QLabel,
-    QLineEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget,
+    QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QHBoxLayout,
+    QLabel, QLineEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget,
+    QListWidget, QListWidgetItem, QToolButton, QInputDialog,
 )
 
 from ..core.sentinel import MISSING
 from ..model.stylestack import set_override, clear_override
+from ..model.panel import CurveSlot
+from .context_menus import ImportSessionDialog
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +34,10 @@ STYLE_PATHS = [
 
 class FigureInspector(QWidget):
     geometry_changed = pyqtSignal(str, float, float, float, float)
-    style_override_changed = pyqtSignal(str, str, object)   # panel_id(может быть ""), path, value
+    style_override_changed = pyqtSignal(str, str, object)
     style_override_cleared = pyqtSignal(str, str)
     style_override_cleared_all = pyqtSignal(str)
+    refresh_requested = pyqtSignal(str)
 
     def __init__(self, stack_getter, parent=None):
         super().__init__(parent)
@@ -48,7 +52,6 @@ class FigureInspector(QWidget):
         body = QWidget()
         self._body_layout = QVBoxLayout(body)
 
-        # --- геометрия ---
         self._geom_label = QLabel("Панель не выбрана")
         self._geom_label.setStyleSheet("font-weight: bold;")
         self._body_layout.addWidget(self._geom_label)
@@ -64,7 +67,31 @@ class FigureInspector(QWidget):
             geom_form.addRow(label, w)
         self._body_layout.addLayout(geom_form)
 
-        # --- стиль ---
+        # --- Секция «Кривые» ---
+        self._curves_label = QLabel("Кривые")
+        self._curves_label.setStyleSheet("font-weight: bold; margin-top: 8px;")
+        self._body_layout.addWidget(self._curves_label)
+        self._curves_list = QListWidget()
+        self._curves_list.setMaximumHeight(160)
+        self._body_layout.addWidget(self._curves_list)
+        self._add_curve_btn = QPushButton("Добавить кривую")
+        self._add_curve_btn.clicked.connect(self._on_add_curve)
+        self._body_layout.addWidget(self._add_curve_btn)
+
+        # --- Цвет из источника ---
+        self._use_source_color = QCheckBox("Брать цвет из кривой-источника")
+        self._use_source_color.stateChanged.connect(self._on_use_source_color)
+        self._body_layout.addWidget(self._use_source_color)
+
+        # --- Секция «Анализ» ---
+        self._analysis_label = QLabel("Анализ")
+        self._analysis_label.setStyleSheet("font-weight: bold; margin-top: 8px;")
+        self._body_layout.addWidget(self._analysis_label)
+        self._analysis_form = QFormLayout()
+        self._analysis_widgets = {}
+        self._body_layout.addLayout(self._analysis_form)
+
+        # --- Стиль ---
         style_title = QLabel("Стиль")
         style_title.setStyleSheet("font-weight: bold; margin-top: 8px;")
         self._body_layout.addWidget(style_title)
@@ -104,7 +131,6 @@ class FigureInspector(QWidget):
         scroll.setWidget(body)
         outer.addWidget(scroll)
 
-    # ------------------------------------------------------------- helpers
     def _spin(self, lo, hi):
         s = QDoubleSpinBox()
         s.setDecimals(2)
@@ -119,6 +145,7 @@ class FigureInspector(QWidget):
         self._current_panel_id = panel_id or None
         if not panel_id:
             self._geom_label.setText("Панель не выбрана")
+            self._curves_list.clear()
             return
         p = self.spec.find_panel(panel_id)
         if p is None:
@@ -132,18 +159,159 @@ class FigureInspector(QWidget):
             self._h.setValue(p.h_mm)
         finally:
             self._suppress = False
+        self._use_source_color.blockSignals(True)
+        self._use_source_color.setChecked(p.use_source_color)
+        self._use_source_color.blockSignals(False)
+        self._rebuild_curves_list(p)
+        self._rebuild_analysis(p)
         self._refresh_style_indicators()
+
+    def _rebuild_curves_list(self, panel):
+        self._curves_list.clear()
+        for i, slot in enumerate(panel.curves):
+            ref = slot.data_ref
+            name = ref.series_root_name if ref is not None and not ref.is_empty() else "(пустая ссылка)"
+            w = QWidget()
+            hl = QHBoxLayout(w)
+            hl.setContentsMargins(2, 2, 2, 2)
+            vis = QCheckBox()
+            vis.setChecked(slot.visible)
+            vis.stateChanged.connect(lambda st, idx=i: self._on_slot_visibility(idx, st != 0))
+            axis_combo = QComboBox()
+            axis_combo.addItems(["Y1", "Y2"])
+            axis_combo.setCurrentText("Y2" if slot.axis == "y2" else "Y1")
+            axis_combo.currentIndexChanged.connect(
+                lambda _ix, idx=i, cb=axis_combo: self._on_slot_axis(idx, cb.currentText().lower())
+            )
+            label = QLineEdit(slot.legend_label)
+            label.editingFinished.connect(lambda idx=i, ww=label: self._on_slot_legend(idx, ww.text()))
+            delete_btn = QPushButton("×")
+            delete_btn.setFixedWidth(22)
+            delete_btn.clicked.connect(lambda _c=False, idx=i: self._on_slot_delete(idx))
+            hl.addWidget(vis)
+            hl.addWidget(axis_combo)
+            hl.addWidget(label, 1)
+            hl.addWidget(delete_btn)
+            item = QListWidgetItem(self._curves_list)
+            item.setSizeHint(w.sizeHint())
+            item.setText(name)
+            self._curves_list.addItem(item)
+            self._curves_list.setItemWidget(item, w)
+
+    def _rebuild_analysis(self, panel):
+        while self._analysis_form.count():
+            item = self._analysis_form.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.deleteLater()
+        self._analysis_widgets = {}
+        all_tool_ids = set()
+        for slot in panel.curves:
+            if slot.data_ref is None or slot.data_ref.style is None:
+                continue
+            for art in getattr(slot.data_ref.style, "artifacts", []) or []:
+                tid = getattr(art, "tool_id", "")
+                if tid:
+                    all_tool_ids.add(tid)
+        for tid in ("attached", "domain"):
+            all_tool_ids.add(tid)
+        for tool_id in sorted(all_tool_ids):
+            cb = QCheckBox(tool_id)
+            cb.setChecked(bool(panel.show_tools.get(tool_id, False)))
+            if tool_id in ("attached", "domain"):
+                cb.setToolTip("не переносится в текущей версии; включение не окажет эффекта")
+            cb.stateChanged.connect(
+                lambda st, t=tool_id: self._on_show_tool(t, st != 0)
+            )
+            self._analysis_form.addRow(cb)
+            self._analysis_widgets[tool_id] = cb
+
+    def _on_slot_visibility(self, index, visible):
+        p = self.spec.find_panel(self._current_panel_id)
+        if p is None or index >= len(p.curves):
+            return
+        p.curves[index].visible = visible
+        self.geometry_changed.emit(p.id, p.x_mm, p.y_mm, p.w_mm, p.h_mm)
+
+    def _on_slot_axis(self, index, axis):
+        p = self.spec.find_panel(self._current_panel_id)
+        if p is None or index >= len(p.curves):
+            return
+        p.curves[index].axis = axis
+        self.geometry_changed.emit(p.id, p.x_mm, p.y_mm, p.w_mm, p.h_mm)
+
+    def _on_slot_legend(self, index, text):
+        p = self.spec.find_panel(self._current_panel_id)
+        if p is None or index >= len(p.curves):
+            return
+        p.curves[index].legend_label = text
+        self.geometry_changed.emit(p.id, p.x_mm, p.y_mm, p.w_mm, p.h_mm)
+
+    def _on_slot_delete(self, index):
+        p = self.spec.find_panel(self._current_panel_id)
+        if p is None or index >= len(p.curves):
+            return
+        p.curves.pop(index)
+        self._rebuild_curves_list(p)
+        self.geometry_changed.emit(p.id, p.x_mm, p.y_mm, p.w_mm, p.h_mm)
+
+    def _on_add_curve(self):
+        p = self.spec.find_panel(self._current_panel_id)
+        if p is None:
+            return
+        ctrl = self._find_session_controller()
+        if ctrl is None:
+            return
+        dialog = ImportSessionDialog(ctrl, self)
+        if dialog.exec_() != __import__("PyQt5.QtWidgets", fromlist=["QDialog"]).QDialog.Accepted:
+            return
+        ref = dialog.get_data_ref()
+        if ref.is_empty():
+            return
+        sess = getattr(ctrl, "graph_sessions", {}).get(ref.session_id)
+        if sess is not None:
+            gm = getattr(sess, "graph_main", None)
+            if gm is not None:
+                curve = gm.get_curve(ref.series_root_name)
+                if curve is not None:
+                    from ..model.session_ref import DataSnapshot, StyleSnapshot
+                    ref.data = DataSnapshot.take(curve)
+                    ref.style = StyleSnapshot.take(curve, None)
+                    ref.refresh_policy = "snapshot"
+        p.curves.append(CurveSlot(data_ref=ref))
+        self._rebuild_curves_list(p)
+        self.geometry_changed.emit(p.id, p.x_mm, p.y_mm, p.w_mm, p.h_mm)
+
+    def _find_session_controller(self):
+        w = self.parent()
+        while w is not None:
+            if hasattr(w, "session_controller"):
+                return w.session_controller
+            w = w.parent()
+        return None
+
+    def _on_use_source_color(self, state):
+        p = self.spec.find_panel(self._current_panel_id)
+        if p is None:
+            return
+        p.use_source_color = state != 0
+        self.geometry_changed.emit(p.id, p.x_mm, p.y_mm, p.w_mm, p.h_mm)
+
+    def _on_show_tool(self, tool_id, value):
+        p = self.spec.find_panel(self._current_panel_id)
+        if p is None:
+            return
+        p.show_tools[tool_id] = value
+        self.geometry_changed.emit(p.id, p.x_mm, p.y_mm, p.w_mm, p.h_mm)
 
     def _refresh_style_indicators(self) -> None:
         stack = self._stack_getter()
         if stack is None:
             return
-        panel_id = self._current_panel_id or ""
         for path, (w, btn) in self._widgets.items():
             full_path = self._path_for_panel(path)
             resolved = stack.resolve(full_path)
-            # пресет-значение
-            default = stack.resolve(path) if not full_path.startswith("panel.") else stack.resolve(path)
+            default = stack.resolve(path)
             overridden = resolved is not MISSING and default is not MISSING and resolved != default
             if isinstance(w, QLineEdit):
                 w.setText("" if resolved is MISSING else str(resolved))
@@ -160,12 +328,10 @@ class FigureInspector(QWidget):
             btn.setStyleSheet("color: #c00; font-weight: bold;" if overridden else "")
 
     def _path_for_panel(self, base_path: str) -> str:
-        """Все per-panel overrides храним как 'panel.<id>.<key>'."""
         if self._current_panel_id:
             return f"panel.{self._current_panel_id}.{base_path}"
         return base_path
 
-    # ------------------------------------------------------------- callbacks
     def _on_geom(self, *_):
         if self._suppress or not self._current_panel_id:
             return
