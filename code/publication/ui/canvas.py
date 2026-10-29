@@ -30,6 +30,7 @@ class _CanvasInner(FigureCanvasQTAgg):
 
     add_panel_requested         = pyqtSignal()
     delete_panel_requested      = pyqtSignal(str)
+    apply_layout_requested      = pyqtSignal()
 
     def __init__(self, widget: "PublicationCanvas"):
         self._figure = Figure(figsize=(1, 1), dpi=100)
@@ -48,7 +49,7 @@ class _CanvasInner(FigureCanvasQTAgg):
 
         self._selected_panel_id: Optional[str] = None
 
-    # -------------------------------------------------- selection API
+    # -------------------------------------------------- selection
     def set_selected_panel(self, panel_id: Optional[str]) -> None:
         if self._selected_panel_id == panel_id:
             return
@@ -89,7 +90,7 @@ class _CanvasInner(FigureCanvasQTAgg):
         self._update_figure_size()
         self.draw_idle()
 
-    # -------------------------------------------------- coordinate map
+    # -------------------------------------------------- coordinates
     def _pos_to_mm(self, pos) -> Optional[Tuple[float, float]]:
         spec = self.widget.spec
         if spec is None:
@@ -109,7 +110,6 @@ class _CanvasInner(FigureCanvasQTAgg):
                 return panel
         return None
 
-    # -------------------------------------------------- annotation hit
     def _annotation_center_mm(self, ann) -> Optional[Tuple[float, float]]:
         spec = self.widget.spec
         if spec is None or len(ann.coords) < 2:
@@ -137,7 +137,7 @@ class _CanvasInner(FigureCanvasQTAgg):
                 return ann
         return None
 
-    # -------------------------------------------------- press
+    # -------------------------------------------------- mouse
     def mousePressEvent(self, event):
         if event.button() != Qt.LeftButton:
             super().mousePressEvent(event)
@@ -154,7 +154,6 @@ class _CanvasInner(FigureCanvasQTAgg):
 
         additive = bool(event.modifiers() & Qt.ShiftModifier)
 
-        # 1) аннотации (верхний слой)
         ann = self._hit_annotation(x_mm, y_mm)
         if ann is not None:
             self._drag_mode = "move_annotation"
@@ -165,7 +164,6 @@ class _CanvasInner(FigureCanvasQTAgg):
             event.accept()
             return
 
-        # 2) панели (по убыванию z)
         for panel in reversed(spec.sorted_panels()):
             edge = panel.edge_hit(x_mm, y_mm, tol_mm=2.0)
             if edge:
@@ -187,12 +185,10 @@ class _CanvasInner(FigureCanvasQTAgg):
                 event.accept()
                 return
 
-        # 3) мимо — снять выделение
         self.set_selected_panel(None)
         self.selection_cleared.emit()
         super().mousePressEvent(event)
 
-    # -------------------------------------------------- move
     def mouseMoveEvent(self, event):
         pt = self._pos_to_mm(event.localPos())
         if pt is None:
@@ -265,7 +261,7 @@ class _CanvasInner(FigureCanvasQTAgg):
         self._drag_ann_id = None
         super().mouseReleaseEvent(event)
 
-    # -------------------------------------------------- paint: selection + stale
+    # -------------------------------------------------- paint
     def paintEvent(self, event):
         super().paintEvent(event)
         spec = self.widget.spec
@@ -279,7 +275,21 @@ class _CanvasInner(FigureCanvasQTAgg):
             if w <= 0 or h <= 0:
                 return
 
-            # --- подсветка выбранной панели (под бейджами) ---
+            # Пустой холст — подсказка
+            if not spec.panels:
+                painter.setPen(QColor("#5a5a5a"))
+                f = QFont()
+                f.setPointSize(13)
+                painter.setFont(f)
+                painter.drawText(
+                    self.rect(),
+                    Qt.AlignCenter,
+                    "Холст пуст\n\n"
+                    "Правый клик → «Добавить панель» или «Разложить по шаблону»\n"
+                    "или кнопки «+ Панель» / «Раскладка» на панели инструментов",
+                )
+
+            # Подсветка выбранной панели
             if self._selected_panel_id:
                 for panel in spec.sorted_panels():
                     if panel.id != self._selected_panel_id:
@@ -293,7 +303,7 @@ class _CanvasInner(FigureCanvasQTAgg):
                     painter.drawRect(x_px, y_px, w_px, h_px)
                     break
 
-            # --- stale-бейджи ---
+            # Stale-бейджи
             for panel in spec.sorted_panels():
                 if not panel.visible:
                     continue
@@ -334,6 +344,11 @@ class _CanvasInner(FigureCanvasQTAgg):
 
         target_panel = self._hit_panel(x_mm, y_mm, tol_mm=2.0)
         menu = QMenu(self)
+
+        act_layout = QAction("Разложить по шаблону…", menu)
+        act_layout.triggered.connect(self.apply_layout_requested.emit)
+        menu.addAction(act_layout)
+        menu.addSeparator()
 
         if target_panel is None:
             act_add = QAction("Добавить панель", menu)
@@ -392,6 +407,7 @@ class PublicationCanvas(QWidget):
 
     add_panel_requested         = pyqtSignal()
     delete_panel_requested      = pyqtSignal(str)
+    apply_layout_requested      = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -411,6 +427,7 @@ class PublicationCanvas(QWidget):
         self._widget.enable_live_requested.connect(self.enable_live_requested)
         self._widget.add_panel_requested.connect(self.add_panel_requested)
         self._widget.delete_panel_requested.connect(self.delete_panel_requested)
+        self._widget.apply_layout_requested.connect(self.apply_layout_requested)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)

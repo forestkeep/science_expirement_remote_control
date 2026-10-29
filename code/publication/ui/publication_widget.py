@@ -31,6 +31,7 @@ from ..export.exporter import Exporter, BackgroundExporter
 from .canvas import PublicationCanvas
 from .context_menus import ImportSessionDialog
 from .inspector import FigureInspector
+from .template_chooser import TemplateChooserDialog
 from .tree_view import FigureTree
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,11 @@ class PublicationWidget(QWidget):
         self._add_panel_btn.clicked.connect(self._add_panel)
         bar_layout.addWidget(self._add_panel_btn)
 
+        self._layout_btn = QPushButton("Раскладка")
+        self._layout_btn.setToolTip("Разложить панели по шаблону")
+        self._layout_btn.clicked.connect(self._on_apply_layout)
+        bar_layout.addWidget(self._layout_btn)
+
         self._import_btn = QPushButton("Импорт в панель")
         self._import_btn.setToolTip("Импортировать кривую сессии в выбранную (или новую) панель")
         self._import_btn.clicked.connect(self._import_session_to_panel)
@@ -134,6 +140,7 @@ class PublicationWidget(QWidget):
         self._canvas.enable_live_requested.connect(self._on_enable_live_requested)
         self._canvas.add_panel_requested.connect(self._add_panel)
         self._canvas.delete_panel_requested.connect(self._delete_panel)
+        self._canvas.apply_layout_requested.connect(self._on_apply_layout)
         splitter.addWidget(self._canvas)
 
         self._inspector = FigureInspector(self._get_stack)
@@ -383,7 +390,6 @@ class PublicationWidget(QWidget):
                 self._refresh_tree()
                 self._schedule_render()
                 return
-        # нет выделенной панели — создаём новую
         panel = self.spec.add_panel(curves=[slot],
                                     x_mm=5.0, y_mm=5.0, w_mm=40.0, h_mm=30.0)
         self._current_panel_id = panel.id
@@ -391,6 +397,48 @@ class PublicationWidget(QWidget):
         self._inspector.select_panel(panel.id)
         self._refresh_tree()
         self._schedule_render()
+
+    # ---------------------------------------------------------------- layout template
+    def _on_apply_layout(self):
+        default_margin = float(
+            (self.preset.constraints or {}).get("margin_mm", 3.0)
+        )
+        default_gap = min(default_margin, 2.0)
+
+        dialog = TemplateChooserDialog(
+            self.spec,
+            default_margin=default_margin,
+            default_gap=default_gap,
+            parent=self,
+        )
+        if dialog.exec_() != QDialog.Accepted:
+            return
+
+        # После применения выбранная панель могла исчезнуть (replace) или
+        # сохраниться (reflow). Аккуратно синхронизируем состояние.
+        current = self._current_panel_id
+        still_exists = (
+            current is not None
+            and any(p.id == current for p in self.spec.panels)
+        )
+        if still_exists:
+            self._canvas.set_selected_panel(current)
+            self._inspector.select_panel(current)
+        else:
+            self._current_panel_id = None
+            self._canvas.set_selected_panel(None)
+            self._inspector.select_panel("")
+            if self.spec.panels:
+                first_id = self.spec.panels[0].id
+                self._current_panel_id = first_id
+                self._canvas.set_selected_panel(first_id)
+                self._inspector.select_panel(first_id)
+
+        self._refresh_tree()
+        self._schedule_render()
+        self._status_label.setText(
+            f"Шаблон применён: {len(self.spec.panels)} панелей."
+        )
 
     # ---------------------------------------------------------------- reload/zoom
     def _on_reload(self):
