@@ -124,8 +124,7 @@ class Custom3DAxis(gl.GLAxisItem):
 
 app = QtWidgets.QApplication([])
 fig1 = gl.GLViewWidget()
-#background_color = app.palette().color(QtGui.QPalette.white)
-#fig1.setBackgroundColor(background_color)
+
 
 n = 51
 y = np.linspace(-10, 10, n)

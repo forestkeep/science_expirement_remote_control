@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QAction, QFileDialog, QHBoxLayout, QLabel, QMainWindow,
     QMessageBox, QStackedWidget, QVBoxLayout, QWidget,
 )
-
+from common.theme import ThemeManager
 from app.sidebar import IconSidebar
 
 logger = logging.getLogger(__name__)
@@ -134,8 +134,20 @@ class UnifiedMainWindow(QMainWindow):
     def _build_menu_settings(self, mb):
         self.menu_settings = mb.addMenu("Настройки")
 
-        self.act_toggle_theme = QAction("Тёмная/светлая тема", self)
-        self.act_toggle_theme.triggered.connect(self._on_toggle_theme)
+        manager = ThemeManager.instance()
+        self._theme_actions = {}
+        current = manager.current
+        for theme in manager.available_themes():
+            act = QAction(manager.label(theme), self)
+            act.setCheckable(True)
+            act.setChecked(theme == current)
+            act.triggered.connect(
+                lambda _checked=False, t=theme: self._on_theme_selected(t)
+            )
+            self.menu_settings.addAction(act)
+            self._theme_actions[theme] = act
+
+        self.menu_settings.addSeparator()
 
         self.menu_language = self.menu_settings.addMenu("Язык")
         self.act_lang_ru = QAction("Русский", self)
@@ -145,8 +157,6 @@ class UnifiedMainWindow(QMainWindow):
         self.act_lang_en.triggered.connect(
             lambda: self._on_change_language("ENG"))
         self.menu_language.addActions([self.act_lang_ru, self.act_lang_en])
-
-        self.menu_settings.addAction(self.act_toggle_theme)
 
     def _build_menu_info(self, mb):
         self.menu_info = mb.addMenu("Инфо")
@@ -722,12 +732,15 @@ class UnifiedMainWindow(QMainWindow):
     
 
     # ======================================================= Настройки
-    def _on_toggle_theme(self):
-        import qdarktheme
-        cur = os.environ.get("APP_THEME", "dark")
-        new = "light" if cur == "dark" else "dark"
-        qdarktheme.setup_theme(new, corner_shape="sharp")
-        os.environ["APP_THEME"] = new
+    def _on_theme_selected(self, theme):
+        manager = ThemeManager.instance(self.settings_manager)
+        if not manager.apply(theme):
+            return
+        for name, act in self._theme_actions.items():
+            act.setChecked(name == theme)
+        self.statusBar().showMessage(
+            f"Тема: {manager.label(theme)}", 2000
+        )
 
     def _on_change_language(self, lang):
         if self.settings_manager:

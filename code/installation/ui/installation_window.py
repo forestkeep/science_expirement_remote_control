@@ -365,7 +365,7 @@ class Ui_Installation(QtWidgets.QMainWindow):
 
         icon = QtGui.QIcon()
 
-        if os.environ["APP_THEME"] == "dark":
+        if os.environ.get("APP_THEME", "dark") == "dark":
             pic = "picture/clean_light.png"
         else:
             pic = "picture/clean_dark.png"

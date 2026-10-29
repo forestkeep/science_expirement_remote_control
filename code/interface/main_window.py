@@ -13,7 +13,6 @@
 import logging
 import os
 
-import qdarktheme
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication
@@ -105,14 +104,22 @@ class Ui_MainWindow(object):
         self.menu.addAction(self.language_menu.menuAction())
 
         self.style_menu = QtWidgets.QMenu(self.menu)
+
         self.action_style_dark = QtWidgets.QAction(MainWindow)
-        self.action_style_dark.triggered.connect(lambda: self.change_style("dark"))
+        self.action_style_dark.triggered.connect(
+            lambda: self.change_style("dark"))
 
         self.action_style_light = QtWidgets.QAction(MainWindow)
-        self.action_style_light.triggered.connect(lambda: self.change_style("light"))
-        
+        self.action_style_light.triggered.connect(
+            lambda: self.change_style("light"))
+
+        self.action_style_auto = QtWidgets.QAction(MainWindow)
+        self.action_style_auto.triggered.connect(
+            lambda: self.change_style("auto"))
+
         self.style_menu.addAction(self.action_style_dark)
         self.style_menu.addAction(self.action_style_light)
+        self.style_menu.addAction(self.action_style_auto)
 
         self.menu.addAction(self.style_menu.menuAction())
 
@@ -126,12 +133,11 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
     def change_style(self, style):
-        if style == "dark":
-            qdarktheme.setup_theme("dark", corner_shape="sharp", custom_colors={"primary": "#00FFFF"})
-            os.environ["APP_THEME"] = "dark"
-        else:
-            qdarktheme.setup_theme("light", corner_shape="sharp", custom_colors={"primary": "#505050"})
-            os.environ["APP_THEME"] = "light"
+        from common.theme import ThemeManager
+        manager = ThemeManager.instance(
+            getattr(self.main_class, "settings_manager", None)
+        )
+        manager.apply(style)
 
     def change_language(self, language):
         self.main_class.change_language(language)
@@ -180,3 +186,4 @@ class Ui_MainWindow(object):
         self.action_style_dark.setText(_translate("main","Темная тема"))
 
         self.log_path_open.setText(_translate("main","Открыть лог файл"))
+        self.action_style_auto.setText(_translate("main", "Системная тема"))
