@@ -392,6 +392,19 @@ class GraphSettingsWidget(QWidget):
         self.legend_font_size_spin.valueChanged.connect(self.apply_legend_font)
         f.addRow("Размер шрифта:", self.legend_font_size_spin)
 
+        self.legend_symbol_size_spin = QSpinBox()
+        self.legend_symbol_size_spin.setRange(1, 40)
+        self.legend_symbol_size_spin.setValue(8)
+        self.legend_symbol_size_spin.setSuffix(" px")
+        self.legend_symbol_size_spin.setToolTip(
+            "Размер значка (маркера) в легенде, независимо от размера "
+            "маркера на самой кривой"
+        )
+        self.legend_symbol_size_spin.valueChanged.connect(
+            self.apply_legend_symbol_size
+        )
+        f.addRow("Размер значка:", self.legend_symbol_size_spin)
+
         return box
     
     
@@ -424,16 +437,24 @@ class GraphSettingsWidget(QWidget):
             except Exception:
                 self.grid_alpha.setValue(100)
 
-            if hasattr(self.graph_view, "get_legend_font"):
-                try:
-                    self._legend_font = self.graph_view.get_legend_font()
+            getter = getattr(self.graph_view, "get_legend_font", None)
+            if getter is not None:
+                font = getter()
+                if font is not None:
+                    self._legend_font = font
                     self.legend_font_size_spin.blockSignals(True)
-                    try:
-                        self.legend_font_size_spin.setValue(self._legend_font.pointSize())
-                    finally:
-                        self.legend_font_size_spin.blockSignals(False)
-                except Exception:
-                    pass
+                    self.legend_font_size_spin.setValue(font.pointSize())
+                    self.legend_font_size_spin.blockSignals(False)
+
+            size_raw = getattr(settings, "legend_symbol_size", 12)
+            size_val = (
+                size_raw
+                if isinstance(size_raw, int) and not isinstance(size_raw, bool)
+                else 12
+            )
+            self.legend_symbol_size_spin.blockSignals(True)
+            self.legend_symbol_size_spin.setValue(size_val)
+            self.legend_symbol_size_spin.blockSignals(False)
 
             for key, w in self._axis_widgets.items():
                 axis_model = settings.axes.get(key)
@@ -841,7 +862,22 @@ class GraphSettingsWidget(QWidget):
         new_font.setPointSize(int(self.legend_font_size_spin.value()))
         self._legend_font = new_font
         self._apply_font_to_all_views(new_font)
-        _status(self.session, "Шрифт легенды обновлён", 2000)
+        _status(self.session, "Шрифт легенды обновлён", 10000)
+
+    def apply_legend_symbol_size(self, *_):
+        if self._suppress:
+            return
+        size = int(self.legend_symbol_size_spin.value())
+        gv_main = self.graph_view
+
+        def mutate():
+            for gv in self._all_graph_views():
+                setter = getattr(gv, "set_legend_symbol_size", None)
+                if setter is not None:
+                    setter(size)
+
+        gv_main.apply_appearance_change(mutate)
+        _status(self.session, "Размер значка легенды обновлён", 10000)
 
     def choose_legend_font(self):
         font, ok = QFontDialog.getFont(self._legend_font, self, "Шрифт легенды")

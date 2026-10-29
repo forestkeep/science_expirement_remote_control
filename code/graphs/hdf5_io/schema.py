@@ -181,6 +181,7 @@ GRAPH_FIELD_SETTINGS_SPEC = Schema(GraphFieldSettings, [
     Attr("legend_enabled", "bool", True),
     Attr("legend_text_color", "color", "#DD1010"),
     Attr("legend_font", "str", "Arial,10,-1,5,50,0,0,0,0,0"),
+    Attr("legend_symbol_size", "int", 12),
     Attr("legend_pos", "tuple_float", (10.0, 10.0)),
     Attr("legend2_pos", "tuple_float", (50.0, 10.0)),
     Attr("antialiasing", "bool", True),

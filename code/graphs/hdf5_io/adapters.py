@@ -505,6 +505,10 @@ class HDF5ToProjectAdapter:
                 f = string_to_qfont(gs.legend_font)
                 if f is not None:
                     graph_widget.set_legend_font(f)
+            if hasattr(graph_widget, "set_legend_symbol_size"):
+                graph_widget.set_legend_symbol_size(
+                    int(getattr(gs, "legend_symbol_size", 12))
+                )
 
         graph_widget.setAntialiasing(gs.antialiasing)
         if hasattr(graph_widget, "style_changed"):

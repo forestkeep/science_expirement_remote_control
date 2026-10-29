@@ -118,6 +118,10 @@ def extract_plot_widget_settings(plot_widget) -> GraphFieldSettings:
             except Exception:
                 pass
 
+        settings.legend_symbol_size = int(
+            getattr(plot_widget, "legend_symbol_size", 8)
+        )
+
     settings.applied_preset_name = getattr(plot_widget, 'applied_preset_name', '—')
     return settings
 

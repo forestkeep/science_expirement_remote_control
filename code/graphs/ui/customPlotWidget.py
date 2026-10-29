@@ -1,11 +1,12 @@
 import pyqtgraph as pg
 
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSignal
 from dataclasses import dataclass
 from pyqtgraph import AxisItem
 import logging
 from graphs.ui.custom_inf_line import RemovableInfiniteLine
+from pyqtgraph.graphicsItems.ScatterPlotItem import drawSymbol
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,124 @@ class axisController():
     def reset_style(self):
         self.settings.is_style_customized = False
         self.__apply_style()
-    
+
+
+class LegendSample(pg.ItemSample):
+    """Сэмпл легенды с независимым от кривой размером значка.
+
+    ``legend_symbol_size`` — class-level, потому что pyqtgraph.LegendItem
+    требует в ``sampleType`` именно класс, а не фабрику. GUI однопоточный,
+    поэтому общий атрибут безопасен; актуальное значение выставляется в
+    ``PatchedPlotWidget._build_legend`` перед созданием легенды.
+    """
+
+    legend_symbol_size = 8
+    _symbol_size = 8
+
+    def __init__(self, item):
+        self._symbol_size = max(1, int(self.__class__.legend_symbol_size))
+        super().__init__(item)
+
+    def _metrics(self):
+        ss = self._symbol_size
+        width = max(20, int(round(ss * 2.5)))
+        height = max(10, ss + 4)
+        return width, height
+
+    def boundingRect(self):
+        w, h = self._metrics()
+        return QtCore.QRectF(0, 0, w, h)
+
+    def sizeHint(self, *args):
+        w, h = self._metrics()
+        return QtCore.QSizeF(w, h)
+
+    def set_symbol_size(self, size):
+        size = max(1, int(size))
+        if size == self._symbol_size:
+            return
+        self._symbol_size = size
+        self.prepareGeometryChange()
+        self.updateGeometry()
+        self.update()
+
+    def _is_hidden(self):
+        opts = getattr(self.item, 'opts', None)
+        if isinstance(opts, dict) and not opts.get('in_legend', True):
+            return True
+        return not self.item.isVisible()
+
+    def mouseClickEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            item = self.item
+            new_visible = not item.isVisible()
+            item.setVisible(new_visible)
+            if isinstance(getattr(item, 'opts', None), dict):
+                item.opts['in_legend'] = new_visible
+            self.update()
+            event.accept()
+            return
+        super().mouseClickEvent(event)
+
+    def paint(self, p, *args):
+        item = self.item
+        opts = getattr(item, 'opts', None)
+        if not isinstance(opts, dict):
+            return
+
+        is_scatter = isinstance(item, pg.ScatterPlotItem)
+        pen = opts.get('pen')
+        symbol = opts.get('symbol')
+
+        if is_scatter:
+            symbol_pen = opts.get('pen')
+            symbol_brush = opts.get('brush')
+        else:
+            symbol_pen = opts.get('symbolPen')
+            symbol_brush = opts.get('symbolBrush')
+
+        rect = self.boundingRect()
+        p.setRenderHint(QtGui.QPainter.Antialiasing)
+        y_mid = rect.center().y()
+
+        if pen is not None and not is_scatter:
+            p.setPen(pen)
+            p.drawLine(
+                QtCore.QPointF(rect.left() + 2, y_mid),
+                QtCore.QPointF(rect.right() - 2, y_mid),
+            )
+
+        if symbol:
+            sp = symbol_pen
+            if sp is None:
+                sp = pen if pen is not None else QtGui.QPen(QtGui.QColor('#ffffff'))
+            sb = symbol_brush if symbol_brush is not None else QtGui.QBrush()
+
+            p.save()
+            p.translate(rect.center())
+            if isinstance(symbol, str):
+                drawSymbol(p, symbol, self._symbol_size, sp, sb)
+            else:
+                p.setPen(sp)
+                p.setBrush(sb)
+                r = self._symbol_size / 2.0
+                p.drawEllipse(
+                    QtCore.QRectF(-r, -r, self._symbol_size, self._symbol_size)
+                )
+            p.restore()
+
+        if self._is_hidden():
+            p.save()
+            cross_pen = QtGui.QPen(QtGui.QColor(220, 70, 70))
+            cross_pen.setWidthF(max(1.0, self._symbol_size / 8.0))
+            p.setPen(cross_pen)
+            p.setBrush(QtCore.Qt.NoBrush)
+            r = rect.adjusted(1, 1, -1, -1)
+            p.drawLine(r.topLeft(), r.bottomRight())
+            p.drawLine(r.topRight(), r.bottomLeft())
+            p.restore()
+
+
 class PatchedPlotWidget(pg.PlotWidget):
     new_curve_selected = pyqtSignal()
     inf_line_added   = pyqtSignal(object)
@@ -142,6 +260,7 @@ class PatchedPlotWidget(pg.PlotWidget):
 
         self.legend = self._create_legend(offset=(10, 10))
         self.legend2 = self._create_legend(offset=(50, 10))
+        self.legend_symbol_size = 12
 
         self.setAntialiasing(False)
         self.scene().sigMouseMoved.connect(self.showToolTip)
@@ -214,19 +333,50 @@ class PatchedPlotWidget(pg.PlotWidget):
 
 
     def _build_legend(self, parent, entries, offset):
+        symbol_size = getattr(self, "legend_symbol_size", 8)
+        LegendSample.legend_symbol_size = symbol_size
+        sample_width = max(20, int(round(symbol_size * 2.5)))
         legend = pg.LegendItem(
             size=None,
             offset=offset,
             labelTextColor=self.legend_color,
             labelTextSize=f"{self.legend_font.pointSize()}pt",
+            sampleType=LegendSample,
         )
         if parent is not None:
             legend.setParentItem(parent)
+        layout = getattr(legend, "layout", None)
+        if layout is not None:
+            layout.setColumnFixedWidth(0, sample_width)
         for plot_item, name in entries:
             legend.addItem(plot_item, name)
         legend.updateSize()
         return legend
 
+
+    def set_legend_symbol_size(self, size):
+        size = max(1, int(size))
+        current = getattr(self, "legend_symbol_size", 8)
+        if size == current:
+            return
+        self.legend_symbol_size = size
+        LegendSample.legend_symbol_size = size
+
+        sample_width = max(20, int(round(size * 2.5)))
+        for legend in (getattr(self, "legend", None),
+                       getattr(self, "legend2", None)):
+            if legend is None:
+                continue
+            for entry in list(getattr(legend, "items", []) or []):
+                sample = entry[0] if isinstance(entry, (tuple, list)) else entry
+                if isinstance(sample, LegendSample):
+                    sample.set_symbol_size(size)
+            layout = getattr(legend, "layout", None)
+            if layout is not None:
+                layout.setColumnFixedWidth(0, sample_width)
+                layout.invalidate()
+            legend.updateSize()
+        self._emit_style_changed()
 
     def set_legend_font(self, font):
         """Сменить шрифт легенды, сохранив текущее положение.
