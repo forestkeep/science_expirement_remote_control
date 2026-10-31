@@ -1,8 +1,9 @@
+
 """Агрегатор загрузки: объединяет builtin + disk + PlotStyle (если есть)."""
 from __future__ import annotations
 from typing import Any, Dict, List
 
-from .builtin import SAFE_DEFAULTS, STYLE_PROFILE_DEFAULT
+from .builtin import SAFE_DEFAULTS, STYLE_PROFILE_DEFAULT, get_style_profile
 from .journal_preset import JournalPresetStore, JournalPreset
 from .plotstyle_adapter import PlotStyleAdapter
 from .style_profile import load_style_profile, load_lab_profile
@@ -40,6 +41,18 @@ def load_style_profile_auto(path: str = None) -> Dict[str, Any]:
         merged.update(ps)
         return merged
     return load_style_profile(path)
+
+
+def load_style_profile_by_id(profile_id: str) -> Dict[str, Any]:
+    """Загрузить style-profile по идентификатору из STYLE_PROFILES.
+
+    Используется тулбаром PublicationWidget: «Стиль: [Okabe-Ito ▾]».
+    Возвращает словарь defaults. Если id неизвестен — STYLE_PROFILE_DEFAULT.
+    """
+    profile = get_style_profile(profile_id)
+    if profile is None:
+        return dict(STYLE_PROFILE_DEFAULT)
+    return dict(profile.get("defaults", {}))
 
 
 def load_lab_profile_auto(path: str = None) -> Dict[str, Any]:

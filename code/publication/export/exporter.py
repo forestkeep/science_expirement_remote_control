@@ -4,11 +4,14 @@
 PNG/TIFF — по запросу с контролем DPI.
 """
 from __future__ import annotations
+
 import json
 import logging
 import os
 from dataclasses import asdict
 from typing import Any, Callable, Dict, Optional
+
+from PyQt5.QtCore import QObject, QThread, pyqtSignal
 
 from ..renderers.mpl_renderer import MatplotlibRenderer
 from ..core.sentinel import MISSING
@@ -17,6 +20,9 @@ from .provenance import Provenance
 logger = logging.getLogger(__name__)
 
 
+# =====================================================================
+# Экспорт фигуры (основной класс)
+# =====================================================================
 class Exporter:
     def __init__(
         self,
@@ -128,62 +134,162 @@ class Exporter:
         return result
 
 
-# --------------------------------------------------------------- background
-from PyQt5.QtCore import QObject, pyqtSignal
-
-
+# =====================================================================
+# Фоновый экспорт (QThread) с прогрессом и отменой
+# =====================================================================
 class _ExportWorker(QObject):
     finished = pyqtSignal(str)
     failed = pyqtSignal(str)
+    progress = pyqtSignal(int, str)
+    cancelled = pyqtSignal()
 
     def __init__(self, exporter: Exporter, dir_path: str, include_png: bool):
         super().__init__()
         self.exporter = exporter
         self.dir_path = dir_path
         self.include_png = include_png
+        self.cancel_requested = False
+
+    def _check_cancel(self) -> bool:
+        if self.cancel_requested:
+            self.cancelled.emit()
+            return True
+        return False
 
     def run(self):
         try:
-            result = self.exporter.export_package(self.dir_path, include_png=self.include_png)
-            self.finished.emit(result)
-        except Exception as e:
+            os.makedirs(self.dir_path, exist_ok=True)
+            steps = 8 + (1 if self.include_png else 0)
+            done = 0
+
+            def tick(msg: str):
+                nonlocal done
+                if self._check_cancel():
+                    raise RuntimeError("cancelled")
+                done += 1
+                self.progress.emit(int(done / steps * 100), msg)
+
+            pdf_path = os.path.join(self.dir_path, "figure.pdf")
+            self.exporter.export_pdf(pdf_path, dpi=int(self.exporter._dpi()))
+            tick("figure.pdf")
+
+            svg_path = os.path.join(self.dir_path, "figure.svg")
+            self.exporter.export_svg(svg_path)
+            tick("figure.svg")
+
+            if self.include_png:
+                png_path = os.path.join(self.dir_path, "figure.png")
+                self.exporter.export_png(png_path, dpi=int(self.exporter._dpi()))
+                tick("figure.png")
+
+            with open(os.path.join(self.dir_path, "spec.json"), "w", encoding="utf-8") as f:
+                json.dump(self.exporter.spec.to_dict(), f, ensure_ascii=False, indent=2, sort_keys=True)
+            tick("spec.json")
+
+            if self.exporter.preset is not None:
+                with open(os.path.join(self.dir_path, "preset.json"), "w", encoding="utf-8") as f:
+                    json.dump(self.exporter.preset.to_dict(), f, ensure_ascii=False, indent=2, sort_keys=True)
+            tick("preset.json")
+
+            resolved = self.exporter._collect_resolved_style()
+            with open(os.path.join(self.dir_path, "resolved_style.json"), "w", encoding="utf-8") as f:
+                json.dump(resolved, f, ensure_ascii=False, indent=2, sort_keys=True)
+            tick("resolved_style.json")
+
+            from ..model.stylestack import list_overrides
+            ov = list_overrides(self.exporter.spec)
+            with open(os.path.join(self.dir_path, "overrides.json"), "w", encoding="utf-8") as f:
+                json.dump(ov, f, ensure_ascii=False, indent=2, sort_keys=True)
+            tick("overrides.json")
+
+            prov = Provenance.collect(self.exporter.spec, self.exporter.preset, ov)
+            with open(os.path.join(self.dir_path, "provenance.json"), "w", encoding="utf-8") as f:
+                json.dump(prov.to_dict(), f, ensure_ascii=False, indent=2, sort_keys=True)
+            tick("provenance.json")
+
+            if self.exporter.validation_report is not None:
+                with open(os.path.join(self.dir_path, "validation.json"), "w", encoding="utf-8") as f:
+                    json.dump(self.exporter.validation_report.to_dict(), f, ensure_ascii=False, indent=2, sort_keys=True)
+            tick("validation.json")
+
+            self.finished.emit(self.dir_path)
+        except RuntimeError as exc:
+            if str(exc) == "cancelled":
+                return
+            self.failed.emit(str(exc))
+        except Exception as exc:
             logger.exception("Background export failed")
-            self.failed.emit(str(e))
+            self.failed.emit(str(exc))
 
 
-class BackgroundExporter:
-    """Тонкая обёртка: запускает экспорт в отдельном потоке."""
+class BackgroundExporter(QObject):
+    """Повторно запускаемый фоновый экспорт с прогрессом и отменой."""
+
+    progress = pyqtSignal(int, str)
+    finished = pyqtSignal(str)
+    failed = pyqtSignal(str)
+    cancelled = pyqtSignal()
 
     def __init__(self, exporter: Exporter, parent: QObject = None):
-        from PyQt5.QtCore import QThread
-        self._thread = QThread(parent)
-        self._worker = _ExportWorker(exporter, "", False)
-        self._worker.moveToThread(self._thread)
-        self._thread.started.connect(self._worker.run)
-        self._worker.finished.connect(self._on_finished)
-        self._worker.failed.connect(self._on_failed)
+        super().__init__(parent)
+        self.exporter = exporter
+        self._thread = None
+        self._worker = None
         self._finished_cb = None
         self._failed_cb = None
 
+    def is_running(self) -> bool:
+        return self._thread is not None and self._thread.isRunning()
+
     def start(self, dir_path: str, include_png: bool = False,
-              on_finished: Callable[[str], None] = None,
-              on_failed: Callable[[str], None] = None) -> None:
-        self._worker.dir_path = dir_path
-        self._worker.include_png = include_png
+              on_finished=None, on_failed=None) -> None:
+        if self.is_running():
+            logger.warning("BackgroundExporter.start: already running, ignored")
+            return
+
         self._finished_cb = on_finished
         self._failed_cb = on_failed
+
+        self._thread = QThread(self)
+        self._worker = _ExportWorker(self.exporter, dir_path, include_png)
+        self._worker.moveToThread(self._thread)
+
+        self._thread.started.connect(self._worker.run)
+        self._worker.progress.connect(self.progress)
+        self._worker.finished.connect(self._on_finished)
+        self._worker.failed.connect(self._on_failed)
+        self._worker.cancelled.connect(self._on_cancelled)
+
         self._thread.start()
 
+    def cancel(self) -> None:
+        if self._worker is not None:
+            self._worker.cancel_requested = True
+
+    def wait(self, timeout_ms: int = 60000) -> bool:
+        if self._thread is None:
+            return True
+        return self._thread.wait(timeout_ms)
+
+    def _cleanup(self) -> None:
+        if self._thread is not None:
+            self._thread.quit()
+            self._thread.wait(3000)
+        self._thread = None
+        self._worker = None
+
     def _on_finished(self, path: str):
-        self._thread.quit()
+        self._cleanup()
+        self.finished.emit(path)
         if self._finished_cb:
             self._finished_cb(path)
 
     def _on_failed(self, msg: str):
-        self._thread.quit()
+        self._cleanup()
+        self.failed.emit(msg)
         if self._failed_cb:
             self._failed_cb(msg)
 
-    def wait(self, timeout_ms: int = 60000) -> bool:
-        return self._thread.wait(timeout_ms)
-    
+    def _on_cancelled(self):
+        self._cleanup()
+        self.cancelled.emit()

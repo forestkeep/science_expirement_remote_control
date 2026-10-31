@@ -13,13 +13,20 @@ def resolve_line_color(slot, index: int, panel, line_style) -> str:
     """Вернуть цвет линии по правилам контракта.
 
     Приоритет:
-      1) panel.use_source_color=True и line_style.color задан → цвет из источника;
-      2) иначе — OKABE_ITO[index % len].
+      1) явный override слота ``line.color``;
+      2) panel.use_source_color=True и line_style.color задан → цвет из источника;
+      3) OKABE_ITO[index % len].
     """
+    overrides = getattr(slot, "style_overrides", None) or {}
+    override_color = overrides.get("line.color")
+    if override_color:
+        return str(override_color)
+
     if getattr(panel, "use_source_color", True) and line_style is not None:
         color = getattr(line_style, "color", None)
         if color:
             return str(color)
+
     return OKABE_ITO[index % len(OKABE_ITO)]
 
 

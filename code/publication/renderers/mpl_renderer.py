@@ -26,6 +26,27 @@ matplotlib.rcParams["svg.fonttype"] = "none"
 matplotlib.rcParams["axes.unicode_minus"] = False
 
 
+_MPL_LINESTYLES = {
+    "Solid": "-",
+    "Dash": (0, (4, 2)),
+    "Dot": (0, (1, 3)),
+    "DashDot": (0, (4, 2, 1, 2)),
+    "DashDotDot": (0, (4, 2, 1, 2, 1, 2)),
+}
+
+
+def _style_name_to_mpl(name: str):
+    """Строковое имя стиля из override → linestyle для Matplotlib."""
+    if not name:
+        return "-"
+    return _MPL_LINESTYLES.get(str(name), "-")
+
+
+def _slot_overrides(slot) -> dict:
+    """Безопасно вернуть style_overrides слота."""
+    return getattr(slot, "style_overrides", None) or {}
+
+
 def _resolve_font_family(name: str) -> str:
     try:
         font_manager.findfont(name, fallback_to_default=False)
@@ -134,21 +155,38 @@ class MatplotlibRenderer(RendererAdapter):
                 spine.set_linewidth(float(axes_lw))
             ax2.tick_params(labelsize=float(tick_size), width=float(axes_lw))
 
+        # axis visibility overrides
+        ax.get_xaxis().set_visible(
+            bool(panel.style_overrides.get("axis.x.visible", True))
+        )
+        ax.get_yaxis().set_visible(
+            bool(panel.style_overrides.get("axis.y1.visible", True))
+        )
+        if ax2 is not None:
+            ax2.get_yaxis().set_visible(
+                bool(panel.style_overrides.get("axis.y2.visible", panel.y2_visible))
+            )
+
         any_curve = False
         for idx, slot in enumerate(panel.curves):
             if not slot.visible:
                 continue
             data = data_resolver(panel, slot.data_ref)
             if data is None:
-                logger.warning("_render_panel: пустые данные для панели %s, слот %d", panel.id, idx)
+                logger.warning(
+                    "_render_panel: пустые данные для панели %s, слот %d",
+                    panel.id, idx,
+                )
                 continue
             target_ax = ax if slot.axis == "y1" else (ax2 or ax)
             style_snap = data.get("style")
             line_style = getattr(style_snap, "line_style", None) if style_snap else None
             if data.get("orphan"):
-                target_ax.text(0.5, 0.5, "(источник не найден)",
-                               ha="center", va="center", transform=target_ax.transAxes,
-                               fontsize=float(label_size), color="#a02020")
+                target_ax.text(
+                    0.5, 0.5, "(источник не найден)",
+                    ha="center", va="center", transform=target_ax.transAxes,
+                    fontsize=float(label_size), color="#a02020",
+                )
                 any_curve = True
                 continue
             self._plot_curve(target_ax, slot, data, idx, panel, style_resolver, line_style)
@@ -158,9 +196,11 @@ class MatplotlibRenderer(RendererAdapter):
             any_curve = True
 
         if not any_curve:
-            ax.text(0.5, 0.5, "(no data)", ha="center", va="center",
-                    transform=ax.transAxes, fontsize=float(label_size),
-                    color="#999999")
+            ax.text(
+                0.5, 0.5, "(no data)", ha="center", va="center",
+                transform=ax.transAxes, fontsize=float(label_size),
+                color="#999999",
+            )
 
         if panel.x_range:
             ax.set_xlim(*panel.x_range)
@@ -198,8 +238,10 @@ class MatplotlibRenderer(RendererAdapter):
                     handles += h2
                     labels += l2
                 if handles:
-                    ax.legend(handles, labels, fontsize=float(legend_fs),
-                              frameon=False, loc="best")
+                    ax.legend(
+                        handles, labels, fontsize=float(legend_fs),
+                        frameon=False, loc="best",
+                    )
             except Exception:
                 logger.exception("legend add failed")
 
@@ -214,30 +256,94 @@ class MatplotlibRenderer(RendererAdapter):
     # ------------------------------------------------------------ curve
     def _plot_curve(self, target_ax, slot, data, index, panel, style_resolver, line_style):
         from ..contract import get_attr as _get
-        try:
-            color = resolve_line_color(slot, index, panel, line_style)
-        except Exception:
-            color = _get("line.color").fallback
+
+        overrides = _slot_overrides(slot)
+
+        # --- цвет ---
+        color_override = overrides.get("line.color", MISSING)
+        if color_override is not MISSING and color_override not in (None, ""):
+            color = str(color_override)
+        else:
+            try:
+                color = resolve_line_color(slot, index, panel, line_style)
+            except Exception:
+                color = _get("line.color").fallback
+
+        # --- толщина ---
         lw_default = style_resolver("figure.line.width")
         if lw_default is MISSING:
             lw_default = 1.0
-        lw = line_width_pt(line_style, float(lw_default))
-        ls = qt_style_to_mpl(getattr(line_style, "line_style", None) if line_style else None)
-        marker = getattr(line_style, "symbol", None) if line_style else None
-        ms = float(getattr(line_style, "symbol_size", _get("marker.size").fallback)) if line_style else float(_get("marker.size").fallback)
-        mfc = str(getattr(line_style, "fill_color", _get("marker.face").fallback)) if line_style else str(_get("marker.face").fallback)
-        mec = str(getattr(line_style, "symbol_color", _get("marker.edge").fallback)) if line_style else str(_get("marker.edge").fallback)
+        width_override = overrides.get("line.width", MISSING)
+        if width_override is not MISSING:
+            try:
+                lw = max(0.1, float(width_override))
+            except (TypeError, ValueError):
+                lw = line_width_pt(line_style, float(lw_default))
+        else:
+            lw = line_width_pt(line_style, float(lw_default))
+
+        # --- штрих ---
+        style_override = overrides.get("line.style", MISSING)
+        if style_override is not MISSING:
+            ls = _style_name_to_mpl(str(style_override))
+        else:
+            ls = qt_style_to_mpl(
+                getattr(line_style, "line_style", None) if line_style else None
+            )
+
+        # --- маркер ---
+        marker_override = overrides.get("marker.symbol", MISSING)
+        if marker_override is not MISSING:
+            marker = marker_override if marker_override not in ("", None) else None
+        else:
+            marker = getattr(line_style, "symbol", None) if line_style else None
+
+        size_override = overrides.get("marker.size", MISSING)
+        if size_override is not MISSING:
+            try:
+                ms = float(size_override)
+            except (TypeError, ValueError):
+                ms = float(_get("marker.size").fallback)
+        elif line_style is not None:
+            ms = float(getattr(line_style, "symbol_size", _get("marker.size").fallback))
+        else:
+            ms = float(_get("marker.size").fallback)
+
+        face_override = overrides.get("marker.face", MISSING)
+        if face_override is not MISSING and face_override not in (None, ""):
+            mfc = str(face_override)
+        elif line_style is not None:
+            mfc = str(getattr(line_style, "fill_color", _get("marker.face").fallback))
+        else:
+            mfc = str(_get("marker.face").fallback)
+
+        edge_override = overrides.get("marker.edge", MISSING)
+        if edge_override is not MISSING and edge_override not in (None, ""):
+            mec = str(edge_override)
+        elif line_style is not None:
+            mec = str(getattr(line_style, "symbol_color", _get("marker.edge").fallback))
+        else:
+            mec = str(_get("marker.edge").fallback)
+
         mew = max(0.5, float(lw))
         label = slot.legend_label or data.get("curve_name", "")
         xs = data.get("x")
         ys = data.get("y")
         if xs is None or ys is None or len(xs) == 0:
             return
+
         target_ax.plot(
-            xs, ys, color=color, linewidth=float(lw), linestyle=ls,
-            marker=marker, markersize=ms,
-            markerfacecolor=mfc, markeredgecolor=mec, markeredgewidth=mew,
-            label=label, zorder=2,
+            xs, ys,
+            color=color,
+            linewidth=float(lw),
+            linestyle=ls,
+            marker=marker,
+            markersize=ms,
+            markerfacecolor=mfc,
+            markeredgecolor=mec,
+            markeredgewidth=mew,
+            label=label,
+            zorder=2,
         )
 
     # ------------------------------------------------------- uncertainty
@@ -250,12 +356,20 @@ class MatplotlibRenderer(RendererAdapter):
         records = getattr(style_snap, "uncertainty_records", []) or []
         if not records:
             return
+
         xs = np.asarray(data.get("x"), dtype=float)
         ys = np.asarray(data.get("y"), dtype=float)
         if xs.size == 0:
             return
+
         line_style = getattr(style_snap, "line_style", None)
-        base_color = str(getattr(line_style, "color", "#333333")) if line_style else "#333333"
+        overrides = _slot_overrides(slot)
+        color_override = overrides.get("line.color", MISSING)
+        if color_override is not MISSING and color_override not in (None, ""):
+            base_color = str(color_override)
+        else:
+            base_color = str(getattr(line_style, "color", "#333333")) if line_style else "#333333"
+
         for rec in records:
             yerr_raw = getattr(rec, "y_err", None)
             if yerr_raw is None:
@@ -271,23 +385,35 @@ class MatplotlibRenderer(RendererAdapter):
             color = style.get("color", "auto")
             if not color or color == "auto":
                 color = base_color
+
             if mode == "shaded":
-                target_ax.fill_between(xs, ys - yerr, ys + yerr,
-                                       color=color, alpha=max(0.05, alpha / 255.0 * 0.5),
-                                       zorder=1)
+                target_ax.fill_between(
+                    xs, ys - yerr, ys + yerr,
+                    color=color,
+                    alpha=max(0.05, alpha / 255.0 * 0.5),
+                    zorder=1,
+                )
             elif mode == "line":
-                target_ax.plot(xs, ys + yerr, color=color, linewidth=width,
-                               linestyle=":", zorder=1)
-                target_ax.plot(xs, ys - yerr, color=color, linewidth=width,
-                               linestyle=":", zorder=1)
+                target_ax.plot(
+                    xs, ys + yerr, color=color, linewidth=width,
+                    linestyle=":", zorder=1,
+                )
+                target_ax.plot(
+                    xs, ys - yerr, color=color, linewidth=width,
+                    linestyle=":", zorder=1,
+                )
             elif mode == "caps":
                 if cap > 0:
-                    target_ax.errorbar(xs, ys, yerr=yerr, fmt="none",
-                                       ecolor=color, elinewidth=width,
-                                       capsize=cap / 2.0, zorder=1)
+                    target_ax.errorbar(
+                        xs, ys, yerr=yerr, fmt="none",
+                        ecolor=color, elinewidth=width,
+                        capsize=cap / 2.0, zorder=1,
+                    )
             else:  # bars
-                target_ax.errorbar(xs, ys, yerr=yerr, fmt="none",
-                                   ecolor=color, elinewidth=width, capsize=0, zorder=1)
+                target_ax.errorbar(
+                    xs, ys, yerr=yerr, fmt="none",
+                    ecolor=color, elinewidth=width, capsize=0, zorder=1,
+                )
 
     # --------------------------------------------------------- artifacts
     def _plot_artifacts(self, target_ax, slot, data, panel):
@@ -297,36 +423,90 @@ class MatplotlibRenderer(RendererAdapter):
         artifacts = getattr(style_snap, "artifacts", []) or []
         if not artifacts:
             return
+
         line_style = getattr(style_snap, "line_style", None)
-        base_color = str(getattr(line_style, "color", "#1f77b4")) if line_style else "#1f77b4"
+        overrides = _slot_overrides(slot)
+        color_override = overrides.get("line.color", MISSING)
+        if color_override is not MISSING and color_override not in (None, ""):
+            base_color = str(color_override)
+        else:
+            base_color = str(getattr(line_style, "color", "#1f77b4")) if line_style else "#1f77b4"
+
+        # Артефакт, временно запрошенный пользователем через «показать»
+        # в инспекторе кривой. Рисуется акцентным цветом поверх остальных,
+        # игнорируя panel.show_tools.
+        highlight_tool = slot.style_overrides.get("__highlight_tool__")
+        highlight_color = "#ff2ecc"
+
         for art in artifacts:
             tool_id = getattr(art, "tool_id", "")
-            if not panel.show_tools.get(tool_id, False):
+            is_highlight = (tool_id == highlight_tool)
+
+            if not is_highlight and not panel.show_tools.get(tool_id, False):
                 continue
+
             payload = getattr(art, "payload", None)
             if payload is None:
                 continue
+
             kind = getattr(payload, "kind", None)
             if kind in ("attached", "domain"):
                 continue
+
+            color = highlight_color if is_highlight else base_color
+            width = 2.4 if is_highlight else 0.75
+            zorder = 6 if is_highlight else 3
+            linestyle = "-" if is_highlight else (0, (4, 2))
+
             if kind == "overlay":
                 xs_list = getattr(payload, "x", []) or []
                 ys_list = getattr(payload, "y", []) or []
                 for xarr, yarr in zip(xs_list, ys_list):
-                    target_ax.plot(np.asarray(xarr), np.asarray(yarr),
-                                   color=base_color, linewidth=0.75,
-                                   linestyle=(0, (4, 2)), zorder=3)
+                    try:
+                        xa = np.asarray(xarr, dtype=float)
+                        ya = np.asarray(yarr, dtype=float)
+                    except (TypeError, ValueError):
+                        continue
+                    if xa.size == 0 or xa.size != ya.size:
+                        continue
+                    target_ax.plot(
+                        xa, ya,
+                        color=color,
+                        linewidth=width,
+                        linestyle=linestyle,
+                        zorder=zorder,
+                    )
+
             elif kind == "annotation":
                 points = getattr(payload, "points", []) or []
                 if not points:
                     continue
-                px = [float(p.get("x", 0.0)) for p in points]
-                py = [float(p.get("y", 0.0)) for p in points]
+                px = []
+                py = []
+                for p in points:
+                    try:
+                        px.append(float(p.get("x", 0.0)))
+                        py.append(float(p.get("y", 0.0)))
+                    except (TypeError, ValueError):
+                        continue
+                if not px:
+                    continue
                 label_kind = getattr(payload, "label", "peaks")
                 marker = "+" if label_kind in ("peaks", "valleys") else "o"
-                target_ax.plot(px, py, linestyle="None", marker=marker,
-                               markersize=8, color=base_color, zorder=3)
+                marker_size = 12 if is_highlight else 8
+                target_ax.plot(
+                    px, py,
+                    linestyle="None",
+                    marker=marker,
+                    markersize=marker_size,
+                    markeredgewidth=1.4 if is_highlight else 1.0,
+                    color=color,
+                    zorder=zorder,
+                )
+
             elif kind == "uncertainty":
+                # uncertainty.estimate рисуется отдельно в _plot_uncertainty,
+                # здесь не дублируем.
                 continue
 
     # -------------------------------------------------- data-bound annotations
@@ -345,12 +525,16 @@ class MatplotlibRenderer(RendererAdapter):
             size = _contract_fallback("annotation.text_size") or 8.0
         if override is not None:
             size = override.style_override.get("size", size)
-        ax.plot([x], [y], marker=marker, linestyle="None",
-                markersize=float(size) * 0.6, color="#d62728")
+        ax.plot(
+            [x], [y], marker=marker, linestyle="None",
+            markersize=float(size) * 0.6, color="#d62728",
+        )
         if label:
-            ax.annotate(label, (x, y), textcoords="offset points",
-                        xytext=(4, 4), fontsize=float(size) * 0.8,
-                        color="#333333")
+            ax.annotate(
+                label, (x, y), textcoords="offset points",
+                xytext=(4, 4), fontsize=float(size) * 0.8,
+                color="#333333",
+            )
 
     # -------------------------------------------------- presentation-only
     def _render_presentation(self, fig, spec, ann, axes_by_panel, style_resolver):
@@ -430,21 +614,31 @@ class MatplotlibRenderer(RendererAdapter):
         if entry is None:
             return
         ax, _ax2, panel = entry
-        width_mm = float(ann.style.get("width_mm",
+        width_mm = float(ann.style.get(
+            "width_mm",
             style_resolver("annotation.scalebar.width_mm")
-            if style_resolver("annotation.scalebar.width_mm") is not MISSING else 5.0))
-        thickness_pt = float(ann.style.get("thickness_pt",
+            if style_resolver("annotation.scalebar.width_mm") is not MISSING else 5.0,
+        ))
+        thickness_pt = float(ann.style.get(
+            "thickness_pt",
             style_resolver("annotation.scalebar.thickness_pt")
-            if style_resolver("annotation.scalebar.thickness_pt") is not MISSING else 0.6))
+            if style_resolver("annotation.scalebar.thickness_pt") is not MISSING else 0.6,
+        ))
         x_mm = float(ann.coords[0]) if len(ann.coords) > 0 else 3.0
         y_mm = float(ann.coords[1]) if len(ann.coords) > 1 else panel.h_mm - 3.0
         x0, y0 = self._mm_to_axes_xy(panel, x_mm, y_mm)
         x1, _ = self._mm_to_axes_xy(panel, x_mm + width_mm, y_mm)
-        ax.plot([x0, x1], [y0, y0], color="black", lw=thickness_pt,
-                transform=ax.transAxes, clip_on=False, solid_capstyle="butt")
+        ax.plot(
+            [x0, x1], [y0, y0], color="black", lw=thickness_pt,
+            transform=ax.transAxes, clip_on=False, solid_capstyle="butt",
+        )
         if ann.text:
-            ax.text((x0 + x1) / 2.0, y0 - 0.03, ann.text, ha="center", va="top",
-                    transform=ax.transAxes, fontsize=float(ann.style.get("size", 7.0)))
+            ax.text(
+                (x0 + x1) / 2.0, y0 - 0.03, ann.text,
+                ha="center", va="top",
+                transform=ax.transAxes,
+                fontsize=float(ann.style.get("size", 7.0)),
+            )
 
     def _render_bracket(self, fig, spec, ann, axes_by_panel, style_resolver):
         entry = axes_by_panel.get(ann.panel_id)
@@ -454,16 +648,24 @@ class MatplotlibRenderer(RendererAdapter):
         x1_mm, y1_mm, x2_mm, y2_mm = ann.coords[:4]
         a0 = self._mm_to_axes_xy(panel, x1_mm, y1_mm)
         a1 = self._mm_to_axes_xy(panel, x2_mm, y2_mm)
-        thickness = float(ann.style.get("thickness_pt",
+        thickness = float(ann.style.get(
+            "thickness_pt",
             style_resolver("annotation.bracket.width_pt")
-            if style_resolver("annotation.bracket.width_pt") is not MISSING else 0.6))
-        ax.plot([a0[0], a0[0], a1[0], a1[0]],
-                [a0[1] - 0.02, a0[1], a1[1], a1[1] - 0.02],
-                color="black", lw=thickness, transform=ax.transAxes, clip_on=False)
+            if style_resolver("annotation.bracket.width_pt") is not MISSING else 0.6,
+        ))
+        ax.plot(
+            [a0[0], a0[0], a1[0], a1[0]],
+            [a0[1] - 0.02, a0[1], a1[1], a1[1] - 0.02],
+            color="black", lw=thickness,
+            transform=ax.transAxes, clip_on=False,
+        )
         if ann.text:
-            ax.text((a0[0] + a1[0]) / 2.0, max(a0[1], a1[1]) + 0.02, ann.text,
-                    ha="center", va="bottom", transform=ax.transAxes,
-                    fontsize=float(ann.style.get("size", 7.0)))
+            ax.text(
+                (a0[0] + a1[0]) / 2.0, max(a0[1], a1[1]) + 0.02, ann.text,
+                ha="center", va="bottom",
+                transform=ax.transAxes,
+                fontsize=float(ann.style.get("size", 7.0)),
+            )
 
     def _render_arrow(self, fig, spec, ann, axes_by_panel, style_resolver):
         entry = axes_by_panel.get(ann.panel_id)
@@ -473,13 +675,18 @@ class MatplotlibRenderer(RendererAdapter):
         x1_mm, y1_mm, x2_mm, y2_mm = ann.coords[:4]
         a0 = self._mm_to_axes_xy(panel, x1_mm, y1_mm)
         a1 = self._mm_to_axes_xy(panel, x2_mm, y2_mm)
-        ax.annotate(ann.text, xy=a1, xytext=a0,
-                    xycoords="axes fraction", textcoords="axes fraction",
-                    arrowprops=dict(arrowstyle="->", color="black"),
-                    fontsize=float(ann.style.get("size", 8.0)))
+        ax.annotate(
+            ann.text, xy=a1, xytext=a0,
+            xycoords="axes fraction", textcoords="axes fraction",
+            arrowprops=dict(arrowstyle="->", color="black"),
+            fontsize=float(ann.style.get("size", 8.0)),
+        )
 
     def save(self, fig: Figure, path: str, fmt: str, dpi: int = 300) -> None:
         if fig.canvas is None or not hasattr(fig.canvas, "print_figure"):
             FigureCanvasAgg(fig)
-        fig.savefig(path, format=fmt, dpi=dpi, bbox_inches=None, pad_inches=0.0,
-                    facecolor=fig.get_facecolor())
+        fig.savefig(
+            path, format=fmt, dpi=dpi,
+            bbox_inches=None, pad_inches=0.0,
+            facecolor=fig.get_facecolor(),
+        )
