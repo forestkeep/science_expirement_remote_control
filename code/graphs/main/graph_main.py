@@ -1,11 +1,11 @@
 # Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
 # following information to ensure the GNU General Public License version 3.0
 # requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-# 
+#
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -33,12 +33,12 @@ class CustomComboBox(QComboBox):
         super().addItem(text)
         fm = QFontMetrics(self.font())
         self.minimum_w = max(fm.width(self.itemText(i)) for i in range(self.count()))
-        
+
     def showPopup(self):
-        super().showPopup()  
+        super().showPopup()
         if self.minimum_w:
             self.view().setMinimumWidth(self.minimum_w)
-            
+
 class manageGraph(QObject):
     new_curve_selected = pyqtSignal()
 
@@ -69,13 +69,8 @@ class manageGraph(QObject):
         self.colors_class = GColors()
         self.color_warm_gen = self.colors_class.get_random_warm_color()
         self.color_cold_gen = self.colors_class.get_random_cold_color()
-
-        self.alias_manager.aliases_updated.connect(self.alias_changed)
-
         self.initUI()
 
-    def alias_changed(self, original_name, old_alias, alias):
-        pass
 
     def set_num_points(self, value: int) -> None:
         self._num_showing_points = max(1, int(value))
@@ -95,7 +90,7 @@ class manageGraph(QObject):
     def initUI(self):
         self.tab1Layout = QVBoxLayout()
         # Add all data source selectors and graph area to tab1Layout
-        
+
         self.graphView = PatchedPlotWidget()
         #self.graphView.setAntialiasing(False)
         self.graphView.scene().sigMouseClicked.connect(self.click_scene_main_graph)
@@ -105,7 +100,7 @@ class manageGraph(QObject):
 
         self.graphView.appearance_undo_callback = self._on_appearance_changed
         self.graphView.legend_recreated.connect(self._on_legend_recreated)
-        
+
         self.graphView.plotItem.getAxis("left").linkToView(
             self.graphView.plotItem.getViewBox()
         )
@@ -361,7 +356,7 @@ class manageGraph(QObject):
 
     def hide_curve(self, curve_data_obj:linearData):
         curve_data_obj.delete_curve_from_graph()
-        
+
     def get_curve(self, name):
         return self.__stack_curve.get(name)
 
@@ -442,6 +437,3 @@ class manageGraph(QObject):
         self.main_class.tree_class.add_curve(curve_data_obj.tree_item)
 
         self._apply_window_state_to_curve(curve_data_obj)
-
-
-        

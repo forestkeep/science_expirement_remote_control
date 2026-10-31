@@ -1,11 +1,11 @@
 # Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
 # following information to ensure the GNU General Public License version 3.0
 # requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-# 
+#
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -76,7 +76,7 @@ class deviceSelector():
 
         for check in self.multiple_select_win.checkBoxes_create_dev:
             check.setChecked(False)
-            
+
         for check in self.multiple_select_win.checkBoxes:
             check.setChecked(False)
 
@@ -100,14 +100,6 @@ class deviceSelector():
 
         return device_list, json_device_list
 
-    def get_new_JSON_devs(self, directory) -> dict:
-        new_devs = {}
-        json_devices = search_devices_json(directory)
-        for device, file_path in json_devices.items():
-            result, message, data = validate_json_schema(file_path, templates)
-            new_devs[device] = devFile(path=file_path, name=device, message=message, status=result, json_data=data)
-        return new_devs
-    
     def set_json_device_directory(self, directory):
         self.directory_devices = directory
         self.settings_manager.save_settings({'JSON_default_path': directory})
@@ -116,7 +108,7 @@ class deviceSelector():
         directory = self.choice_json_devices_directory()
         if directory:
             self.set_json_device_directory(directory)
-            self.JSON_devices = self.get_new_JSON_devs(directory)
+            self.JSON_devices = get_new_JSON_devs(directory)
             if self.multiple_select_win and self.multiple_select_win.isVisible():
                 self.multiple_select_win.reload_json_dev(self.JSON_devices)
 

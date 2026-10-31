@@ -1,11 +1,11 @@
 # Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
 # following information to ensure the GNU General Public License version 3.0
 # requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-# 
+#
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -22,7 +22,6 @@ except:
 
 NOT_READY_STYLE_BORDER = "border: 1px solid rgb(180, 0, 0); border-radius: 5px;"
 READY_STYLE_BORDER = "border: 1px solid rgb(0, 150, 0); border-radius: 5px;"
-WARNING_STYLE_BORDER = "border: 1px solid rgb(180, 180, 0); border-radius: 5px;"
 
 SCAN_INTERVAL = 2000
 DEFAULT_TIMEOUT = 2000
@@ -56,8 +55,8 @@ class TestCommands(QMainWindow):
         self.timer_for_scan_com_port = QTimer(self)
         self.timer_for_scan_com_port.timeout.connect(self._scan_com_ports)
         self.timer_for_scan_com_port.start(100)
-        self.is_reading = False 
-        
+        self.is_reading = False
+
         layout = QGridLayout()
         self._create_widgets(layout)
         self.main_widget.setLayout(layout)
@@ -125,7 +124,6 @@ class TestCommands(QMainWindow):
                 self.answer.clear()
                 self.timeout = float(self.timeout_entry.text())
                 self.client.timeout = self.timeout
-                self.client.baud_rate = int(self.speed_combo.currentText())
                 self.answ_label.setText(QApplication.translate("create_dev_window", "Принимаем"))
                 self.entry.setEnabled(False)
                 self.send_button.setEnabled(False)
@@ -165,11 +163,11 @@ class TestCommands(QMainWindow):
             rm = instrument.get_visa_resourses()
             if current_port not in rm:
                 self._handle_client_error()
-                
+
     def _handle_client_error(self):
         self.client = None
         self.source_combo.setStyleSheet(NOT_READY_STYLE_BORDER)
-     
+
     def retranslateuI(self, creat_window):
         _translate = QApplication.translate
         creat_window.setWindowTitle(_translate("creat_dev_window", "Тест команд"))
@@ -194,7 +192,7 @@ class TestCommands(QMainWindow):
             if set(local_list_com_ports) != set(self.active_ports):
                 self.source_combo.clear()
                 self.source_combo.addItems(local_list_com_ports)
-                
+
             if current_val in local_list_com_ports:
                 self.source_combo.setCurrentText(current_val)
 
@@ -206,15 +204,4 @@ class TestCommands(QMainWindow):
             self.active_ports = local_list_com_ports
         self.timer_for_scan_com_port.start(SCAN_INTERVAL)
 
-
-if __name__ == "__main__":
-
-    rm = pyvisa.ResourceManager()
-    name = rm.list_resources()
-
-    with rm.open_resource(name[0]) as Power_Analyser:
-
-        Power_Analyser.timeout = 25000
-
-        Data = Power_Analyser.query(":DDS:ARB:DAC16:BIN#504096")
 

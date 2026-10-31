@@ -24,10 +24,8 @@ class legendName:
     def __init__(self, name: str) -> None:
         self._name = name
         self.current_name = name
-        self.previous_name = ""
 
     def set_custom(self, name: str) -> None:
-        self.previous_name = self._name
         self._name = name
         self.current_name = name
 
@@ -67,7 +65,6 @@ class CurveDataStore:
         self.ch: Optional[str] = None
         self.number: Optional[int] = None
 
-        self._on_changed: List[Callable[[], None]] = []
 
         # --- Погрешности ---
         self.uncertainty_records: list = []

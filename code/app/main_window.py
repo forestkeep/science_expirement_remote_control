@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QAction, QFileDialog, QHBoxLayout, QLabel, QMainWindow,
     QMessageBox, QStackedWidget, QVBoxLayout, QWidget,
 )
+from functions import open_log_file
 from common.theme import ThemeManager
 from app.sidebar import IconSidebar
 
@@ -311,7 +312,7 @@ class UnifiedMainWindow(QMainWindow):
         self._install_ctrl.reconstruct_installation([], [])
         self._install_ctrl.start_resource_scanning()
         self._bind_pages_from_controllers()
-        
+
     def _bind_pages_from_controllers(self):
         self._installation_page = self._install_ctrl.installation_window
         if hasattr(self._installation_page, "open_graph_button"):
@@ -344,7 +345,7 @@ class UnifiedMainWindow(QMainWindow):
                 if self._install_ctrl.is_debug
                 else "Включить режим разработчика"
             )
-    
+
     def _hide_page_menu(self, window):
         """Скрыть менюбар встроенной страницы и обнулить ярлыки его действий.
 
@@ -434,7 +435,7 @@ class UnifiedMainWindow(QMainWindow):
         self.stack.setCurrentIndex(index)
         self.sidebar.set_active(index)
         self._update_menu_visibility(index)
-    
+
     def _update_menu_visibility(self, index):
         is_install = index == self.PAGE_INSTALL
         is_graphs  = index == self.PAGE_GRAPHS
@@ -602,7 +603,7 @@ class UnifiedMainWindow(QMainWindow):
             "Выключить режим разработчика"
             if self._install_ctrl.is_debug
             else "Включить режим разработчика")
-    
+
     def _on_convert_buf(self):
         if not self._install_ctrl:
             return
@@ -729,7 +730,7 @@ class UnifiedMainWindow(QMainWindow):
                 and hasattr(self._publication_page, "widget")):
             return self._publication_page.widget()
         return None
-    
+
 
     # ======================================================= Настройки
     def _on_theme_selected(self, theme):
@@ -763,11 +764,7 @@ class UnifiedMainWindow(QMainWindow):
             self, "Версия", f"Версия приложения: {self.version_app}")
 
     def _on_open_log(self):
-        folder = os.path.join(
-            os.getenv("USERPROFILE", os.path.expanduser("~")),
-            "AppData", "Local", "Installation_Controller")
-        if os.path.isdir(folder):
-            os.startfile(folder)
+        open_log_file()
 
     # ========================================================= Закрытие
     def closeEvent(self, event):

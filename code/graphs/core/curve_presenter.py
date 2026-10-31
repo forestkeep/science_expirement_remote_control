@@ -218,7 +218,7 @@ class CurvePresenter:
                 self._apply_style_to_all(self.saved_style, update_tree=True)
             return
         self._apply_style_to_all(self._selection_style(), update_tree=True)
-    
+
 
     def attach_selection_model(self, model: Optional[SelectionModel]) -> None:
         """Подключить модель выделения и сбросить кэш состояния выделения."""
@@ -269,7 +269,7 @@ class CurvePresenter:
     def _on_model_selection_changed(self, selected_list) -> None:
         self._refresh_selection_style()
 
-    
+
 
     # -- plots ----------------------------------------------------------
     def create_plot_item(self):
@@ -399,8 +399,7 @@ class CurvePresenter:
     def _apply_legend_name(self, info: dict, name: str) -> None:
         """Привести подпись элемента в легенде к *name*.
 
-        Использует LegendItem.getLabel(item) — не зависит от
-        legend.previous_name, поэтому корректно работает в любом
+        Использует LegendItem.getLabel(item) корректно работает в любом
         порядке вызовов (change_name / reset_name / set_legend_name).
         """
         legend = info.get('legend')
@@ -421,7 +420,7 @@ class CurvePresenter:
             logger.exception("CurvePresenter: legend rename failed")
 
     # -- style ----------------------------------------------------------
-    
+
 
     def apply_style_to_all(self, style: LineStyle) -> None:
         self._apply_style_to_all(style)
@@ -479,7 +478,6 @@ class CurvePresenter:
     def set_legend_name(self, name: str) -> None:
         """Публичный API: задать пользовательское имя и обновить легенду.
 
-        Переписано, чтобы не зависеть от legend.previous_name.
         """
         self.store.legend.set_custom(name)
         self._last_legend_name = name

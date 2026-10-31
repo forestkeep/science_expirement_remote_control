@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 from graphs.ui.Link_data_import_win import Check_data_import_win, SheetSelectionDialog
-from graphs.ui.Message_graph import messageDialog
+from interface.Message import messageDialog
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class ButtonsWidget(QWidget):
     def init_ui(self):
         self.btn_import_data = QPushButton(QApplication.translate("filters","Импортировать данные"))
         self.btn_import_osc = QPushButton(QApplication.translate("filters","Импортировать осциллограммы"))
-        
+
         button_layout = QHBoxLayout(self)
         button_layout.addWidget(self.btn_import_data)
         button_layout.addWidget(self.btn_import_osc)
@@ -34,7 +34,7 @@ class ButtonsControl(QObject):
         super().__init__()
         self.session_selector = session_selector
         self.widget = ButtonsWidget()
-        
+
         self.widget.btn_import_data.clicked.connect(self.handle_import_data)
         self.widget.btn_import_osc.clicked.connect(self.handle_import_osc)
 
@@ -148,22 +148,19 @@ class ButtonsControl(QObject):
             filter="Книга Excel (*.xlsx)",
             options=options,
         )
-        
+
         #fileName = r"C:\Users\zahidovds\Desktop\testimport.xlsx"
         #ans = "Книга Excel (*.xlsx)"
-        
+
         if fileName:
             if ans == "Книга Excel (*.xlsx)":
                 df = pd.read_excel(fileName, engine='openpyxl')
-
-                if 'time' not in df.columns:
-                    self.is_time_column = False
 
                 df = df.dropna(axis=1, how='all')
 
                 window = Check_data_import_win(sorted([str(col) for col in df.columns]), None, True)
                 ans = window.exec_()
-                if ans == QDialog.Accepted: 
+                if ans == QDialog.Accepted:
                     selected_step = window.step_combo.currentText()
                     selected_channels = [cb.text() for cb in window.checkboxes if cb.isChecked()]
                 else:
@@ -178,7 +175,7 @@ class ButtonsControl(QObject):
                     except ValueError:
                         errors_col.append(col)
                         continue
-                    
+
                 if errors_col != []:
                     res = ', '.join(errors_col)
                     text = QApplication.translate("GraphWindow", "В столбцах {res} обнаружены данные, которые не получается преобразовать в числа.\nПри построение эти точки будут пропущены.")
@@ -220,7 +217,7 @@ class ButtonsControl(QObject):
                     volt_val = np.array( df[col].tolist() )
                     dev[col] = {col_: {0 : volt_val}, "scale": [import_time_scale for i in range(len(volt_val))]}
                 '''
-                    
+
                 for index, col in enumerate(selected_channels):
                     col_ = str(col).replace('(', '[').replace(')', ']')
                     val = np.array( df[col].tolist())
@@ -237,8 +234,5 @@ class ButtonsControl(QObject):
 
                 logger.info(f"Data imported emitted {id}")
                 self.new_data_imported.emit(fileName, id, result)
-                
+
                 #self.add_session({'id': id, 'name': fileName, 'status': 'imported'})
-
-
-

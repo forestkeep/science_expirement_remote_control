@@ -1,11 +1,11 @@
 # Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
 # following information to ensure the GNU General Public License version 3.0
 # requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-# 
+#
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -25,25 +25,11 @@ not_ready_style_border = "border: 1px solid rgb(180, 0, 0); border-radius: 5px; 
 not_ready_style_background = "background-color: rgb(100, 50, 50);  QToolTip { color: #ffffff; background-color: rgb(100, 50, 50); border: 1px solid white;}"
 
 ready_style_border = "border: 1px solid rgb(0, 150, 0); border-radius: 5px; QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white;}"
-ready_style_background = "background-color: rgb(50, 100, 50); QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white;}" 
+ready_style_background = "background-color: rgb(50, 100, 50); QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white;}"
 
 warning_style_border = "border: 1px solid rgb(180, 180, 0); border-radius: 5px; QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white;}"
 warning_style_background = "background-color: rgb(150, 160, 0); QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white;}"
 
-not_ready_style_border_all_window = """
-            QComboBox {
-                border: 1px solid rgb(180, 0, 0);
-                border-radius: 5px;
-            }
-            QCheckBox {
-                border: 1px solid rgb(180, 0, 0);
-                border-radius: 5px;
-            }
-            QToolTip { 
-                color: #ffffff; 
-                background-color: rgb(100, 50, 50); 
-                border: 1px solid white;}
-            """
 
 ready_style_border_all_window = """
             QComboBox {
@@ -54,9 +40,9 @@ ready_style_border_all_window = """
                 border: 1px solid rgb(0, 150, 0);
                 border-radius: 5px;
             }
-            QToolTip { 
-                color: #ffffff; 
-                background-color: rgb(100, 50, 50); 
+            QToolTip {
+                color: #ffffff;
+                background-color: rgb(100, 50, 50);
                 border: 1px solid white;}
             """
 
@@ -91,7 +77,7 @@ class control_in_experiment():
         self.time_of_action = 3# время, необходимое для совершения одного шага
         self.step_index = -1
         self.last_step_time = 5#хранит время, затраченное на последний сделанной шаг в эксперименте. Необходимо для подстройки продолжительности эксперимента
-        self.do_last_step = False# необходима в стом случае, когда устройство тригер завершило работу и данные устройство должно сделать последний шаг, при этом 
+        self.do_last_step = False# необходима в стом случае, когда устройство тригер завершило работу и данные устройство должно сделать последний шаг, при этом
 
     def set_priority(self, priority: int) -> bool:
         self.priority = priority
@@ -158,9 +144,9 @@ class base_device():
             if ch.get_name() == ch_name:
                 return ch
         return False
-    
-    def check_connect(self) -> bool: 
-        """проверяет подключение прибора, если прибор отвечает возвращает True, иначе False. 
+
+    def check_connect(self) -> bool:
+        """проверяет подключение прибора, если прибор отвечает возвращает True, иначе False.
         Для прибора, который не поддерживает подключение по scpi необходимо переопределить функцию"""
         response = "not defined check connect"
         try:
@@ -249,11 +235,11 @@ class base_device():
 
             if self.active_channel_meas.dict_buf_parameters is self.active_channel_meas.dict_settable_parameters:
                 logger.warning("в активном измерительном канале буфферный накопитель парамметров и основной являются одним объектом")
-            
+
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_act:
                 self.setting_window.triger_act_enter.setCurrentText(self.active_channel_act.dict_buf_parameters["trigger"])
                 self.setting_window.sourse_act_enter.setCurrentText(str(self.active_channel_act.dict_buf_parameters["sourse/time"]))
-                
+
                 num_act_list = ["5","10","20","50"]
                 if self.installation_class.get_signal_list(self.name, self.active_channel_act) != []:
                     num_act_list.append( QApplication.translate("Device","Пока активны другие приборы") )
@@ -264,13 +250,13 @@ class base_device():
                 except:
                     num_steps = self.active_channel_act.dict_buf_parameters["num steps"]
                 self.setting_window.num_act_enter.setCurrentText(str(num_steps))
-                
-                
+
+
 
             if self.part_ch == which_part_in_ch.bouth or self.part_ch == which_part_in_ch.only_meas:
                 self.setting_window.triger_meas_enter.setCurrentText(self.active_channel_meas.dict_buf_parameters["trigger"])
                 self.setting_window.sourse_meas_enter.setCurrentText(str(self.active_channel_meas.dict_buf_parameters["sourse/time"]))
-                
+
                 num_meas_list = ["5","10","20","50"]
                 if self.installation_class.get_signal_list(self.name, self.active_channel_meas) != []:
                     num_meas_list.append( QApplication.translate("Device","Пока активны другие приборы") )
@@ -281,7 +267,7 @@ class base_device():
                 except:
                     num_steps = self.active_channel_meas.dict_buf_parameters["num steps"]
                 self.setting_window.num_meas_enter.setCurrentText(str(num_steps))
-                
+
 
             self.key_to_signal_func = True
             return func(self, *args, **kwargs)
@@ -301,7 +287,7 @@ class base_device():
                         self.active_channel_act.dict_buf_parameters["num steps"] = self.setting_window.num_act_enter.currentText()
                     except:
                         pass
-    
+
                     self.active_channel_act.dict_buf_parameters["trigger"] = (self.setting_window.triger_act_enter.currentText())
                     self.active_channel_act.dict_buf_parameters["sourse/time"] = (self.setting_window.sourse_act_enter.currentText())
 
@@ -311,8 +297,8 @@ class base_device():
                     self.dict_buf_parameters["slave_id"] = int(self.setting_window.id_enter.currentText())
                 return func(self, *args, **kwargs)
         return wrapper
-    
-    def base_is_correct_parameters(func) -> bool: 
+
+    def base_is_correct_parameters(func) -> bool:
         def wrapper(self, *args, **kwargs):
             if self.key_to_signal_func:
                 func_result = func(self, *args, **kwargs)
@@ -345,7 +331,7 @@ class base_device():
                                     self.active_channel_meas.is_num_steps_meas_correct = False
                             except:
                                 pass
-                    
+
                     self.setting_window.num_meas_enter.setStyleSheet(ready_style_border)
 
                     self.setting_window.sourse_meas_enter.setStyleSheet(ready_style_border)
@@ -378,7 +364,7 @@ class base_device():
                                 pass
                             else:
                                 self.active_channel_act.is_num_steps_act_correct = False
-        
+
                     self.setting_window.num_act_enter.setStyleSheet(ready_style_border)
 
                     self.setting_window.sourse_act_enter.setStyleSheet(ready_style_border)
@@ -410,7 +396,7 @@ class base_device():
                     return self.active_channel_meas.is_num_steps_act_correct \
                             and self.active_channel_meas.is_time_act_correct \
                             and func_result
-                
+
             func_result = func(self, *args, **kwargs)
             return False and func_result
         return wrapper
@@ -430,7 +416,7 @@ class base_device():
         return channels
 
     def create_meas_channel_array(self, channels):
-        for i in range(1, 8): 
+        for i in range(1, 8):
             channel_attr = f'ch{i}_meas'
             channel = getattr(self, channel_attr, None)
             if channel:
@@ -439,9 +425,9 @@ class base_device():
             self.ch1_meas.is_active = True
             self.active_channel_meas = self.ch1_meas #поле необходимо для записи параметров при настройке в нужный канал
         return channels
-    
+
     def create_act_channel_array(self, channels):
-        for i in range(1, 8): 
+        for i in range(1, 8):
             channel_attr = f'ch{i}_act'
             channel = getattr(self, channel_attr, None)
             if channel:
@@ -456,7 +442,7 @@ class base_device():
         self.switch_channel(ch_name=ch_name)
         self.active_channel.am_i_should_do_step = status
         return True
-    
+
     def get_label_parameters(self, number_ch):
         meas_param = None
         act_param = None
@@ -472,7 +458,7 @@ class base_device():
                     break
 
         return act_param, meas_param, self.dict_settable_parameters
-    
+
     def get_status_step(self, ch_name):
         """возвращает ответ на вопрос, "должен ли канал сделать шаг?" """
         self.switch_channel(ch_name = ch_name)
@@ -491,14 +477,14 @@ class base_device():
                 ch.i_am_seted = state
 
     def switch_channel(self, number = None, ch_name = None):
-            '''переключает активный канала либо по номеру, либо по имени. Если переключение по имени, то активный канал будет доступен в 
+            '''переключает активный канала либо по номеру, либо по имени. Если переключение по имени, то активный канал будет доступен в
             self.active_channel, если по номеру, то канала измерений будет в self.active_channel_meas, а канал действий в self.active_channel_act'''
             if number is not None:
                 try:
                     number = int(number)
                 except:
                     return False
-                
+
                 status = False
                 for ch in self.channels:
                     if number == ch.number:
@@ -509,16 +495,16 @@ class base_device():
                             self.active_channel_act = ch
 
                 return status
-            
+
             elif ch_name is not None:
                 for ch in self.channels:
                     if ch_name == ch.get_name():
                         self.active_channel = ch
                         return True
                 return False
-            
+
             return False
-      
+
     def on_next_step(self, ch, repeat = 1):
         '''активирует следующий шаг канала прибора'''
         stps = ch.dict_settable_parameters["num steps"]
@@ -572,7 +558,7 @@ class base_device():
                 stop = True
         try:
             AllItems = [self.setting_window.comportslist.itemText(i) for i in range(self.setting_window.comportslist.count())]
-            
+
             for i in range(1,len(AllItems), 1):
                 if AllItems[i] == self.setting_window.comportslist.currentText() and i != self.setting_window.comportslist.currentIndex():
                     self.setting_window.comportslist.removeItem(i)
@@ -584,7 +570,7 @@ class base_device():
                 self.setting_window.comportslist.setStyleSheet(not_ready_style_border)
         else:
                 self.setting_window.comportslist.setStyleSheet(ready_style_border)
-        
+
         self.active_ports = list_all_resources
 
         try:
@@ -627,7 +613,7 @@ class base_device():
                 answer = False
         elif trigger == QApplication.translate("Device","Внешний сигнал"):
             answer = ch.dict_settable_parameters["sourse/time"]
-            
+
         else:
             answer = False
         return answer
@@ -650,12 +636,12 @@ class base_device():
         except:
             answer = False
         return answer
-    
+
     def display_tooltip_act(self, index):
         # Обновляем текст подсказки в метке в зависимости от выделенного элемента
         value = self.setting_window.sourse_act_enter.itemText(index)
         text = self.message_broker.get_subscribe_description(subscribe_name=value)
-        self.setting_window.tooltip_label_act.setStyleSheet(""" 
+        self.setting_window.tooltip_label_act.setStyleSheet("""
                 color: #00FFCC;          /* Цвет текста */
         """)
         self.setting_window.tooltip_label_act.setText(text)
@@ -664,7 +650,7 @@ class base_device():
         # Обновляем текст подсказки в метке в зависимости от выделенного элемента
         value = self.setting_window.sourse_meas_enter.itemText(index)
         text = self.message_broker.get_subscribe_description(subscribe_name=value)
-        self.setting_window.tooltip_label_meas.setStyleSheet(""" 
+        self.setting_window.tooltip_label_meas.setStyleSheet("""
                 color: #00FFCC;          /* Цвет текста */
         """)
         self.setting_window.tooltip_label_meas.setText(text)
@@ -757,7 +743,7 @@ class base_device():
 
         if parameters["state"] == "not active":
             self.active_channel.set_active(False)
-            
+
         else:
             self.active_channel.set_active(True)
             if parameters["state"] == "not settings":
@@ -816,7 +802,7 @@ class base_device():
 
     def get_number_channels(self) -> int:
         return len(self.channels)
-        
+
 class base_ch(control_in_experiment):
     '''базовый класс канала устройства'''
     def __init__(self, number, ch_type, device_class_name, message_broker, is_activate_standart_publish = True) -> None:
@@ -843,7 +829,7 @@ class base_ch(control_in_experiment):
 
     def get_name(self):
         return self.ch_name
-    
+
     def receive_message(self, message):
         '''функция приема сигнала от издателя, в данный момент по приему сообщения выставляется готовность сделать действие'''
         self.am_i_should_do_step = True
@@ -853,16 +839,15 @@ class base_ch(control_in_experiment):
 
     def set_active(self, state):
         self.is_active = state
-    
+
     def is_ch_active(self) -> bool:
         return (self.is_active == True)
-    
+
     def is_ch_seted(self) -> bool:
         return (self.i_am_seted == True)
-    
+
     def get_number(self):
         return self.number
-    
+
     def get_type(self):
         return self.ch_type
-    

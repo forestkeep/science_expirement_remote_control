@@ -394,52 +394,6 @@ class AnalysisController(QObject):
         self.artifacts_changed.emit()
 
     # ------------------------------------------------------------------
-    def update_artifact_params(self, artifact_id: str,
-                               params: Dict[str, Any]) -> None:
-        artifact = self.store.get(artifact_id)
-        if artifact is None:
-            return
-        old_params = dict(artifact.params)
-        old_payload = artifact.payload
-        old_description = artifact.description
-
-        strategy = self.registry.create_strategy(artifact.tool_id)
-        if strategy is None:
-            return
-
-        snapshots = self._collect_sources(artifact.source_curve_ids)
-        if not snapshots:
-            return
-
-        from .strategies.base import AnalysisContext
-        ctx = AnalysisContext(
-            sources=snapshots,
-            filter_instance=getattr(self.session, "filter_class", None),
-        )
-        try:
-            payload, details = strategy.compute(ctx, params)
-        except (ValueError, TypeError, RuntimeError, KeyError) as exc:
-            logger.warning(
-                "update_artifact_params: compute failed for %s: %s",
-                artifact_id, exc,
-            )
-            return
-
-        source_id = (artifact.source_curve_ids[0]
-                     if artifact.source_curve_ids else None)
-        new_payload = self._payload_for_source(payload, 0, source_id)
-        new_description = self._build_artifact_description(
-            strategy, params, new_payload, details, source_id,
-        )
-
-        cmd = UpdateAnalysisParamsCommand(
-            self, artifact_id, old_params, params,
-            old_payload, new_payload,
-            old_description, new_description,
-        )
-        self.session.undo_manager.push(cmd, execute=True)
-        self.artifacts_changed.emit()
-    # ------------------------------------------------------------------
     # Внутренний помощник: артефакты, привязанные к источнику
     # ------------------------------------------------------------------
     def _artifacts_for_source(self, root_name: str) -> List[AnalysisArtifact]:

@@ -691,7 +691,6 @@ class sessionController():
         self.session_selector = SessionSelectControl()
         self.buttons_controller = ButtonsControl(self.session_selector)
         self.status_bar = StatusBar()
-        self.button_ctrl_win = self.buttons_controller.widget
         self.controll_sessions_win = self.session_selector.widget
 
         self.session_selector.current_session_changed.connect(self.change_session)
