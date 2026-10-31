@@ -1,11 +1,11 @@
 # Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
 # following information to ensure the GNU General Public License version 3.0
 # requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-# 
+#
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -25,6 +25,7 @@ from Devices.base.Classes import (not_ready_style_background,
                              not_ready_style_border, ready_style_border)
 
 from interface.Message import messageDialog
+from saving_data.Parse_data import savingController, type_save_file
 
 from functions import get_active_ch_and_device, ExperimentState
 
@@ -42,7 +43,6 @@ class baseInstallation:
         self.is_experiment_endless = False
         self.pbar_percent = 0
 
-        from saving_data.Parse_data import savingController, type_save_file
         self.type_file_for_result = type_save_file.excel
 
         self.dict_active_device_class = {}
@@ -174,10 +174,10 @@ class baseInstallation:
 
     def get_list_resources(self) -> list:
         return self.list_resources
-    
+
     def get_list_visa_resources(self) -> list:
         return self.list_visa_resources
-    
+
     def get_visa_backend(self):
         return self.visa_backend
 
@@ -286,13 +286,13 @@ class baseInstallation:
             return True
         else:
             return False
-        
-    def show_instruction(self): 
+
+    def show_instruction(self):
         base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         html_path = os.path.join(base_path, "instruction.html")
-        
+
         if not os.path.exists(html_path):
-            logger.warning(f"Файл инструкции {html_path} не найден")    
+            logger.warning(f"Файл инструкции {html_path} не найден")
             return
         webbrowser.open(f"file:///{html_path}")
 
@@ -302,13 +302,13 @@ class baseInstallation:
 
         Разработка:
         - Захидов Дмитрий
-                                      
-        Тестирование:        
+
+        Тестирование:
         - Тимофеев Сергей
         - Астахов Василий
         - Морченко Александр
 
-        Если у вас есть вопросы, замечания, или предложения по улучшению приложения, 
+        Если у вас есть вопросы, замечания, или предложения по улучшению приложения,
         пожалуйста, свяжитесь с нами по почте zakhidov.dim@yandex.ru
 
         Благодарим вас за использование приложения!
@@ -330,32 +330,32 @@ class baseInstallation:
 
         if is_show_again:
             text = QApplication.translate('base_install',"""
-                Настройте каждый прибор, нажав кнопку "Настроить" под его каналом. 
+                Настройте каждый прибор, нажав кнопку "Настроить" под его каналом.
                 Открывайте (кнопка +) и закрывайте каналы, а также добавляйте и удаляйте приборы по необходимости.
 
-                После настройки всех приборов система проверяет конфликты интерфейсов. 
-                Если конфликты обнаружены, вы получите сообщение желтым цветом в 
+                После настройки всех приборов система проверяет конфликты интерфейсов.
+                Если конфликты обнаружены, вы получите сообщение желтым цветом в
                 логе под полем приборов. Чтобы устранить конфликты, заново внесите
                 настройки интерфейсов в указанные приборы. Система также проверяет,
                 имеет ли эксперимент окончание или будет продолжаться бесконечно,
-                и выдаст соответствующее сообщение. После успешного завершения 
+                и выдаст соответствующее сообщение. После успешного завершения
                 всех проверок кнопка "Старт" подсветится зеленым цветом.
 
-                Установите количество измерений в каждой точке и количество повторов 
-                эксперимента в поле справа от приборов. Количество измерений больше 1 
-                поможет усреднить результаты, а количество повторов больше 1 позволит 
+                Установите количество измерений в каждой точке и количество повторов
+                эксперимента в поле справа от приборов. Количество измерений больше 1
+                поможет усреднить результаты, а количество повторов больше 1 позволит
                 проверить их повторяемость.
 
-                Контроллер установки покажет текущий прогресс в процентах и оставшееся 
-                время работы. В логе будут отображаться информационные сообщения о 
-                текущих действиях и их результатах. По завершении эксперимента 
-                программа предложит выбрать файл для сохранения результатов, 
+                Контроллер установки покажет текущий прогресс в процентах и оставшееся
+                время работы. В логе будут отображаться информационные сообщения о
+                текущих действиях и их результатах. По завершении эксперимента
+                программа предложит выбрать файл для сохранения результатов,
                 если вы не сделали этого заранее.
 
-                В ходе эксперимента или после его завершения вы можете нажать кнопку 
+                В ходе эксперимента или после его завершения вы можете нажать кнопку
                 "Показать график". График отображает зависимость измеряемого параметра
                 от времени или других параметров. Вы можете масштабировать графики,
-                менять цвета и фон, сохранять их в виде картинок и производить 
+                менять цвета и фон, сохранять их в виде картинок и производить
                 несложную цифровую обработку.
 
                 Для подробной инструкции по использованию приложения нажмите кнопку "Инфо" -> "Инструкция".
@@ -374,7 +374,7 @@ class baseInstallation:
                 )
 
     def open_graph_in_exp(self):
-        
+
         self.graph_controller.graphics_win.show()
 
     def add_new_device(self):
@@ -425,7 +425,7 @@ class baseInstallation:
                 identifiers = [dev.get_name()]
                 for ch in dev.channels:
                     identifiers.append( f"{dev.get_name()} {ch.get_name()}")
-    
+
                 color = self.inst_color_manager.register_color(dev, identifiers)
                 dev.set_color(color)
 
@@ -448,16 +448,6 @@ class baseInstallation:
 
         self.preparation_experiment()
 
-    def format_bool_settings(self, value):
-
-        if isinstance(value, str ):
-            if value.lower() == "true":
-                value = True
-            elif value.lower() == "false":
-                value = False
-            else:
-                value = True
-        return value
 
     def open_general_settings(self):
         self.settings_manager.ask_exp_settings()

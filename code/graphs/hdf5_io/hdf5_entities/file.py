@@ -6,7 +6,6 @@ from typing import Optional
 import h5py
 
 from ..extras import read_attrs, write_attrs
-from ..load_strategies.base import BaseLoadStrategy
 from ..models import ProjectFile, Session
 from ..schema import PROJECT_FILE_SPEC
 from .session import HDF5Session
@@ -14,7 +13,7 @@ from .session import HDF5Session
 
 class HDF5File:
     def __init__(self, file_path: str, mode: str = "a",
-                 load_strategy: Optional[BaseLoadStrategy] = None):
+                 load_strategy = None):
         self.file_path = file_path
         self.mode = mode
         self._h5file = h5py.File(file_path, mode)

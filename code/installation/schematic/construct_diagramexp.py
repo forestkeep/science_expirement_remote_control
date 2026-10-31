@@ -1,11 +1,11 @@
 # Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
 # following information to ensure the GNU General Public License version 3.0
 # requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-# 
+#
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -30,7 +30,7 @@ class Position(Enum):
     RIGHT_TOP = 7
     RIGHT_BOTTOM = 8
     SAME = 9
-    
+
 class connectionType(Enum):
     SINGLE = 1
     DOUBLE = 2
@@ -77,7 +77,7 @@ class connection():
 
         first_pos = self.first_unit.pos()
         second_pos = self.second_unit.pos()
-        
+
         width_first = self.first_unit.width()
         height_first = self.first_unit.height()
         width_second = self.second_unit.width()
@@ -95,7 +95,7 @@ class connection():
         is_overlap_y = not first_above_second and not second_above_first
         is_overlap_x = not first_left_of_second and not first_right_of_second
         is_overlap = is_overlap_x and is_overlap_y  # Перекрытие по обеим осям
-        
+
         if is_overlap:
             start_point = get_center_side(self.first_unit, Position.RIGHT)
             end_point = get_center_side(self.second_unit, Position.LEFT)
@@ -142,7 +142,7 @@ class connection():
                 direction_first = Position.LEFT
 
         return (start_point, end_point, direction_first, (is_overlap_x or is_overlap_y) )
-       
+
     def setStyle(self, new_pen : QPen):
         self.pen = new_pen
 
@@ -161,7 +161,7 @@ class connection():
     def draw_connection_to_self(self):
         painter = QPainter(self.base_widget)
         painter.setPen(self.pen)
-        
+
 
         text = str(self.name)
         text_width = painter.fontMetrics().boundingRect(text).width()
@@ -180,13 +180,13 @@ class connection():
 
         painter.drawText(text_x, text_y, text)
         x = self.first_unit.pos().x() + self.first_unit.width() - min_dis*(1/3)
-        y = self.first_unit.pos().y() + self.first_unit.height() 
+        y = self.first_unit.pos().y() + self.first_unit.height()
         self.add_in_simbol(QPoint(int(x), int(y)))
 
     def draw_line(self):
         painter = QPainter(self.base_widget)
         painter.setPen(self.pen)
-        
+
         start_point, end_point, direction_first, is_overlap = self.get_coords()
 
         if os.getenv("APP_THEME") == "dark":
@@ -245,7 +245,7 @@ class connection():
                 painter.drawText(end_point.x()+10, end_point.y(), str(sig_text))
 
             self.add_in_simbol(end_point)
-        
+
     def draw( self ):
             if self.first_unit is None or self.second_unit is None:
                 return
@@ -299,14 +299,14 @@ class Packing:
                 self.current_level = []
                 rectangle.y_offset = 0
                 rectangle.x_offset = current_x
-                
+
             self.current_level.append(rectangle)
 
         if self.current_level:
             current_x += max(r.current_x for r in self.current_level)
         return current_x, self.field_height
 
-    def pack_on_ceiling(self, rectangle, current_x):   
+    def pack_on_ceiling(self, rectangle, current_x):
         rectangle.x_offset = current_x
         rectangle.y_offset = sum(r.current_y for r in self.current_level if r.x_offset == current_x)
 
@@ -469,14 +469,14 @@ class expDiagram(QWidget):
         self.is_ctrl_pressed = False
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.connections = []
-        self.labels = [] 
+        self.labels = []
 
     def mousePressEvent(self, event):
         if event.buttons() == Qt.LeftButton:
             all_child_widgets = self.findChildren(blockDevice)
             for widget in all_child_widgets:
                 widget.toggle_selection(set_check=False)
-                    
+
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Control:
             self.is_ctrl_pressed = True
@@ -490,7 +490,7 @@ class expDiagram(QWidget):
                 if widget.is_check:
                     widget.hide()
                     widget.setParent(None)
-                    
+
     def auto_place(self, components: list):
         '''
         группа 1: компоненты работают по таймеру и от них не зависит ни один другой компонент
@@ -505,7 +505,7 @@ class expDiagram(QWidget):
         groups1 = []
         groups2 = []
         groups3 = []
-        
+
         for obj in components:
             if obj.group == None:
                 if obj.type_trigger == QApplication.translate("construct","Таймер"):
@@ -630,7 +630,7 @@ class expDiagram(QWidget):
         for widget in all_child_widgets:
             widget.hide()
             widget.setParent(None)
-            
+
         all_child_widgets = self.findChildren(connection)
         for widget in all_child_widgets:
             widget.hide()
@@ -767,7 +767,7 @@ class expDiagram(QWidget):
     def paintEvent(self, event):
         for con in self.connections:
             con.draw()
-                    
+
 class connectObject:
     def __init__(self, device, ch, type, value, num, color):
         self.name = f"{device} {ch}"
@@ -777,133 +777,3 @@ class connectObject:
         self.color         = color
         self.ch_name       = ch
         self.dev_name      = device
-
-def create_objects(main_dict):
-    objects = []
-    
-    # Список уникальных цветов
-    unique_colors= [
-    "rgba(186, 0, 0, 1)",       
-    "rgba(0, 128, 0, 1)",        
-    "rgba(0, 0, 255, 1)",        
-    "rgba(0, 160, 240, 1)",      
-    "rgba(128, 0, 128, 1)",      
-    "rgba(255, 165, 0, 1)",      
-    "rgba(255, 20, 147, 1)",     
-    "rgba(255, 105, 180, 1)",    
-    "rgba(255, 80, 0, 1)",      
-    "rgba(0, 255, 127, 1)",       
-    "rgba(0, 120, 120, 1)",       
-    "rgba(75, 0, 130, 1)",        
-    "rgba(200, 160, 150, 1)"     
-]
-    color_map = {}
-    color_index = 0
-
-    for device, channels in main_dict.items():
-        # Присваиваем цвет, если еще не присвоили
-        if device not in color_map:
-            if color_index < len(unique_colors):
-                color_map[device] = unique_colors[color_index]
-                color_index += 1
-            else:
-                color_map[device] = "#ffffff"  # цвет по умолчанию, белый
-        
-        color = color_map[device]
-        
-        for ch, params in channels.items():
-            obj = connectObject(
-                device=device,
-                ch=ch,
-                type=params["type_trigger"],
-                value=params["Value_trigger"],
-                num=params["Num_meas"],
-                color=color
-            )
-            objects.append(obj)
-    
-    return objects
-
-# Пример использования
-main_dict1 = {
-    "device1": {
-        "ch_1": {
-            "type_trigger": "Внешний сигнал",
-            "Value_trigger": "device2 ch_1 something",
-            "Num_meas": "num",
-        },
-    },
-    "device2": {
-        "ch_1": {
-            "type_trigger": "Внешний сигнал",
-            "Value_trigger": "device3 ch_1 something",
-            "Num_meas": "Пока активны другие приборы",
-        },
-    },
-    "device3": {
-        "ch_1": {
-            "type_trigger": "Внешний сигнал",
-            "Value_trigger": "device1 ch_1 something",
-            "Num_meas": 5,
-        },
-        "ch_2": {
-            "type_trigger": "Таймер",
-            "Value_trigger": 10,
-            "Num_meas": "num",
-        },
-        "ch_8": {
-            "type_trigger": "Таймер",
-            "Value_trigger": 10,
-            "Num_meas": "num",
-        }
-    },
-    "device4": {
-        "ch_1": {
-            "type_trigger": "Внешний сигнал",
-            "Value_trigger": "device3 ch_8 something",
-            "Num_meas": "num",
-        },
-        "ch_2": {
-            "type_trigger": "Внешний сигнал",
-            "Value_trigger": "device3 ch_8 something",
-            "Num_meas": "num",
-        },
-    },
-    "device5": {
-        "ch_1": {
-            "type_trigger": "Таймер",
-            "Value_trigger": 20,
-            "Num_meas": "num",
-        },
-    },
-    "device7": {
-        "ch_1": {
-            "type_trigger": "Внешний сигнал",
-            "Value_trigger": "device7 ch_2 something",
-            "Num_meas": "num",
-        },
-        "ch_2": {
-            "type_trigger": "Внешний сигнал",
-            "Value_trigger": "device7 ch_1 something",
-            "Num_meas": "num",
-        },
-    },
-}
-
-main_dict2 = {
-    "device1": {
-        "ch_1": {
-            "type_trigger": "Таймер",
-            "Value_trigger": 30,
-            "Num_meas": "num",
-        },
-    },
-    "device2": {
-        "ch_1": {
-            "type_trigger": "Внешний сигнал",
-            "Value_trigger": "device1 ch_1 something",
-            "Num_meas": "Пока активны другие приборы",
-        },
-    },
-}
-

@@ -2,9 +2,8 @@
 z-order, presentation-элементы. Никаких JSON.
 """
 from __future__ import annotations
-from typing import Callable, List, Tuple
 
-from PyQt5.QtWidgets import QMenu, QInputDialog, QComboBox, QDialog, QDialogButtonBox, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QVBoxLayout, QLabel
 
 from ..model.session_ref import DataRef
 
@@ -59,42 +58,3 @@ class ImportSessionDialog(QDialog):
         sid = self.session_combo.currentData() or ""
         root = self.series_combo.currentData() or ""
         return DataRef(session_id=sid, series_root_name=root)
-
-
-def build_canvas_menu(
-    parent_widget,
-    session_controller,
-    on_add_panel: Callable[[], None],
-    on_import_session: Callable[[str], None],
-    on_add_annotation: Callable[[str], None],
-    on_zorder_front: Callable[[], None],
-    on_zorder_back: Callable[[], None],
-    on_align: Callable[[str], None],
-) -> QMenu:
-    menu = QMenu(parent_widget)
-
-    menu.addAction("Добавить панель", on_add_panel)
-
-    import_dialog_action = QMenu("Импортировать сессию в панель", menu)
-    dialog = ImportSessionDialog(session_controller, parent_widget)
-    if dialog.exec_() == QDialog.Accepted:
-        ref = dialog.get_data_ref()
-        if ref.session_id and ref.series_root_name:
-            on_import_session(ref)
-    menu.addMenu(import_dialog_action)
-
-    pres_menu = QMenu("Presentation-элементы", menu)
-    for kind in ("text", "panel_label", "scale_bar", "bracket", "arrow"):
-        pres_menu.addAction(kind, lambda k=kind: on_add_annotation(k))
-    menu.addMenu(pres_menu)
-
-    align_menu = QMenu("Выровнять", menu)
-    for mode in ("left", "right", "top", "bottom", "center_h", "center_v"):
-        align_menu.addAction(mode, lambda m=mode: on_align(m))
-    menu.addMenu(align_menu)
-
-    menu.addSeparator()
-    menu.addAction("Z-order: на передний план", on_zorder_front)
-    menu.addAction("Z-order: на задний план", on_zorder_back)
-
-    return menu

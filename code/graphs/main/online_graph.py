@@ -90,7 +90,7 @@ class GraphWindow(QMainWindow):
         self.setWindowTitle(("Online Graph " + version) if version else "Online Graph")
         self.action_registry = action_registry
         self.buttons_controller = buttons_controller
-        self.session_controller = session_controller 
+        self.session_controller = session_controller
 
         self._apply_adaptive_geometry()
         self.notification = None
@@ -1213,10 +1213,3 @@ class sessionController():
         if self.graph_sessions.get(session_id) is None:
             return False
         return self.graph_sessions[session_id].data_manager.decode_add_exp_parameters(entry, time)
-
-
-def run_graph_process(queue):
-    app = QApplication([])
-    controller = sessionController(current_version="test")
-    controller.controll_sessions_win.show()
-    app.exec_()

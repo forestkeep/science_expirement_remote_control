@@ -43,7 +43,7 @@ class CurveDataStore:
         raw_x = np.asarray(data.x_result)
         raw_y = np.asarray(data.y_result)
         n = min(len(raw_x), len(raw_y))
-        
+
         self.raw_data_x = np.array(raw_x[:n], copy=True)
         self.raw_data_y = np.array(raw_y[:n], copy=True)
         self._filtered_x_data = self.raw_data_x.copy()
@@ -75,7 +75,7 @@ class CurveDataStore:
         self.uncertainty_style: dict = {}
 
     # -- observers ---------------------------------------------------
-    def on_data_changed(self, cb): 
+    def on_data_changed(self, cb):
         if cb not in self._on_data_changed:
             self._on_data_changed.append(cb)
 
@@ -90,10 +90,6 @@ class CurveDataStore:
     def off_meta_changed(self, cb):
         try: self._on_meta_changed.remove(cb)
         except ValueError: pass
-
-    # обратная совместимость:
-    def on_changed(self, cb):   self.on_data_changed(cb)
-    def off_changed(self, cb):  self.off_data_changed(cb)
 
     def _notify_data_changed(self) -> None:
         for cb in list(self._on_data_changed):
@@ -172,7 +168,7 @@ class CurveDataStore:
         self._notify_data_changed()
         return True
 
-    
+
 
     def delete_filter(self, fc: FilterCommand) -> None:
         if fc not in self.filters_history:
@@ -333,16 +329,6 @@ class CurveDataStore:
     # -- uncertainty -------------------------------------------------
     def active_uncertainty_records(self) -> list:
         return [r for r in self.uncertainty_records if r.id in self.active_uncertainty_ids]
-
-    def add_uncertainty(self, record) -> None:
-        self.uncertainty_records.append(record)
-        self.active_uncertainty_ids.add(record.id)
-        self._notify_meta_changed()
-
-    def remove_uncertainty(self, record_id: str) -> None:
-        self.uncertainty_records = [r for r in self.uncertainty_records if r.id != record_id]
-        self.active_uncertainty_ids.discard(record_id)
-        self._notify_meta_changed()
 
     def set_uncertainty_active(self, record_id: str, active: bool) -> None:
         if active:

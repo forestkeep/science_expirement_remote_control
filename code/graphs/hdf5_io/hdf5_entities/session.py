@@ -12,14 +12,13 @@ import h5py
 
 from ..extensions import SessionExtensionRegistry
 from ..extras import read_attrs, write_attrs
-from ..load_strategies.base import BaseLoadStrategy
 from ..models import Session, SessionParameters
 from ..schema import SESSION_PARAMETERS_SPEC, SESSION_SPEC
 
 
 class HDF5Session:
     def __init__(self, group: h5py.Group,
-                 load_strategy: Optional[BaseLoadStrategy] = None):
+                 load_strategy = None):
         self._group = group
         self.load_strategy = load_strategy
 

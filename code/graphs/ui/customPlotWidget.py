@@ -185,7 +185,7 @@ class PatchedPlotWidget(pg.PlotWidget):
     inf_line_removed = pyqtSignal(object)
     style_changed    = pyqtSignal()
     legend_recreated = pyqtSignal(object, object)
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -513,7 +513,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         return QtGui.QFont(self.legend_font)
 
 
-    
+
     def _emit_style_changed(self):
         """Оповестить подписчиков (сессия → дочерние графики) о смене стиля."""
         try:
@@ -548,7 +548,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         self.set_legend_color(style["legend"])
         self.toggleGrid(True)
         self._emit_style_changed()
-        
+
 
     def updateViews(self):
         """Обновление вьюшек при изменении размера"""
@@ -557,7 +557,7 @@ class PatchedPlotWidget(pg.PlotWidget):
 
     def showToolTip(self, pos):
         return
-            
+
     def set_second_axis(self, state: bool):
         """Включение/выключение второй оси"""
         self.is_second_axis = state
@@ -567,10 +567,6 @@ class PatchedPlotWidget(pg.PlotWidget):
             self.axises["right"].show()
         self._emit_style_changed()
 
-    def chooseCustomLegendColor(self):
-        color = QtWidgets.QColorDialog.getColor()
-        if color.isValid():
-            self.set_legend_color(color)
 
     def set_legend_color(self, color):
         """Обновить цвет текста легенды.
@@ -642,109 +638,7 @@ class PatchedPlotWidget(pg.PlotWidget):
         finally:
             self._emit_style_changed()
 
-    def set_axis_color(self, color, axis_key):
-        if isinstance(color, tuple):
-            color = QtGui.QColor(*color)
-        axis_map = {'x': 'bottom', 'y1': 'left', 'y2': 'right'}
-        axis = self.axises[axis_map[axis_key]]
-        axis.custom_style.color = color
-        axis.setTextPen(color)
-        if hasattr(axis, 'style') and 'tickText' in axis.style:
-            axis.style['tickText'] = (color, axis.style['tickText'][1])
-        self._emit_style_changed()
 
-    def choose_custom_axis_color(self, axis_key):
-        color = QtWidgets.QColorDialog.getColor()
-        if color.isValid():
-            self.set_axis_color(color, axis_key)
-
-    def customize_axis_font(self, axis_key):
-        """Установка шрифта для оси"""
-        
-        # Получаем текущий шрифт оси
-        axis_map = {'x': 'bottom', 'y1': 'left', 'y2': 'right'}
-        axis = self.axises[axis_map[axis_key]]
-        
-        current_font = QtGui.QFont()
-        if hasattr(axis, 'tickFont') and axis.tickFont():
-            current_font = axis.tickFont()
-        elif hasattr(axis, 'style') and 'tickText' in axis.style:
-            current_font = axis.style['tickText'][1]
-        
-        # Открываем диалог выбора шрифта
-        font, ok = QtWidgets.QFontDialog.getFont(current_font, self, "Выберите шрифт")
-        if ok:
-            axis.custom_style.text_font = font
-            axis.set_custom_style( axis.custom_style )
-            self._emit_style_changed()
-
-    def customize_axis_tick_font(self, axis_key):
-        """Установка шрифта для оси"""
-        
-        # Получаем текущий шрифт оси
-        axis_map = {'x': 'bottom', 'y1': 'left', 'y2': 'right'}
-        axis = self.axises[axis_map[axis_key]]
-        
-        current_font = QtGui.QFont()
-        if hasattr(axis, 'tickFont') and axis.tickFont():
-            current_font = axis.tickFont()
-        elif hasattr(axis, 'style') and 'tickText' in axis.style:
-            current_font = axis.style['tickText'][1]
-        
-        # Открываем диалог выбора шрифта
-        font, ok = QtWidgets.QFontDialog.getFont(current_font, self, "Выберите шрифт")
-        if ok:
-            axis.custom_style.tick_font = font
-            axis.set_custom_style( axis.custom_style )
-            self._emit_style_changed()
-
-    def customize_axes_font(self):
-
-        font, ok = QtWidgets.QFontDialog.getFont(self.common_style.text_font, self, "Выберите шрифт")
-        if ok:
-            self.common_style.text_font = font
-            for axis in self.axises.values():
-                if not axis.settings.is_style_customized:#если ось не была кастомизирована инживидуально. то применяем общие настройки
-                    axis.set_common_style( self.common_style )
-                else:
-                    axis.update_common_style(self.common_style)
-            self._emit_style_changed()
-
-    def customize_axes_tick_font(self):
-
-        font, ok = QtWidgets.QFontDialog.getFont(self.common_style.text_font, self, "Выберите шрифт")
-        if ok:
-            self.common_style.tick_font = font
-            for axis in self.axises.values():
-                if not axis.settings.is_style_customized:#если ось не была кастомизирована инживидуально. то применяем общие настройки
-                    axis.set_common_style( self.common_style )
-                else:
-                    axis.update_common_style(self.common_style)
-
-    def reset_x_axis_style(self):
-        self.axises["bottom"].reset_style()
-        self._emit_style_changed()
-
-    def reset_y1_axis_style(self):
-        self.axises["left"].reset_style()
-        self._emit_style_changed()
-
-    def reset_y2_axis_style(self):
-        self.axises["right"].reset_style()
-        self._emit_style_changed()
-
-    def customize_x_axis_font(self):
-        self.customize_axis_font('x')
-        self._emit_style_changed()
-
-    def customize_y1_axis_font(self):
-        self.customize_axis_font('y1')
-        self._emit_style_changed()
-
-    def customize_y2_axis_font(self):
-        self.customize_axis_font('y2')
-        self._emit_style_changed()
-        
     def invert_x_axis(self, checked):
         self.plotItem.vb.invertX(checked)
         if hasattr(self, 'second_graphView'):
@@ -765,13 +659,13 @@ class PatchedPlotWidget(pg.PlotWidget):
 
     def hide_second_line_grid(self):
         self.axises["right"].setGrid(0)
-    
+
     def toggleGrid(self, checked):
         self.is_grid_shown = checked
         self.plotItem.showGrid(x=checked, y=checked)
         self.hide_second_line_grid()
         self._emit_style_changed()
-    
+
     def setCustomBackgroundColor(self, color):
         if isinstance(color, tuple):
             color = QtGui.QColor(*color)
@@ -784,12 +678,7 @@ class PatchedPlotWidget(pg.PlotWidget):
             line.setPen(tooltip_color)
             line.label.setColor(tooltip_color)
         self._emit_style_changed()
-    
-    def chooseCustomBackgroundColor(self):
-        color = QtWidgets.QColorDialog.getColor()
-        if color.isValid():
-            self.setCustomBackgroundColor(color)
-    
+
     def setGridColor(self, color):
         if isinstance(color, tuple):
             color = QtGui.QColor(*color)
@@ -798,54 +687,17 @@ class PatchedPlotWidget(pg.PlotWidget):
             plot_item.getAxis('bottom').setPen(color)
             plot_item.getAxis('left').setPen(color)
         self._emit_style_changed()
-            
-    def chooseCustomGridColor(self):
-        color = QtWidgets.QColorDialog.getColor()
-        if color.isValid():
-            self.setGridColor(color)
-    
-    def set_axes_color(self, color):
-        if isinstance(color, tuple):
-            color = QtGui.QColor(*color)
-        
-        plot_item = self.plotItem
-        self.common_style.color = color
-        
-        for axis_name in ['bottom', 'left', 'right', 'top']:
-            if self.axises.get(axis_name) is None:
-                continue
-            axis = self.axises[axis_name]
-            axis.update_common_style(self.common_style)
-            if axis:
-                axis.setTextPen(color)
-                if hasattr(axis, 'style') and 'tickText' in axis.style:
-                    axis.style['tickText'] = (color, axis.style['tickText'][1])
-        self._emit_style_changed()
-        
-    def chooseCustomTextColor(self):
-        color = QtWidgets.QColorDialog.getColor()
-        if color.isValid():
-            self.common_style.color = color
-            self.set_axes_color(color)
-    
-    def toggleAntialias(self, checked):
-        for item in self.plotItem.items:
-            if isinstance(item, pg.PlotCurveItem):
-                item.setAntialiased(checked)
-            self._emit_style_changed()
-    
-    def autoRangeEnabled(self):
-        return self.plotItem.getViewBox().autoRangeEnabled()
-    
+
+
     def get_max_contrast_color(self, color: QtGui.QColor) -> QtGui.QColor:
         r = color.red() / 255.0
         g = color.green() / 255.0
         b = color.blue() / 255.0
-        
+
         r = r / 12.92 if r <= 0.03928 else ((r + 0.055) / 1.055) ** 2.4
         g = g / 12.92 if g <= 0.03928 else ((g + 0.055) / 1.055) ** 2.4
         b = b / 12.92 if b <= 0.03928 else ((b + 0.055) / 1.055) ** 2.4
-        
+
         luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
 
         return QtGui.QColor(0, 0, 0) if luminance > 0.179 else QtGui.QColor(255, 255, 255)
@@ -871,42 +723,3 @@ class PatchedPlotWidget(pg.PlotWidget):
                 # обратная совместимость со старым 2-аргументным колбэком
                 cb(before, after)
         self._emit_style_changed()
-    
-    def add_vertical_line(self):
-        """Добавляет вертикальную линию в центр видимой области"""
-        view_range = self.plotItem.viewRange()
-        x_center = (view_range[0][0] + view_range[0][1]) / 2
-        self._add_line(angle=90, pos=x_center)
-
-    def add_horizontal_line(self):
-        """Добавляет горизонтальную линию в центр видимой области"""
-        view_range = self.plotItem.viewRange()
-        y_center = (view_range[1][0] + view_range[1][1]) / 2
-        self._add_line(angle=0, pos=y_center)
-
-    def _add_line(self, angle, pos):
-        """Создает линию с указанным углом и позицией"""
-        contrast_color = self.get_max_contrast_color(self.background_color)
-
-        if not hasattr(self, '_line_counter'):
-            self._line_counter = 0
-        self._line_counter += 1
-        
-        inf_line = RemovableInfiniteLine(
-            movable=True,
-            angle=angle,
-            pen=(contrast_color.red(), contrast_color.green(), contrast_color.blue()),
-            hoverPen=(0, 200, 0),
-            label=f'#{self._line_counter}: {{value:0.6f}}',
-            labelOpts={
-                'color': (contrast_color.red(), contrast_color.green(), contrast_color.blue()),
-                'movable': True, 
-                'fill': (0, 0, 200, 100)
-            },
-            pos=pos
-        )
-        
-        inf_line.removeRequested.connect(self.remove_inf_line)
-        self.add_inf_line(inf_line)
-
-        

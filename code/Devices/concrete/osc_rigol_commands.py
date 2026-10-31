@@ -1,11 +1,11 @@
 # Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
 # following information to ensure the GNU General Public License version 3.0
 # requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-# 
+#
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -126,7 +126,7 @@ class oscRigolCommands:
         """return step beetwen points"""
         sample_rate = self.get_sample_rate()
         return 1 / sample_rate[0]
-    
+
     def get_data(self, start_point, end_point):
         new_data = []
 
@@ -419,38 +419,6 @@ class oscRigolCommands:
                 command=f":CHANnel{number_ch}:DISP?\r\n", focus_answer=f"{0}\n"
             )
         return is_ok
-
-    def show_graph(self, arr):
-        new_data = arr
-        fig, ax1 = plt.subplots(figsize=(12, 8))
-
-        cmap = plt.get_cmap("tab20")
-
-        markers = [
-            "o",
-            "s",
-            "^",
-            "v",
-            "p",
-            "*",
-            "+",
-            "x",
-            "D",
-            "H",
-        ]  # Выбор стилей маркеров
-
-        y = new_data
-        x = range(len(y))
-        ax1.scatter(x, y, label=f" (Main)", color="green", marker=markers[0], s=10)
-
-        ax1.set_xlabel("Index")
-        ax1.set_ylabel("Main Axis")
-
-        plt.title("rtrrtrtrtrt")
-        fig.tight_layout()
-        fig.legend()
-        plt.grid(True)
-        plt.show()
 
 
 if __name__ == "__main__":

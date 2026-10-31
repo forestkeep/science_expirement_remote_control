@@ -13,12 +13,6 @@ hdf5_io/
         plot.py            # Представление графика
         oscillogram_data.py # Представление данных осциллограмм
         # ... другие сущности
-    load_strategies/       # Пакет для стратегий выборочной загрузки
-        __init__.py
-        base.py
-        metadata_strategy.py  # Загрузка только метаданных
-        full_load_strategy.py # Полная загрузка
-        # ... другие стратегии
 Ответственность классов
 HDF5Facade (в facade.py):
 
@@ -62,9 +56,6 @@ VersioningManager (в versioning.py):
 
 Использует паттерн Стратегия для миграций между конкретными версиями.
 
-Стратегии загрузки (в load_strategies/):
-
-Базовый класс LoadStrategy с методом load(entity: BaseHDF5Entity) -> Model.
 
 
 Взаимодействие компонентов при сохранении

@@ -32,15 +32,6 @@ def qt_style_to_mpl(style) -> object:
     logger.warning("qt_style_to_mpl: неизвестный стиль %r, fallback '-'", style)
     return "-"
 
-
-def color_for_series(saved_style, index: int, palette: str = "okabe_ito") -> str:
-    if saved_style is not None:
-        c = getattr(saved_style, "color", None)
-        if c:
-            return str(c)
-    return OKABE_ITO[index % len(OKABE_ITO)]
-
-
 def line_width_pt(saved_style, default: float = 1.0) -> float:
     if saved_style is None:
         return float(default)
@@ -51,4 +42,4 @@ def line_width_pt(saved_style, default: float = 1.0) -> float:
         return float(default)
 
 
-__all__ = ["qt_style_to_mpl", "color_for_series", "line_width_pt"]
+__all__ = ["qt_style_to_mpl", "line_width_pt"]

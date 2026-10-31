@@ -1,11 +1,11 @@
 # Copyright © 2025 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
 # following information to ensure the GNU General Public License version 3.0
 # requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-# 
+#
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 from graphs.core.curve_data import linearData
@@ -25,7 +25,6 @@ class graphSelectAdapter:
         self.main_class = main_class
 
         self.selector.parameters_updated.connect(self.parameters_choised)
-        self.selector.multiple_checked.connect(self.multiple_changed)
         self.selector.state_second_axis_changed.connect(self.state_second_axis_changed)
         self.selector.numPointsChanged.connect(self._on_num_points_changed)
         self.selector.showingAllPoints.connect(self._on_showing_all_points)
@@ -237,12 +236,10 @@ class graphSelectAdapter:
         cmd = AddCurveCommand(session=session, root_name=data.root_name)
         if cmd.bind_after_creation():
             session.undo_manager.push(cmd)
-            
+
     def state_second_axis_changed(self, state):
         self.graph.set_second_axis(state)
 
-    def multiple_changed(self, state):
-        pass
 
     def update_params(self, parameters):
         list_parameters = parameters[self.type_data]

@@ -1,11 +1,11 @@
 # Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
 # following information to ensure the GNU General Public License version 3.0
 # requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-# 
+#
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -14,7 +14,7 @@ import sys
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import  QFont, QIcon, QPixmap
 from PyQt5.QtWidgets import (QAction, QApplication,  QDialog,
-                             QHBoxLayout, QHeaderView, QLineEdit, QMainWindow,
+                             QHBoxLayout, QHeaderView, QLineEdit,
                              QMenu, QMessageBox, QPushButton, QTextEdit,
                              QTreeWidget, QTreeWidgetItem, QVBoxLayout,
                              QWidget)
@@ -94,7 +94,7 @@ class CurveTreeItem(QTreeWidgetItem):
 
     def add_basic_characteristics(self):
         self.addChild(QTreeWidgetItem([f"ID: {self.parameters['id']}"]))
-        
+
         text = QApplication.translate("GraphWindow", "Тип: {tip}")
         text = text.format(tip=self.parameters["tip"])
         self.addChild(QTreeWidgetItem([text]))
@@ -295,13 +295,6 @@ class CurveDialog(QDialog):
     def get_curve_data(self):
         return self.name_input.text(), self.formula_input.text(), self.description_input.toPlainText()
 
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("")
-        self.setGeometry(100, 100, 800, 600)
-        main_widget = treeWin()
-        self.setCentralWidget(main_widget)
 
 class customTreeWidget(QTreeWidget):
     def __init__(self, par_class):
@@ -322,7 +315,6 @@ class treeWin(QWidget):
     curve_deleted = pyqtSignal( object )
     curve_shown = pyqtSignal( object )
     curve_hide = pyqtSignal( object )
-    curve_reset = pyqtSignal( object )
     curve_created = pyqtSignal( object, str, str )
     analysis_item_removed = pyqtSignal(str)
     analysis_item_visibility_toggled = pyqtSignal(str, bool)
@@ -491,7 +483,7 @@ class treeWin(QWidget):
                     choised_curves[curve.parameters["id"]] = curve
             if not is_consist_curve:
                 return
-            
+
             names_x_parameters = set()
             for id, curve in choised_curves.items():
                 if curve.curve_data_obj.rel_data.x_root_name not in names_x_parameters and names_x_parameters:
@@ -505,7 +497,7 @@ class treeWin(QWidget):
                 logger.info("ошибка в расчете, таймаут, возможно, что-то с исходными данными")
                 self.main_class.show_tooltip( QApplication.translate("GraphWindow","Таймаут при расчете параметров. Возможно, исходные данные содержат некорректные значенияю."), timeout=3000)
                 return
-                
+
             result = self.evaluate_expression(self.buf_formula, all_curves)
 
             temp_rel_data = copy.deepcopy( curve.curve_data_obj.rel_data )
@@ -532,12 +524,12 @@ class treeWin(QWidget):
             curve_data = tree_curves[key].curve_data_obj
             x = curve_data.filtered_x_data
             y = curve_data.filtered_y_data
-            
+
             all_x.append(x)
             all_y.append(y)
 
         all_x, all_y, status = ArrayProcessor.combine_all_arrays(all_x, all_y)
-        
+
         for i, key in enumerate(keys):
             tree_curves[key] = all_y[i]
 
@@ -570,7 +562,7 @@ class treeWin(QWidget):
                 break
 
         if root_item:
-            context_menu = QMenu(self) 
+            context_menu = QMenu(self)
 
             if root_item.curve_data_obj.is_draw:
                 text_show = QApplication.translate("filters","Скрыть")
@@ -684,7 +676,7 @@ class treeWin(QWidget):
                                           QApplication.translate("GraphWindow", "Пожалуйста, выберите элемент для отображения."))
                 return
         logger.info(f"show_curve {item=} {self.curves=}")
-            
+
         if item in self.curves:
             self.curve_shown.emit(item.curve_data_obj)
 
@@ -710,11 +702,3 @@ class treeWin(QWidget):
             self.delete_curve(curve)
 
         self.update_visible()
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    mainWin = MainWindow()
-    mainWin.show()
-    sys.exit(app.exec_())
-
-    

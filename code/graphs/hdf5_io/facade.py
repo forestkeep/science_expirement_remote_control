@@ -7,8 +7,6 @@ from typing import Optional
 
 from .adapters import HDF5ToProjectAdapter, ProjectToHDF5Adapter
 from .hdf5_entities.file import HDF5File
-from .load_strategies.base import BaseLoadStrategy
-from .load_strategies.full_load_strategy import FullLoadStrategy
 from .models import ProjectFile
 
 logger = logging.getLogger(__name__)
@@ -27,10 +25,10 @@ def _parse_dt(raw) -> datetime:
 
 class HDF5Facade:
     def __init__(self, core_to_hdf5_adapter=None, hdf5_to_core_adapter=None,
-                 default_load_strategy: Optional[BaseLoadStrategy] = None):
+                 default_load_strategy = None):
         self.core_to_hdf5 = core_to_hdf5_adapter or ProjectToHDF5Adapter()
         self.hdf5_to_core = hdf5_to_core_adapter or HDF5ToProjectAdapter()
-        self.default_load_strategy = default_load_strategy or FullLoadStrategy()
+        self.default_load_strategy = default_load_strategy
 
     def save_project(self, core_project, file_path: str) -> None:
         project_file = self.core_to_hdf5.convert_project(core_project)
@@ -42,7 +40,7 @@ class HDF5Facade:
             logger.info("project saved: %s", file_path)
 
     def load_project(self, file_path: str, core_project_class,
-                 load_strategy: Optional[BaseLoadStrategy] = None):
+                 load_strategy = None):
         strategy = load_strategy or self.default_load_strategy
         with HDF5File(file_path, "r", strategy) as h5:
             values, extras = h5.read_file_attributes()

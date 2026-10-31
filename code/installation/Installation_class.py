@@ -1,11 +1,11 @@
 # Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
 # following information to ensure the GNU General Public License version 3.0
 # requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-# 
+#
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -55,7 +55,7 @@ def get_serializable_copy(obj):
     """Создает копию объекта только с сериализуемыми атрибутами."""
     # Создаем новый экземпляр класса без вызова __init__
     new_obj = obj.__class__.__new__(obj.__class__)
-    
+
     # Собираем атрибуты исходного объекта
     attributes = {}
     if hasattr(obj, '__dict__'):
@@ -72,9 +72,9 @@ def get_serializable_copy(obj):
                     attributes[attr_name] = attr_value
             except AttributeError:
                 continue
-    
+
     removed_attrs = []
-    
+
     # Копируем только сериализуемые атрибуты
     for attr_name, attr_value in attributes.items():
         if is_serializable(attr_value):
@@ -85,7 +85,7 @@ def get_serializable_copy(obj):
                 removed_attrs.append(attr_name)
         else:
             removed_attrs.append(attr_name)
-    
+
     return new_obj, removed_attrs
 
 
@@ -145,20 +145,6 @@ class installation_class( ExperimentBridge, analyse):
     def actor_end_work(self, actor: str):
         self.exp_call_stack.set_actor_inactive(actor)
         self.add_text_to_log(f"{actor}" + QApplication.translate('exp_flow',"завершил работу"), "ok")
-        
-    def format_bool_settings(self, value):
-
-        if isinstance(value, str ):
-            if value.lower() == "true":
-                value = True
-            elif value.lower() == "false":
-                value = False
-            else:
-                try:
-                    value = float(value)
-                except:
-                    pass
-        return value
 
     def reconstruct_installation(self, installation_list: list, json_devices: dict = None):
         """Reconstruct installation from list of device names"""
@@ -199,7 +185,7 @@ class installation_class( ExperimentBridge, analyse):
 
         self.exp_diagram = expDiagram(icon_manager=self.inst_icon_manager)
         self.exp_call_stack = actDiagram(color_manager=self.inst_color_manager)
-        
+
         self.installation_window = Ui_Installation()
         self.installation_window.setWindowTitle(
                     "Experiment control " + self.version_app
@@ -238,14 +224,14 @@ class installation_class( ExperimentBridge, analyse):
         self.installation_window.develop_mode.triggered.connect(self.change_check_debug)
 
         self.installation_window.clear_log_button.clicked.connect(self.clear_log)
-        
+
         self.installation_window.clear_log_button.setToolTip(QApplication.translate('main install',"Очистить лог"))
         self.set_state_text( text = QApplication.translate('main install',"Ожидание настройки приборов") )
 
         self.installation_window.instruction.triggered.connect(self.show_instruction)
 
         self.installation_window.log_path_open.triggered.connect(open_log_file)
-        
+
         self.timer_for_open_base_instruction.start()
 
     def set_state_ch(self, device, num_ch, state):
@@ -256,11 +242,11 @@ class installation_class( ExperimentBridge, analyse):
     def preparation_experiment(self):
         logger.debug("подготовка к эксперименту")
         self.current_state = ExperimentState.PREPARATION
-        
+
         self.message_broker.clear_all_subscribers()
         status = self.set_depending()#setting subscribers
-        
-        
+
+
         #Строим схему взаимодействия приборов
         self.exp_diagram.rebuild_schematic(self, self.dict_active_device_class)
 
@@ -347,7 +333,7 @@ class installation_class( ExperimentBridge, analyse):
         list_parameters_act=None,
         list_parameters_meas=None,
     ):
-        
+
         labeltext = ""
         for i in list_parameters_device:
             labeltext = (
@@ -376,7 +362,7 @@ class installation_class( ExperimentBridge, analyse):
         """функция записывает параметры во временный текстовый файл в ходе эксперимента, если что-то прервется, то данные не будут потеряны, после окончания эксперимента файл вычитывается и перегоняется в нужные форматы"""
         with open(self.buf_file, "a") as file:
             file.write(str(name_device) + str(text) + "\n\r")
-    
+
     def close_app(self, event):
         self.close_other_windows()
         event.accept()
@@ -409,7 +395,7 @@ class installation_class( ExperimentBridge, analyse):
                 identifiers = [dev.get_name()]
                 for ch in dev.channels:
                     identifiers.append( f"{dev.get_name()} {ch.get_name()}")
-    
+
                 color = self.inst_color_manager.register_color(dev, identifiers)
                 dev.set_color(color)
             self.preparation_experiment()
@@ -452,7 +438,7 @@ class installation_class( ExperimentBridge, analyse):
                     self.add_text_to_log(text=text, status='war')
                     logger.warning(f"Подписки {trig_val} не существует в менеджере подписок. {device=} {ch=}")
         return status
-    
+
     def action_stop_experiment(self):
             self.stoped_experiment()
             self.pause_exp()
@@ -480,28 +466,28 @@ class installation_class( ExperimentBridge, analyse):
                 self.is_search_resources = True
                 self.set_clients_for_device()
                 self.set_state_text(text = QApplication.translate('main install',"Старт эксперимента"))
-                
+
                 self.message_broker.clear_all_subscribers()
                 status = self.set_depending()#setting subscribers
-                
+
                 if status:
                     self.current_session_graph_id = self.graph_controller.start_new_session(session_name=str(datetime.now()),
                                                                                             use_timestamps=True,
                                                                                             is_experiment_running=True
                                                                                             )
-                      
+
                     if isinstance(self.current_session_graph_id, bool) and self.current_session_graph_id is False:
                         self.add_text_to_log(text =QApplication.translate('main install',"Не удалось создать новую сессию измерений"), status = "war")
                         logger.warning("Не удалось создать новую сессию измерений")
                         self.current_state = ExperimentState.PREPARATION
                         return
-                    
+
                     self.installation_window.pause_button.setStyleSheet(ready_style_background)
                     self.installation_window.start_button.setStyleSheet(ready_style_background)
                     self.installation_window.start_button.setText(QApplication.translate('main install',"Стоп"))
-                    
+
                     self.has_unsaved_data = False
-                    
+
                     self.buf_file = self.create_buf_file()
 
                     write_data_to_buf_file(file = self.buf_file,message="installation start" + "\n\r")
@@ -589,7 +575,7 @@ class installation_class( ExperimentBridge, analyse):
     @property
     def current_state(self):
         return self._current_state
-    
+
     @current_state.setter
     def current_state(self, state):
         self._current_state = state
@@ -645,7 +631,7 @@ class installation_class( ExperimentBridge, analyse):
 
         if self.count_exp_call_stack == self.max_actors:
             self.exp_call_stack.finalize_layout()
-                
+
     def update_remaining_time(self, remaining_time: float):
         logger.debug(f"update_remaining_time {remaining_time}")
         self.remaining_exp_time = remaining_time
@@ -664,7 +650,7 @@ class installation_class( ExperimentBridge, analyse):
 
         currentdatetime = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
         return os.path.join(folder_path, f"{name_file + currentdatetime}.txt")
-    
+
     def write_settings_to_buf_file(self):
         for device_class in self.dict_active_device_class.values():
             write_data_to_buf_file(file = self.buf_file, message="Settings " + str(device_class.get_name()) + "\r")
@@ -743,7 +729,7 @@ class installation_class( ExperimentBridge, analyse):
             self.way_to_save_installation_file = fileName
             self.installation_window.setWindowTitle("Experiment control - " + fileName + " " + self.version_app)
         return status, buffer
-        
+
     def extract_saved_installlation(self, fileName):
         status, buffer = self.read_info_by_saved_installation(fileName)
         #TODO: добавить проверку буффера на корректность
@@ -753,7 +739,7 @@ class installation_class( ExperimentBridge, analyse):
             self.timer_open.timeout.connect(lambda: self.timer_open_timeout(buffer, fileName))
             self.timer_open.setSingleShot(True)
             self.timer_open.start(800)
-  
+
         return status, buffer
 
     def timer_open_timeout(self, buffer, fileName):

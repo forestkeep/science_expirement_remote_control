@@ -1,11 +1,11 @@
 # Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
 # following information to ensure the GNU General Public License version 3.0
 # requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-# 
+#
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -13,14 +13,7 @@ import json
 import os
 from dataclasses import dataclass
 from device_creator.dev_creator import templates
-
-@dataclass
-class devFile:
-    path: str
-    name: str
-    message: str
-    status: bool
-    json_data: dict
+from device_selector import devFile
 
 def validate_json_schema(file_path, templates, data=None):
     if data is None:

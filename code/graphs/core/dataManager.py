@@ -1,11 +1,11 @@
 # Copyright © 2025 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
 # following information to ensure the GNU General Public License version 3.0
 # requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-# 
+#
 # This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -30,15 +30,6 @@ class measTimeData:
     param: str = ''
     par_val: np.array = None
     num_or_time: np.array = None
-
-@dataclass
-class oscData:
-    device: str = ''
-    ch: str = ''
-    param: str = ''
-    time_stamp = float
-    par_val: np.array = None
-    steps_time: np.array = None
 
 @dataclass
 class sessionMeasData:
@@ -96,30 +87,30 @@ class relationData:
                 self.__base_x = np.unique(np.concatenate((xt, yt)))
                 self.x_result = np.interp(self.__base_x, xt, xv)
                 self.y_result = np.interp(self.__base_x, yt, yv)
-            
+
 
     def create_base_names(self, x_device, x_ch, x_param, y_device, y_ch, y_param):
         x_original = f"{x_device}{x_ch}{x_param}"
         y_original = f"{y_device}{y_ch}{y_param}"
-        
+
         return x_original, y_original, f"{y_original}/{x_original}"
-    
+
     @property
     def is_gen(self):
         return self._is_gen
-    
+
     @property
     def y_current_name(self):
         return self._y_current_name
-    
+
     @property
     def x_root_name(self):
         return self._x_root_name
-    
+
     @property
     def y_root_name(self):
         return self._y_root_name
-    
+
     @property
     def root_name(self):
         return self._root_name
@@ -141,7 +132,7 @@ class relationData:
         if y_name is None:
             y_name = self.y_current_name
         self.x_current_name = x_name
-        self.y_current_name = y_name 
+        self.y_current_name = y_name
         self.current_name = f"{y_name}/{x_name}"
 
 class graphDataManager(QObject):
@@ -223,13 +214,13 @@ class graphDataManager(QObject):
         """
         if "osc" in self.__sessions_data:
             self.__sessions_data["osc"].is_running = False
-    
+
     def get_session_data(self, keysx: str, keysy1: list, keysy2: list, data_type: str) -> tuple[measTimeData, dict, dict]:
         # Конвертируем псевдонимы обратно в оригинальные имена
         original_keysx = self.alias_manager.get_original_name(keysx)
         original_keysy1 = [self.alias_manager.get_original_name(key) for key in keysy1]
         original_keysy2 = [self.alias_manager.get_original_name(key) for key in keysy2]
-        
+
         returned_x = None
         returned_y1 = {}
         returned_y2 = {}
@@ -241,18 +232,18 @@ class graphDataManager(QObject):
             returned_y2[self.alias_manager.get_original_name(key)] = self.__sessions_data[data_type].data[key]
 
         return returned_x, returned_y1, returned_y2
-    
+
     def get_all_data(self):
         return self.__sessions_data
-    
+
     def get_name(self):
         return self.name
-    
+
     def get_name_params(self) -> list[str]:
         """Возвращает список параметров с применением псевдонимов"""
         original_names = list(self.__sessions_data['osc'].data.keys()) + list(self.__sessions_data['main'].data.keys())
         return [self.alias_manager.get_alias(name) for name in original_names]
-    
+
     def get_original_name_params(self) -> list[str]:
         """Возвращает список оригинальных имен параметров"""
         return list(self.__sessions_data['osc'].data.keys()) + list(self.__sessions_data['main'].data.keys())
@@ -261,7 +252,7 @@ class graphDataManager(QObject):
         """Возвращает все параметры с применением псевдонимов"""
         osc_params = [self.alias_manager.get_alias(name) for name in self.__sessions_data['osc'].data.keys()]
         main_params = [self.alias_manager.get_alias(name) for name in self.__sessions_data['main'].data.keys()]
-        
+
         return {
             "main": main_params,
             "osc": osc_params
@@ -307,7 +298,7 @@ class graphDataManager(QObject):
         if not session_id:
             session_id = self.name
         return self.__sessions_data['osc'].is_running
-    
+
     def stop_session_running(self, session_id: str = None):
         if not session_id:
             session_id = self.name
@@ -346,7 +337,7 @@ class graphDataManager(QObject):
             2: self._handle_two_level_data,
             1: self._handle_one_level_data
         }
-        
+
         handler = depth_handlers.get(depth)
 
         is_new_param_added = False
@@ -365,7 +356,7 @@ class graphDataManager(QObject):
             self._enqueue_batch(self.updated_params)
 
         return status
-    
+
     def _handle_three_level_data(self, data: Dict[str, Dict[str, dict[str, Any]]], type_data: str = None) -> tuple[bool, bool, bool]:
         is_new_param_added = False
         is_old_param_udated = False
@@ -380,7 +371,7 @@ class graphDataManager(QObject):
                         is_old_param_udated = True
                     if not ans:
                         return False, is_new_param_added, is_old_param_udated
-                    
+
         return True, is_new_param_added, is_old_param_udated
 
     def _handle_two_level_data(self, data: Dict[str, Dict[str, Any]], type_data: str = None)  -> bool:
@@ -410,7 +401,7 @@ class graphDataManager(QObject):
                 is_old_param_udated = True
             if not ans:
                 return False, is_new_param_added, is_old_param_udated
-            
+
         return True, is_new_param_added, is_old_param_udated
 
     def _add_new_data(self, device: Optional[str], channel: Optional[str], param: str, value: list, type_data: str = None) -> tuple[bool, bool, bool]:
@@ -468,7 +459,7 @@ class graphDataManager(QObject):
             is_old_param_udated = True
 
         return True, is_new_param_added, is_old_param_udated
-    
+
     def decode_add_exp_parameters(self, entry, time):
         data = {}
         try:
@@ -542,7 +533,7 @@ class graphDataManager(QObject):
     def force_flush(self):
         """Принудительно отправить буфер сейчас (при остановке сессии, экспорте и т.п.)."""
         self._flush_batch()
-    
+
 def get_dict_depth(d):
     if not isinstance(d, dict) or not d:
         return 0

@@ -1,5 +1,5 @@
 # Copyright © 2025 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-# 
+#
 # This file may be used under the terms of the GNU General Public License
 # version 3.0 as published by the Free Software Foundation and appearing in
 # the file LICENSE included in the packaging of this file. Please review the
@@ -12,10 +12,9 @@
 import logging
 
 from PyQt5.QtCore import QObject, Qt, pyqtSignal
-from PyQt5.QtGui import QBrush, QColor
 from PyQt5.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QFrame, QGridLayout, QGroupBox,
-    QHBoxLayout, QLabel, QLineEdit, QScrollArea, QSizePolicy, QSplitter,
+    QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QSplitter,
     QVBoxLayout, QWidget,
 )
 
@@ -43,7 +42,6 @@ class YAxisGroup(QGroupBox):
     selection_changed = pyqtSignal()
     activation_changed = pyqtSignal(bool)
     multiple_changed = pyqtSignal(bool)
-
     def __init__(self, title: str, axis_id: int, parent=None, columns: int = 2):
         super().__init__(title, parent)
         self.axis_id = axis_id
