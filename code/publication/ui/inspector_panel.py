@@ -621,132 +621,150 @@ class PanelInspector(QWidget):
             return
         self.panel_geometry_changed.emit(self.panel_id, 30.0, 20.0, 60.0, 45.0)
 
-
 class AddCurveInlinePanel(QWidget):
-    """Inline-панель добавления кривых из сессии (по ТЗ)."""
-    curves_added = pyqtSignal(str, list)  # panel_id, list of DataRef
+	curves_added=pyqtSignal(str,list)
+	def __init__(self,panel_id:str,session_controller,parent=None):
+		super().__init__(parent)
+		self.panel_id=panel_id
+		self.session_controller=session_controller
+		self._connected_session=None
+		self._connected_signals=[]
+		self._build_ui()
+		self._reload_sessions()
+		self.destroyed.connect(lambda *args: self._disconnect_session())
 
-    def __init__(self, panel_id: str, session_controller, parent=None):
-        super().__init__(parent)
-        self.panel_id = panel_id
-        self.session_controller = session_controller
-        self._build_ui()
-        self._reload_sessions()
+	def _build_ui(self):
+		layout=QVBoxLayout(self)
+		layout.setContentsMargins(0,0,0,0)
+		layout.setSpacing(4)
+		row1=QHBoxLayout()
+		row1.addWidget(QLabel("Сессия:"))
+		self.session_combo=QComboBox()
+		self.session_combo.currentIndexChanged.connect(self._reload_series)
+		row1.addWidget(self.session_combo,1)
+		layout.addLayout(row1)
+		row2=QHBoxLayout()
+		row2.addWidget(QLabel("Фильтр:"))
+		self.filter_edit=QLineEdit()
+		self.filter_edit.setPlaceholderText("поиск...")
+		self.filter_edit.textChanged.connect(self._apply_filter)
+		row2.addWidget(self.filter_edit,1)
+		layout.addLayout(row2)
+		self.scroll=QScrollArea()
+		self.scroll.setWidgetResizable(True)
+		self.scroll.setMaximumHeight(200)
+		self.list_widget=QWidget()
+		self.list_layout=QVBoxLayout(self.list_widget)
+		self.list_layout.setContentsMargins(0,0,0,0)
+		self.scroll.setWidget(self.list_widget)
+		layout.addWidget(self.scroll)
+		btn_row=QHBoxLayout()
+		self.add_btn=QPushButton("Добавить выбранные")
+		self.add_btn.clicked.connect(self._on_add)
+		self.cancel_btn=QPushButton("Отмена")
+		self.cancel_btn.clicked.connect(self.hide)
+		btn_row.addWidget(self.add_btn)
+		btn_row.addWidget(self.cancel_btn)
+		layout.addLayout(btn_row)
+		self.hide()
 
-    def _build_ui(self):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(4)
+	def _disconnect_session(self):
+		if self._connected_session is not None:
+			for sig, slot in self._connected_signals:
+				try:
+					sig.disconnect(slot)
+				except TypeError:
+					pass
+			self._connected_session=None
+			self._connected_signals.clear()
 
-        # Сессия
-        row1 = QHBoxLayout()
-        row1.addWidget(QLabel("Сессия:"))
-        self.session_combo = QComboBox()
-        self.session_combo.currentIndexChanged.connect(self._reload_series)
-        row1.addWidget(self.session_combo, 1)
-        layout.addLayout(row1)
+	def _connect_session(self, sess):
+		if sess is self._connected_session:
+			return
+		self._disconnect_session()
+		if sess is None:
+			return
+		gm=getattr(sess,"graph_main",None)
+		if gm is not None:
+			sig_add=getattr(gm,"curve_added",None)
+			if sig_add is not None:
+				slot=lambda *args: self._reload_series()
+				sig_add.connect(slot)
+				self._connected_signals.append((sig_add,slot))
+			sig_rem=getattr(gm,"curve_removed",None)
+			if sig_rem is not None:
+				slot=lambda *args: self._reload_series()
+				sig_rem.connect(slot)
+				self._connected_signals.append((sig_rem,slot))
+		self._connected_session=sess
 
-        # Фильтр
-        row2 = QHBoxLayout()
-        row2.addWidget(QLabel("Фильтр:"))
-        self.filter_edit = QLineEdit()
-        self.filter_edit.setPlaceholderText("поиск...")
-        self.filter_edit.textChanged.connect(self._apply_filter)
-        row2.addWidget(self.filter_edit, 1)
-        layout.addLayout(row2)
+	def _reload_sessions(self):
+		self.session_combo.blockSignals(True)
+		self.session_combo.clear()
+		sessions=getattr(self.session_controller,"graph_sessions",{}) or {}
+		for sid,sess in sessions.items():
+			try:
+				name=sess.session_name
+			except Exception:
+				name=sid
+			self.session_combo.addItem(f"{sid}: {name}",sid)
+		self.session_combo.blockSignals(False)
+		self._reload_series()
 
-        # Список чекбоксов
-        self.scroll = QScrollArea()
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setMaximumHeight(200)
-        self.list_widget = QWidget()
-        self.list_layout = QVBoxLayout(self.list_widget)
-        self.list_layout.setContentsMargins(0, 0, 0, 0)
-        self.scroll.setWidget(self.list_widget)
-        layout.addWidget(self.scroll)
+	def _reload_series(self):
+		while self.list_layout.count():
+			item=self.list_layout.takeAt(0)
+			w=item.widget()
+			if w is not None:
+				w.deleteLater()
+		sid=self.session_combo.currentData()
+		if not sid:
+			return
+		sess=self.session_controller.graph_sessions.get(sid)
+		if not sess:
+			return
+		self._connect_session(sess)
+		gm=getattr(sess,"graph_main",None)
+		if not gm:
+			return
+		curves=gm.get_curves()
+		for root_name,curve in curves.items():
+			name=getattr(curve,"curve_name",root_name)
+			cb=QCheckBox(name)
+			cb.setProperty("root_name",root_name)
+			cb.setProperty("session_id",sid)
+			self.list_layout.addWidget(cb)
+		self.list_layout.addStretch()
 
-        # Кнопки
-        btn_row = QHBoxLayout()
-        self.add_btn = QPushButton("Добавить выбранные")
-        self.add_btn.clicked.connect(self._on_add)
-        self.cancel_btn = QPushButton("Отмена")
-        self.cancel_btn.clicked.connect(self.hide)
-        btn_row.addWidget(self.add_btn)
-        btn_row.addWidget(self.cancel_btn)
-        layout.addLayout(btn_row)
+	def _apply_filter(self,text):
+		text=text.strip().lower()
+		for i in range(self.list_layout.count()):
+			item=self.list_layout.itemAt(i)
+			w=item.widget()
+			if isinstance(w,QCheckBox):
+				w.setVisible( not text or text in w.text().lower())
 
-        self.hide()
-
-    def _reload_sessions(self):
-        self.session_combo.blockSignals(True)
-        self.session_combo.clear()
-        sessions = getattr(self.session_controller, "graph_sessions", {}) or {}
-        for sid, sess in sessions.items():
-            try:
-                name = sess.session_name
-            except Exception:
-                name = sid
-            self.session_combo.addItem(f"{sid}: {name}", sid)
-        self.session_combo.blockSignals(False)
-        self._reload_series()
-
-    def _reload_series(self):
-        # Очистить список
-        while self.list_layout.count():
-            item = self.list_layout.takeAt(0)
-            w = item.widget()
-            if w is not None:
-                w.deleteLater()
-
-        sid = self.session_combo.currentData()
-        if not sid:
-            return
-        sess = self.session_controller.graph_sessions.get(sid)
-        if not sess:
-            return
-        gm = getattr(sess, "graph_main", None)
-        if not gm:
-            return
-        curves = gm.get_curves()
-        for root_name, curve in curves.items():
-            name = getattr(curve, "curve_name", root_name)
-            cb = QCheckBox(name)
-            cb.setProperty("root_name", root_name)
-            cb.setProperty("session_id", sid)
-            self.list_layout.addWidget(cb)
-        self.list_layout.addStretch()
-
-    def _apply_filter(self, text):
-        text = text.strip().lower()
-        for i in range(self.list_layout.count()):
-            item = self.list_layout.itemAt(i)
-            w = item.widget()
-            if isinstance(w, QCheckBox):
-                w.setVisible(not text or text in w.text().lower())
-
-    def _on_add(self):
-        from ..model.session_ref import DataRef, DataSnapshot, StyleSnapshot
-
-        selected = []
-        for i in range(self.list_layout.count()):
-            item = self.list_layout.itemAt(i)
-            w = item.widget()
-            if isinstance(w, QCheckBox) and w.isChecked():
-                sid = w.property("session_id")
-                root_name = w.property("root_name")
-                if sid and root_name:
-                    ref = DataRef(session_id=sid, series_root_name=root_name)
-                    sess = self.session_controller.graph_sessions.get(sid)
-                    if sess:
-                        gm = getattr(sess, "graph_main", None)
-                        if gm:
-                            curve = gm.get_curve(root_name)
-                            if curve:
-                                ref.data = DataSnapshot.take(curve)
-                                # artifacts_provider можно передать, если нужно
-                                ref.style = StyleSnapshot.take(curve, None)
-                                ref.refresh_policy = "snapshot"
-                    selected.append(ref)
-        if selected:
-            self.curves_added.emit(self.panel_id, selected)
-        self.hide()
+	def _on_add(self):
+		from..model.session_ref import DataRef,DataSnapshot,StyleSnapshot
+		selected=[]
+		for i in range(self.list_layout.count()):
+			item=self.list_layout.itemAt(i)
+			w=item.widget()
+			if isinstance(w,QCheckBox) and w.isChecked():
+				sid=w.property("session_id")
+				root_name=w.property("root_name")
+				if sid and root_name:
+					ref=DataRef(session_id=sid,series_root_name=root_name)
+					sess=self.session_controller.graph_sessions.get(sid)
+					if sess:
+						gm=getattr(sess,"graph_main",None)
+						if gm:
+							curve=gm.get_curve(root_name)
+							if curve:
+								ref.data=DataSnapshot.take(curve)
+								ref.style=StyleSnapshot.take(curve,None)
+								ref.refresh_policy="snapshot"
+					selected.append(ref)
+		if selected:
+			self.curves_added.emit(self.panel_id,selected)
+		self.hide()
