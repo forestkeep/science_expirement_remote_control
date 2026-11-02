@@ -216,12 +216,14 @@ class PublicationWidgetCoreMixin:
         panel = self.spec.find_panel(panel_id)
         if panel is None:
             return
+
         for ref in refs:
             slot = CurveSlot(data_ref=ref, axis="y1", visible=True)
             panel.curves.append(slot)
-        self._refresh_tree()
-        if self._current_panel_id == panel_id:
-            self._inspector_panel.set_panel(panel_id)
+
+        self._tree.set_spec(self.spec, preserve_selection=False)
+        self._on_panel_selected(panel_id)
+        self._refresh_counters()
         self._schedule_render()
 
     # -------------------------------------------------------------- toolbar
@@ -272,29 +274,24 @@ class PublicationWidgetCoreMixin:
         self._layout_btn.clicked.connect(self._on_apply_layout)
         h.addWidget(self._layout_btn)
 
-        # 6) Импорт в панель
-        self._import_btn = QPushButton("Импорт в панель")
-        self._import_btn.clicked.connect(self._import_session_to_panel)
-        h.addWidget(self._import_btn)
-
-        # 7) Валидировать
+        # 6) Валидировать
         self._validate_btn = QPushButton("Валидировать")
         self._validate_btn.clicked.connect(self._on_validate)
         h.addWidget(self._validate_btn)
 
-        # 8) Экспорт
+        # 7) Экспорт
         self._export_btn = QPushButton("Экспорт")
         self._export_btn.clicked.connect(self._on_export)
         h.addWidget(self._export_btn)
 
-        # 9) Реальный размер (по умолчанию вкл)
+        # 8) Реальный размер (по умолчанию вкл)
         self._zoom_btn = QPushButton("Реальный размер")
         self._zoom_btn.setCheckable(True)
         self._zoom_btn.setChecked(True)
         self._zoom_btn.toggled.connect(self._on_zoom_toggled)
         h.addWidget(self._zoom_btn)
 
-        # 10) Перезагрузить сессии
+        # 9) Перезагрузить сессии
         self._reload_btn = QPushButton("Перезагрузить сессии")
         self._reload_btn.clicked.connect(self._on_reload)
         h.addWidget(self._reload_btn)

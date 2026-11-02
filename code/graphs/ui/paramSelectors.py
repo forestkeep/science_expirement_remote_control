@@ -84,17 +84,7 @@ class YAxisGroup(QGroupBox):
 
         outer.addLayout(header)
 
-        # --- Поиск (компактный) ---
-        '''
-        self.search = QLineEdit()
-        self.search.setPlaceholderText(_TR("Поиск..."))
-        self.search.setClearButtonEnabled(True)
-        self.search.setMaximumHeight(22)
-        self.search.textChanged.connect(self._apply_filter)
-        outer.addWidget(self.search)
-        '''
-
-         # --- Прокручиваемая сетка чекбоксов ---
+        # --- Прокручиваемая сетка чекбоксов ---
         self._scroll = QScrollArea()
         self._scroll.setWidgetResizable(True)
         self._scroll.setFrameShape(QFrame.NoFrame)
@@ -116,6 +106,10 @@ class YAxisGroup(QGroupBox):
             "QCheckBox::indicator { width: 14px; height: 14px; }"
         )
         self._scroll.setWidget(self._container)
+        # ИСПРАВЛЕНИЕ: ограничиваем высоту области параметров,
+        # чтобы селектор занимал минимум места. Прокрутка остаётся.
+        self._scroll.setMaximumHeight(80)
+        self._scroll.setMinimumHeight(40)
         outer.addWidget(self._scroll, 1)
 
     # ------------------------------------------------------------------

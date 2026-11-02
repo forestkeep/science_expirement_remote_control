@@ -128,7 +128,49 @@ class MatplotlibRenderer(RendererAdapter):
         )
         if w <= 0 or h <= 0:
             return None
-        ax = fig.add_axes([x, y, w, h])
+
+        # --- ИСПРАВЛЕНИЕ: учёт места под числа на осях и подписи ---
+        tick_size = style_resolver("figure.axes.tick_size")
+        if tick_size is MISSING:
+            tick_size = _contract_fallback("axes.tick_size") or 7.0
+        label_size = style_resolver("figure.axes.label_size")
+        if label_size is MISSING:
+            label_size = _contract_fallback("axes.label_size") or 8.0
+
+        tick_in = float(tick_size) / 72.0
+        label_in = float(label_size) / 72.0
+        fig_w_in, fig_h_in = fig.get_size_inches()
+
+        left_margin = (
+            (tick_in * 2.5 + label_in * 1.5) / fig_w_in
+            if panel.y_label else (tick_in * 2.5) / fig_w_in
+        )
+        bottom_margin = (
+            (tick_in * 1.5 + label_in * 1.5) / fig_h_in
+            if panel.x_label else (tick_in * 1.5) / fig_h_in
+        )
+        if panel.y2_visible:
+            right_margin = (
+                (tick_in * 2.5 + label_in * 1.5) / fig_w_in
+                if panel.y2_label else (tick_in * 2.5) / fig_w_in
+            )
+        else:
+            right_margin = 0.0
+        top_margin = (label_in * 1.5) / fig_h_in if panel.title else 0.0
+
+        # Если панель слишком мала, отказываемся от отступов
+        if left_margin + right_margin >= w or bottom_margin + top_margin >= h:
+            left_margin = right_margin = bottom_margin = top_margin = 0.0
+
+        ix = x + left_margin
+        iy = y + bottom_margin
+        iw = w - left_margin - right_margin
+        ih = h - bottom_margin - top_margin
+
+        if iw <= 0 or ih <= 0:
+            return None
+
+        ax = fig.add_axes([ix, iy, iw, ih])
 
         axes_lw = style_resolver("figure.axes.line_width")
         if axes_lw is MISSING:
@@ -675,11 +717,14 @@ class MatplotlibRenderer(RendererAdapter):
         x1_mm, y1_mm, x2_mm, y2_mm = ann.coords[:4]
         a0 = self._mm_to_axes_xy(panel, x1_mm, y1_mm)
         a1 = self._mm_to_axes_xy(panel, x2_mm, y2_mm)
+
+        color = str((ann.style or {}).get("color", "black"))
         ax.annotate(
             ann.text, xy=a1, xytext=a0,
             xycoords="axes fraction", textcoords="axes fraction",
-            arrowprops=dict(arrowstyle="->", color="black"),
+            arrowprops=dict(arrowstyle="->", color=color),
             fontsize=float(ann.style.get("size", 8.0)),
+            color=color,
         )
 
     def save(self, fig: Figure, path: str, fmt: str, dpi: int = 300) -> None:

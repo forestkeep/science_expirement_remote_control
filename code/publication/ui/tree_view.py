@@ -282,7 +282,8 @@ class FigureTree(QTreeWidget):
             for ann in sorted(self.spec.presentation_annotations,
                               key=lambda a: (int(a.z), a.id)):
                 preview = (ann.text or "")[:40]
-                label = f"{ann.kind}  {preview}".rstrip()
+                # ИСПРАВЛЕНИЕ: добавлен префикс «Аннотация»
+                label = f"Аннотация {ann.kind}  {preview}".rstrip()
                 item = QTreeWidgetItem(ann_root, [label, "", ""])
                 item.setData(0, Qt.UserRole, ("annotation", ann.id))
 
@@ -302,7 +303,6 @@ class FigureTree(QTreeWidget):
         finally:
             self.blockSignals(False)
 
-
     def _add_panel_item(self, parent: QTreeWidgetItem, panel: PanelSpec) -> QTreeWidgetItem:
         item = QTreeWidgetItem(parent, [f"Панель {panel.id}", "", ""])
         item.setIcon(0, _indicator_for(panel))
@@ -318,7 +318,8 @@ class FigureTree(QTreeWidget):
             ref = slot.data_ref
             name = ref.series_root_name if ref is not None and not ref.is_empty() else "(пустая ссылка)"
             legend = slot.legend_label or name
-            slot_item.setText(0, f"{axis}  {legend}")
+            # ИСПРАВЛЕНИЕ: добавлен префикс «Кривая»
+            slot_item.setText(0, f"Кривая {axis}  {legend}")
             type_icon = _slot_type_icon(panel, idx)
             slot_item.setText(2, type_icon)
 

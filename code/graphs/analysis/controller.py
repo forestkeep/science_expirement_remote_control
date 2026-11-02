@@ -351,7 +351,12 @@ class AnalysisController(QObject):
         return normalize_uncertainty_style(style)
 
     def _on_selection_changed(self, selected) -> None:
-        """Подсветить артефакты, чьи источники выделены."""
+        """Подсветить артефакты, чьи источники выделены.
+
+        Дополнительно синхронизирует источники активного инструмента с
+        текущим выделением. Иначе инструмент, выбранный один раз, при
+        выделении новой кривой продолжал бы применяться к старой.
+        """
         selected_roots = set()
         for item in selected or []:
             root = None
@@ -361,6 +366,14 @@ class AnalysisController(QObject):
                 root = item.rel_data.root_name
             if root:
                 selected_roots.add(root)
+
+        # Активный инструмент всегда работает с текущим выделением.
+        if self._active is not None:
+            fresh_sources = self._collect_sources(None)
+            self._active.sources = fresh_sources
+            self._active.leader_index = (
+                len(fresh_sources) - 1 if fresh_sources else -1
+            )
 
         for art in self.store.all():
             is_sel = any(s in selected_roots for s in art.source_curve_ids)
@@ -450,6 +463,10 @@ class AnalysisController(QObject):
         self.renderer.set_visible(handle, artifact.visibility)
         for root_name in artifact.source_curve_ids:
             self._subscribe_curve(root_name)
+
+        # Важно для undo/redo: дерево и панель «Анализ» слушают
+        # artifacts_changed, а не artifact_applied.
+        self.artifacts_changed.emit()
         self.artifact_applied.emit(artifact.id)
 
     def _do_remove(self, artifact_id: str) -> None:
@@ -460,6 +477,10 @@ class AnalysisController(QObject):
         self.store.remove(artifact_id)
         for root_name in artifact.source_curve_ids:
             self._maybe_unsubscribe_curve(root_name)
+
+        # Важно для undo/redo: без этого артефакт исчезает с графика,
+        # но остаётся в дереве / списке результатов.
+        self.artifacts_changed.emit()
         self.artifact_removed.emit(artifact_id)
 
 

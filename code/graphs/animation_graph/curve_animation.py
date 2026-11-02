@@ -4,6 +4,7 @@ from PyQt5 import QtCore
 
 logger = logging.getLogger(__name__)
 
+
 class Animator(QtCore.QObject):
     """
     Аниматор для плавного отображения данных кривой (linearData).
@@ -54,14 +55,7 @@ class Animator(QtCore.QObject):
         if self._is_playing and not self._is_paused:
             return
 
-
         self.current_index = 0
-        # Сбрасываем данные к сырым (без фильтров)
-        self.curve.filtered_x_data = self.raw_x.copy()
-        self.curve.filtered_y_data = self.raw_y.copy()
-        self.curve.update_all_plots_data()
-
-        self._update_curve_data(0)
 
         self.saved_filters = list(self.curve.filters_history)
 
@@ -71,6 +65,11 @@ class Animator(QtCore.QObject):
 
         self._is_playing = True
         self._is_paused = False
+
+        # Сразу показываем пустое окно. Далее кадры будут добавлять точки.
+        # Важно: _update_curve_data() сам бампает data_version, иначе
+        # CurvePresenter.refresh() не увидит изменения filtered_*.
+        self._update_curve_data(0)
         self._start_timer()
 
     @property
@@ -87,7 +86,7 @@ class Animator(QtCore.QObject):
         self.filter_timer.stop()
         self._is_playing = False
         self._is_paused = False
-        self._update_curve_data(self.total_points)#восстановление всех точек
+        self._update_curve_data(self.total_points)  # восстановление всех точек
 
         if self.saved_filters:
             # Восстанавливаем историю и применяем все фильтры сразу (без анимации)
@@ -162,8 +161,19 @@ class Animator(QtCore.QObject):
         else:
             x_slice = self.raw_x[:index]
             y_slice = self.raw_y[:index]
+
         self.curve.filtered_x_data = x_slice
         self.curve.filtered_y_data = y_slice
+
+        # КЛЮЧЕВОЕ: CurvePresenter.refresh() кэширует по store.data_version.
+        # Без бампа версии setData() не вызывается и анимация визуально
+        # «замирает» на первом кадре.
+        store = getattr(self.curve, "store", None)
+        if store is not None:
+            bump = getattr(store, "_bump_version", None)
+            if callable(bump):
+                bump()
+
         self.curve.update_all_plots_data()
 
     def _finish_animation(self):

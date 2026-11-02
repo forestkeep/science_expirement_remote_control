@@ -406,8 +406,8 @@ class GraphSettingsWidget(QWidget):
         f.addRow("Размер значка:", self.legend_symbol_size_spin)
 
         return box
-    
-    
+
+
     # ==================================================================
     # Синхронизация UI с текущим состоянием виджета
     # ==================================================================
@@ -590,7 +590,7 @@ class GraphSettingsWidget(QWidget):
 
         gv_main.apply_appearance_change(mutate)
         _status(self.session, f"Ось «{self.AXIS_TITLES.get(key, key)}» обновлена", 2000)
-    
+
     def apply_legend(self, *_):
         if self._suppress:
             return
@@ -1766,14 +1766,21 @@ class AppliedFilterWidget(QGroupBox):
             "GraphWindow",
             "Снимите галочку, чтобы исключить фильтр из расчёта, не удаляя его."
         ))
+        # Разрешаем чекбоксу сжиматься, чтобы он не выталкивал кнопку удаления.
+        self.enable_check.setSizePolicy(
+            QSizePolicy.Ignored, QSizePolicy.Preferred
+        )
+        self.enable_check.setMinimumWidth(0)
         self.enable_check.stateChanged.connect(self._on_enabled_changed)
         header.addWidget(self.enable_check, 1)
 
         del_btn = QPushButton("×")
         del_btn.setFixedWidth(24)
+        del_btn.setMinimumWidth(24)
+        del_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         del_btn.setToolTip(QApplication.translate("GraphWindow", "Удалить фильтр"))
         del_btn.clicked.connect(self._on_delete)
-        header.addWidget(del_btn)
+        header.addWidget(del_btn, 0, Qt.AlignRight)
 
         outer.addLayout(header)
 
@@ -2006,34 +2013,7 @@ class FiltersTab(QWidget):
     def setup_ui(self) -> None:
         layout = QVBoxLayout(self)
 
-        layout.addWidget(QLabel("Применённые фильтры:"))
-        hint = QLabel(QApplication.translate(
-            "GraphWindow",
-            "Порядок карточек = порядок применения. Перетащите карточку, "
-            "чтобы изменить порядок."
-        ))
-        hint.setStyleSheet("color: #888; font-size: 11px;")
-        hint.setWordWrap(True)
-        layout.addWidget(hint)
-
-        self.filters_scroll = QScrollArea()
-        self.filters_scroll.setWidgetResizable(True)
-        self.filters_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.filters_container = FiltersContainer()
-        self.filters_container.filter_dropped.connect(self._on_filter_dropped)
-        self.filters_layout = QVBoxLayout(self.filters_container)
-        self.filters_layout.setContentsMargins(0, 0, 0, 0)
-        self.filters_layout.setSpacing(4)
-        self.filters_scroll.setWidget(self.filters_container)
-        layout.addWidget(self.filters_scroll, 1)
-
-        self.reset_all_btn = QPushButton("Сбросить все")
-        self.reset_all_btn.setToolTip(QApplication.translate(
-            "GraphWindow", "Снять все фильтры с выделенных кривых"))
-        self.reset_all_btn.clicked.connect(self.reset_all_filters)
-        layout.addWidget(self.reset_all_btn)
-
-        # --- Добавление нового фильтра (без изменений) ---
+        # --- Добавление нового фильтра: перенесено наверх ---
         group = QGroupBox("Добавить фильтр")
         gl = QVBoxLayout(group)
 
@@ -2067,6 +2047,34 @@ class FiltersTab(QWidget):
         gl.addWidget(self.apply_btn)
 
         layout.addWidget(group)
+
+        # --- Применённые фильтры ---
+        layout.addWidget(QLabel("Применённые фильтры:"))
+        hint = QLabel(QApplication.translate(
+            "GraphWindow",
+            "Порядок карточек = порядок применения. Перетащите карточку, "
+            "чтобы изменить порядок."
+        ))
+        hint.setStyleSheet("color: #888; font-size: 11px;")
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+
+        self.filters_scroll = QScrollArea()
+        self.filters_scroll.setWidgetResizable(True)
+        self.filters_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.filters_container = FiltersContainer()
+        self.filters_container.filter_dropped.connect(self._on_filter_dropped)
+        self.filters_layout = QVBoxLayout(self.filters_container)
+        self.filters_layout.setContentsMargins(0, 0, 0, 0)
+        self.filters_layout.setSpacing(4)
+        self.filters_scroll.setWidget(self.filters_container)
+        layout.addWidget(self.filters_scroll, 1)
+
+        self.reset_all_btn = QPushButton("Сбросить все")
+        self.reset_all_btn.setToolTip(QApplication.translate(
+            "GraphWindow", "Снять все фильтры с выделенных кривых"))
+        self.reset_all_btn.clicked.connect(self.reset_all_filters)
+        layout.addWidget(self.reset_all_btn)
     # ------------------------------------------------------------------
     # Панели добавления фильтра (без изменений по существу)
     # ------------------------------------------------------------------
@@ -2431,4 +2439,3 @@ class CollapsibleGroupBox(QWidget):
 
     def contentLayout(self) -> QVBoxLayout:
         return self.content_layout
-
