@@ -1,3 +1,4 @@
+# code/installation/Installation_class.py
 # Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
 #
 # This file may be used under the terms of the GNU General Public License
@@ -11,10 +12,10 @@
 
 import logging
 import os
+import pickle
 import threading
-
 import time
-import json
+
 from datetime import datetime
 
 from PyQt5 import QtCore, QtWidgets
@@ -22,8 +23,9 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication
 
 from installation.Analyse_in_installation import analyse
-from Devices.base.Classes import (not_ready_style_background,
-                             not_ready_style_border, ready_style_background)
+from Devices.base.Classes import (
+    not_ready_style_background, not_ready_style_border, ready_style_background,
+)
 from installation.experiment.measurement_running import experimentControl
 from installation.experiment.meta import metaDataExp
 from infrastructure.pubsub import messageBroker
@@ -35,53 +37,54 @@ from meas_session_data import measSession
 from infrastructure.visual.color_manager import ColorManager
 from infrastructure.visual.icon_manager import IconGenerator
 from installation.experiment.experiment_control import ExperimentBridge
-from functions import get_active_ch_and_device, write_data_to_buf_file, clear_queue, create_clients, ExperimentState, open_log_file
+from installation.installation_spec import InstallationSpec
+from functions import (
+    get_active_ch_and_device, write_data_to_buf_file,
+    clear_queue, create_clients, ExperimentState, open_log_file,
+)
 from graphs.main.online_graph import sessionController
 from multiprocessing import Process, Pipe, Queue
 
+from file_io import load_file, save_file
+from file_io.errors import FileError
+
 logger = logging.getLogger(__name__)
 
-import pickle
 
 def is_serializable(value):
     """Проверяет, можно ли сериализовать значение с помощью pickle."""
     try:
         pickle.dumps(value)
         return True
-    except Exception as e:
+    except Exception:
         return False
+
 
 def get_serializable_copy(obj):
     """Создает копию объекта только с сериализуемыми атрибутами."""
-    # Создаем новый экземпляр класса без вызова __init__
     new_obj = obj.__class__.__new__(obj.__class__)
 
-    # Собираем атрибуты исходного объекта
     attributes = {}
     if hasattr(obj, '__dict__'):
-        # Для объектов с __dict__
         attributes = vars(obj).copy()
     else:
-        # Для объектов без __dict__ (например, с __slots__)
         for attr_name in dir(obj):
             if attr_name.startswith('__') and attr_name.endswith('__'):
-                continue  # Пропускаем служебные атрибуты
+                continue
             try:
                 attr_value = getattr(obj, attr_name)
-                if not callable(attr_value):  # Пропускаем методы
+                if not callable(attr_value):
                     attributes[attr_name] = attr_value
             except AttributeError:
                 continue
 
     removed_attrs = []
 
-    # Копируем только сериализуемые атрибуты
     for attr_name, attr_value in attributes.items():
         if is_serializable(attr_value):
             try:
                 setattr(new_obj, attr_name, attr_value)
             except AttributeError:
-                # Обработка атрибутов, которые нельзя установить (например, в __slots__)
                 removed_attrs.append(attr_name)
         else:
             removed_attrs.append(attr_name)
@@ -89,19 +92,19 @@ def get_serializable_copy(obj):
     return new_obj, removed_attrs
 
 
-class installation_class( ExperimentBridge, analyse):
-    def __init__(self, settings_manager, version = None) -> None:
+class installation_class(ExperimentBridge, analyse):
+    def __init__(self, settings_manager, version=None) -> None:
         super().__init__()
 
-        self.settings_manager    = settings_manager
-        self.version_app         = version
+        self.settings_manager = settings_manager
+        self.version_app = version
 
         self.device_selector = None
 
         self.inst_color_manager = ColorManager()
         self.inst_icon_manager = IconGenerator(self.inst_color_manager)
 
-        self.dict_device_class  = dict_device_class
+        self.dict_device_class = dict_device_class
         self.JSON_dict_device_class = JSON_dict_device_class
 
         self.timer_for_pause_exp = QTimer()
@@ -114,19 +117,15 @@ class installation_class( ExperimentBridge, analyse):
         self.timer_second_thread_tasks.timeout.connect(self.second_thread_tasks)
 
         self.timer_for_connection_main_exp_thread = QTimer()
-        self.timer_for_connection_main_exp_thread.timeout.connect( self.connection_two_thread )
+        self.timer_for_connection_main_exp_thread.timeout.connect(self.connection_two_thread)
 
         self.timer_for_open_base_instruction = QTimer()
         self.timer_for_open_base_instruction.timeout.connect(
             lambda: self.show_basic_instruction()
         )
-        self.timer_for_open_base_instruction.setSingleShot(
-            True
-        )
+        self.timer_for_open_base_instruction.setSingleShot(True)
 
-        self.message_broker = (
-            messageBroker()
-        )
+        self.message_broker = messageBroker()
         self.count_exp_call_stack = 0
 
         self.current_state = ExperimentState.PREPARATION
@@ -138,47 +137,58 @@ class installation_class( ExperimentBridge, analyse):
             "set_state_text": self.set_state_text,
             "update_remaining_time": self.update_remaining_time,
             "add_text_to_log": self.add_text_to_log,
-            "end_work": self.actor_end_work
+            "end_work": self.actor_end_work,
         }
         self.second_thread_tasks_counter = 0
 
     def actor_end_work(self, actor: str):
         self.exp_call_stack.set_actor_inactive(actor)
-        self.add_text_to_log(f"{actor}" + QApplication.translate('exp_flow',"завершил работу"), "ok")
+        self.add_text_to_log(
+            f"{actor}" + QApplication.translate('exp_flow', "завершил работу"), "ok"
+        )
 
-    def reconstruct_installation(self, installation_list: list, json_devices: dict = None):
-        """Reconstruct installation from list of device names"""
+    def reconstruct_installation(self, installation_list: list,
+                                 json_devices: dict = None):
+        """Reconstruct installation from list of device names."""
         self.dict_active_device_class = {}
         self.graph_controller = sessionController(current_version=self.version_app)
         self.inst_color_manager = ColorManager()
         self.inst_icon_manager = IconGenerator(self.inst_color_manager)
-        #self.graph_controller.graphics_win.graph_win_close_signal.connect(self.graph_win_closed)
         self.measurement_parameters = {}
         i = 0
         for device_name in installation_list:
             try:
-                device = self.dict_device_class[device_name](name=f"{device_name}_{i+1}", installation_class=self)
+                device = self.dict_device_class[device_name](
+                    name=f"{device_name}_{i+1}", installation_class=self
+                )
                 self.dict_active_device_class[f"{device_name}_{i+1}"] = device
             except Exception as e:
-                logger.error(f"Failed to create instance of {device_name} {e}")
+                logger.error("Failed to create instance of %s %s", device_name, e)
             i += 1
 
         if json_devices:
-            for dev in json_devices.values():
+            for dev_name, dev_data in json_devices.items():
                 try:
-                    device_class = self.JSON_dict_device_class[ dev.json_data['device_type'] ](
-                        name=f"{dev.name}_{i+1}", installation_class=self
-                        )
-                    device_class.load_json(dev.json_data)
-                    self.dict_active_device_class[f"{dev.name}_{i+1}"] = device_class
+                    # dev_data — dict (JSON_temp), не devFile. Используем
+                    # device_type из него напрямую.
+                    device_class = self.JSON_dict_device_class[
+                        dev_data['device_type']
+                    ](name=f"{dev_name}_{i+1}", installation_class=self)
+                    device_class.load_json(dev_data)
+                    self.dict_active_device_class[f"{dev_name}_{i+1}"] = device_class
+                except KeyError:
+                    logger.warning(
+                        "тип %s пока не разработан в шаблон класса",
+                        dev_data.get('device_type') if isinstance(dev_data, dict) else "?",
+                    )
                 except Exception as e:
-                    logger.error(f"Failed to create instance of {dev.name} {e}")
+                    logger.error("Failed to create instance of %s %s", dev_name, e)
                 i += 1
 
         for dev in self.dict_active_device_class.values():
             identifiers = [dev.get_name()]
             for ch in dev.channels:
-                identifiers.append( f"{dev.get_name()} {ch.get_name()}")
+                identifiers.append(f"{dev.get_name()} {ch.get_name()}")
 
             color = self.inst_color_manager.register_color(dev, identifiers)
             dev.set_color(color)
@@ -188,17 +198,22 @@ class installation_class( ExperimentBridge, analyse):
 
         self.installation_window = Ui_Installation()
         self.installation_window.setWindowTitle(
-                    "Experiment control " + self.version_app
-                )
+            "Experiment control " + self.version_app
+        )
         self.installation_window.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-        self.installation_window.setupUi(self.installation_window, self, self.dict_active_device_class, self.exp_diagram, self.exp_call_stack.diagram)
+        self.installation_window.setupUi(
+            self.installation_window, self, self.dict_active_device_class,
+            self.exp_diagram, self.exp_call_stack.diagram,
+        )
 
         self.installation_window.start_button.clicked.connect(self.push_button_start)
         self.installation_window.start_button.setToolTip(
             "Start experiment will be available after all devices are set up"
         )
         self.installation_window.start_button.setStyleSheet(not_ready_style_background)
-        self.installation_window.start_button.setText(QApplication.translate('main install',"Старт"))
+        self.installation_window.start_button.setText(
+            QApplication.translate('main install', "Старт")
+        )
         self.installation_window.pause_button.clicked.connect(self.pause_exp)
         self.installation_window.pause_button.setStyleSheet(not_ready_style_background)
         self.installation_window.about_autors.triggered.connect(self.show_about_autors)
@@ -225,17 +240,20 @@ class installation_class( ExperimentBridge, analyse):
 
         self.installation_window.clear_log_button.clicked.connect(self.clear_log)
 
-        self.installation_window.clear_log_button.setToolTip(QApplication.translate('main install',"Очистить лог"))
-        self.set_state_text( text = QApplication.translate('main install',"Ожидание настройки приборов") )
+        self.installation_window.clear_log_button.setToolTip(
+            QApplication.translate('main install', "Очистить лог")
+        )
+        self.set_state_text(
+            text=QApplication.translate('main install', "Ожидание настройки приборов")
+        )
 
         self.installation_window.instruction.triggered.connect(self.show_instruction)
-
         self.installation_window.log_path_open.triggered.connect(open_log_file)
 
         self.timer_for_open_base_instruction.start()
 
     def set_state_ch(self, device, num_ch, state):
-        logger.debug(f"передаем состояние {state} канала {num_ch} прибору {device}")
+        logger.debug("передаем состояние %s канала %s прибору %s", state, num_ch, device)
         self.dict_active_device_class[device].set_state_ch(num_ch, state)
         self.preparation_experiment()
 
@@ -244,27 +262,23 @@ class installation_class( ExperimentBridge, analyse):
         self.current_state = ExperimentState.PREPARATION
 
         self.message_broker.clear_all_subscribers()
-        status = self.set_depending()#setting subscribers
+        status = self.set_depending()
 
-
-        #Строим схему взаимодействия приборов
         self.exp_diagram.rebuild_schematic(self, self.dict_active_device_class)
 
         if self.is_all_device_settable():
-            ############################
             self.get_time_line_devices()
-            ############################
 
             logger.debug("все каналы настроены")
             matrix = self.get_call_matrix()
 
             self.cycle_analyse(matrix)
-            self.is_experiment_endless = self.analyse_endless_exp( matrix )
+            self.is_experiment_endless = self.analyse_endless_exp(matrix)
             ans_com = self.analyse_com_ports()
             ans_corr_call = self.is_correct_call_stack(matrix)
             if (ans_com and ans_corr_call) or self.is_debug:
-                    self.confirm_devices_parameters()
-                    self.current_state = ExperimentState.READY
+                self.confirm_devices_parameters()
+                self.current_state = ExperimentState.READY
             else:
                 self.current_state = ExperimentState.PREPARATION
 
@@ -272,9 +286,7 @@ class installation_class( ExperimentBridge, analyse):
             self.installation_window.start_button.setStyleSheet(ready_style_background)
             self.installation_window.start_button.update_buf_style()
         else:
-            self.installation_window.start_button.setStyleSheet(
-                not_ready_style_background
-            )
+            self.installation_window.start_button.setStyleSheet(not_ready_style_background)
             self.installation_window.start_button.update_buf_style()
 
     def add_new_channel(self, device, num_ch):
@@ -291,27 +303,24 @@ class installation_class( ExperimentBridge, analyse):
                         )
         else:
             self.add_text_to_log(
-                QApplication.translate('main install',"Запрещено добавлять или отключать канал во время эксперимента"),
+                QApplication.translate(
+                    'main install',
+                    "Запрещено добавлять или отключать канал во время эксперимента",
+                ),
                 status="war",
             )
 
-    def set_border_color_device(
-        self,
-        device_name,
-        status_color=not_ready_style_border,
-        num_ch=None,
-        is_only_device_lay=False,
-    ):
-        """устанавливает цвет границ для канала устройства или для всего устройства в случае, если не указан канал"""
+    def set_border_color_device(self, device_name, status_color=not_ready_style_border,
+                                num_ch=None, is_only_device_lay=False):
         if is_only_device_lay:
             self.installation_window.devices_lay[device_name].name_device.setStyleSheet(
                 status_color
             )
         else:
             if num_ch is None:
-                self.installation_window.devices_lay[
-                    device_name
-                ].name_device.setStyleSheet(status_color)
+                self.installation_window.devices_lay[device_name].name_device.setStyleSheet(
+                    status_color
+                )
                 for ch in self.dict_active_device_class[device_name].channels:
                     self.get_channel_widget(device_name, ch.number).setStyleSheet(
                         status_color
@@ -325,41 +334,25 @@ class installation_class( ExperimentBridge, analyse):
                     device_name, num_ch
                 ).label_settings_channel.setStyleSheet(status_color)
 
-    def show_parameters_of_device_on_label(
-        self,
-        device,
-        num_channel,
-        list_parameters_device,
-        list_parameters_act=None,
-        list_parameters_meas=None,
-    ):
-
+    def show_parameters_of_device_on_label(self, device, num_channel,
+                                           list_parameters_device,
+                                           list_parameters_act=None,
+                                           list_parameters_meas=None):
         labeltext = ""
         for i in list_parameters_device:
-            labeltext = (
-                labeltext + str(i) + ":" + str(list_parameters_device[i]) + "\n\r"
-            )
+            labeltext = labeltext + str(i) + ":" + str(list_parameters_device[i]) + "\n\r"
         if list_parameters_act is not None:
             labeltext = labeltext + "Action" + ":\n\r"
             for i in list_parameters_act:
-                labeltext = (
-                    labeltext + str(i) + ":" + str(list_parameters_act[i]) + "\n\r"
-                )
+                labeltext = labeltext + str(i) + ":" + str(list_parameters_act[i]) + "\n\r"
         if list_parameters_meas is not None:
             labeltext = labeltext + "Measurement" + ":\n\r"
             for i in list_parameters_meas:
-                labeltext = (
-                    labeltext + str(i) + ":" + str(list_parameters_meas[i]) + "\n\r"
-                )
+                labeltext = labeltext + str(i) + ":" + str(list_parameters_meas[i]) + "\n\r"
 
-        self.get_channel_widget(device, num_channel).label_settings_channel.setText(
-            labeltext
-        )
-        # self.installation_window.label[device].setWordWrap(True)
-        # self.installation_window.label[device].setText(labeltext)
+        self.get_channel_widget(device, num_channel).label_settings_channel.setText(labeltext)
 
     def write_parameters_to_file(self, name_device, text):
-        """функция записывает параметры во временный текстовый файл в ходе эксперимента, если что-то прервется, то данные не будут потеряны, после окончания эксперимента файл вычитывается и перегоняется в нужные форматы"""
         with open(self.buf_file, "a") as file:
             file.write(str(name_device) + str(text) + "\n\r")
 
@@ -394,7 +387,7 @@ class installation_class( ExperimentBridge, analyse):
             for dev in self.dict_active_device_class.values():
                 identifiers = [dev.get_name()]
                 for ch in dev.channels:
-                    identifiers.append( f"{dev.get_name()} {ch.get_name()}")
+                    identifiers.append(f"{dev.get_name()} {ch.get_name()}")
 
                 color = self.inst_color_manager.register_color(dev, identifiers)
                 dev.set_color(color)
@@ -402,176 +395,186 @@ class installation_class( ExperimentBridge, analyse):
             logger.debug("выход из функции удаления прибора")
         else:
             self.add_text_to_log(
-                QApplication.translate('main install',"Запрещено удалять прибор во время эксперимента"), status="war"
+                QApplication.translate('main install', "Запрещено удалять прибор во время эксперимента"),
+                status="war",
             )
 
     def click_set(self, device, num_ch):
-        logger.debug(
-            "кнопка настройки нажата, устройство -" + str(device) + " " + str(num_ch)
-        )
+        logger.debug("кнопка настройки нажата, устройство -%s %s", device, num_ch)
 
         if not self.is_experiment_running():
-            #for client in self.clients:
-            #    try:
-            #        client.close()
-            #    except:
-            #        pass
             self.dict_active_device_class[device].show_setting_window(num_ch)
         else:
             self.add_text_to_log(
-                QApplication.translate('main install',"Запрещено менять параметры во время эксперимента"), status="war"
+                QApplication.translate('main install', "Запрещено менять параметры во время эксперимента"),
+                status="war",
             )
 
     def set_depending(self) -> bool:
-        """устанавливает зависимости одних приборов от других, добавляет подписчиков"""
+        """Устанавливает зависимости одних приборов от других."""
         status = True
-        for device, ch in get_active_ch_and_device( self.dict_active_device_class ):
+        for device, ch in get_active_ch_and_device(self.dict_active_device_class):
             trig = device.get_trigger(ch)
-            if trig != QApplication.translate('main install',"Таймер"):
-
+            if trig != QApplication.translate('main install', "Таймер"):
                 trig_val = device.get_trigger_value(ch)
                 status = self.message_broker.subscribe(object=ch, name_subscribe=trig_val)
-                text=QApplication.translate('main install',"{device_name} {ch_name} не имеет источника сигнала, проверьте его настройки")
-                text = text.format(device_name = device.get_name(), ch_name = ch.get_name())
+                text = QApplication.translate(
+                    'main install',
+                    "{device_name} {ch_name} не имеет источника сигнала, проверьте его настройки",
+                )
+                text = text.format(device_name=device.get_name(), ch_name=ch.get_name())
 
                 if status is False:
                     self.add_text_to_log(text=text, status='war')
-                    logger.warning(f"Подписки {trig_val} не существует в менеджере подписок. {device=} {ch=}")
+                    logger.warning(
+                        "Подписки %s не существует в менеджере подписок. %s %s",
+                        trig_val, device, ch,
+                    )
         return status
 
     def action_stop_experiment(self):
-            self.stoped_experiment()
-            self.pause_exp()
-            self.installation_window.pause_button.setStyleSheet(
-                not_ready_style_background
-            )
-            self.timer_for_pause_exp.stop()
-            self.installation_window.pause_button.style_sheet = not_ready_style_background
-            self.installation_window.pause_button.setText(QApplication.translate('exp_flow',"Пауза"))
-            self.installation_window.start_button.setText(QApplication.translate('main install',"Остановка") + "...")
+        self.stoped_experiment()
+        self.pause_exp()
+        self.installation_window.pause_button.setStyleSheet(not_ready_style_background)
+        self.timer_for_pause_exp.stop()
+        self.installation_window.pause_button.style_sheet = not_ready_style_background
+        self.installation_window.pause_button.setText(
+            QApplication.translate('exp_flow', "Пауза")
+        )
+        self.installation_window.start_button.setText(
+            QApplication.translate('main install', "Остановка") + "..."
+        )
 
     def push_button_start(self):
-        """
-        slot for start button, if experiment is running, stops it, if not, starts experiment
-        """
-
         if self.is_experiment_running():
             self.action_stop_experiment()
-        else:
-            self.preparation_experiment()
-            if self.current_state == ExperimentState.READY:
+            return
 
-                self.is_search_resources = False
-                self.clients, _ = create_clients(self.clients, self.dict_active_device_class)
-                self.is_search_resources = True
-                self.set_clients_for_device()
-                self.set_state_text(text = QApplication.translate('main install',"Старт эксперимента"))
+        self.preparation_experiment()
+        if self.current_state != ExperimentState.READY:
+            return
 
-                self.message_broker.clear_all_subscribers()
-                status = self.set_depending()#setting subscribers
+        self.is_search_resources = False
+        self.clients, _ = create_clients(self.clients, self.dict_active_device_class)
+        self.is_search_resources = True
+        self.set_clients_for_device()
+        self.set_state_text(text=QApplication.translate('main install', "Старт эксперимента"))
 
-                if status:
-                    self.current_session_graph_id = self.graph_controller.start_new_session(session_name=str(datetime.now()),
-                                                                                            use_timestamps=True,
-                                                                                            is_experiment_running=True
-                                                                                            )
+        self.message_broker.clear_all_subscribers()
+        status = self.set_depending()
 
-                    if isinstance(self.current_session_graph_id, bool) and self.current_session_graph_id is False:
-                        self.add_text_to_log(text =QApplication.translate('main install',"Не удалось создать новую сессию измерений"), status = "war")
-                        logger.warning("Не удалось создать новую сессию измерений")
-                        self.current_state = ExperimentState.PREPARATION
-                        return
+        if not status:
+            self.current_state = ExperimentState.PREPARATION
+            return
 
-                    self.installation_window.pause_button.setStyleSheet(ready_style_background)
-                    self.installation_window.start_button.setStyleSheet(ready_style_background)
-                    self.installation_window.start_button.setText(QApplication.translate('main install',"Стоп"))
+        self.current_session_graph_id = self.graph_controller.start_new_session(
+            session_name=str(datetime.now()),
+            use_timestamps=True,
+            is_experiment_running=True,
+        )
 
-                    self.has_unsaved_data = False
+        if isinstance(self.current_session_graph_id, bool) and self.current_session_graph_id is False:
+            self.add_text_to_log(
+                text=QApplication.translate('main install', "Не удалось создать новую сессию измерений"),
+                status="war",
+            )
+            logger.warning("Не удалось создать новую сессию измерений")
+            self.current_state = ExperimentState.PREPARATION
+            return
 
-                    self.buf_file = self.create_buf_file()
+        self.installation_window.pause_button.setStyleSheet(ready_style_background)
+        self.installation_window.start_button.setStyleSheet(ready_style_background)
+        self.installation_window.start_button.setText(
+            QApplication.translate('main install', "Стоп")
+        )
 
-                    write_data_to_buf_file(file = self.buf_file,message="installation start" + "\n\r")
-                    lst_dev = ""
-                    for dev in self.dict_active_device_class.values():
-                        lst_dev += dev.get_name() + " "
-                    write_data_to_buf_file(file = self.buf_file,message="device list: " + lst_dev + "\r\n")
+        self.has_unsaved_data = False
 
-                    self.write_settings_to_buf_file()
+        self.buf_file = self.create_buf_file()
 
-                    self.add_text_to_log(text =QApplication.translate('main install',"Создан файл") + " " + self.buf_file)
-                    logger.debug("Эксперимент начат" + "Создан файл " + self.buf_file)
-                    self.measurement_parameters = {}
+        write_data_to_buf_file(file=self.buf_file, message="installation start" + "\n\r")
+        lst_dev = ""
+        for dev in self.dict_active_device_class.values():
+            lst_dev += dev.get_name() + " "
+        write_data_to_buf_file(file=self.buf_file, message="device list: " + lst_dev + "\r\n")
 
-                    self.add_text_to_log(text = QApplication.translate('main install',"настройка приборов") + ".. ")
+        self.write_settings_to_buf_file()
 
-                    self.exp_call_stack.clear_action_field()
-                    self.exp_call_stack.remove_all_actors()
-                    self.count_exp_call_stack = 0
-                    self.max_actors = 0
+        self.add_text_to_log(
+            text=QApplication.translate('main install', "Создан файл") + " " + self.buf_file
+        )
+        logger.debug("Эксперимент начат. Создан файл %s", self.buf_file)
+        self.measurement_parameters = {}
 
-                    for device in self.dict_active_device_class.values():
-                        for channel in device.channels:
-                            if channel.is_ch_active():
-                                self.max_actors += 1
+        self.add_text_to_log(
+            text=QApplication.translate('main install', "настройка приборов") + ".. "
+        )
 
-                    self.exp_start_time = time.perf_counter()
-                    self.adjusted_start_time = time.perf_counter()
-                    self.remaining_exp_time = 0
-                    #self.update_pbar(0)
+        self.exp_call_stack.clear_action_field()
+        self.exp_call_stack.remove_all_actors()
+        self.count_exp_call_stack = 0
+        self.max_actors = 0
 
-                    self.exp_third_queue = Queue()
-                    self.exp_first_queue = Queue()
-                    self.exp_second_queue = Queue()
-                    self.important_exp_queue = Queue()
+        for device in self.dict_active_device_class.values():
+            for channel in device.channels:
+                if channel.is_ch_active():
+                    self.max_actors += 1
 
-                    self.count_excrt = 0
+        self.exp_start_time = time.perf_counter()
+        self.adjusted_start_time = time.perf_counter()
+        self.remaining_exp_time = 0
 
-                    self.meas_session = measSession()
+        self.exp_third_queue = Queue()
+        self.exp_first_queue = Queue()
+        self.exp_second_queue = Queue()
+        self.important_exp_queue = Queue()
 
-                    self.meta_data_exp = metaDataExp()
-                    self.meta_data_exp.write_start_meta_data( self.dict_active_device_class )
+        self.count_excrt = 0
 
-                    self.pipe_exp, self.pipe_installation = Pipe()
-                    self.data_exp_to_installation, self.data_from_exp = Pipe()
+        self.meas_session = measSession()
 
-                    serialize_divices_classes = {}
-                    for dev in self.dict_active_device_class.values():
-                        try:
-                            dev.client.close()
-                        except Exception as e:
-                            logger.warning(f"в приборе {dev} не закрыт клиент. Причина {e}")
-                        serialize_divices_classes[dev.get_name()], unserial  = get_serializable_copy(dev)
-                        logger.warning(f"в приборе {dev} не сериализованы объекты  {unserial}")
+        self.meta_data_exp = metaDataExp()
+        self.meta_data_exp.write_start_meta_data(self.dict_active_device_class)
 
-                    self.exp_controller = experimentControl(
-                        device_classes        =serialize_divices_classes,
-                        message_broker        =self.message_broker,
-                        is_debug              =self.is_debug,
-                        is_experiment_endless =self.is_experiment_endless,
-                        repeat_exp            =int(self.settings_manager.get_setting("repeat_exp")[1]),
-                        repeat_meas           =int(self.settings_manager.get_setting("repeat_meas")[1]),
-                        is_run_anywhere       =self.settings_manager.get_setting("is_exp_run_anywhere")[1],
-                        first_queue           =self.exp_first_queue,
-                        second_queue          =self.exp_second_queue,
-                        third_queue           =self.exp_third_queue,
-                        important_queue       =self.important_exp_queue,
-                        buf_file              =self.buf_file,
-                        pipe_installation     =self.pipe_installation,
-                        data_pipe             =self.data_exp_to_installation,
-                        session_id            =self.current_session_graph_id,
-                        logger_level          =logger.level
-                    )
+        self.pipe_exp, self.pipe_installation = Pipe()
+        self.data_exp_to_installation, self.data_from_exp = Pipe()
 
-                    self.current_state = ExperimentState.IN_PROGRESS
+        serialize_divices_classes = {}
+        for dev in self.dict_active_device_class.values():
+            try:
+                dev.client.close()
+            except Exception as e:
+                logger.warning("в приборе %s не закрыт клиент. Причина %s", dev, e)
+            serialize_divices_classes[dev.get_name()], unserial = get_serializable_copy(dev)
+            logger.warning("в приборе %s не сериализованы объекты %s", dev, unserial)
 
-                    self.experiment_process = Process(target=self.exp_controller.run)
-                    self.experiment_process.start()
-                    self.timer_for_connection_main_exp_thread.start(1000)
-                    self.timer_second_thread_tasks.start(90)
-                    self.timer_for_receive_data_exp.start(5)
+        self.exp_controller = experimentControl(
+            device_classes=serialize_divices_classes,
+            message_broker=self.message_broker,
+            is_debug=self.is_debug,
+            is_experiment_endless=self.is_experiment_endless,
+            repeat_exp=int(self.settings_manager.get_setting("repeat_exp")[1]),
+            repeat_meas=int(self.settings_manager.get_setting("repeat_meas")[1]),
+            is_run_anywhere=self.settings_manager.get_setting("is_exp_run_anywhere")[1],
+            first_queue=self.exp_first_queue,
+            second_queue=self.exp_second_queue,
+            third_queue=self.exp_third_queue,
+            important_queue=self.important_exp_queue,
+            buf_file=self.buf_file,
+            pipe_installation=self.pipe_installation,
+            data_pipe=self.data_exp_to_installation,
+            session_id=self.current_session_graph_id,
+            logger_level=logger.level,
+        )
 
-                else:
-                    self.current_state = ExperimentState.PREPARATION
+        self.current_state = ExperimentState.IN_PROGRESS
+
+        self.experiment_process = Process(target=self.exp_controller.run)
+        self.experiment_process.start()
+        self.timer_for_connection_main_exp_thread.start(1000)
+        self.timer_second_thread_tasks.start(90)
+        self.timer_for_receive_data_exp.start(5)
+
     @property
     def current_state(self):
         return self._current_state
@@ -579,7 +582,7 @@ class installation_class( ExperimentBridge, analyse):
     @current_state.setter
     def current_state(self, state):
         self._current_state = state
-        logger.debug(f"установлено состояние  {state} {time.perf_counter()}")
+        logger.debug("установлено состояние %s %s", state, time.perf_counter())
 
     def second_thread_tasks(self):
         if self.current_state != ExperimentState.IN_PROGRESS and not self.exp_third_queue.empty():
@@ -590,13 +593,12 @@ class installation_class( ExperimentBridge, analyse):
 
         if not self.important_exp_queue.empty():
             event_type, data = self.important_exp_queue.get_nowait()
-            tasks.append( (event_type, data) )
-
+            tasks.append((event_type, data))
         else:
             if not self.exp_first_queue.empty():
                 event_type, data = self.exp_first_queue.get_nowait()
-                tasks.append( (event_type, data) )
-                self.second_thread_tasks_counter +=1
+                tasks.append((event_type, data))
+                self.second_thread_tasks_counter += 1
             else:
                 self.second_thread_tasks_counter = 30
 
@@ -605,11 +607,10 @@ class installation_class( ExperimentBridge, analyse):
 
                 if not self.exp_second_queue.empty():
                     event_type, data = self.exp_second_queue.get_nowait()
-                    tasks.append( (event_type, data) )
-
+                    tasks.append((event_type, data))
                 elif not self.exp_third_queue.empty():
                     event_type, data = self.exp_third_queue.get_nowait()
-                    tasks.append( (event_type, data) )
+                    tasks.append((event_type, data))
 
         for buf in tasks:
             event_type = buf[0]
@@ -618,8 +619,8 @@ class installation_class( ExperimentBridge, analyse):
             if handler:
                 handler(**data)
 
-    def update_exp_meta_data(self, name, info, status = None, trigger = None):
-        self.meta_data_exp.exp_queue.append( self.meta_data_exp.numbers[name] )
+    def update_exp_meta_data(self, name, info, status=None, trigger=None):
+        self.meta_data_exp.exp_queue.append(self.meta_data_exp.numbers[name])
         self.meta_data_exp.queue_info.append(info)
 
         if not self.exp_call_stack.actors.get(name):
@@ -627,13 +628,14 @@ class installation_class( ExperimentBridge, analyse):
             icon = self.inst_icon_manager.get_icon(name)
             self.exp_call_stack.add_actor(name, icon)
 
-        self.exp_call_stack.add_action(actor_name=name, action_info=info, status=status, trigger=trigger)
+        self.exp_call_stack.add_action(actor_name=name, action_info=info,
+                                       status=status, trigger=trigger)
 
         if self.count_exp_call_stack == self.max_actors:
             self.exp_call_stack.finalize_layout()
 
     def update_remaining_time(self, remaining_time: float):
-        logger.debug(f"update_remaining_time {remaining_time}")
+        logger.debug("update_remaining_time %s", remaining_time)
         self.remaining_exp_time = remaining_time
 
     def create_buf_file(self):
@@ -644,7 +646,10 @@ class installation_class( ExperimentBridge, analyse):
                     name_file = name_file + str(i.get_name()) + "_"
                     break
 
-        folder_path = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller", "buf_files")
+        folder_path = os.path.join(
+            os.getenv('USERPROFILE'), "AppData", "Local",
+            "Installation_Controller", "buf_files",
+        )
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
@@ -653,48 +658,55 @@ class installation_class( ExperimentBridge, analyse):
 
     def write_settings_to_buf_file(self):
         for device_class in self.dict_active_device_class.values():
-            write_data_to_buf_file(file = self.buf_file, message="Settings " + str(device_class.get_name()) + "\r")
+            write_data_to_buf_file(
+                file=self.buf_file,
+                message="Settings " + str(device_class.get_name()) + "\r",
+            )
             settings = device_class.get_settings()
-            for set, key in zip(settings.values(), settings.keys()):
-                write_data_to_buf_file(file = self.buf_file,message=str(key) + " - " + str(set) + "\r")
+            for set_, key in zip(settings.values(), settings.keys()):
+                write_data_to_buf_file(
+                    file=self.buf_file, message=str(key) + " - " + str(set_) + "\r",
+                )
 
             for ch in device_class.channels:
                 if ch.is_ch_active():
-
-                    write_data_to_buf_file(file = self.buf_file,
-                        message="Settings " + str(ch.get_name()) + "\r"
+                    write_data_to_buf_file(
+                        file=self.buf_file,
+                        message="Settings " + str(ch.get_name()) + "\r",
                     )
                     settings = ch.get_settings()
-                    for set, key in zip(settings.values(), settings.keys()):
-                        write_data_to_buf_file(file = self.buf_file,
-                            message=str(key) + " - " + str(set) + "\r"
+                    for set_, key in zip(settings.values(), settings.keys()):
+                        write_data_to_buf_file(
+                            file=self.buf_file,
+                            message=str(key) + " - " + str(set_) + "\r",
                         )
 
-            write_data_to_buf_file(file = self.buf_file,message="--------------------\n")
+            write_data_to_buf_file(file=self.buf_file, message="--------------------\n")
 
     def push_button_save_installation(self):
-            logger.debug("нажата кнопка сохранения установки")
-            if self.way_to_save_installation_file is None:
-                self.push_button_save_installation_as()
-            else:
-                status_save = self.write_data_to_save_installation_file(
-                    self.way_to_save_installation_file
-                )
-                if status_save:
-                    self.installation_window.setWindowTitle(
-                        "Experiment control - " + self.way_to_save_installation_file + " " + self.version_app
-                    )
-                    self.add_text_to_log(
-                        QApplication.translate('main install',"Установка сохранена в файл ") + self.way_to_save_installation_file, "ok")
+        logger.debug("нажата кнопка сохранения установки")
+        if self.way_to_save_installation_file is None:
+            self.push_button_save_installation_as()
+            return
+        status_save = self.write_data_to_save_installation_file(
+            self.way_to_save_installation_file
+        )
+        if status_save:
+            self.installation_window.setWindowTitle(
+                "Experiment control - " + self.way_to_save_installation_file
+                + " " + self.version_app
+            )
+            self.add_text_to_log(
+                QApplication.translate('main install', "Установка сохранена в файл ")
+                + self.way_to_save_installation_file,
+                "ok",
+            )
 
     def push_button_save_installation_as(self):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         fileName, ans = QtWidgets.QFileDialog.getSaveFileName(
-            self.installation_window,
-            "Save File",
-            "",
-            "Installation(*.ns)",
+            self.installation_window, "Save File", "", "Installation(*.ns)",
             options=options,
         )
         if ans == "Installation(*.ns)":
@@ -709,34 +721,36 @@ class installation_class( ExperimentBridge, analyse):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         fileName, ans = QtWidgets.QFileDialog.getOpenFileName(
-            self.installation_window,
-            "Open File",
-            "",
-            "Installation(*.ns)",
+            self.installation_window, "Open File", "", "Installation(*.ns)",
             options=options,
         )
         if ans == "Installation(*.ns)":
             status, buffer = self.open_saved_installation(fileName)
             if not status:
                 self.add_text_to_log(
-                    QApplication.translate('main install',"Установка не загружена из файла ") + fileName, "error"
+                    QApplication.translate('main install', "Установка не загружена из файла ")
+                    + fileName,
+                    "error",
                 )
-                logger.error(f"Установка не загружена из файла {fileName} {buffer}")
+                logger.error("Установка не загружена из файла %s", fileName)
 
     def open_saved_installation(self, fileName):
         status, buffer = self.extract_saved_installlation(fileName=fileName)
         if status:
             self.way_to_save_installation_file = fileName
-            self.installation_window.setWindowTitle("Experiment control - " + fileName + " " + self.version_app)
+            self.installation_window.setWindowTitle(
+                "Experiment control - " + fileName + " " + self.version_app
+            )
         return status, buffer
 
     def extract_saved_installlation(self, fileName):
         status, buffer = self.read_info_by_saved_installation(fileName)
-        #TODO: добавить проверку буффера на корректность
         if status:
             self.show_window_installation()
             self.timer_open = QTimer()
-            self.timer_open.timeout.connect(lambda: self.timer_open_timeout(buffer, fileName))
+            self.timer_open.timeout.connect(
+                lambda: self.timer_open_timeout(buffer, fileName)
+            )
             self.timer_open.setSingleShot(True)
             self.timer_open.start(800)
 
@@ -748,8 +762,6 @@ class installation_class( ExperimentBridge, analyse):
             "Experiment control - " + fileName + " " + self.version_app
         )
         self.way_to_save_installation_file = fileName
-
-        # Сканирование запускается после показа окна установки.
         self.start_resource_scanning()
 
     def close_other_windows(self):
@@ -770,73 +782,62 @@ class installation_class( ExperimentBridge, analyse):
         self.graph_controller.close()
 
     def write_data_to_save_installation_file(self, file_path: str) -> bool:
-
-        """
-        Сохраняет данные об установке устройств в JSON файл.
-
-        Args:
-            file_path (str): Путь к файлу для сохранения данных.
-        """
-
-        install_dict: dict[str, dict[str, any]] = {}
+        """Собрать InstallationSpec и записать через общий save_file."""
+        install_dict: dict[str, dict] = {}
 
         for device_class in self.dict_active_device_class.values():
-
             dev_name = device_class.get_name()
-            install_dict[dev_name] = {"settings": device_class.get_settings(), "channels": {}}
+            install_dict[dev_name] = {
+                "settings": device_class.get_settings(),
+                "channels": {},
+            }
 
             if hasattr(device_class, "JSON_temp"):
                 install_dict[dev_name]["JSON_temp"] = device_class.JSON_temp
 
             for ch in device_class.channels:
                 ch_name = ch.get_name()
-                install_dict[dev_name]["channels"][ch_name] = {"settings": ch.get_settings()}
+                install_dict[dev_name]["channels"][ch_name] = {
+                    "settings": ch.get_settings(),
+                }
 
                 is_ch_active = ch.is_ch_active()
                 widget = self.get_channel_widget(dev_name, ch.get_number())
                 state_text = widget.label_settings_channel.text()
 
                 if is_ch_active:
-                    install_dict[dev_name]["channels"][ch_name]["state"] = ("active" if state_text != QApplication.translate('main install', "Не настроено") else "not settings")
+                    install_dict[dev_name]["channels"][ch_name]["state"] = (
+                        "active"
+                        if state_text != QApplication.translate('main install', "Не настроено")
+                        else "not settings"
+                    )
                 else:
                     install_dict[dev_name]["channels"][ch_name]["state"] = "not active"
 
         try:
-            with open(file_path, 'w') as outfile:
-                json.dump(install_dict, outfile, ensure_ascii=False, indent=4)
+            spec = InstallationSpec(devices=install_dict)
+            save_file(spec, file_path, format="ns")
             return True
-        except Exception as e:
-            logger.warning(f"Ошибка при записи в файл: {e}")
+        except FileError as e:
+            logger.warning("Ошибка при записи в файл: %s", e)
             return False
 
-    def read_info_by_saved_installation(self, filename: str) -> tuple[bool, dict[str, any]]:
+    def read_info_by_saved_installation(self, filename: str) -> tuple[bool, dict]:
+        """Прочитать .ns через dispatch.load_file с hint='installation_spec'.
 
+        Возвращает (status, buffer), где buffer = spec.devices — тот же
+        dict-формат, что и раньше, для add_parameter_devices.
         """
-        Читает информацию об установке из сохраненного JSON файла.
-        Args:
-            filename (str): Путь к файлу.
-        Returns:
-            Tuple[bool, Dict[str, Any]]: Кортеж, содержащий статус (True в случае успеха) и данные из файла.
-        """
-
         try:
-            with open(filename, "r") as file:
-                buffer: dict[str, any] = json.load(file)
-
-        except FileNotFoundError:
-            logger.error(f"Файл сохраненной установки {filename} не найден.")
+            spec = load_file(filename, hint="installation_spec")
+        except FileError as e:
+            logger.error("Ошибка чтения %s: %s", filename, e)
             return False, {}
 
-        except json.JSONDecodeError:
-            logger.error(f"Ошибка декодирования JSON в файле {filename}.")
-            return False, {}
-
-        except Exception as e:
-            logger.error(f"Произошла ошибка при чтении файла: {e}")
-            return False, {}
+        buffer: dict[str, dict] = dict(spec.devices)
 
         installation_list: list[str] = []
-        json_devices: dict[str, any] = {}
+        json_devices: dict[str, dict] = {}
 
         for device, data in buffer.items():
             device_name = device[:-2]
@@ -847,7 +848,7 @@ class installation_class( ExperimentBridge, analyse):
 
         self.dict_active_device_class.clear()
         self.message_broker.clear_all()
-        logger.debug(f"Закрыто окно установки {self.installation_window}, реконструируем новое")
+        logger.debug("Закрыто окно установки, реконструируем новое")
 
         self.close_window_installation()
 
@@ -855,17 +856,13 @@ class installation_class( ExperimentBridge, analyse):
 
         return True, buffer
 
-    def add_parameter_devices(self, buffer: dict[str, any], fileName: str):
-
-        """
-        Добавляет параметры устройств и каналов на основе данных из буфера.
-        Args:
-            buffer (Dict[str, Any]): Словарь с данными об устройствах и каналах.
-        """
-
+    def add_parameter_devices(self, buffer: dict, fileName: str):
         for key, data in buffer.items():
             if key not in self.dict_active_device_class:
-                logger.warning(f"При открытии установки {fileName} Устройство с ключом {key} не найдено в dict_active_device_class. ")
+                logger.warning(
+                    "При открытии установки %s устройство %s не найдено в dict_active_device_class.",
+                    fileName, key,
+                )
                 continue
 
             device = self.dict_active_device_class[key]
@@ -876,37 +873,45 @@ class installation_class( ExperimentBridge, analyse):
                 ch_name = ch.get_name()
 
                 if "channels" not in data or ch_name not in data["channels"]:
-
                     log_message = QApplication.translate(
                         'main install',
-                        f"Не найдены настройки канала {ch_name} у прибора {device.get_name()}"
-
+                        f"Не найдены настройки канала {ch_name} у прибора {device.get_name()}",
                     )
                     self.add_text_to_log(text=log_message, status="err")
-
-                    logger.warning(f"При открытии установки {fileName} не нашли настройки канала {ch_name} у прибора {device.get_name()}")
-
+                    logger.warning(
+                        "При открытии установки %s не нашли настройки канала %s у прибора %s",
+                        fileName, ch_name, device.get_name(),
+                    )
                 else:
                     ch_data = data["channels"][ch_name]
                     is_open = ch_data.get("state") != "not active"
-                    self.get_device_widget(device.get_name()).set_state_ch_widget(ch.number, is_open)
+                    self.get_device_widget(device.get_name()).set_state_ch_widget(
+                        ch.number, is_open
+                    )
                     try:
-                        device.set_parameters_ch(channel_name=ch_name, parameters=ch_data, is_preparation_experiment=False)
+                        device.set_parameters_ch(
+                            channel_name=ch_name, parameters=ch_data,
+                            is_preparation_experiment=False,
+                        )
                     except Exception as e:
                         log_message = QApplication.translate(
-                                                            'main install',
-                                                            f"Ошибка чтения настроек канала {ch_name} у прибора {device.get_name()}. Увы, необходимо их ввести заново :( .)"
-                                                            )
+                            'main install',
+                            f"Ошибка чтения настроек канала {ch_name} у прибора {device.get_name()}. Увы, необходимо их ввести заново :( .",
+                        )
                         self.add_text_to_log(text=log_message, status="err")
-
-                        logger.warning(f"Ошибка при установке параметров канала. после открытия сохраненной установки.файл: {fileName} устройство: {device.get_name()}, канал {ch_name} data:{ch_data}: {e}")
+                        logger.warning(
+                            "Ошибка при установке параметров канала. файл: %s устройство: %s, канал %s data:%s: %s",
+                            fileName, device.get_name(), ch_name, ch_data, e,
+                        )
 
             self.get_device_widget(device.get_name()).update_widgets()
         self.preparation_experiment()
 
     def convert_buf_file(self):
         from saving_data.Parse_data import type_save_file
-        default_path_buf = os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller")
+        default_path_buf = os.path.join(
+            os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller"
+        )
 
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
@@ -917,35 +922,34 @@ class installation_class( ExperimentBridge, analyse):
             "text(*.txt)",
             options=options,
         )
-        if ans == "text(*.txt)":
-            options = QtWidgets.QFileDialog.Options()
-            options |= QtWidgets.QFileDialog.DontUseNativeDialog
-            options |= QtWidgets.QFileDialog.DontConfirmOverwrite
-            result_file, ans = QtWidgets.QFileDialog.getSaveFileName(
-                self.installation_window,
-                QApplication.translate('base_install',"укажите путь сохранения результатов"),
-                "",
-                "Книга Excel (*.xlsx);; Text Files(*.txt)",
-                #"Text Files(*.txt);; Книга Excel (*.xlsx);;Origin (*.opju)",
-                options=options,
+        if ans != "text(*.txt)":
+            return
+
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        options |= QtWidgets.QFileDialog.DontConfirmOverwrite
+        result_file, ans = QtWidgets.QFileDialog.getSaveFileName(
+            self.installation_window,
+            QApplication.translate('base_install', "укажите путь сохранения результатов"),
+            "",
+            "Книга Excel (*.xlsx);; Text Files(*.txt)",
+            options=options,
+        )
+
+        buf_session = measSession()
+        buf_session.ask_session_name_description()
+
+        if not result_file:
+            return
+
+        if ans == "Книга Excel (*.xlsx)":
+            if ".xlsx" not in result_file:
+                result_file = result_file + ".xlsx"
+            self.saving_controller.process_and_export(
+                buf_file,
+                result_file,
+                type_save_file.excel,
+                buf_session.meas_session_data,
+                False,
+                self.answer_save_results,
             )
-
-            buf_session = measSession()
-            buf_session.ask_session_name_description()
-
-            if result_file:
-                if ans == "Книга Excel (*.xlsx)":
-                    if result_file.find(".xlsx") == -1:
-                        result_file = result_file + ".xlsx"
-                    self.saving_controller.process_and_export(
-                        buf_file,
-                        result_file,
-                        type_save_file.excel,
-                        buf_session.meas_session_data,
-                        False,
-                        self.answer_save_results
-                    )
-            else:
-                pass
-        else:
-            pass

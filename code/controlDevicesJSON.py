@@ -1,24 +1,60 @@
-# Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-#
-# This file may be used under the terms of the GNU General Public License
-# version 3.0 as published by the Free Software Foundation and appearing in
-# the file LICENSE included in the packaging of this file. Please review the
-# following information to ensure the GNU General Public License version 3.0
-# requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-#
-# This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-# WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+# code/controlDevicesJSON.py
+"""JSON-приборы: чтение/валидация/индексация через единый файловый слой.
+
+Внешнее API (get_new_JSON_devs / search_devices_json / validate_json_schema)
+сохранено для device_selector. Внутреннее чтение папки — через scan_folder
+с hint="device_spec", без собственных os.listdir + try/except.
+
+Валидация по шаблону (templates из dev_template) уже произошла внутри
+DeviceSpec.parse — повторный validate_json_schema в hot-path не нужен.
+validate_json_schema оставлена как публичная утилита (используется в
+__main__ и внешними вызовами).
+
+`_spec_to_raw` восстанавливает dict в исходной форме (без `kind`),
+потому что `devFile.json_data` — это legacy-представление для
+power_supply.load_json и templates, а не семантический payload нового слоя.
+"""
+from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass
-from device_creator.dev_creator import templates
-from device_selector import devFile
+
+from file_io import scan_folder
+
+from Devices.device_spec import DeviceSpec
+from device_creator.dev_template import templates
+
+
+def _spec_to_raw(spec: DeviceSpec) -> dict:
+    """Восстановить исходный dict из DeviceSpec для legacy-API.
+
+    Специально без `kind`: `devFile.json_data` должен быть совместим
+    с power_supply.load_json и lookup'ом по `templates[device_type]`.
+    """
+    payload = {
+        "schema_version": int(spec.schema_version),
+        "device_type": spec.device_type,
+        "device_name": spec.device_name,
+        "number_channels": int(spec.number_channels),
+        "commands": dict(spec.commands),
+    }
+    if spec.channels_parameters:
+        payload["channels parameters"] = dict(spec.channels_parameters)
+    for k, v in (spec.extras or {}).items():
+        payload.setdefault(k, v)
+    return payload
+
 
 def validate_json_schema(file_path, templates, data=None):
+    """Валидация JSON-объекта по шаблону прибора.
+
+    Работает с dict (не с моделью), так как проверяет внешний контракт
+    templates. Используется в __main__ и внешними вызовами; в
+    get_new_JSON_devs не вызывается (DeviceSpec.parse уже проверил).
+    """
     if data is None:
         try:
-            with open(file_path, 'r', encoding='utf-8') as file:
+            with open(file_path, "r", encoding="utf-8") as file:
                 data = json.load(file)
         except FileNotFoundError:
             return False, f"Файл {file_path} не был найден", None
@@ -33,11 +69,9 @@ def validate_json_schema(file_path, templates, data=None):
         return False, "Неверный device_type", data
 
     template = templates[device_type]
-
     for key in template.keys():
         if key not in data:
             return False, f"Отсутствует поле: {key}", data
-
         if isinstance(template[key], dict):
             if not isinstance(data.get(key), dict):
                 return False, f"Поле {key} должно быть объектом", data
@@ -47,95 +81,62 @@ def validate_json_schema(file_path, templates, data=None):
 
     return True, "JSON валиден", data
 
-def get_new_JSON_devs(directory) -> dict:
-    new_devs = {}
 
+def get_new_JSON_devs(directory) -> dict:
+    """Просканировать папку, вернуть dict[name, devFile].
+
+    Использует scan_folder(..., hint="device_spec"). Объект в
+    result.objects уже прошёл проверку в DeviceSpec.parse (device_type
+    есть в templates, device_name не пуст), поэтому повторно
+    validate_json_schema не вызываем.
+    """
+    # lazy import: device_selector импортирует этот модуль на старте,
+    # поэтому devFile берём в момент вызова — цикла импорта нет.
+    from device_selector import devFile
+
+    new_devs: dict = {}
     if not os.path.isdir(directory):
         return new_devs
 
-    for filename in os.listdir(directory):
-        if not filename.endswith('.json'):
-            continue
+    result = scan_folder(directory, extensions=["json"], hint="device_spec")
 
-        file_path = os.path.join(directory, filename)
-        data = None
-        message = ""
-        status = False
+    for path, spec in result.objects:
+        raw = _spec_to_raw(spec)
+        new_devs[spec.device_name] = devFile(
+            path=str(path),
+            name=spec.device_name,
+            message="JSON валиден",
+            status=True,
+            json_data=raw,
+        )
 
-        try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                data = json.load(file)
-        except (OSError, json.JSONDecodeError) as exc:
-            message = f"Ошибка чтения JSON: {exc}"
-            new_devs[filename] = devFile(
-                path=file_path,
-                name=filename,
-                message=message,
-                status=False,
-                json_data={},
-            )
-            continue
-
-        if not isinstance(data, dict):
-            new_devs[filename] = devFile(
-                path=file_path,
-                name=filename,
-                message="JSON должен быть объектом",
-                status=False,
-                json_data={},
-            )
-            continue
-
-        device_name = data.get('device_name')
-        if not device_name:
-            new_devs[filename] = devFile(
-                path=file_path,
-                name=filename,
-                message="Отсутствует device_name",
-                status=False,
-                json_data=data,
-            )
-            continue
-
-        status, message, _ = validate_json_schema(file_path, templates, data)
-        new_devs[device_name] = devFile(
-            path=file_path,
-            name=device_name,
-            message=message,
-            status=status,
-            json_data=data,
+    for err in result.errors:
+        p = err.path
+        filename = p.name if p is not None else "?"
+        new_devs[filename] = devFile(
+            path=str(p) if p is not None else "",
+            name=filename,
+            message=str(err.reason or err),
+            status=False,
+            json_data={},
         )
 
     return new_devs
 
 
 def search_devices_json(directory) -> dict:
-    result = {}
-
+    """Просканировать папку, вернуть dict[device_name, file_path]."""
+    result: dict = {}
     if not os.path.isdir(directory):
         return result
-
-    for filename in os.listdir(directory):
-        if not filename.endswith('.json'):
-            continue
-
-        file_path = os.path.join(directory, filename)
-
-        try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                data = json.load(file)
-        except (OSError, json.JSONDecodeError):
-            continue
-
-        if isinstance(data, dict):
-            device_name = data.get('device_name')
-            if device_name:
-                result[device_name] = file_path
-
+    scan = scan_folder(directory, extensions=["json"], hint="device_spec")
+    for path, spec in scan.objects:
+        result[spec.device_name] = str(path)
     return result
+
 
 if __name__ == "__main__":
     json_devices = search_devices_json("Devices/JSONDevices")
     for device, file_path in json_devices.items():
-        result, message = validate_json_schema(file_path, templates)
-        print(device,result, message)
+        result, message, _ = validate_json_schema(file_path, templates)
+        print(device, result, message)

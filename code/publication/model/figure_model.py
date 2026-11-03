@@ -1,8 +1,20 @@
-"""FigureSpec — дерево Figure → Panels → Annotations + overrides."""
+# code/publication/model/figure_model.py
+"""FigureSpec — дерево Figure → Panels → Annotations + overrides.
+
+FigureSpec сам регистрируется как семантический парсер/writer
+(kind="figure_spec"). Отдельного FigureSpecFile нет — модель и есть
+единица регистрации (см. ТЗ: парсер живёт в модуле модели).
+"""
 from __future__ import annotations
+
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Optional
+
+from file_io import (
+    RawDocument, register, register_writer,
+)
+from file_io.errors import UnsupportedVersionError
 
 from .annotations import DataBoundOverride, PresentationAnnotation
 from .panel import CurveSlot, PanelSpec
@@ -12,28 +24,79 @@ from ..core.sentinel import MISSING
 
 logger = logging.getLogger(__name__)
 
+SCHEMA_VERSION = 1
 
+
+@register(kind="figure_spec", formats=("json",))
+@register_writer(kind="figure_spec", formats=("json",))
 @dataclass
 class FigureSpec:
-    schema_version: int = 1
+    KIND: ClassVar[str] = "figure_spec"
+    FORMATS: ClassVar[tuple[str, ...]] = ("json",)
+    SCHEMA_VERSION: ClassVar[int] = SCHEMA_VERSION
+
+    schema_version: int = SCHEMA_VERSION
     id: str = "fig_0001"
     column_preset_id: str = ""
     width_mm: float = 180.0
     height_mm: float = 120.0
-    panels: List[PanelSpec] = field(default_factory=list)
-    presentation_annotations: List[PresentationAnnotation] = field(default_factory=list)
-    data_bound_overrides: Dict[str, DataBoundOverride] = field(default_factory=dict)
-    figure_overrides: Dict[str, Any] = field(default_factory=dict)
+    panels: list[PanelSpec] = field(default_factory=list)
+    presentation_annotations: list[PresentationAnnotation] = field(default_factory=list)
+    data_bound_overrides: dict[str, DataBoundOverride] = field(default_factory=dict)
+    figure_overrides: dict[str, Any] = field(default_factory=dict)
     style_profile_id: str = "default"
     journal_preset_id: str = ""
     lab_profile_id: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    _panel_gen: IdGen = field(default_factory=lambda: IdGen("pn"), repr=False, compare=False)
-    _annot_gen: IdGen = field(default_factory=lambda: IdGen("ann"), repr=False, compare=False)
+    _panel_gen: IdGen = field(
+        default_factory=lambda: IdGen("pn"), repr=False, compare=False
+    )
+    _annot_gen: IdGen = field(
+        default_factory=lambda: IdGen("ann"), repr=False, compare=False
+    )
+
+    # ---------- parser/writer registration ----------
+
+    @classmethod
+    def can_parse(cls, doc: RawDocument) -> bool:
+        if doc.format not in cls.FORMATS:
+            return False
+        data = doc.payload
+        if not isinstance(data, dict):
+            return False
+        if data.get("kind") == cls.KIND:
+            return True
+        # fallback для старых файлов без kind
+        return isinstance(data.get("id"), str) and isinstance(data.get("panels"), list)
+
+    @classmethod
+    def parse(cls, doc: RawDocument) -> "FigureSpec":
+        data = doc.payload
+        assert isinstance(data, dict)
+        version = int(data.get("schema_version", cls.SCHEMA_VERSION))
+        if version > cls.SCHEMA_VERSION:
+            raise UnsupportedVersionError(
+                path=doc.path, got=version, supported=cls.SCHEMA_VERSION
+            )
+        return cls.from_dict(data)
+
+    @classmethod
+    def can_write(cls, obj: Any) -> bool:
+        return isinstance(obj, cls)
+
+    @classmethod
+    def serialize(cls, obj: "FigureSpec") -> RawDocument:
+        payload = obj.to_dict()
+        payload["kind"] = cls.KIND
+        return RawDocument(
+            format="json", path=None, size=0, payload=payload, meta={}
+        )
+
+    # ---------- panels ----------
 
     def add_panel(self, data_ref: Optional[DataRef] = None,
-                  curves: Optional[List[CurveSlot]] = None,
+                  curves: Optional[list[CurveSlot]] = None,
                   x_mm: float = 5.0, y_mm: float = 5.0,
                   w_mm: float = 40.0, h_mm: float = 30.0,
                   title: str = "", **kwargs) -> PanelSpec:
@@ -66,8 +129,10 @@ class FigureSpec:
         ]
         return len(self.panels) != before
 
-    def sorted_panels(self) -> List[PanelSpec]:
+    def sorted_panels(self) -> list[PanelSpec]:
         return sorted(self.panels, key=lambda p: (int(p.z), p.id))
+
+    # ---------- annotations ----------
 
     def add_presentation(self, kind: str = "text",
                          coordinate_space: str = "figure_mm",
@@ -100,17 +165,24 @@ class FigureSpec:
             self.data_bound_overrides[ann_id] = ov
         return ov
 
-    def to_dict(self) -> Dict[str, Any]:
+    # ---------- (de)serialization (остаётся точкой конверсии) ----------
+
+    def to_dict(self) -> dict[str, Any]:
         fig_ov = {k: v for k, v in self.figure_overrides.items() if v is not MISSING}
         return {
+            "kind": self.KIND,
             "schema_version": int(self.schema_version),
             "id": self.id,
             "column_preset_id": self.column_preset_id,
             "width_mm": float(self.width_mm),
             "height_mm": float(self.height_mm),
             "panels": [p.to_dict() for p in self.panels],
-            "presentation_annotations": [a.to_dict() for a in self.presentation_annotations],
-            "data_bound_overrides": {k: v.to_dict() for k, v in self.data_bound_overrides.items()},
+            "presentation_annotations": [
+                a.to_dict() for a in self.presentation_annotations
+            ],
+            "data_bound_overrides": {
+                k: v.to_dict() for k, v in self.data_bound_overrides.items()
+            },
             "figure_overrides": fig_ov,
             "style_profile_id": self.style_profile_id,
             "journal_preset_id": self.journal_preset_id,
@@ -119,9 +191,9 @@ class FigureSpec:
         }
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> "FigureSpec":
+    def from_dict(cls, d: dict[str, Any]) -> "FigureSpec":
         spec = cls(
-            schema_version=int(d.get("schema_version", 1)),
+            schema_version=int(d.get("schema_version", cls.SCHEMA_VERSION)),
             id=str(d.get("id", "fig_0001")),
             column_preset_id=str(d.get("column_preset_id", "")),
             width_mm=float(d.get("width_mm", 180.0)),

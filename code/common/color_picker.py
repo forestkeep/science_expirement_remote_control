@@ -1,9 +1,12 @@
+# code/common/color_picker.py
 from __future__ import annotations
+
 import colorsys
-import json
 import logging
 import os
 import re
+from dataclasses import dataclass, field
+from typing import Any, ClassVar
 
 from PyQt5.QtCore import Qt, QPoint, pyqtSignal
 from PyQt5.QtGui import QColor, QCursor, QKeySequence
@@ -14,6 +17,13 @@ from PyQt5.QtWidgets import (
 )
 
 from common.undo.manager import SessionUndoManager, UndoCommand
+from file_io import (
+    RawDocument, load_file, save_file, register, register_writer,
+)
+from file_io.errors import (
+    FileError, MissingFieldError, ReadError,
+    UnsupportedVersionError, WriteError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +32,7 @@ _HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
 # ---------------------------------------------------------------------------
-# Storage
+# Storage — модель палитры + регистрация в файловом слое
 # ---------------------------------------------------------------------------
 
 def _palette_dir() -> str:
@@ -88,51 +98,119 @@ def _parse_color_to_hex(color):
     return None
 
 
-def _validate_palette_data(data):
-    if not isinstance(data, dict):
-        return None
-    if data.get("schema_version") != SCHEMA_VERSION:
-        return None
-    columns = data.get("columns")
-    if not isinstance(columns, list) or not columns:
-        return None
-    result = []
-    for col in columns:
-        if not isinstance(col, list) or not col:
-            return None
-        cleaned = []
-        for c in col:
-            if not _is_valid_hex(c):
-                return None
-            cleaned.append(c.lower())
-        result.append(cleaned)
-    return result
+@register(kind="color_palette", formats=("json",))
+@register_writer(kind="color_palette", formats=("json",))
+@dataclass
+class ColorPaletteData:
+    """Модель палитры цветов (semantic type 'color_palette').
+
+    Хранится в `%LOCALAPPDATA%/Installation_Controller/color_palette.json`.
+    Старые файлы без `kind` читаются через can_parse-fallback по форме
+    (`schema_version` и `columns`).
+    """
+
+    KIND: ClassVar[str] = "color_palette"
+    FORMATS: ClassVar[tuple[str, ...]] = ("json",)
+    SCHEMA_VERSION: ClassVar[int] = SCHEMA_VERSION
+
+    columns: list[list[str]] = field(default_factory=list)
+    schema_version: int = SCHEMA_VERSION
+    kind: str = KIND
+
+    # ---------- parser ----------
+
+    @classmethod
+    def can_parse(cls, doc: RawDocument) -> bool:
+        if doc.format not in cls.FORMATS:
+            return False
+        data = doc.payload
+        if not isinstance(data, dict):
+            return False
+        if data.get("kind") == cls.KIND:
+            return True
+        # fallback для старых файлов без kind
+        if data.get("schema_version") != cls.SCHEMA_VERSION:
+            return False
+        cols = data.get("columns")
+        if not isinstance(cols, list) or not cols:
+            return False
+        for col in cols:
+            if not isinstance(col, list) or not col:
+                return False
+            for c in col:
+                if not _is_valid_hex(c):
+                    return False
+        return True
+
+    @classmethod
+    def parse(cls, doc: RawDocument) -> "ColorPaletteData":
+        data = doc.payload
+        assert isinstance(data, dict)
+        version = int(data.get("schema_version", cls.SCHEMA_VERSION))
+        if version > cls.SCHEMA_VERSION:
+            raise UnsupportedVersionError(
+                path=doc.path, got=version, supported=cls.SCHEMA_VERSION
+            )
+        cols = data.get("columns")
+        if not isinstance(cols, list) or not cols:
+            raise MissingFieldError(path=doc.path, field="columns")
+        result: list[list[str]] = []
+        for col in cols:
+            if not isinstance(col, list) or not col:
+                raise ReadError(
+                    path=doc.path, position=None,
+                    reason="palette column must be a non-empty list",
+                )
+            cleaned: list[str] = []
+            for c in col:
+                if not _is_valid_hex(c):
+                    raise ReadError(
+                        path=doc.path, position=None,
+                        reason=f"invalid hex color: {c!r}",
+                    )
+                cleaned.append(c.lower())
+            result.append(cleaned)
+        return cls(columns=result, schema_version=version, kind=cls.KIND)
+
+    # ---------- writer ----------
+
+    @classmethod
+    def can_write(cls, obj: Any) -> bool:
+        return isinstance(obj, cls)
+
+    @classmethod
+    def serialize(cls, obj: "ColorPaletteData") -> RawDocument:
+        payload = {
+            "kind": cls.KIND,
+            "schema_version": int(obj.schema_version),
+            "columns": [list(c) for c in obj.columns],
+        }
+        return RawDocument(
+            format="json", path=None, size=0, payload=payload, meta={}
+        )
 
 
 def load_palette():
+    """Прочитать палитру с диска. None — если файла нет или он битый."""
     path = _palette_path()
     if not os.path.isfile(path):
         return None
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except (OSError, json.JSONDecodeError) as exc:
+        data = load_file(path, hint="color_palette")
+    except FileError as exc:
         logger.warning("Не удалось прочитать файл палитры %s: %s", path, exc)
         return None
-    result = _validate_palette_data(data)
-    if result is None:
-        logger.warning("Файл палитры %s повреждён или не соответствует схеме", path)
-    return result
+    return [list(c) for c in data.columns]
 
 
 def save_palette(columns) -> bool:
+    """Атомарно записать палитру. False — при ошибке записи."""
     try:
         os.makedirs(_palette_dir(), exist_ok=True)
-        data = {"schema_version": SCHEMA_VERSION, "columns": [list(c) for c in columns]}
-        with open(_palette_path(), "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        obj = ColorPaletteData(columns=[list(c) for c in columns])
+        save_file(obj, _palette_path())
         return True
-    except OSError as exc:
+    except (OSError, WriteError) as exc:
         logger.warning("Не удалось сохранить палитру: %s", exc)
         return False
 

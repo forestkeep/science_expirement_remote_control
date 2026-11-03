@@ -1,3 +1,4 @@
+
 import logging
 import os
 import sys
@@ -15,9 +16,61 @@ from infrastructure.settings import SettingsManager
 from open_file_controller import FileTypeChecker
 from app.main_window import UnifiedMainWindow
 
+from file_io import (
+    register_all_parsers,
+    assert_registry_complete,
+    assert_writer_registry_complete,
+)
+
 logger = logging.getLogger(__name__)
 
 VERSION_APP = "1.6.2"
+
+
+# Единственный список моделей, которые надо импортировать, чтобы
+# сработали @register/@register_writer. При добавлении модели — одна
+# строка здесь; file_io/registry.py, file_io/dispatch.py,
+# file_io/writers.py не меняются.
+_REGISTERED_MODELS: tuple[str, ...] = (
+    # publication
+    "publication.model.figure_model",           # FigureSpec          kind="figure_spec"
+    "publication.presets.journal_preset",       # JournalPreset       kind="journal_preset"
+    "publication.presets.style_profile",        # StyleProfile, LabProfile
+    # analysis
+    "graphs.analysis.presets",                  # AnalysisPresetFile  kind="analysis_preset_file"
+    # devices / installation / saving
+    "Devices.device_spec",                      # DeviceSpec          kind="device_spec"
+    "installation.installation_spec",           # InstallationSpec    kind="installation_spec"
+    "saving_data.buffer_data",                  # BufferData          kind="buffer_data"
+    # common
+    "common.color_picker",                      # ColorPaletteData    kind="color_palette"
+)
+
+# Ожидаемые kind — для проверки на старте. buffer_data включается только
+# в парсеры (read-only модель), но не в writers.
+_EXPECTED_PARSER_KINDS: tuple[str, ...] = (
+    "figure_spec",
+    "journal_preset",
+    "style_profile",
+    "lab_profile",
+    "analysis_preset_file",
+    "device_spec",
+    "installation_spec",
+    "buffer_data",
+    "color_palette",
+)
+
+_EXPECTED_WRITER_KINDS: tuple[str, ...] = (
+    "figure_spec",
+    "journal_preset",
+    "style_profile",
+    "lab_profile",
+    "analysis_preset_file",
+    "device_spec",
+    "installation_spec",
+    # buffer_data — read-only, writer не регистрируется
+    "color_palette",
+)
 
 
 def migrate_settings(old_settings, current_version):
@@ -114,6 +167,25 @@ if __name__ == "__main__":
                         level=log_level_file,
                         encoding="utf-8",)
 
+    # ---------- регистрация semantic parsers/writers ----------
+    # Выполняется ДО создания окна и до любого load_file/save_file.
+    # Ошибки отдельных импортов логируются и не валят старт.
+    register_all_parsers(model_modules=_REGISTERED_MODELS)
+    try:
+        assert_registry_complete(expected_kinds=_EXPECTED_PARSER_KINDS)
+        assert_writer_registry_complete(expected_kinds=_EXPECTED_WRITER_KINDS)
+    except RuntimeError:
+        # В production не валим приложение из-за опечатки в реестре —
+        # пишем громко в лог, но продолжаем старт. В dev/CI
+        # assert-функции должны падать; при желании можно поднять
+        # RuntimeError через переменную окружения.
+        logger.exception(
+            "registry incomplete: приложение стартует, но часть "
+            "load_file/save_file вызовов может завершиться ошибкой"
+        )
+        if os.getenv("APP_STRICT_REGISTRY", "0") == "1":
+            raise
+
     app = QtWidgets.QApplication(sys.argv)
 
     translator = QTranslator()
@@ -155,7 +227,6 @@ if __name__ == "__main__":
         VERSION_APP=VERSION_APP,
         def_persistent_sett=persistent_settings,
     )
-
 
     from common.theme import ThemeManager
     ThemeManager.instance(settings_manager).initialize()

@@ -1,27 +1,17 @@
-# Copyright © 2023 Zakhidov Dmitry <zakhidov.dim@yandex.ru>
-#
-# This file may be used under the terms of the GNU General Public License
-# version 3.0 as published by the Free Software Foundation and appearing in
-# the file LICENSE included in the packaging of this file. Please review the
-# following information to ensure the GNU General Public License version 3.0
-# requirements will be met: https://www.gnu.org/copyleft/gpl.html.
-#
-# This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-# WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 import logging
 import os
-import logging
+
+from PyQt5 import QtWidgets
+from dataclasses import dataclass
 
 from installation.ui.installation_check_devices import installation_Ui_Dialog
 from installation.ui.selectdevice_window import Ui_Selectdevice
 from Devices.available_devices import dict_device_class, local_device_class
-from controlDevicesJSON import search_devices_json, validate_json_schema, get_new_JSON_devs
-from PyQt5 import QtWidgets
-from dataclasses import dataclass
-from device_creator.dev_template import templates
+from controlDevicesJSON import get_new_JSON_devs
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class devFile:
@@ -30,6 +20,7 @@ class devFile:
     message: str
     status: bool
     json_data: dict
+
 
 class deviceSelector():
     def __init__(self, settings_manager):
@@ -40,19 +31,21 @@ class deviceSelector():
 
         ans, self.directory_devices = self.settings_manager.get_setting('JSON_default_path')
         if not ans:
-            logger.warning(f"Не удалось получить путь к JSON приборам из настроек")
+            logger.warning("Не удалось получить путь к JSON приборам из настроек")
             self.JSON_devices = {}
         else:
+            # get_new_JSON_devs делегирует в file_io.scan_folder и не бросает
+            # исключений наружу: все ошибки упакованы в devFile(status=False).
             try:
                 os.makedirs(self.directory_devices, exist_ok=True)
-                self.JSON_devices = get_new_JSON_devs(self.directory_devices)
-            except Exception as e:
-                logger.warning(f"Не удалось получить список JSON приборов, исключение: {e}")
-                self.JSON_devices = {}
+            except OSError as exc:
+                logger.warning("Не удалось создать папку %s: %s",
+                               self.directory_devices, exc)
+            self.JSON_devices = get_new_JSON_devs(self.directory_devices)
 
     def get_single_device(self):
         if not self.single_select_win:
-            self.single_select_win = Ui_Selectdevice( devices = local_device_class.keys() )
+            self.single_select_win = Ui_Selectdevice(devices=local_device_class.keys())
             self.single_select_win.open_new_path.clicked.connect(self.callback_select_device)
 
         self.single_select_win.reload_json_dev(self.JSON_devices)
@@ -61,8 +54,8 @@ class deviceSelector():
         answer = self.single_select_win.exec_()
         if answer:
             try:
-                answer = self.JSON_devices[ self.single_select_win.choised_device ]
-            except:
+                answer = self.JSON_devices[self.single_select_win.choised_device]
+            except Exception:
                 answer = self.single_select_win.choised_device
         if answer == 0:
             answer = None
@@ -71,7 +64,9 @@ class deviceSelector():
 
     def get_multiple_devices(self):
         if not self.multiple_select_win:
-            self.multiple_select_win = installation_Ui_Dialog( available_devices=dict_device_class.keys() )
+            self.multiple_select_win = installation_Ui_Dialog(
+                available_devices=dict_device_class.keys()
+            )
             self.multiple_select_win.open_new_path.clicked.connect(self.callback_select_device)
 
         for check in self.multiple_select_win.checkBoxes_create_dev:
@@ -81,7 +76,6 @@ class deviceSelector():
             check.setChecked(False)
 
         self.selection_type = 'multiple'
-
         self.multiple_select_win.reload_json_dev(self.JSON_devices)
 
         answer = self.multiple_select_win.exec_()
@@ -108,6 +102,7 @@ class deviceSelector():
         directory = self.choice_json_devices_directory()
         if directory:
             self.set_json_device_directory(directory)
+            # get_new_JSON_devs → scan_folder: ошибки чтения уже в devFile.
             self.JSON_devices = get_new_JSON_devs(directory)
             if self.multiple_select_win and self.multiple_select_win.isVisible():
                 self.multiple_select_win.reload_json_dev(self.JSON_devices)
@@ -120,14 +115,16 @@ class deviceSelector():
             par_win = self.multiple_select_win
         elif self.selection_type == 'single':
             par_win = self.single_select_win
+        else:
+            par_win = None
 
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         ans = QtWidgets.QFileDialog.getExistingDirectory(
             par_win,
-            QtWidgets.QApplication.translate('base_install',"Выберите папку с приборами"),
+            QtWidgets.QApplication.translate('base_install', "Выберите папку с приборами"),
             options=options,
         )
         if ans:
-            logger.info(f"Выбран путь {ans} для приборов")
+            logger.info("Выбран путь %s для приборов", ans)
         return ans
