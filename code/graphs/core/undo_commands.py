@@ -242,77 +242,79 @@ class DeleteCurveCommand(UndoCommand):
 
 
 class AddCurveCommand(UndoCommand):
-    """
-    Создание новой кривой (формула / автокорреляция).
-    После успешного создания команда привязывается к объекту кривой
-    через bind_after_creation().
-    """
-    def __init__(self, session, root_name: str):
-        self.session = session
-        self.root_name = root_name
-        self.curve = None
-        self.tree_item = None
-        self.top_index = -1
-        self.number_axis = 1
-
-    def bind_after_creation(self) -> bool:
-        curve = self.session.graph_main.get_curve(self.root_name)
-        if curve is None:
-            return False
-        self.curve = curve
-        self.tree_item = curve.tree_item
-        self.number_axis = curve.number_axis or 1
-        self.top_index = self.session.tree_class.tree_widget.indexOfTopLevelItem(self.tree_item)
-        return True
-
-    def text(self):
-        return _TR("Создание кривой")
-
-    def redo(self):
-        if self.curve is None:
-            return
-        gm = self.session.graph_main
-        tree = self.session.tree_class
-        gm.get_curves()[self.root_name] = self.curve
-        if self.tree_item not in tree.curves:
-            tree.curves.append(self.tree_item)
-        parent = self.tree_item.parent()
-        if parent is not None:
-            parent.addChild(self.tree_item)
-        elif 0 <= self.top_index <= tree.tree_widget.topLevelItemCount():
-            tree.tree_widget.insertTopLevelItem(self.top_index, self.tree_item)
-        else:
-            tree.tree_widget.addTopLevelItem(self.tree_item)
-        if self.number_axis == 2:
-            self.curve.add_to_graph(
-                gm.graphView.second_graphView, gm.graphView.legend2, 2,
-            )
-        else:
-            self.curve.add_to_graph(gm.graphView, gm.graphView.legend, 1)
-        tree.update_visible() 
-
-    def undo(self):
-        if self.curve is None:
-            return
-        gm = self.session.graph_main
-        tree = self.session.tree_class
-        self.curve.delete_curve_from_graph()
-        self.curve.is_draw = False
-        gm.get_curves().pop(self.root_name, None)
-        if getattr(self.session, "selection_model", None) is not None:
-            self.session.selection_model.remove(self.curve)
-        if self.tree_item in tree.curves:
-            tree.curves.remove(self.tree_item)
-        parent = self.tree_item.parent()
-        if parent is not None:
-            parent.removeChild(self.tree_item)
-        else:
-            idx = tree.tree_widget.indexOfTopLevelItem(self.tree_item)
-            if idx != -1:
-                tree.tree_widget.takeTopLevelItem(idx)
-        tree.update_visible() 
-
-
+	def __init__(self,session,root_name:str):
+		self.session=session
+		self.root_name=root_name
+		self.curve=None
+		self.tree_item=None
+		self.top_index=-1
+		self.number_axis=1
+		self._macro=None
+	def bind_after_creation(self)->bool:
+		curve=self.session.graph_main.get_curve(self.root_name)
+		if curve is None:
+			return False
+		self.curve=curve
+		self.tree_item=curve.tree_item
+		self.number_axis=curve.number_axis or 1
+		self.top_index=self.session.tree_class.tree_widget.indexOfTopLevelItem(self.tree_item)
+		return True
+	def text(self):
+		return _TR("Создание кривой")
+	def redo(self):
+		if self.curve is None:
+			return
+		gm=self.session.graph_main
+		tree=self.session.tree_class
+		gm.get_curves()[self.root_name]=self.curve
+		if self.tree_item not in tree.curves:
+			tree.curves.append(self.tree_item)
+		parent=self.tree_item.parent()
+		if parent is not None:
+			parent.addChild(self.tree_item)
+		elif 0<=self.top_index<=tree.tree_widget.topLevelItemCount():
+			tree.tree_widget.insertTopLevelItem(self.top_index,self.tree_item)
+		else:
+			tree.tree_widget.addTopLevelItem(self.tree_item)
+		if self.number_axis==2:
+			self.curve.add_to_graph(gm.graphView.second_graphView,gm.graphView.legend2,2,)
+		else:
+			self.curve.add_to_graph(gm.graphView,gm.graphView.legend,1)
+		if self._macro is not None:
+			self._macro.undo()
+			self._macro=None
+		tree.update_visible()
+	def undo(self):
+		if self.curve is None:
+			return
+		gm=self.session.graph_main
+		tree=self.session.tree_class
+		controller=getattr(self.session,"analysis_controller",None)
+		self._macro=None
+		if controller is not None:
+			from graphs.analysis.commands import RemoveAnalysisCommand,MacroAnalysisCommand
+			artifacts=controller.get_artifacts_for_curve(self.root_name)
+			if artifacts:
+				macro=MacroAnalysisCommand(controller)
+				for art in artifacts:
+					macro.add(RemoveAnalysisCommand(controller,art))
+				macro.redo()
+				self._macro=macro
+		self.curve.delete_curve_from_graph()
+		self.curve.is_draw=False
+		gm.get_curves().pop(self.root_name,None)
+		if getattr(self.session,"selection_model",None) is not None:
+			self.session.selection_model.remove(self.curve)
+		if self.tree_item in tree.curves:
+			tree.curves.remove(self.tree_item)
+		parent=self.tree_item.parent()
+		if parent is not None:
+			parent.removeChild(self.tree_item)
+		else:
+			idx=tree.tree_widget.indexOfTopLevelItem(self.tree_item)
+			if idx!=-1:
+				tree.tree_widget.takeTopLevelItem(idx)
+		tree.update_visible()
 # =====================================================================
 # Фильтры
 # =====================================================================

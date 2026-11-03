@@ -16,26 +16,25 @@ class PublicationWidgetSlotsMixin:
         self._current_panel_id = panel_id
         self._import_session_to_panel()
 
-    def _on_slot_color_clicked(self, idx: int):
-        panel = self._current_panel()
-        if panel is None or not (0 <= idx < len(panel.curves)):
-            return
-        from PyQt5.QtGui import QColor
-        from PyQt5.QtWidgets import QColorDialog
-        slot = panel.curves[idx]
-        # стартовый цвет: override → snapshot → fallback
-        current = slot.style_overrides.get("line.color")
-        if current is None:
-            ls = getattr(getattr(slot.data_ref, "style", None), "line_style", None)
-            current = getattr(ls, "color", "#1f77b4") if ls else "#1f77b4"
-        c = QColorDialog.getColor(QColor(str(current)))
-        if not c.isValid():
-            return
-        slot.style_overrides["line.color"] = c.name()
-        # ТЗ: «Выбор цвета записывает override и ставит 📌 автоматически»
-        self._auto_pin_slot(slot)
-        self._inspector_panel.set_panel(panel.id)
-        self._schedule_render()
+    def _on_slot_color_clicked(self, idx: int) -> None:
+		panel = self._current_panel()
+		if panel is None or not (0 <= idx < len(panel.curves)):
+			return
+		from PyQt5.QtGui import QColor
+		from common.color_picker import pick_color
+		slot = panel.curves[idx]
+		current = slot.style_overrides.get("line.color")
+		if current is None:
+			ls = getattr(getattr(slot.data_ref, "style", None), "line_style", None)
+			current = getattr(ls, "color", "#1f77b4") if ls else "#1f77b4"
+
+		def on_selected(c: QColor) -> None:
+			slot.style_overrides["line.color"] = c.name()
+			self._auto_pin_slot(slot)
+			self._inspector_panel.set_panel(panel.id)
+			self._schedule_render()
+
+		pick_color(None, current, on_selected, self)
 
     def _on_slot_style_clicked(self, idx: int):
         panel = self._current_panel()

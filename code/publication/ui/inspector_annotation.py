@@ -8,13 +8,15 @@
 """
 from __future__ import annotations
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import (
-    QColorDialog, QDialog, QDialogButtonBox, QDoubleSpinBox, QFormLayout,
+    QDialog, QDialogButtonBox, QDoubleSpinBox, QFormLayout,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QScrollArea,
     QSpinBox, QVBoxLayout, QWidget,
 )
+
+from common.color_picker import pick_color
 
 
 _KIND_TITLES = {
@@ -163,9 +165,10 @@ class AnnotationPropertiesDialog(QDialog):
         self.color_btn.setStyleSheet(f"background-color: {color};")
 
     def _choose_color(self):
-        c = QColorDialog.getColor(QColor(self.color_btn.text() or "#000000"))
-        if c.isValid():
+        current = self.color_btn.text() or "#000000"
+        def on_selected(c: QColor) -> None:
             self._set_color(c.name())
+        pick_color(self.color_btn, current, on_selected, self)
 
     def apply(self):
         self.ann.text = self.text_edit.text()
@@ -299,14 +302,16 @@ class AnnotationInspector(QWidget):
     def _choose_color(self):
         if not self._ann_id:
             return
-        c = QColorDialog.getColor(QColor(self.color_btn.text() or "#000000"))
-        if not c.isValid():
-            return
-        self._set_color_btn(c.name())
-        ann = self.spec.find_presentation(self._ann_id)
-        if ann is not None:
-            ann.style["color"] = c.name()
-            self.changed.emit()
+        from PyQt5.QtGui import QColor as _QC
+        from common.color_picker import pick_color as _pc
+        current = self.color_btn.text() or "#000000"
+        def on_selected(c: _QC) -> None:
+            self._set_color_btn(c.name())
+            ann = self.spec.find_presentation(self._ann_id)
+            if ann is not None:
+                ann.style["color"] = c.name()
+                self.changed.emit()
+        _pc(self.color_btn, current, on_selected, self)
 
     def _on_reset(self):
         if not self._ann_id:
