@@ -1,3 +1,2 @@
-from .publication_widget import PublicationWidget
-from .publication_window import PublicationWindow
-__all__ = ["PublicationWidget", "PublicationWindow"]
+from.publication_window import PublicationWidget, PublicationWindow
+__all__=["PublicationWidget","PublicationWindow"]

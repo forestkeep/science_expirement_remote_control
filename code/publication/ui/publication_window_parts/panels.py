@@ -284,6 +284,7 @@ class PublicationWidgetPanelsMixin:
 		self._canvas.set_spec(self.spec)
 		self._canvas.set_selected_panels([])
 		self._inspector_figure.set_spec(self.spec)
+		self._inspector_panel.set_spec(self.spec)
 		self._inspector_panel.set_panel("")
 		self._inspector_annotation.set_spec(self.spec)
 		self._load_journal(self.spec.journal_preset_id or "nature_double")

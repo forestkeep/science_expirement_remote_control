@@ -44,39 +44,42 @@ class PublicationWidgetCoreMixin:
     def __init__(self, session_controller, spec: FigureSpec = None, parent=None):
         super().__init__(parent)
         self.session_controller = session_controller
+        self._created_new = spec is None
         self.spec: FigureSpec = spec or FigureSpec(id="fig_0001")
         self.preset_store = JournalPresetStore()
         self.preset = None
         self.style_stack: Optional[StyleStack] = None
         self.renderer = MatplotlibRenderer()
-        self.data_loader = SessionDataLoader(
-            session_controller,
-            artifacts_provider=self._artifacts_for_curve,
-        )
+        self.data_loader = SessionDataLoader(session_controller, artifacts_provider=self._artifacts_for_curve)
         self.source_bus = SourceBus(session_controller, parent=self)
         self.source_bus.source_changed.connect(self._schedule_render)
         self.source_bus.artifacts_changed.connect(self._schedule_render)
         self.source_bus.sessions_changed.connect(self._schedule_render)
-
         self._render_generation = 0
         self._debounce_timer = QTimer(self)
         self._debounce_timer.setSingleShot(True)
         self._debounce_timer.setInterval(DEBOUNCE_MS)
         self._debounce_timer.timeout.connect(self._render_now)
-
         self._current_panel_id: Optional[str] = None
         self._current_slot_index: int = -1
         self._current_ann_id: Optional[str] = None
         self._last_validation = None
         self._last_render_ms: float = 0.0
-
         self._build_ui()
         self._load_journal(self.spec.journal_preset_id or "nature_double")
         self._load_style(self.spec.style_profile_id or "okabe_ito")
-        self._schedule_render()
+        initial_panel_id = None
+        if self._created_new and not self.spec.panels:
+            initial_panel_id = self._add_initial_panel()
         self._refresh_tree()
         self._refresh_counters()
+        if initial_panel_id:
+            self._on_panel_selected(initial_panel_id)
+        self._render_now()
 
+    def _add_initial_panel(self) -> Optional[str]:
+        panel = self.spec.add_panel(x_mm=5.0, y_mm=5.0, w_mm=60.0, h_mm=45.0)
+        return panel.id
     # ==================================================================
     # UI
     # ==================================================================
@@ -84,42 +87,31 @@ class PublicationWidgetCoreMixin:
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
-
         outer.addWidget(self._build_toolbar())
-
         splitter = QSplitter(Qt.Horizontal)
         self._tree = FigureTree()
         self._tree.setMinimumWidth(SPLIT_TREE_W)
         splitter.addWidget(self._tree)
-
         self._canvas = PublicationCanvas()
         self._canvas.set_spec(self.spec)
         splitter.addWidget(self._canvas)
-
         self._inspector_stack = QStackedWidget()
         self._inspector_stack.setMinimumWidth(SPLIT_INSPECTOR_W)
-
-        # -- 4 состояния инспектора
         self._inspector_figure = FigureStateInspector(self.spec, None, None)
         self._inspector_panel = PanelInspector(self.spec)
         self._inspector_panel.session_controller = self.session_controller
         self._inspector_panel.curves_added.connect(self._on_curves_added)
         self._inspector_curve = CurveInspector()
         self._inspector_annotation = AnnotationInspector(self.spec)
-
         self._inspector_stack.addWidget(self._inspector_figure)
         self._inspector_stack.addWidget(self._inspector_panel)
         self._inspector_stack.addWidget(self._inspector_curve)
         self._inspector_stack.addWidget(self._inspector_annotation)
-
         splitter.addWidget(self._inspector_stack)
         splitter.setSizes([SPLIT_TREE_W, 900, SPLIT_INSPECTOR_W])
         splitter.setStretchFactor(1, 1)
         outer.addWidget(splitter, 1)
-
         outer.addWidget(self._build_status())
-
-        # -- wiring: canvas
         self._canvas.panel_geometry_changed.connect(self._on_panel_geometry_changed)
         self._canvas.panel_selected.connect(self._on_canvas_panel_selected)
         self._canvas.selection_cleared.connect(self._on_canvas_selection_cleared)
@@ -138,8 +130,7 @@ class PublicationWidgetCoreMixin:
         self._canvas.apply_layout_requested.connect(self._on_apply_layout)
         self._canvas.delete_panel_requested.connect(self._delete_panel)
         self._canvas.drag_finished.connect(self._on_canvas_drag_finished)
-
-        # -- wiring: tree
+        self._canvas.spec_changed.connect(self._on_canvas_spec_changed)
         self._tree.figure_selected.connect(self._on_figure_selected)
         self._tree.panel_selected.connect(self._on_panel_selected)
         self._tree.slot_selected.connect(self._on_slot_selected)
@@ -154,14 +145,12 @@ class PublicationWidgetCoreMixin:
         self._tree.annotation_properties.connect(self._on_annotation_edit)
         self._tree.panel_reordered.connect(self._on_panel_reordered)
         self._tree.slot_moved.connect(self._on_slot_moved)
-
-        # -- wiring: panel inspector
         self._inspector_panel.panel_label_changed.connect(self._on_panel_label_changed)
         self._inspector_panel.panel_reset_all.connect(self._on_panel_reset_all)
-        self._inspector_panel.panel_pinned_toggled.connect(self._on_panel_pinned)   # TODO: stub
+        self._inspector_panel.panel_pinned_toggled.connect(self._on_panel_pinned)
         self._inspector_panel.panel_geometry_changed.connect(self._on_panel_geometry_changed)
         self._inspector_panel.panel_axis_visibility.connect(self._on_panel_axis_visibility)
-        self._inspector_panel.panel_axis_linked.connect(self._on_panel_axis_linked)  # TODO: stub
+        self._inspector_panel.panel_axis_linked.connect(self._on_panel_axis_linked)
         self._inspector_panel.panel_axis_label.connect(self._on_panel_axis_label)
         self._inspector_panel.panel_axis_range.connect(self._on_panel_axis_range)
         self._inspector_panel.panel_axis_auto.connect(self._on_panel_axis_auto)
@@ -173,22 +162,20 @@ class PublicationWidgetCoreMixin:
         self._inspector_panel.slot_width_changed.connect(self._on_slot_width_changed)
         self._inspector_panel.slot_legend_changed.connect(self._on_slot_legend_changed)
         self._inspector_panel.slot_axis_changed.connect(self._on_slot_axis_changed)
-        self._inspector_panel.slot_pinned_toggled.connect(self._on_slot_pinned)  # TODO: stub
+        self._inspector_panel.slot_pinned_toggled.connect(self._on_slot_pinned)
         self._inspector_panel.slot_reset_clicked.connect(self._on_slot_reset_style)
         self._inspector_panel.slot_deleted.connect(self._on_slot_removed)
         self._inspector_panel.legend_mode_changed.connect(self._on_legend_mode)
         self._inspector_panel.legend_position_changed.connect(self._on_legend_pos)
         self._inspector_panel.legend_visible_changed.connect(self._on_legend_visible)
-        self._inspector_panel.legend_pinned_toggled.connect(self._on_legend_pinned)  # TODO: stub
+        self._inspector_panel.legend_pinned_toggled.connect(self._on_legend_pinned)
         self._inspector_panel.annotation_create.connect(self._on_annotation_create)
         self._inspector_panel.annotation_edit.connect(self._on_annotation_edit)
         self._inspector_panel.annotation_delete.connect(self._on_annotation_delete)
-
-        # -- wiring: curve inspector
         self._inspector_curve.visible_changed.connect(self._on_curve_visible)
         self._inspector_curve.axis_changed.connect(self._on_curve_axis)
         self._inspector_curve.legend_label_changed.connect(self._on_curve_legend)
-        self._inspector_curve.from_source_toggled.connect(self._on_curve_from_source)  # TODO
+        self._inspector_curve.from_source_toggled.connect(self._on_curve_from_source)
         self._inspector_curve.color_changed.connect(self._on_curve_color)
         self._inspector_curve.line_style_changed.connect(self._on_curve_line_style)
         self._inspector_curve.line_width_changed.connect(self._on_curve_line_width)
@@ -200,14 +187,10 @@ class PublicationWidgetCoreMixin:
         self._inspector_curve.refresh_style_requested.connect(self._on_curve_refresh_style)
         self._inspector_curve.artifact_toggled.connect(self._on_curve_artifact_toggle)
         self._inspector_curve.artifact_show_requested.connect(self._on_curve_artifact_show)
-
-        # -- wiring: figure inspector
         self._inspector_figure.figure_size_changed.connect(self._on_figure_size_changed)
         self._inspector_figure.figure_overrides_changed.connect(self._schedule_render)
         self._inspector_figure.panel_list_clicked.connect(self._on_panel_selected)
         self._inspector_figure.layout_requested.connect(self._on_apply_layout)
-
-        # -- wiring: annotation inspector
         self._inspector_annotation.changed.connect(self._schedule_render)
         self._inspector_annotation.edit_requested.connect(self._on_annotation_edit)
         self._inspector_annotation.delete_requested.connect(self._on_annotation_delete)

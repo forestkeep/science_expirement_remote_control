@@ -8,9 +8,7 @@ class PublicationWidgetSelectionMixin:
         self._current_ann_id = None
         self._canvas.set_selected_panels([])
         self._inspector_stack.setCurrentWidget(self._inspector_figure)
-        self._inspector_figure.update_from_spec(
-            self.spec, self.preset, self.style_stack
-        )
+        self._inspector_figure.update_from_spec(self.spec, self.preset, self.style_stack)
 
     def _on_panel_selected(self, panel_id: str):
         if not panel_id:
@@ -30,16 +28,13 @@ class PublicationWidgetSelectionMixin:
         self._on_figure_selected()
 
     def _on_canvas_drag_finished(self):
-        """Drag/resize завершён: рендерим немедленно, без 400 мс дебаунса.
-
-        Во время самого drag-а canvas рисует только кэшированную фигуру +
-        dashed-рамку, поэтому перетаскивание остаётся плавным. Полный
-        matplotlib-render нужен только по завершении — именно его мы
-        запускаем сразу, чтобы пользователь не видел задержку в 400 мс.
-        """
         if self._debounce_timer.isActive():
             self._debounce_timer.stop()
         self._render_now()
+
+    def _on_canvas_spec_changed(self):
+        self._refresh_tree()
+        self._refresh_counters()
 
     def _on_slot_selected(self, panel_id: str, idx: int):
         self._current_panel_id = panel_id
@@ -59,9 +54,6 @@ class PublicationWidgetSelectionMixin:
         self._inspector_stack.setCurrentWidget(self._inspector_annotation)
         self._inspector_annotation.set_annotation(ann_id)
 
-    # ==================================================================
-    # Панель: геометрия / label / прочее
-    # ==================================================================
     def _on_panel_geometry_changed(self, panel_id, x, y, w, h):
         p = self.spec.find_panel(panel_id)
         if p is None:
@@ -102,23 +94,13 @@ class PublicationWidgetSelectionMixin:
         p = self.spec.find_panel(panel_id)
         if p is None:
             return
-
         p.style_overrides[f"axis.{axis}.linked"] = other_panel_id or ""
-
         if other_panel_id:
             src = self.spec.find_panel(other_panel_id)
             if src is not None:
-                rng = {
-                    "x": src.x_range,
-                    "y1": src.y_range,
-                    "y2": src.y2_range,
-                }.get(axis)
+                rng = {"x": src.x_range, "y1": src.y_range, "y2": src.y2_range}.get(axis)
                 self._set_axis_range(p, axis, rng)
                 self._propagate_axis_link(other_panel_id, axis, rng)
-        else:
-            # при отвязке оставляем текущий диапазон как есть
-            pass
-
         if self._current_panel_id == panel_id:
             self._inspector_panel.set_panel(panel_id)
         self._schedule_render()
@@ -171,7 +153,6 @@ class PublicationWidgetSelectionMixin:
             return
         p.y2_visible = bool(state)
         if not state:
-            # При выключении Y2 все слоты переключаются на Y1
             for slot in p.curves:
                 if slot.axis == "y2":
                     slot.axis = "y1"
@@ -179,38 +160,24 @@ class PublicationWidgetSelectionMixin:
         if self._current_panel_id == panel_id:
             self._inspector_panel.set_panel(panel_id)
 
-    # ==================================================================
-    # Легенда / оси (уровень панели)
-    # ==================================================================
     def _on_legend_mode(self, mode: str):
         p = self._current_panel()
         if p is None:
             return
-
-        # Удаляем старые legend.* с обоих уровней, сохраняя только pinned-флаг.
         for k in list(p.style_overrides.keys()):
             if k.startswith("legend.") and k != "legend.pinned":
                 p.style_overrides.pop(k, None)
         for k in list(self.spec.figure_overrides.keys()):
             if k.startswith("legend."):
                 self.spec.figure_overrides.pop(k, None)
-
         p.style_overrides["legend.mode"] = mode
-
         if mode == "figure":
             self.spec.figure_overrides["legend.mode"] = "figure"
-            self.spec.figure_overrides["legend.enabled"] = bool(
-                p.style_overrides.get("legend.enabled", True)
-            )
+            self.spec.figure_overrides["legend.enabled"] = bool(p.style_overrides.get("legend.enabled", True))
         elif mode == "inline":
-            p.style_overrides["legend.inline_pos"] = p.style_overrides.get(
-                "legend.pos", "best"
-            )
-        else:  # panel
-            p.style_overrides["legend.pos"] = p.style_overrides.get(
-                "legend.pos", "best"
-            )
-
+            p.style_overrides["legend.inline_pos"] = p.style_overrides.get("legend.pos", "best")
+        else:
+            p.style_overrides["legend.pos"] = p.style_overrides.get("legend.pos", "best")
         self._schedule_render()
 
     def _on_legend_pos(self, pos: str):
@@ -227,9 +194,6 @@ class PublicationWidgetSelectionMixin:
         p.style_overrides["legend.enabled"] = bool(visible)
         self._schedule_render()
 
-    # ==================================================================
-    # Figure inspector
-    # ==================================================================
     def _on_figure_size_changed(self, w: float, h: float):
         self.spec.width_mm = float(w)
         self.spec.height_mm = float(h)
