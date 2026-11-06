@@ -1,80 +1,578 @@
 from __future__ import annotations
-from PyQt5.QtCore import pyqtSignal
+from typing import Callable, Dict, Optional
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (
-    QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QGroupBox, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton, QScrollArea, QTabWidget, QVBoxLayout, QWidget,
+    QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QFrame, QGroupBox, QHBoxLayout,
+    QLabel, QLineEdit, QPushButton, QScrollArea, QTabWidget, QToolButton,
+    QVBoxLayout, QWidget,
 )
 from ..model.panel import PanelSpec, CurveSlot
 
 
-class CurveSlotRow(QWidget):
-    color_clicked = pyqtSignal(int)
-    style_clicked = pyqtSignal(int)
-    width_changed = pyqtSignal(int, float)
-    legend_changed = pyqtSignal(int, str)
+class _CurveEditorSection(QWidget):
+    visible_changed = pyqtSignal(int, bool)
     axis_changed = pyqtSignal(int, str)
+    legend_changed = pyqtSignal(int, str)
+    from_source_toggled = pyqtSignal(int, bool)
+    color_changed = pyqtSignal(int, str)
+    line_style_changed = pyqtSignal(int, str)
+    line_width_changed = pyqtSignal(int, float)
+    marker_changed = pyqtSignal(int, str)
+    marker_size_changed = pyqtSignal(int, float)
+    marker_edge_changed = pyqtSignal(int, str)
+    marker_face_changed = pyqtSignal(int, str)
+    refresh_data_requested = pyqtSignal(int)
+    refresh_style_requested = pyqtSignal(int)
+    artifact_toggled = pyqtSignal(int, str, bool)
+    artifact_show_requested = pyqtSignal(int, str)
     pinned_toggled = pyqtSignal(int, bool)
-    reset_clicked = pyqtSignal(int)
-    delete_clicked = pyqtSignal(int)
+    reset_requested = pyqtSignal(int)
+    delete_requested = pyqtSignal(int)
 
-    def __init__(self, index: int, slot: CurveSlot, parent=None):
+    _PIN_KEY = "__pinned__"
+    _PIN_KEYS_KEY = "__pinned_keys__"
+
+    def __init__(
+        self,
+        idx: int,
+        slot: CurveSlot,
+        panel: PanelSpec,
+        link_state: bool = True,
+        on_link_state_changed: Optional[Callable[[int, bool], None]] = None,
+        parent=None,
+    ):
         super().__init__(parent)
-        self.index = index
-        self.slot = slot
+        self._idx = idx
+        self._slot = slot
+        self._panel = panel
+        self._suppress = False
+        self._link_marker_state = bool(link_state)
+        self._on_link_state_changed = on_link_state_changed
         self._build_ui()
+        self._link_marker_check.setChecked(self._link_marker_state)
+        self._apply_link_visibility()
+        self._refresh_from_slot()
+
+    # ---------- UI ----------
 
     def _build_ui(self):
-        lay = QHBoxLayout(self)
-        lay.setContentsMargins(2, 2, 2, 2)
-        lay.setSpacing(3)
-        self.setFixedHeight(28)
-        self.color_btn = QPushButton()
-        self.color_btn.setFixedSize(16, 16)
-        color = "#1f77b4"
-        if self.slot.style_overrides.get("line.color"):
-            color = self.slot.style_overrides["line.color"]
-        self.color_btn.setStyleSheet(f"background-color: {color};")
-        self.color_btn.clicked.connect(lambda: self.color_clicked.emit(self.index))
-        lay.addWidget(self.color_btn)
-        self.style_btn = QPushButton("—")
-        self.style_btn.setFixedSize(28, 22)
-        self.style_btn.clicked.connect(lambda: self.style_clicked.emit(self.index))
-        lay.addWidget(self.style_btn)
-        self.width_spin = QDoubleSpinBox()
-        self.width_spin.setRange(0.1, 10.0)
-        self.width_spin.setSingleStep(0.25)
-        self.width_spin.setDecimals(2)
-        self.width_spin.setFixedWidth(60)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(2, 2, 2, 4)
+        outer.setSpacing(1)
+
+        # --- строка 1: заголовок + сервисные кнопки ---
+        row1 = QHBoxLayout()
+        row1.setSpacing(2)
+        row1.setContentsMargins(0, 0, 0, 0)
+
+        self._toggle = QToolButton()
+        self._toggle.setArrowType(Qt.RightArrow)
+        self._toggle.setCheckable(True)
+        self._toggle.setChecked(False)
+        self._toggle.setAutoRaise(True)
+        self._toggle.setFixedSize(16, 20)
+        self._toggle.toggled.connect(self._on_toggle)
+        row1.addWidget(self._toggle)
+
+        self._color_btn = QPushButton()
+        self._color_btn.setFixedSize(18, 20)
+        self._color_btn.setToolTip("Цвет линии")
+        self._color_btn.clicked.connect(self._on_color_click)
+        row1.addWidget(self._color_btn)
+
+        self._legend_edit = QLineEdit()
+        self._legend_edit.setPlaceholderText("auto")
+        self._legend_edit.setFixedHeight(20)
+        self._legend_edit.editingFinished.connect(self._on_legend_changed)
+        row1.addWidget(self._legend_edit, 1)
+
+        self._pin_btn = QPushButton("📌")
+        self._pin_btn.setFixedSize(20, 20)
+        self._pin_btn.setCheckable(True)
+        self._pin_btn.setToolTip("Закрепить overrides")
+        self._pin_btn.toggled.connect(self._on_pin_toggled)
+        row1.addWidget(self._pin_btn)
+
+        self._reset_btn = QPushButton("↺")
+        self._reset_btn.setFixedSize(20, 20)
+        self._reset_btn.setToolTip("Сбросить к источнику")
+        self._reset_btn.clicked.connect(self._on_reset_clicked)
+        row1.addWidget(self._reset_btn)
+
+        self._del_btn = QPushButton("✕")
+        self._del_btn.setFixedSize(20, 20)
+        self._del_btn.setToolTip("Удалить кривую")
+        self._del_btn.clicked.connect(self._on_delete_clicked)
+        row1.addWidget(self._del_btn)
+
+        outer.addLayout(row1)
+
+        # --- строка 2: толщина + стиль линии ---
+        row2 = QHBoxLayout()
+        row2.setSpacing(4)
+        row2.setContentsMargins(20, 0, 0, 0)
+
+        lbl_w = QLabel("Линия:")
+        lbl_w.setStyleSheet("color: #777;")
+        row2.addWidget(lbl_w)
+        self._width_spin = QDoubleSpinBox()
+        self._width_spin.setRange(0.1, 20.0)
+        self._width_spin.setSingleStep(0.25)
+        self._width_spin.setDecimals(2)
+        self._width_spin.setSuffix(" pt")
+        self._width_spin.setFixedHeight(20)
+        self._width_spin.valueChanged.connect(self._on_width_changed)
+        row2.addWidget(self._width_spin, 1)
+
+        self._line_style_combo = QComboBox()
+        for text, val in (
+            ("—", "Solid"), ("--", "Dash"), ("··", "Dot"),
+            ("-·-", "DashDot"), ("-··-", "DashDotDot"),
+        ):
+            self._line_style_combo.addItem(text, val)
+        self._line_style_combo.setFixedHeight(20)
+        self._line_style_combo.setToolTip("Стиль линии")
+        self._line_style_combo.currentIndexChanged.connect(self._on_line_style_changed)
+        row2.addWidget(self._line_style_combo, 1)
+
+        outer.addLayout(row2)
+
+        # --- строка 3: маркер + размер ---
+        row3 = QHBoxLayout()
+        row3.setSpacing(4)
+        row3.setContentsMargins(20, 0, 0, 0)
+
+        lbl_ms = QLabel("Маркер:")
+        lbl_ms.setStyleSheet("color: #777;")
+        row3.addWidget(lbl_ms)
+        self._marker_size_spin = QDoubleSpinBox()
+        self._marker_size_spin.setRange(0.0, 40.0)
+        self._marker_size_spin.setDecimals(1)
+        self._marker_size_spin.setSuffix(" pt")
+        self._marker_size_spin.setFixedHeight(20)
+        self._marker_size_spin.valueChanged.connect(self._on_marker_size_changed)
+        row3.addWidget(self._marker_size_spin, 1)
+
+        self._marker_combo = QComboBox()
+        for text, val in (
+            ("×", ""), ("○", "o"), ("□", "s"), ("△", "t1"), ("◇", "d"), ("+", "+"),
+        ):
+            self._marker_combo.addItem(text, val)
+        self._marker_combo.setFixedHeight(20)
+        self._marker_combo.setToolTip("Стиль маркера")
+        self._marker_combo.currentIndexChanged.connect(self._on_marker_changed)
+        row3.addWidget(self._marker_combo, 1)
+
+        outer.addLayout(row3)
+
+        # --- разделитель между кривыми ---
+        sep = QFrame()
+        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShadow(QFrame.Plain)
+        sep.setStyleSheet("color: #444;")
+        outer.addWidget(sep)
+
+        # --- разворачиваемый контент ---
+        self._content = QWidget()
+        cl = QVBoxLayout(self._content)
+        cl.setContentsMargins(20, 4, 4, 4)
+        cl.setSpacing(4)
+
+        ident = QFormLayout()
+        ident.setContentsMargins(0, 0, 0, 0)
+        ident.setSpacing(2)
+        self._session_label = QLabel("—")
+        self._session_label.setStyleSheet("color: #888;")
+        ident.addRow("Сессия:", self._session_label)
+        self._series_label = QLabel("—")
+        self._series_label.setStyleSheet("color: #888;")
+        ident.addRow("Серия:", self._series_label)
+        cl.addLayout(ident)
+
+        row_ax = QHBoxLayout()
+        row_ax.addWidget(QLabel("Ось:"))
+        self._axis_combo = QComboBox()
+        self._axis_combo.addItems(["Y1", "Y2"])
+        self._axis_combo.currentIndexChanged.connect(self._on_axis_changed)
+        row_ax.addWidget(self._axis_combo)
+        self._visible_check = QCheckBox("видима")
+        self._visible_check.stateChanged.connect(self._on_visible_changed)
+        row_ax.addWidget(self._visible_check)
+        row_ax.addStretch()
+        cl.addLayout(row_ax)
+
+        self._from_source_check = QCheckBox("из источника (сброс overrides)")
+        self._from_source_check.stateChanged.connect(self._on_from_source_toggled)
+        cl.addWidget(self._from_source_check)
+
+        self._link_marker_check = QCheckBox("цвет маркера как у линии")
+        self._link_marker_check.setChecked(True)
+        self._link_marker_check.toggled.connect(self._on_link_marker_toggled)
+        cl.addWidget(self._link_marker_check)
+
+        self._marker_edge_container = QWidget()
+        mel = QHBoxLayout(self._marker_edge_container)
+        mel.setContentsMargins(0, 0, 0, 0)
+        mel.addWidget(QLabel("Цвет маркера:"))
+        self._marker_edge_btn = QPushButton()
+        self._marker_edge_btn.clicked.connect(self._on_marker_edge_click)
+        mel.addWidget(self._marker_edge_btn, 1)
+        cl.addWidget(self._marker_edge_container)
+
+        self._marker_face_container = QWidget()
+        mfl = QHBoxLayout(self._marker_face_container)
+        mfl.setContentsMargins(0, 0, 0, 0)
+        mfl.addWidget(QLabel("Цвет заливки:"))
+        self._marker_face_btn = QPushButton()
+        self._marker_face_btn.clicked.connect(self._on_marker_face_click)
+        mfl.addWidget(self._marker_face_btn, 1)
+        cl.addWidget(self._marker_face_container)
+
+        data_box = QGroupBox("Данные")
+        data_lay = QVBoxLayout(data_box)
+        self._data_info = QLabel("snapshot отсутствует")
+        self._data_info.setStyleSheet("font-family: monospace; color: #666;")
+        data_lay.addWidget(self._data_info)
+        row_refresh = QHBoxLayout()
+        self._refresh_data_btn = QPushButton("Обновить данные")
+        self._refresh_data_btn.clicked.connect(self._on_refresh_data)
+        row_refresh.addWidget(self._refresh_data_btn)
+        self._refresh_style_btn = QPushButton("Обновить стиль")
+        self._refresh_style_btn.clicked.connect(self._on_refresh_style)
+        row_refresh.addWidget(self._refresh_style_btn)
+        data_lay.addLayout(row_refresh)
+        cl.addWidget(data_box)
+
+        self._artifacts_box = QGroupBox("Артефакты анализа")
+        self._artifacts_lay = QVBoxLayout(self._artifacts_box)
+        cl.addWidget(self._artifacts_box)
+
+        outer.addWidget(self._content)
+        self._content.setVisible(False)
+
+    # ---------- expand / state ----------
+
+    def is_expanded(self) -> bool:
+        return self._toggle.isChecked()
+
+    def set_expanded(self, value: bool) -> None:
+        self._toggle.setChecked(bool(value))
+
+    def _on_toggle(self, checked: bool):
+        self._toggle.setArrowType(Qt.DownArrow if checked else Qt.RightArrow)
+        self._content.setVisible(checked)
+
+    def _apply_link_visibility(self):
+        linked = self._link_marker_state
+        self._marker_edge_container.setVisible(not linked)
+        self._marker_face_container.setVisible(not linked)
+
+    # ---------- refresh ----------
+
+    def _refresh_from_slot(self):
+        self._suppress = True
         try:
-            self.width_spin.setValue(float(self.slot.style_overrides.get("line.width", 1.0)))
-        except Exception:
-            pass
-        self.width_spin.valueChanged.connect(lambda v, i=self.index: self.width_changed.emit(i, float(v)))
-        lay.addWidget(self.width_spin)
-        self.legend_edit = QLineEdit(self.slot.legend_label or "")
-        self.legend_edit.setPlaceholderText("auto")
-        self.legend_edit.editingFinished.connect(lambda i=self.index, e=self.legend_edit: self.legend_changed.emit(i, e.text()))
-        lay.addWidget(self.legend_edit, 1)
-        self.axis_combo = QComboBox()
-        self.axis_combo.addItems(["Y1", "Y2"])
-        self.axis_combo.setCurrentText("Y2" if self.slot.axis == "y2" else "Y1")
-        self.axis_combo.currentIndexChanged.connect(
-            lambda _i, i=self.index, cb=self.axis_combo: self.axis_changed.emit(i, cb.currentText().lower())
-        )
-        lay.addWidget(self.axis_combo)
-        self.pin_btn = QPushButton("📌")
-        self.pin_btn.setFixedSize(22, 22)
-        self.pin_btn.setCheckable(True)
-        self.pin_btn.toggled.connect(lambda st, i=self.index: self.pinned_toggled.emit(i, bool(st)))
-        lay.addWidget(self.pin_btn)
-        self.reset_btn = QPushButton("↺")
-        self.reset_btn.setFixedSize(22, 22)
-        self.reset_btn.clicked.connect(lambda: self.reset_clicked.emit(self.index))
-        lay.addWidget(self.reset_btn)
-        self.del_btn = QPushButton("✕")
-        self.del_btn.setFixedSize(22, 22)
-        self.del_btn.clicked.connect(lambda: self.delete_clicked.emit(self.index))
-        lay.addWidget(self.del_btn)
+            slot = self._slot
+            ref = slot.data_ref
+            self._session_label.setText(ref.session_id if ref and ref.session_id else "—")
+            self._series_label.setText(ref.series_root_name if ref and ref.series_root_name else "—")
+            default_name = ""
+            if ref is not None and ref.series_root_name:
+                default_name = ref.series_root_name
+            self._legend_edit.setPlaceholderText(default_name or "auto")
+            self._legend_edit.setText(slot.legend_label or "")
+
+            self._axis_combo.setCurrentText("Y2" if slot.axis == "y2" else "Y1")
+            self._visible_check.setChecked(slot.visible)
+
+            style = getattr(ref, "style", None) if ref else None
+            line_style = getattr(style, "line_style", None) if style else None
+
+            color = slot.style_overrides.get("line.color")
+            if color is None and line_style is not None:
+                color = getattr(line_style, "color", "#1f77b4")
+            color = str(color or "#1f77b4")
+            self._set_color_btn(color)
+
+            edge = slot.style_overrides.get("marker.edge")
+            if edge is None and line_style is not None:
+                edge = getattr(line_style, "symbol_color", color)
+            edge = str(edge or color)
+            self._set_marker_edge_btn(edge)
+
+            face = slot.style_overrides.get("marker.face")
+            if face is None and line_style is not None:
+                face = getattr(line_style, "fill_color", color)
+            face = str(face or color)
+            self._set_marker_face_btn(face)
+
+            width = slot.style_overrides.get("line.width")
+            if width is None and line_style is not None:
+                width = getattr(line_style, "line_width", 1.0)
+            try:
+                self._width_spin.setValue(float(width or 1.0))
+            except (TypeError, ValueError):
+                self._width_spin.setValue(1.0)
+
+            ls_name = slot.style_overrides.get("line.style")
+            if ls_name is None and line_style is not None:
+                from PyQt5.QtCore import Qt as _Qt
+                _map = {
+                    _Qt.SolidLine: "Solid", _Qt.DashLine: "Dash", _Qt.DotLine: "Dot",
+                    _Qt.DashDotLine: "DashDot", _Qt.DashDotDotLine: "DashDotDot",
+                }
+                ls_name = _map.get(getattr(line_style, "line_style", None), "Solid")
+            idx = self._line_style_combo.findData(str(ls_name or "Solid"))
+            if idx >= 0:
+                self._line_style_combo.setCurrentIndex(idx)
+
+            sym = slot.style_overrides.get("marker.symbol")
+            if sym is None and line_style is not None:
+                sym = getattr(line_style, "symbol", None) or ""
+            idx = self._marker_combo.findData(str(sym or ""))
+            if idx >= 0:
+                self._marker_combo.setCurrentIndex(idx)
+
+            msize = slot.style_overrides.get("marker.size")
+            if msize is None and line_style is not None:
+                msize = getattr(line_style, "symbol_size", 5.0)
+            try:
+                self._marker_size_spin.setValue(float(msize or 5.0))
+            except (TypeError, ValueError):
+                self._marker_size_spin.setValue(5.0)
+
+            real_ovr = [k for k in slot.style_overrides
+                        if k not in (self._PIN_KEY, self._PIN_KEYS_KEY)]
+            self._from_source_check.setChecked(not real_ovr)
+            self._pin_btn.setChecked(
+                bool(slot.style_overrides.get(self._PIN_KEY))
+                or bool(slot.style_overrides.get(self._PIN_KEYS_KEY))
+            )
+
+            snap = ref.data if ref is not None else None
+            if snap is not None:
+                n = len(getattr(snap, "x", []))
+                fp = getattr(snap, "fingerprint", "")[:12]
+                self._data_info.setText(
+                    f"Точек: {n}\nfingerprint: {fp}…\nвзято: {getattr(snap, 'taken_at', '?')}"
+                )
+            else:
+                self._data_info.setText("snapshot отсутствует")
+
+            self._rebuild_artifacts()
+            self._apply_link_visibility()
+        finally:
+            self._suppress = False
+
+    def _rebuild_artifacts(self):
+        while self._artifacts_lay.count():
+            item = self._artifacts_lay.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.deleteLater()
+        ref = self._slot.data_ref
+        style = getattr(ref, "style", None) if ref else None
+        arts = list(getattr(style, "artifacts", []) or []) if style else []
+        uncertainty = list(getattr(style, "uncertainty_records", []) or []) if style else []
+        if not arts and not uncertainty:
+            self._artifacts_box.setVisible(False)
+            return
+        self._artifacts_box.setVisible(True)
+        for art in arts:
+            tool_id = getattr(art, "tool_id", "")
+            if not tool_id:
+                continue
+            row = QWidget()
+            lay = QHBoxLayout(row)
+            lay.setContentsMargins(0, 0, 0, 0)
+            cb = QCheckBox(tool_id)
+            cb.setChecked(bool(self._panel.show_tools.get(tool_id, False)))
+            cb.stateChanged.connect(lambda st, t=tool_id: self._on_artifact_toggled(t, st != 0))
+            lay.addWidget(cb, 1)
+            show_btn = QPushButton("показать")
+            show_btn.clicked.connect(
+                lambda _c=False, t=tool_id: self.artifact_show_requested.emit(self._idx, t)
+            )
+            lay.addWidget(show_btn)
+            self._artifacts_lay.addWidget(row)
+        if uncertainty:
+            rec = uncertainty[0]
+            method = str(getattr(rec, "method", "std"))
+            n = len(getattr(rec, "y_err", []) or [])
+            text = f"uncertainty.estimate  ({method}, N={n})"
+            row = QWidget()
+            lay = QHBoxLayout(row)
+            lay.setContentsMargins(0, 0, 0, 0)
+            cb = QCheckBox(text)
+            cb.setChecked(bool(self._panel.show_tools.get("uncertainty.estimate", False)))
+            cb.stateChanged.connect(
+                lambda st: self._on_artifact_toggled("uncertainty.estimate", st != 0)
+            )
+            lay.addWidget(cb, 1)
+            show_btn = QPushButton("показать")
+            show_btn.clicked.connect(
+                lambda _c=False: self.artifact_show_requested.emit(self._idx, "uncertainty.estimate")
+            )
+            lay.addWidget(show_btn)
+            self._artifacts_lay.addWidget(row)
+
+    # ---------- helpers ----------
+
+    def _set_color_btn(self, color: str):
+        self._color_btn.setStyleSheet(f"background-color: {color}; border: 1px solid #333;")
+        self._color_btn.setToolTip(f"Цвет линии: {color}")
+
+    def _set_marker_edge_btn(self, color: str):
+        self._marker_edge_btn.setText(color)
+        self._marker_edge_btn.setStyleSheet(f"background-color: {color}; padding: 2px;")
+
+    def _set_marker_face_btn(self, color: str):
+        self._marker_face_btn.setText(color)
+        self._marker_face_btn.setStyleSheet(f"background-color: {color}; padding: 2px;")
+
+    def _after_field_edit(self):
+        if self._suppress:
+            return
+        self._suppress = True
+        try:
+            self._from_source_check.setChecked(False)
+        finally:
+            self._suppress = False
+
+    # ---------- compact row handlers ----------
+
+    def _on_visible_changed(self, st):
+        if not self._suppress:
+            self.visible_changed.emit(self._idx, st != 0)
+
+    def _on_axis_changed(self, _i):
+        if not self._suppress:
+            self.axis_changed.emit(self._idx, self._axis_combo.currentText().lower())
+
+    def _on_legend_changed(self):
+        if not self._suppress:
+            self.legend_changed.emit(self._idx, self._legend_edit.text())
+
+    def _on_from_source_toggled(self, st):
+        if self._suppress:
+            return
+        self.from_source_toggled.emit(self._idx, st != 0)
+        self._refresh_from_slot()
+
+    def _on_link_marker_toggled(self, checked: bool):
+        self._link_marker_state = bool(checked)
+        self._apply_link_visibility()
+        if self._on_link_state_changed:
+            try:
+                self._on_link_state_changed(id(self._slot), bool(checked))
+            except Exception:
+                pass
+        if self._suppress:
+            return
+        if checked:
+            color = self._color_btn.text() or "#1f77b4"
+            if not color.startswith("#"):
+                color = "#1f77b4"
+            self._set_marker_edge_btn(color)
+            self._set_marker_face_btn(color)
+            self.marker_edge_changed.emit(self._idx, color)
+            self.marker_face_changed.emit(self._idx, color)
+            self._after_field_edit()
+
+    def _on_color_click(self):
+        from PyQt5.QtGui import QColor
+        from common.color_picker import pick_color
+        current = self._color_btn.text() or "#1f77b4"
+
+        def on_selected(c: QColor):
+            color = c.name()
+            self._set_color_btn(color)
+            self.color_changed.emit(self._idx, color)
+            if self._link_marker_check.isChecked():
+                self._set_marker_edge_btn(color)
+                self._set_marker_face_btn(color)
+                self.marker_edge_changed.emit(self._idx, color)
+                self.marker_face_changed.emit(self._idx, color)
+            self._after_field_edit()
+
+        pick_color(self._color_btn, current, on_selected, self)
+
+    def _on_marker_edge_click(self):
+        from PyQt5.QtGui import QColor
+        from common.color_picker import pick_color
+        current = self._marker_edge_btn.text() or "#1f77b4"
+
+        def on_selected(c: QColor):
+            self._set_marker_edge_btn(c.name())
+            self.marker_edge_changed.emit(self._idx, c.name())
+            self._after_field_edit()
+
+        pick_color(self._marker_edge_btn, current, on_selected, self)
+
+    def _on_marker_face_click(self):
+        from PyQt5.QtGui import QColor
+        from common.color_picker import pick_color
+        current = self._marker_face_btn.text() or "#1f77b4"
+
+        def on_selected(c: QColor):
+            self._set_marker_face_btn(c.name())
+            self.marker_face_changed.emit(self._idx, c.name())
+            self._after_field_edit()
+
+        pick_color(self._marker_face_btn, current, on_selected, self)
+
+    def _on_line_style_changed(self, _i):
+        if self._suppress:
+            return
+        self.line_style_changed.emit(self._idx, self._line_style_combo.currentData() or "Solid")
+        self._after_field_edit()
+
+    def _on_width_changed(self, v):
+        if self._suppress:
+            return
+        self.line_width_changed.emit(self._idx, float(v))
+        self._after_field_edit()
+
+    def _on_marker_changed(self, _i):
+        if self._suppress:
+            return
+        self.marker_changed.emit(self._idx, self._marker_combo.currentData() or "")
+        if self._link_marker_state:
+            color = self._color_btn.text() or "#1f77b4"
+            if not color.startswith("#"):
+                color = "#1f77b4"
+            self.marker_edge_changed.emit(self._idx, color)
+            self.marker_face_changed.emit(self._idx, color)
+        self._after_field_edit()
+
+    def _on_marker_size_changed(self, v):
+        if self._suppress:
+            return
+        self.marker_size_changed.emit(self._idx, float(v))
+        self._after_field_edit()
+
+    def _on_refresh_data(self):
+        self.refresh_data_requested.emit(self._idx)
+        self._refresh_from_slot()
+
+    def _on_refresh_style(self):
+        self.refresh_style_requested.emit(self._idx)
+        self._refresh_from_slot()
+
+    def _on_artifact_toggled(self, tool_id: str, checked: bool):
+        if not self._suppress:
+            self.artifact_toggled.emit(self._idx, tool_id, checked)
+
+    def _on_pin_toggled(self, checked: bool):
+        if not self._suppress:
+            self.pinned_toggled.emit(self._idx, bool(checked))
+
+    def _on_reset_clicked(self):
+        self.reset_requested.emit(self._idx)
+        self._refresh_from_slot()
+
+    def _on_delete_clicked(self):
+        self.delete_requested.emit(self._idx)
 
 
 class PanelInspector(QWidget):
@@ -90,13 +588,23 @@ class PanelInspector(QWidget):
     panel_axis_log = pyqtSignal(str, str, bool)
     panel_y2_toggled = pyqtSignal(str, bool)
     slot_add_requested = pyqtSignal(str)
-    slot_color_clicked = pyqtSignal(int)
-    slot_style_clicked = pyqtSignal(int)
-    slot_width_changed = pyqtSignal(int, float)
-    slot_legend_changed = pyqtSignal(int, str)
+    slot_visible_changed = pyqtSignal(int, bool)
     slot_axis_changed = pyqtSignal(int, str)
+    slot_legend_changed = pyqtSignal(int, str)
+    slot_from_source_toggled = pyqtSignal(int, bool)
+    slot_color_changed = pyqtSignal(int, str)
+    slot_line_style_changed = pyqtSignal(int, str)
+    slot_width_changed = pyqtSignal(int, float)
+    slot_marker_changed = pyqtSignal(int, str)
+    slot_marker_size_changed = pyqtSignal(int, float)
+    slot_marker_edge_changed = pyqtSignal(int, str)
+    slot_marker_face_changed = pyqtSignal(int, str)
+    slot_refresh_data_requested = pyqtSignal(int)
+    slot_refresh_style_requested = pyqtSignal(int)
+    slot_artifact_toggled = pyqtSignal(int, str, bool)
+    slot_artifact_show_requested = pyqtSignal(int, str)
     slot_pinned_toggled = pyqtSignal(int, bool)
-    slot_reset_clicked = pyqtSignal(int)
+    slot_reset_requested = pyqtSignal(int)
     slot_deleted = pyqtSignal(int)
     legend_mode_changed = pyqtSignal(str)
     legend_position_changed = pyqtSignal(str)
@@ -112,11 +620,22 @@ class PanelInspector(QWidget):
         self.spec = spec
         self.panel_id = ""
         self._suppress = False
+        self._curve_sections: list = []
+        self._link_states: Dict[int, bool] = {}
         self._build_ui()
 
     def set_spec(self, spec) -> None:
         self.spec = spec
         self.panel_id = ""
+        self._curve_sections = []
+        self._link_states = {}
+        self._clear_panel_ui()
+
+    def get_link_state(self, slot) -> bool:
+        return bool(self._link_states.get(id(slot), True))
+
+    def _set_link_state(self, slot_id: int, value: bool) -> None:
+        self._link_states[slot_id] = bool(value)
 
     def _build_ui(self):
         outer = QVBoxLayout(self)
@@ -176,6 +695,7 @@ class PanelInspector(QWidget):
         self.curves_rows_container = QWidget()
         self.curves_rows_lay = QVBoxLayout(self.curves_rows_container)
         self.curves_rows_lay.setContentsMargins(0, 0, 0, 0)
+        self.curves_rows_lay.setSpacing(1)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(self.curves_rows_container)
@@ -328,12 +848,18 @@ class PanelInspector(QWidget):
         lay.addLayout(row2)
         vis.stateChanged.connect(lambda st, k=key: self.panel_axis_visibility.emit(self.panel_id, k, st != 0))
         linked.currentIndexChanged.connect(lambda _i, k=key: self._on_axis_linked_changed(k))
-        label_edit.editingFinished.connect(lambda k=key, e=label_edit: self.panel_axis_label.emit(self.panel_id, k, e.text()))
+        label_edit.editingFinished.connect(
+            lambda k=key, e=label_edit: self.panel_axis_label.emit(self.panel_id, k, e.text())
+        )
         min_spin.valueChanged.connect(
-            lambda v, k=key: self.panel_axis_range.emit(self.panel_id, k, float(v), float(self.axis_widgets[k]["max"].value()))
+            lambda v, k=key: self.panel_axis_range.emit(
+                self.panel_id, k, float(v), float(self.axis_widgets[k]["max"].value())
+            )
         )
         max_spin.valueChanged.connect(
-            lambda v, k=key: self.panel_axis_range.emit(self.panel_id, k, float(self.axis_widgets[k]["min"].value()), float(v))
+            lambda v, k=key: self.panel_axis_range.emit(
+                self.panel_id, k, float(self.axis_widgets[k]["min"].value()), float(v)
+            )
         )
         auto.stateChanged.connect(lambda st, k=key: self.panel_axis_auto.emit(self.panel_id, k, st != 0))
         log.stateChanged.connect(lambda st, k=key: self.panel_axis_log.emit(self.panel_id, k, st != 0))
@@ -424,7 +950,7 @@ class PanelInspector(QWidget):
                     combo.setCurrentIndex(idx_linked)
                 combo.blockSignals(False)
             self._update_axis_enabled_state(panel)
-            self._rebuild_curves(panel)
+            self._rebuild_curve_sections(panel)
             mode = panel.style_overrides.get("legend.mode", "panel")
             self.legend_panel_radio.setChecked(mode == "panel")
             self.legend_fig_radio.setChecked(mode == "figure")
@@ -444,6 +970,7 @@ class PanelInspector(QWidget):
 
     def _clear_panel_ui(self) -> None:
         self._suppress = True
+        self._curve_sections = []
         try:
             self.label_edit.clear()
             self.pin_btn.setChecked(False)
@@ -479,23 +1006,53 @@ class PanelInspector(QWidget):
                 return letters[i] if i < len(letters) else f"a{i}"
         return "a"
 
-    def _rebuild_curves(self, panel: PanelSpec) -> None:
+    def _rebuild_curve_sections(self, panel: PanelSpec) -> None:
+        expanded_slots = set()
+        for section in self._curve_sections:
+            try:
+                if section.is_expanded():
+                    expanded_slots.add(id(section._slot))
+                self._link_states[id(section._slot)] = section._link_marker_state
+            except Exception:
+                pass
+
         while self.curves_rows_lay.count():
             item = self.curves_rows_lay.takeAt(0)
             w = item.widget()
             if w is not None:
                 w.deleteLater()
+
+        self._curve_sections = []
         for idx, slot in enumerate(panel.curves):
-            row = CurveSlotRow(idx, slot)
-            row.color_clicked.connect(self.slot_color_clicked.emit)
-            row.style_clicked.connect(self.slot_style_clicked.emit)
-            row.width_changed.connect(self.slot_width_changed.emit)
-            row.legend_changed.connect(self.slot_legend_changed.emit)
-            row.axis_changed.connect(self.slot_axis_changed.emit)
-            row.pinned_toggled.connect(self.slot_pinned_toggled.emit)
-            row.reset_clicked.connect(self.slot_reset_clicked.emit)
-            row.delete_clicked.connect(self.slot_deleted.emit)
-            self.curves_rows_lay.addWidget(row)
+            link_initial = self._link_states.get(id(slot), True)
+            section = _CurveEditorSection(
+                idx, slot, panel,
+                link_state=link_initial,
+                on_link_state_changed=self._set_link_state,
+            )
+            section.visible_changed.connect(self.slot_visible_changed.emit)
+            section.axis_changed.connect(self.slot_axis_changed.emit)
+            section.legend_changed.connect(self.slot_legend_changed.emit)
+            section.from_source_toggled.connect(self.slot_from_source_toggled.emit)
+            section.color_changed.connect(self.slot_color_changed.emit)
+            section.line_style_changed.connect(self.slot_line_style_changed.emit)
+            section.line_width_changed.connect(self.slot_width_changed.emit)
+            section.marker_changed.connect(self.slot_marker_changed.emit)
+            section.marker_size_changed.connect(self.slot_marker_size_changed.emit)
+            section.marker_edge_changed.connect(self.slot_marker_edge_changed.emit)
+            section.marker_face_changed.connect(self.slot_marker_face_changed.emit)
+            section.refresh_data_requested.connect(self.slot_refresh_data_requested.emit)
+            section.refresh_style_requested.connect(self.slot_refresh_style_requested.emit)
+            section.artifact_toggled.connect(self.slot_artifact_toggled.emit)
+            section.artifact_show_requested.connect(self.slot_artifact_show_requested.emit)
+            section.pinned_toggled.connect(self.slot_pinned_toggled.emit)
+            section.reset_requested.connect(self.slot_reset_requested.emit)
+            section.delete_requested.connect(self.slot_deleted.emit)
+            self.curves_rows_lay.addWidget(section, 0, Qt.AlignTop)
+            self._curve_sections.append(section)
+            if id(slot) in expanded_slots:
+                section.set_expanded(True)
+        self.curves_rows_lay.addStretch()
 
     def _rebuild_annotations(self, panel: PanelSpec) -> None:
         while self.ann_lay.count():
