@@ -204,78 +204,61 @@ class OverlayRenderer(BaseRenderer):
                 labels.append(item)
         return labels
 
-    def _on_scatter_hovered(self, scatter, *args):
-        # --- mouse leave → скрыть ---
+    def _on_scatter_hovered(self,scatter,*args):
         for a in args:
-            if a is not None and hasattr(a, "isExit") and a.isExit():
+            if a is not None and hasattr(a,"isExit") and a.isExit():
                 QToolTip.hideText()
                 return
-
-        points = None
-        event = None
+        points=None
+        event=None
         for a in args:
             if a is None:
                 continue
-            if isinstance(a, (list, tuple)) and not points:
-                points = list(a)
+            if isinstance(a,(list,tuple)) and not points:
+                points=list(a)
                 continue
-            # event — QGraphicsSceneHoverEvent: имеет ОДНОВРЕМЕННО isEnter, isExit и pos.
-            # ScatterPlotItem, SpotItem, QPointF — не имеют isEnter/isExit.
-            if (event is None
-                    and hasattr(a, "isEnter")
-                    and hasattr(a, "isExit")
-                    and hasattr(a, "pos")):
-                event = a
-
-        # Fallback: сигнал не передал список точек — берём у ScatterPlotItem по coord.
+            if(event is None and hasattr(a,"isEnter") and hasattr(a,"isExit") and hasattr(a,"pos")):
+                event=a
         if not points and event is not None:
             try:
-                points = list(scatter.pointsAt(event.pos()))
+                points=list(scatter.pointsAt(event.pos()))
             except Exception:
-                logger.debug("hover: pointsAt failed", exc_info=True)
-                points = None
-
+                logger.debug("hover: pointsAt failed",exc_info=True)
+                points=None
         if not points:
             QToolTip.hideText()
             return
-
-        pt = points[0]
-
-        # SpotItem.data() обычно возвращает тот dict, что передан в
-        # ScatterPlotItem(..., data=[...]). Но в редких сборках это может
-        # быть сырое значение — защищаемся.
+        pt=points[0]
         try:
-            data = pt.data() if hasattr(pt, "data") else None
+            data=pt.data()if hasattr(pt,"data")else None
         except Exception:
-            data = None
-        if not isinstance(data, dict):
+            data=None
+        if not isinstance(data,dict):
             QToolTip.hideText()
             return
-
-        x = data.get("x")
-        y = data.get("y")
+        x=data.get("x")
+        y=data.get("y")
         if x is None or y is None:
             QToolTip.hideText()
             return
-
-        parts = [f"x = {float(x):.6g}", f"y = {float(y):.6g}"]
-        idx = data.get("index")
-        if idx is not None and int(idx) >= 0:
+        parts=[f"x = {float(x):.6g}",f"y = {float(y):.6g}"]
+        idx=data.get("index")
+        if idx is not None and int(idx)>=0:
             parts.append(f"index = {int(idx)}")
-        prom = data.get("prominence")
+        prom=data.get("prominence")
         if prom is not None:
             try:
-                parts.append(f"prominence = {float(prom):.6g}")
-            except (TypeError, ValueError):
+                parts.append(f"значимость = {float(prom):.6g}")
+            except(TypeError,ValueError):
                 pass
-        w = data.get("width")
+        w=data.get("width")
         if w is not None:
             try:
                 parts.append(f"width = {float(w):.6g}")
-            except (TypeError, ValueError):
+            except(TypeError,ValueError):
                 pass
+        QToolTip.showText(QCursor.pos(),"\n".join(parts))
 
-        QToolTip.showText(QCursor.pos(), "\n".join(parts))
     # ==================================================================
     # Видимость / удаление / обновление
     # ==================================================================

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from typing import Dict, Any
+
 from ..models import (
     AnalysisToolDescriptor, AttachedPayload, ParamDescriptor, ParamType,
     PlacementType, ToolCategory,
@@ -12,57 +14,46 @@ from .base import AnalysisContext, AnalysisStrategy, ValidationResult
 
 _registry = AnalysisToolRegistry.instance()
 
-
 class DerivativeStrategy(AnalysisStrategy):
-    def validate(self, params, sources):
-        if not sources:
-            return ValidationResult(False, "Не выделено кривых")
-        return ValidationResult(True)
-
-    def compute(self, context: AnalysisContext, params: Dict[str, Any]):
-        window = int(params.get("window", 0) or 0)
-        xs, ys, details = [], [], []
-        for snap in context.sources:
-            x = np.asarray(snap.x, dtype=float)
-            y = np.asarray(snap.y, dtype=float)
-            if len(x) < 2:
-                continue
-            dydx = np.gradient(y, x)
-            if window > 1:
-                k = np.ones(window) / window
-                dydx = np.convolve(dydx, k, mode="same")
-            xs.append(x)
-            ys.append(dydx)
-            details.append({"curve": snap.root_name,
-                            "y_label": "d/dx",
-                            "panel_title": "d/dx"})
-        return AttachedPayload(x=xs, y=ys, y_label="d/dx",
-                               panel_title="Производная"), details
-
-    def describe(self, params):
-        return "d/dx"
-
-
+	def validate(self,params,sources):
+		if not sources:
+			return ValidationResult(False,"Не выделено кривых")
+		return ValidationResult(True)
+	def compute(self,context:AnalysisContext,params:Dict[str,Any]):
+		window=int(params.get("window",0) or 0)
+		xs,ys,details=[],[],[]
+		for snap in context.sources:
+			x=np.asarray(snap.x,dtype=float)
+			y=np.asarray(snap.y,dtype=float)
+			if len(x)<2:
+				details.append({"curve":snap.root_name,"error":"мало точек (нужно ≥ 2)"})
+				continue
+			dydx=np.gradient(y,x)
+			if window>1:
+				k=np.ones(window)/window
+				dydx=np.convolve(dydx,k,mode="same")
+			xs.append(x)
+			ys.append(dydx)
+			details.append({"curve":snap.root_name,"y_label":"d/dx","panel_title":"d/dx"})
+		return AttachedPayload(x=xs,y=ys,y_label="d/dx",panel_title="Производная"),details
+	def describe(self,params):
+		return "d/dx"
 class IntegralStrategy(AnalysisStrategy):
-    def compute(self, context: AnalysisContext, params: Dict[str, Any]):
-        xs, ys, details = [], [], []
-        for snap in context.sources:
-            x = np.asarray(snap.x, dtype=float)
-            y = np.asarray(snap.y, dtype=float)
-            if len(x) < 2:
-                continue
-            cum = np.concatenate([[0.0], np.cumsum(0.5 * (y[1:] + y[:-1]) * np.diff(x))])
-            xs.append(x)
-            ys.append(cum)
-            details.append({"curve": snap.root_name,
-                            "y_label": "∫",
-                            "panel_title": "Интеграл"})
-        return AttachedPayload(x=xs, y=ys, y_label="∫",
-                               panel_title="Интеграл"), details
-
-    def describe(self, params):
-        return "∫"
-
+	def compute(self,context:AnalysisContext,params:Dict[str,Any]):
+		xs,ys,details=[],[],[]
+		for snap in context.sources:
+			x=np.asarray(snap.x,dtype=float)
+			y=np.asarray(snap.y,dtype=float)
+			if len(x)<2:
+				details.append({"curve":snap.root_name,"error":"мало точек (нужно ≥ 2)"})
+				continue
+			cum=np.concatenate([[0.0],np.cumsum(0.5*(y[1:]+y[:-1])*np.diff(x))])
+			xs.append(x)
+			ys.append(cum)
+			details.append({"curve":snap.root_name,"y_label":"∫","panel_title":"Интеграл"})
+		return AttachedPayload(x=xs,y=ys,y_label="∫",panel_title="Интеграл"),details
+	def describe(self,params):
+		return "∫"
 
 def _register():
     _registry.register(AnalysisToolDescriptor(

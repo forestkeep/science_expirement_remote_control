@@ -104,117 +104,88 @@ class _BaseSearchStrategy(AnalysisStrategy):
         return _validate_search_params(params or {})
 
     # ------------------------------------------------------------------
-    def compute(self, context: AnalysisContext,
-                params: Dict[str, Any]) -> Tuple[AnnotationPayload, List[Dict[str, Any]]]:
-        """Найти пики/впадины.
-
-        Гарантии:
-        * не бросает исключений при некорректных params — возвращает
-          пустой payload;
-        * не бросает исключений при отсутствии scipy — пустой payload;
-        * ``points`` содержит все найденные точки (для всех источников),
-          ``per_curve`` — разбивку по источникам с полными свойствами.
-        """
+    def compute(self, context: AnalysisContext, params: Dict[str, Any]) -> Tuple[AnnotationPayload, List[Dict[str, Any]]]:
         label = "valleys" if self.is_valley else "peaks"
-
-        # Валидация повторяется (validate() не всегда вызывается контроллером).
         validation = _validate_search_params(params or {})
         if not validation.ok:
             logger.warning("search: invalid params: %s", validation.message)
             return AnnotationPayload(points=[], label=label), []
-
         if not _HAS_SCIPY:
             logger.error("search: scipy is not installed")
             return AnnotationPayload(points=[], label=label), []
 
         sp = _coerce_search_params(params or {})
         kwargs = _build_find_peaks_kwargs(sp)
-
         points: List[Dict[str, Any]] = []
         per_curve: List[Dict[str, Any]] = []
 
         for snap in context.sources:
             x = np.asarray(snap.x, dtype=float)
             y = np.asarray(snap.y, dtype=float)
-
             mask = np.isfinite(x) & np.isfinite(y)
             x, y = x[mask], y[mask]
             if len(y) < 3:
-                per_curve.append({
-                    "curve": snap.root_name, "peaks": [], "count": 0,
-                    "total_found": 0, "truncated": False,
-                    "note": "too few points",
-                })
+                per_curve.append({"curve": snap.root_name, "peaks": [], "count": 0, "total_found": 0, "truncated": False, "note": "too few points"})
                 continue
 
             target = -y if self.is_valley else y
             idxs, props = _scipy_find_peaks(target, **kwargs)
-
             total_found = int(len(idxs))
             truncated = False
-
-            # --- NEW: обрезаем топ-N по prominence ---
             if total_found > sp.max_points:
                 if "prominences" in props and len(props["prominences"]) == total_found:
                     scores = np.asarray(props["prominences"], dtype=float)
                 else:
                     scores = np.asarray(target[idxs], dtype=float)
                 order = np.argsort(scores)[::-1][:sp.max_points]
-                order = np.sort(order)  # вернуть порядок по X, чтобы выглядело аккуратно
-
+                order = np.sort(order)
                 idxs = idxs[order]
-                for key in (
-                    "peak_heights", "prominences", "widths", "plateau_sizes",
-                    "left_bases", "right_bases", "left_ips", "right_ips",
-                ):
+                for key in ("peak_heights", "prominences", "widths", "plateau_sizes", "left_bases", "right_bases", "left_ips", "right_ips"):
                     if key in props and len(props[key]) == total_found:
                         props[key] = np.asarray(props[key])[order]
-
                 truncated = True
-                logger.info(
-                    "search: truncated %d -> %d for %s",
-                    total_found, sp.max_points, snap.root_name,
-                )
+                logger.info("search: truncated %d -> %d for %s", total_found, sp.max_points, snap.root_name)
 
             if len(idxs) == 0:
-                per_curve.append({
-                    "curve": snap.root_name, "peaks": [], "count": 0,
-                    "total_found": total_found, "truncated": truncated,
-                })
+                per_curve.append({"curve": snap.root_name, "peaks": [], "count": 0, "total_found": total_found, "truncated": truncated})
                 continue
 
-            heights      = props.get("peak_heights")
-            prominences  = props.get("prominences")
-            widths       = props.get("widths")
-            plateau_sizes = props.get("plateau_sizes")
+            # Полуширина (FWHM). Переиспользуем props["widths"], иначе вычисляем отдельно.
+            fwhm_arr: Optional[np.ndarray] = None
+            if "widths" in props:
+                try:
+                    fwhm_arr = np.asarray(props["widths"], dtype=float)
+                except (TypeError, ValueError):
+                    fwhm_arr = None
+            if fwhm_arr is None:
+                try:
+                    from scipy.signal import peak_widths as _peak_widths
+                    rel_height = float(sp.rel_height) if sp.rel_height else _DEFAULT_REL_HEIGHT
+                    fwhm_arr = np.asarray(_peak_widths(target, idxs, rel_height=rel_height)[0], dtype=float)
+                except Exception as exc:
+                    logger.warning("search: peak_widths failed for %s: %s", snap.root_name, exc)
+                    fwhm_arr = None
 
+            heights = props.get("peak_heights")
+            prominences = props.get("prominences")
+            plateau_sizes = props.get("plateau_sizes")
             local: List[Dict[str, Any]] = []
             for j, i in enumerate(idxs):
-                pt: Dict[str, Any] = {
-                    "curve": snap.root_name,
-                    "x": float(x[i]),
-                    "y": float(y[i]),
-                    "index": int(i),
-                }
+                pt: Dict[str, Any] = {"curve": snap.root_name, "x": float(x[i]), "y": float(y[i]), "index": int(i)}
                 if heights is not None:
                     pt["height"] = float(heights[j])
                 if prominences is not None:
                     pt["prominence"] = float(prominences[j])
-                if widths is not None:
-                    pt["width"] = float(widths[j])
+                if fwhm_arr is not None and j < len(fwhm_arr):
+                    v = fwhm_arr[j]
+                    if np.isfinite(v):
+                        pt["width"] = float(v)          # FWHM (полуширина)
+                        pt["half_width"] = float(v) / 2.0  # HWHM
                 if plateau_sizes is not None:
                     pt["plateau_size"] = int(plateau_sizes[j])
-
                 points.append(pt)
                 local.append(pt)
-
-            per_curve.append({
-                "curve": snap.root_name,
-                "peaks": local,
-                "count": len(local),
-                "total_found": total_found,
-                "truncated": truncated,
-            })
+            per_curve.append({"curve": snap.root_name, "peaks": local, "count": len(local), "total_found": total_found, "truncated": truncated})
 
         return AnnotationPayload(points=points, label=label), per_curve
 

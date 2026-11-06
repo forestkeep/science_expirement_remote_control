@@ -28,7 +28,7 @@ class ExperimentState(Enum):
     FINALIZING = auto()         # Подготовка к окончанию
     COMPLETED = auto()          # Эксперимент окончен
 
-def open_log_file(self):
+def open_log_file():
         folder_path = os.path.abspath(os.path.join(os.getenv('USERPROFILE'), "AppData", "Local", "Installation_Controller"))
         os.startfile(folder_path)
         
