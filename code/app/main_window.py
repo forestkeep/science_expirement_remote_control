@@ -43,13 +43,9 @@ class UnifiedMainWindow(QMainWindow):
         self.setWindowTitle(f"Experiment Control {version}")
         self.resize(1400, 600)
 
-        # Лёгкий каркас — без installation_class, sessionController,
-        # PublicationWindow, deviceSelector и чтения JSON.
         self._build_ui()
         self._build_menu()
 
-        # Тяжёлая инициализация — после первого прохода event loop,
-        # т.е. уже после show() главного окна.
         QTimer.singleShot(0, self._deferred_bootstrap)
 
     def _deferred_bootstrap(self):

@@ -1,11 +1,11 @@
 from __future__ import annotations
 from typing import Callable, Dict, Optional
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import (
-    QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QFrame, QGroupBox, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton, QScrollArea, QTabWidget, QToolButton,
-    QVBoxLayout, QWidget,
-)
+from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QFrame,
+                             QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget,
+                             QListWidgetItem, QPushButton, QRadioButton, QScrollArea,
+                             QStackedWidget, QSpinBox, QTabWidget, QToolButton,
+                             QVBoxLayout, QWidget)
 from ..model.panel import PanelSpec, CurveSlot
 
 
@@ -576,535 +576,597 @@ class _CurveEditorSection(QWidget):
 
 
 class PanelInspector(QWidget):
-    panel_label_changed = pyqtSignal(str, str)
-    panel_reset_all = pyqtSignal(str)
-    panel_pinned_toggled = pyqtSignal(str, bool)
-    panel_geometry_changed = pyqtSignal(str, float, float, float, float)
-    panel_axis_visibility = pyqtSignal(str, str, bool)
-    panel_axis_linked = pyqtSignal(str, str, str)
-    panel_axis_label = pyqtSignal(str, str, str)
-    panel_axis_range = pyqtSignal(str, str, object, object)
-    panel_axis_auto = pyqtSignal(str, str, bool)
-    panel_axis_log = pyqtSignal(str, str, bool)
-    panel_y2_toggled = pyqtSignal(str, bool)
-    slot_add_requested = pyqtSignal(str)
-    slot_visible_changed = pyqtSignal(int, bool)
-    slot_axis_changed = pyqtSignal(int, str)
-    slot_legend_changed = pyqtSignal(int, str)
-    slot_from_source_toggled = pyqtSignal(int, bool)
-    slot_color_changed = pyqtSignal(int, str)
-    slot_line_style_changed = pyqtSignal(int, str)
-    slot_width_changed = pyqtSignal(int, float)
-    slot_marker_changed = pyqtSignal(int, str)
-    slot_marker_size_changed = pyqtSignal(int, float)
-    slot_marker_edge_changed = pyqtSignal(int, str)
-    slot_marker_face_changed = pyqtSignal(int, str)
-    slot_refresh_data_requested = pyqtSignal(int)
-    slot_refresh_style_requested = pyqtSignal(int)
-    slot_artifact_toggled = pyqtSignal(int, str, bool)
-    slot_artifact_show_requested = pyqtSignal(int, str)
-    slot_pinned_toggled = pyqtSignal(int, bool)
-    slot_reset_requested = pyqtSignal(int)
-    slot_deleted = pyqtSignal(int)
-    legend_mode_changed = pyqtSignal(str)
-    legend_position_changed = pyqtSignal(str)
-    legend_visible_changed = pyqtSignal(bool)
-    legend_pinned_toggled = pyqtSignal(bool)
-    annotation_create = pyqtSignal(str)
-    annotation_edit = pyqtSignal(str)
-    annotation_delete = pyqtSignal(str)
-    curves_added = pyqtSignal(str, list)
-
-    def __init__(self, spec, parent=None):
-        super().__init__(parent)
-        self.spec = spec
-        self.panel_id = ""
-        self._suppress = False
-        self._curve_sections: list = []
-        self._link_states: Dict[int, bool] = {}
-        self._build_ui()
-
-    def set_spec(self, spec) -> None:
-        self.spec = spec
-        self.panel_id = ""
-        self._curve_sections = []
-        self._link_states = {}
-        self._clear_panel_ui()
-
-    def get_link_state(self, slot) -> bool:
-        return bool(self._link_states.get(id(slot), True))
-
-    def _set_link_state(self, slot_id: int, value: bool) -> None:
-        self._link_states[slot_id] = bool(value)
-
-    def _build_ui(self):
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-        self._tabs = QTabWidget()
-        outer.addWidget(self._tabs)
-        self._build_geometry_tab()
-        self._build_curves_tab()
-        self._build_axes_tab()
-        self._build_legend_tab()
-        self._build_annotations_tab()
-
-    def _build_geometry_tab(self):
-        w = QWidget()
-        lay = QVBoxLayout(w)
-        header = QHBoxLayout()
-        header.addWidget(QLabel("Метка:"))
-        self.label_edit = QLineEdit()
-        self.label_edit.setFixedWidth(80)
-        self.label_edit.editingFinished.connect(self._on_label)
-        header.addWidget(self.label_edit)
-        header.addStretch()
-        self.pin_btn = QPushButton("📌")
-        self.pin_btn.setCheckable(True)
-        self.pin_btn.setToolTip("Закрепить все текущие overrides панели")
-        self.pin_btn.toggled.connect(lambda st: self.panel_pinned_toggled.emit(self.panel_id, bool(st)))
-        header.addWidget(self.pin_btn)
-        self.reset_all_btn = QPushButton("↺")
-        self.reset_all_btn.setToolTip("Сбросить все panel_overrides")
-        self.reset_all_btn.clicked.connect(lambda: self.panel_reset_all.emit(self.panel_id))
-        header.addWidget(self.reset_all_btn)
-        lay.addLayout(header)
-
-        geom_box = QGroupBox("Геометрия (мм)")
-        geom_form = QFormLayout(geom_box)
-        self.x_spin = self._coord_spin()
-        self.y_spin = self._coord_spin()
-        self.w_spin = self._coord_spin()
-        self.h_spin = self._coord_spin()
-        for label, sp in (("x:", self.x_spin), ("y:", self.y_spin), ("w:", self.w_spin), ("h:", self.h_spin)):
-            geom_form.addRow(label, sp)
-            sp.valueChanged.connect(self._on_geom)
-        lay.addWidget(geom_box)
-
-        reset_row = QHBoxLayout()
-        reset_geom = QPushButton("↺ на панель (30, 20, 60×45)")
-        reset_geom.clicked.connect(self._reset_geom)
-        reset_row.addWidget(reset_geom)
-        reset_row.addStretch()
-        lay.addLayout(reset_row)
-        lay.addStretch()
-        self._tabs.addTab(w, "Геометрия")
-
-    def _build_curves_tab(self):
-        w = QWidget()
-        lay = QVBoxLayout(w)
-        self.curves_rows_container = QWidget()
-        self.curves_rows_lay = QVBoxLayout(self.curves_rows_container)
-        self.curves_rows_lay.setContentsMargins(0, 0, 0, 0)
-        self.curves_rows_lay.setSpacing(1)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(self.curves_rows_container)
-        lay.addWidget(scroll, 1)
-        add_row = QHBoxLayout()
-        self.add_slot_btn = QPushButton("+ из сессии ▾")
-        self.add_slot_btn.clicked.connect(self._toggle_add_panel)
-        add_row.addWidget(self.add_slot_btn)
-        add_row.addStretch()
-        lay.addLayout(add_row)
-        self.add_panel_container = QWidget()
-        self.add_panel_layout = QVBoxLayout(self.add_panel_container)
-        self.add_panel_layout.setContentsMargins(0, 0, 0, 0)
-        self.add_panel_container.hide()
-        lay.addWidget(self.add_panel_container)
-        self._tabs.addTab(w, "Кривые")
-
-    def _build_axes_tab(self):
-        w = QWidget()
-        lay = QVBoxLayout(w)
-        self.axis_widgets = {}
-        for key, title in (("x", "X"), ("y1", "Y1"), ("y2", "Y2")):
-            lay.addWidget(self._build_axis_row(key, title))
-        lay.addStretch()
-        self._tabs.addTab(w, "Оси")
-
-    def _build_legend_tab(self):
-        w = QWidget()
-        lay = QVBoxLayout(w)
-        mode_row = QHBoxLayout()
-        self.legend_panel_radio = QPushButton("в панели")
-        self.legend_fig_radio = QPushButton("общая фигуры")
-        self.legend_inline_radio = QPushButton("у кривых")
-        for b in (self.legend_panel_radio, self.legend_fig_radio, self.legend_inline_radio):
-            b.setCheckable(True)
-            b.setFixedHeight(22)
-            mode_row.addWidget(b)
-        mode_row.addStretch()
-        lay.addLayout(mode_row)
-        self.legend_panel_radio.clicked.connect(lambda: self._on_legend_mode_clicked("panel"))
-        self.legend_fig_radio.clicked.connect(lambda: self._on_legend_mode_clicked("figure"))
-        self.legend_inline_radio.clicked.connect(lambda: self._on_legend_mode_clicked("inline"))
-
-        self.legend_visible_check = QCheckBox("показывать")
-        self.legend_visible_check.stateChanged.connect(lambda st: self.legend_visible_changed.emit(st != 0))
-        lay.addWidget(self.legend_visible_check)
-
-        pos_row = QHBoxLayout()
-        pos_row.addWidget(QLabel("позиция:"))
-        self.legend_pos_combo = QComboBox()
-        for text, val in (
-            ("best", "best"), ("верх-лево", "upper left"), ("верх-право", "upper right"),
-            ("низ-лево", "lower left"), ("низ-право", "lower right"), ("снаружи-право", "outside right"),
-        ):
-            self.legend_pos_combo.addItem(text, val)
-        self.legend_pos_combo.currentIndexChanged.connect(
-            lambda _i: self.legend_position_changed.emit(self.legend_pos_combo.currentData() or "best")
-        )
-        pos_row.addWidget(self.legend_pos_combo, 1)
-        self.legend_pin_btn = QPushButton("📌")
-        self.legend_pin_btn.setCheckable(True)
-        self.legend_pin_btn.toggled.connect(self.legend_pinned_toggled.emit)
-        pos_row.addWidget(self.legend_pin_btn)
-        lay.addLayout(pos_row)
-        lay.addStretch()
-        self._tabs.addTab(w, "Легенда")
-
-    def _build_annotations_tab(self):
-        w = QWidget()
-        lay = QVBoxLayout(w)
-        btn_row = QHBoxLayout()
-        for kind, label in (("text", "+ Текст"), ("arrow", "+ Стрелка"), ("scale_bar", "+ Scale bar")):
-            btn = QPushButton(label)
-            btn.clicked.connect(lambda _c=False, k=kind: self.annotation_create.emit(k))
-            btn_row.addWidget(btn)
-        lay.addLayout(btn_row)
-        self.ann_lay = QVBoxLayout()
-        lay.addLayout(self.ann_lay)
-        lay.addStretch()
-        self._tabs.addTab(w, "Аннотации")
-
-    def _on_legend_mode_clicked(self, mode: str) -> None:
-        self.legend_panel_radio.setChecked(mode == "panel")
-        self.legend_fig_radio.setChecked(mode == "figure")
-        self.legend_inline_radio.setChecked(mode == "inline")
-        self.legend_mode_changed.emit(mode)
-
-    def _coord_spin(self):
-        s = QDoubleSpinBox()
-        s.setRange(-1000.0, 1000.0)
-        s.setDecimals(1)
-        s.setSingleStep(0.1)
-        s.setSuffix(" мм")
-        s.setFixedWidth(80)
-        return s
-
-    def _toggle_add_panel(self):
-        if not hasattr(self, "session_controller") or self.session_controller is None:
-            return
-        if self.add_panel_container.isVisible():
-            self.add_panel_container.hide()
-            return
-        while self.add_panel_layout.count():
-            item = self.add_panel_layout.takeAt(0)
-            w = item.widget()
-            if w is not None:
-                w.deleteLater()
-        panel = AddCurveInlinePanel(self.panel_id, self.session_controller, self)
-        panel.curves_added.connect(self._on_curves_added)
-        self.add_panel_layout.addWidget(panel)
-        self.add_panel_container.show()
-        panel.show()
-
-    def _on_curves_added(self, panel_id, refs):
-        self.curves_added.emit(panel_id, refs)
-        self.add_panel_container.hide()
-
-    def _build_axis_row(self, key: str, title: str) -> QWidget:
-        w = QWidget()
-        lay = QVBoxLayout(w)
-        lay.setContentsMargins(0, 2, 0, 2)
-        lay.setSpacing(2)
-        row1 = QHBoxLayout()
-        vis = QCheckBox(title)
-        vis.setChecked(key != "y2")
-        linked = QComboBox()
-        linked.addItem("—", "")
-        row1.addWidget(vis)
-        row1.addWidget(QLabel("связана с:"))
-        row1.addWidget(linked, 1)
-        lay.addLayout(row1)
-        row2 = QHBoxLayout()
-        label_edit = QLineEdit()
-        label_edit.setPlaceholderText("подпись")
-        row2.addWidget(label_edit, 1)
-        min_spin = QDoubleSpinBox()
-        min_spin.setRange(-1e12, 1e12)
-        min_spin.setDecimals(1)
-        max_spin = QDoubleSpinBox()
-        max_spin.setRange(-1e12, 1e12)
-        max_spin.setDecimals(1)
-        auto = QCheckBox("auto")
-        auto.setChecked(True)
-        log = QCheckBox("log")
-        row2.addWidget(min_spin)
-        row2.addWidget(QLabel("–"))
-        row2.addWidget(max_spin)
-        row2.addWidget(auto)
-        row2.addWidget(log)
-        lay.addLayout(row2)
-        vis.stateChanged.connect(lambda st, k=key: self.panel_axis_visibility.emit(self.panel_id, k, st != 0))
-        linked.currentIndexChanged.connect(lambda _i, k=key: self._on_axis_linked_changed(k))
-        label_edit.editingFinished.connect(
-            lambda k=key, e=label_edit: self.panel_axis_label.emit(self.panel_id, k, e.text())
-        )
-        min_spin.valueChanged.connect(
-            lambda v, k=key: self.panel_axis_range.emit(
-                self.panel_id, k, float(v), float(self.axis_widgets[k]["max"].value())
-            )
-        )
-        max_spin.valueChanged.connect(
-            lambda v, k=key: self.panel_axis_range.emit(
-                self.panel_id, k, float(self.axis_widgets[k]["min"].value()), float(v)
-            )
-        )
-        auto.stateChanged.connect(lambda st, k=key: self.panel_axis_auto.emit(self.panel_id, k, st != 0))
-        log.stateChanged.connect(lambda st, k=key: self.panel_axis_log.emit(self.panel_id, k, st != 0))
-        self.axis_widgets[key] = {
-            "widget": w, "vis": vis, "linked": linked, "label": label_edit,
-            "min": min_spin, "max": max_spin, "auto": auto, "log": log,
-        }
-        return w
-
-    def _on_axis_linked_changed(self, key: str):
-        if self._suppress:
-            return
-        w = self.axis_widgets.get(key)
-        if w is None:
-            return
-        other = w["linked"].currentData() or ""
-        self.panel_axis_linked.emit(self.panel_id, key, other)
-        panel = self.spec.find_panel(self.panel_id) if self.spec is not None else None
-        if panel is not None:
-            self._update_axis_enabled_state(panel)
-
-    def _update_axis_enabled_state(self, panel: PanelSpec) -> None:
-        for key in ("x", "y1", "y2"):
-            w = self.axis_widgets.get(key)
-            if w is None:
-                continue
-            linked = bool(w["linked"].currentData())
-            auto = w["auto"].isChecked()
-            w["min"].setEnabled(not linked and not auto)
-            w["max"].setEnabled(not linked and not auto)
-            w["auto"].setEnabled(not linked)
-            w["log"].setEnabled(True)
-            w["label"].setEnabled(True)
-            w["linked"].setEnabled(True)
-            if key == "y2":
-                enabled = bool(panel.y2_visible)
-                w["vis"].setEnabled(True)
-                if not enabled:
-                    w["linked"].setEnabled(False)
-                    w["label"].setEnabled(False)
-                    w["min"].setEnabled(False)
-                    w["max"].setEnabled(False)
-                    w["auto"].setEnabled(False)
-                    w["log"].setEnabled(False)
-
-    def set_panel(self, panel_id: str) -> None:
-        self.panel_id = panel_id or ""
-        panel = self.spec.find_panel(self.panel_id) if self.spec is not None and self.panel_id else None
-        if panel is None:
-            self._clear_panel_ui()
-            return
-        self._suppress = True
-        try:
-            self.label_edit.setText(self._panel_label(panel))
-            for key in ("x", "y1", "y2"):
-                w = self.axis_widgets[key]
-                w["vis"].setChecked(True if key != "y2" else panel.y2_visible)
-                label_text = {"x": panel.x_label, "y1": panel.y_label, "y2": panel.y2_label}[key]
-                w["label"].setText(label_text or "")
-                auto_val = True
-                if key == "x" and panel.x_range is not None:
-                    auto_val = False
-                elif key == "y1" and panel.y_range is not None:
-                    auto_val = False
-                elif key == "y2" and panel.y2_range is not None:
-                    auto_val = False
-                w["auto"].setChecked(auto_val)
-                rng = {"x": panel.x_range, "y1": panel.y_range, "y2": panel.y2_range}[key]
-                if rng is not None:
-                    try:
-                        w["min"].setValue(float(rng[0]))
-                        w["max"].setValue(float(rng[1]))
-                    except Exception:
-                        pass
-                log_val = {"x": panel.x_log, "y1": panel.y_log, "y2": panel.y2_log}[key]
-                w["log"].setChecked(bool(log_val))
-            for key in ("x", "y1", "y2"):
-                combo = self.axis_widgets[key]["linked"]
-                combo.blockSignals(True)
-                combo.clear()
-                combo.addItem("—", "")
-                for p in self.spec.sorted_panels():
-                    if p.id != self.panel_id:
-                        combo.addItem(f"{p.title or p.id}", p.id)
-                linked_value = panel.style_overrides.get(f"axis.{key}.linked", "")
-                idx_linked = combo.findData(linked_value)
-                if idx_linked >= 0:
-                    combo.setCurrentIndex(idx_linked)
-                combo.blockSignals(False)
-            self._update_axis_enabled_state(panel)
-            self._rebuild_curve_sections(panel)
-            mode = panel.style_overrides.get("legend.mode", "panel")
-            self.legend_panel_radio.setChecked(mode == "panel")
-            self.legend_fig_radio.setChecked(mode == "figure")
-            self.legend_inline_radio.setChecked(mode == "inline")
-            self.legend_visible_check.setChecked(bool(panel.style_overrides.get("legend.enabled", True)))
-            pos = panel.style_overrides.get("legend.pos", "best")
-            idx = self.legend_pos_combo.findData(pos)
-            if idx >= 0:
-                self.legend_pos_combo.setCurrentIndex(idx)
-            self.x_spin.setValue(float(panel.x_mm))
-            self.y_spin.setValue(float(panel.y_mm))
-            self.w_spin.setValue(float(panel.w_mm))
-            self.h_spin.setValue(float(panel.h_mm))
-            self._rebuild_annotations(panel)
-        finally:
-            self._suppress = False
-
-    def _clear_panel_ui(self) -> None:
-        self._suppress = True
-        self._curve_sections = []
-        try:
-            self.label_edit.clear()
-            self.pin_btn.setChecked(False)
-            for sp in (self.x_spin, self.y_spin, self.w_spin, self.h_spin):
-                sp.setValue(0.0)
-            while self.curves_rows_lay.count():
-                item = self.curves_rows_lay.takeAt(0)
-                w = item.widget()
-                if w is not None:
-                    w.deleteLater()
-            while self.ann_lay.count():
-                item = self.ann_lay.takeAt(0)
-                w = item.widget()
-                if w is not None:
-                    w.deleteLater()
-        finally:
-            self._suppress = False
-
-    def _panel_label(self, panel: PanelSpec) -> str:
-        if panel is None:
-            return "a"
-        custom = panel.style_overrides.get("panel.label")
-        if custom:
-            return str(custom)
-        return self._auto_label(panel.id)
-
-    def _auto_label(self, panel_id: str) -> str:
-        if self.spec is None:
-            return "a"
-        letters = "abcdefghijklmnopqrstuvwxyz"
-        for i, p in enumerate(self.spec.sorted_panels()):
-            if p.id == panel_id:
-                return letters[i] if i < len(letters) else f"a{i}"
-        return "a"
-
-    def _rebuild_curve_sections(self, panel: PanelSpec) -> None:
-        expanded_slots = set()
-        for section in self._curve_sections:
-            try:
-                if section.is_expanded():
-                    expanded_slots.add(id(section._slot))
-                self._link_states[id(section._slot)] = section._link_marker_state
-            except Exception:
-                pass
-
-        while self.curves_rows_lay.count():
-            item = self.curves_rows_lay.takeAt(0)
-            w = item.widget()
-            if w is not None:
-                w.deleteLater()
-
-        self._curve_sections = []
-        for idx, slot in enumerate(panel.curves):
-            link_initial = self._link_states.get(id(slot), True)
-            section = _CurveEditorSection(
-                idx, slot, panel,
-                link_state=link_initial,
-                on_link_state_changed=self._set_link_state,
-            )
-            section.visible_changed.connect(self.slot_visible_changed.emit)
-            section.axis_changed.connect(self.slot_axis_changed.emit)
-            section.legend_changed.connect(self.slot_legend_changed.emit)
-            section.from_source_toggled.connect(self.slot_from_source_toggled.emit)
-            section.color_changed.connect(self.slot_color_changed.emit)
-            section.line_style_changed.connect(self.slot_line_style_changed.emit)
-            section.line_width_changed.connect(self.slot_width_changed.emit)
-            section.marker_changed.connect(self.slot_marker_changed.emit)
-            section.marker_size_changed.connect(self.slot_marker_size_changed.emit)
-            section.marker_edge_changed.connect(self.slot_marker_edge_changed.emit)
-            section.marker_face_changed.connect(self.slot_marker_face_changed.emit)
-            section.refresh_data_requested.connect(self.slot_refresh_data_requested.emit)
-            section.refresh_style_requested.connect(self.slot_refresh_style_requested.emit)
-            section.artifact_toggled.connect(self.slot_artifact_toggled.emit)
-            section.artifact_show_requested.connect(self.slot_artifact_show_requested.emit)
-            section.pinned_toggled.connect(self.slot_pinned_toggled.emit)
-            section.reset_requested.connect(self.slot_reset_requested.emit)
-            section.delete_requested.connect(self.slot_deleted.emit)
-            self.curves_rows_lay.addWidget(section, 0, Qt.AlignTop)
-            self._curve_sections.append(section)
-            if id(slot) in expanded_slots:
-                section.set_expanded(True)
-        self.curves_rows_lay.addStretch()
-
-    def _rebuild_annotations(self, panel: PanelSpec) -> None:
-        while self.ann_lay.count():
-            item = self.ann_lay.takeAt(0)
-            w = item.widget()
-            if w is not None:
-                w.deleteLater()
-        if self.spec is None:
-            return
-        for ann in self.spec.presentation_annotations:
-            if ann.panel_id != panel.id:
-                continue
-            row = QWidget()
-            lay = QHBoxLayout(row)
-            lay.setContentsMargins(2, 2, 2, 2)
-            color = ann.style.get("color", "#000000") if ann.style else "#000000"
-            dot = QLabel("●")
-            dot.setStyleSheet(f"color: {color};")
-            lay.addWidget(dot)
-            text = f"{ann.kind}  {(ann.text or '')[:24]}"
-            lbl = QLabel(text)
-            lay.addWidget(lbl, 1)
-            props_btn = QPushButton("свойства")
-            props_btn.clicked.connect(lambda _c=False, aid=ann.id: self.annotation_edit.emit(aid))
-            lay.addWidget(props_btn)
-            del_btn = QPushButton("✕")
-            del_btn.setFixedWidth(22)
-            del_btn.clicked.connect(lambda _c=False, aid=ann.id: self.annotation_delete.emit(aid))
-            lay.addWidget(del_btn)
-            self.ann_lay.addWidget(row)
-
-    def _on_label(self):
-        if self._suppress or not self.panel_id:
-            return
-        text = self.label_edit.text().strip()
-        self.panel_label_changed.emit(self.panel_id, text)
-
-    def _on_geom(self, *_):
-        if self._suppress or not self.panel_id:
-            return
-        self.panel_geometry_changed.emit(
-            self.panel_id,
-            float(self.x_spin.value()),
-            float(self.y_spin.value()),
-            float(self.w_spin.value()),
-            float(self.h_spin.value()),
-        )
-
-    def _reset_geom(self):
-        if not self.panel_id:
-            return
-        self.panel_geometry_changed.emit(self.panel_id, 30.0, 20.0, 60.0, 45.0)
+	panel_label_changed=pyqtSignal(str,str)
+	panel_reset_all=pyqtSignal(str)
+	panel_pinned_toggled=pyqtSignal(str,bool)
+	panel_geometry_changed=pyqtSignal(str,float,float,float,float)
+	panel_axis_visibility=pyqtSignal(str,str,bool)
+	panel_axis_linked=pyqtSignal(str,str,str)
+	panel_axis_label=pyqtSignal(str,str,str)
+	panel_axis_range=pyqtSignal(str,str,object,object)
+	panel_axis_auto=pyqtSignal(str,str,bool)
+	panel_axis_log=pyqtSignal(str,str,bool)
+	panel_y2_toggled=pyqtSignal(str,bool)
+	slot_add_requested=pyqtSignal(str)
+	slot_visible_changed=pyqtSignal(int,bool)
+	slot_axis_changed=pyqtSignal(int,str)
+	slot_legend_changed=pyqtSignal(int,str)
+	slot_from_source_toggled=pyqtSignal(int,bool)
+	slot_color_changed=pyqtSignal(int,str)
+	slot_line_style_changed=pyqtSignal(int,str)
+	slot_width_changed=pyqtSignal(int,float)
+	slot_marker_changed=pyqtSignal(int,str)
+	slot_marker_size_changed=pyqtSignal(int,float)
+	slot_marker_edge_changed=pyqtSignal(int,str)
+	slot_marker_face_changed=pyqtSignal(int,str)
+	slot_refresh_data_requested=pyqtSignal(int)
+	slot_refresh_style_requested=pyqtSignal(int)
+	slot_artifact_toggled=pyqtSignal(int,str,bool)
+	slot_artifact_show_requested=pyqtSignal(int,str)
+	slot_pinned_toggled=pyqtSignal(int,bool)
+	slot_reset_requested=pyqtSignal(int)
+	slot_deleted=pyqtSignal(int)
+	legend_mode_changed=pyqtSignal(str)
+	legend_position_changed=pyqtSignal(str)
+	legend_visible_changed=pyqtSignal(bool)
+	legend_pinned_toggled=pyqtSignal(bool)
+	annotation_create=pyqtSignal(str)
+	annotation_edit=pyqtSignal(str)
+	annotation_delete=pyqtSignal(str)
+	curves_added=pyqtSignal(str,list)
+	legend_source_changed=pyqtSignal(str,list,list)
+	legend_options_changed=pyqtSignal(str,dict)
+	def __init__(self,spec,parent=None):
+		super().__init__(parent)
+		self.spec=spec
+		self.panel_id=""
+		self._suppress=False
+		self._curve_sections=[]
+		self._link_states={}
+		self._build_ui()
+	def set_spec(self,spec):
+		self.spec=spec
+		self.panel_id=""
+		self._curve_sections=[]
+		self._link_states={}
+		self._clear_panel_ui()
+	def get_link_state(self,slot):
+		return bool(self._link_states.get(id(slot),True))
+	def _set_link_state(self,slot_id,value):
+		self._link_states[slot_id]=bool(value)
+	def _build_ui(self):
+		outer=QVBoxLayout(self)
+		outer.setContentsMargins(0,0,0,0)
+		self._stack=QStackedWidget()
+		outer.addWidget(self._stack)
+		self._tabs=QTabWidget()
+		self._build_geometry_tab()
+		self._build_curves_tab()
+		self._build_axes_tab()
+		self._build_legend_tab()
+		self._build_annotations_tab()
+		self._stack.addWidget(self._tabs)
+		self._legend_tabs=QTabWidget()
+		self._build_legend_source_tab()
+		self._build_legend_appearance_tab()
+		self._stack.addWidget(self._legend_tabs)
+	def _build_geometry_tab(self):
+		w=QWidget()
+		lay=QVBoxLayout(w)
+		header=QHBoxLayout()
+		header.addWidget(QLabel("Метка:"))
+		self.label_edit=QLineEdit()
+		self.label_edit.setFixedWidth(80)
+		self.label_edit.editingFinished.connect(self._on_label)
+		header.addWidget(self.label_edit)
+		header.addStretch()
+		self.pin_btn=QPushButton("📌")
+		self.pin_btn.setCheckable(True)
+		self.pin_btn.setToolTip("Закрепить все текущие overrides панели")
+		self.pin_btn.toggled.connect(lambda st:self.panel_pinned_toggled.emit(self.panel_id,bool(st)))
+		header.addWidget(self.pin_btn)
+		self.reset_all_btn=QPushButton("↺")
+		self.reset_all_btn.setToolTip("Сбросить все panel_overrides")
+		self.reset_all_btn.clicked.connect(lambda:self.panel_reset_all.emit(self.panel_id))
+		header.addWidget(self.reset_all_btn)
+		lay.addLayout(header)
+		geom_box=QGroupBox("Геометрия (мм)")
+		geom_form=QFormLayout(geom_box)
+		self.x_spin=self._coord_spin()
+		self.y_spin=self._coord_spin()
+		self.w_spin=self._coord_spin()
+		self.h_spin=self._coord_spin()
+		for label,sp in (("x:",self.x_spin),("y:",self.y_spin),("w:",self.w_spin),("h:",self.h_spin)):
+			geom_form.addRow(label,sp)
+			sp.valueChanged.connect(self._on_geom)
+		lay.addWidget(geom_box)
+		reset_row=QHBoxLayout()
+		reset_geom=QPushButton("↺ на панель (30, 20, 60×45)")
+		reset_geom.clicked.connect(self._reset_geom)
+		reset_row.addWidget(reset_geom)
+		reset_row.addStretch()
+		lay.addLayout(reset_row)
+		lay.addStretch()
+		self._tabs.addTab(w,"Геометрия")
+	def _build_curves_tab(self):
+		w=QWidget()
+		lay=QVBoxLayout(w)
+		self.curves_rows_container=QWidget()
+		self.curves_rows_lay=QVBoxLayout(self.curves_rows_container)
+		self.curves_rows_lay.setContentsMargins(0,0,0,0)
+		self.curves_rows_lay.setSpacing(1)
+		scroll=QScrollArea()
+		scroll.setWidgetResizable(True)
+		scroll.setWidget(self.curves_rows_container)
+		lay.addWidget(scroll,1)
+		add_row=QHBoxLayout()
+		self.add_slot_btn=QPushButton("+ из сессии ▾")
+		self.add_slot_btn.clicked.connect(self._toggle_add_panel)
+		add_row.addWidget(self.add_slot_btn)
+		add_row.addStretch()
+		lay.addLayout(add_row)
+		self.add_panel_container=QWidget()
+		self.add_panel_layout=QVBoxLayout(self.add_panel_container)
+		self.add_panel_layout.setContentsMargins(0,0,0,0)
+		self.add_panel_container.hide()
+		lay.addWidget(self.add_panel_container)
+		self._tabs.addTab(w,"Кривые")
+	def _build_axes_tab(self):
+		w=QWidget()
+		lay=QVBoxLayout(w)
+		self.axis_widgets={}
+		for key,title in (("x","X"),("y1","Y1"),("y2","Y2")):
+			lay.addWidget(self._build_axis_row(key,title))
+		lay.addStretch()
+		self._tabs.addTab(w,"Оси")
+	def _build_legend_tab(self):
+		w=QWidget()
+		lay=QVBoxLayout(w)
+		mode_row=QHBoxLayout()
+		self.legend_panel_radio=QPushButton("в панели")
+		self.legend_fig_radio=QPushButton("общая фигуры")
+		self.legend_inline_radio=QPushButton("у кривых")
+		for b in (self.legend_panel_radio,self.legend_fig_radio,self.legend_inline_radio):
+			b.setCheckable(True)
+			b.setFixedHeight(22)
+			mode_row.addWidget(b)
+		mode_row.addStretch()
+		lay.addLayout(mode_row)
+		self.legend_panel_radio.clicked.connect(lambda:self._on_legend_mode_clicked("panel"))
+		self.legend_fig_radio.clicked.connect(lambda:self._on_legend_mode_clicked("figure"))
+		self.legend_inline_radio.clicked.connect(lambda:self._on_legend_mode_clicked("inline"))
+		self.legend_visible_check=QCheckBox("показывать")
+		self.legend_visible_check.stateChanged.connect(lambda st:self.legend_visible_changed.emit(st!=0))
+		lay.addWidget(self.legend_visible_check)
+		pos_row=QHBoxLayout()
+		pos_row.addWidget(QLabel("позиция:"))
+		self.legend_pos_combo=QComboBox()
+		for text,val in (("best","best"),("верх-лево","upper left"),("верх-право","upper right"),("низ-лево","lower left"),("низ-право","lower right"),("снаружи-право","outside right")):
+			self.legend_pos_combo.addItem(text,val)
+		self.legend_pos_combo.currentIndexChanged.connect(lambda _i:self.legend_position_changed.emit(self.legend_pos_combo.currentData() or "best"))
+		pos_row.addWidget(self.legend_pos_combo,1)
+		self.legend_pin_btn=QPushButton("📌")
+		self.legend_pin_btn.setCheckable(True)
+		self.legend_pin_btn.toggled.connect(self.legend_pinned_toggled.emit)
+		pos_row.addWidget(self.legend_pin_btn)
+		lay.addLayout(pos_row)
+		lay.addStretch()
+		self._tabs.addTab(w,"Легенда")
+	def _build_annotations_tab(self):
+		w=QWidget()
+		lay=QVBoxLayout(w)
+		btn_row=QHBoxLayout()
+		for kind,label in (("text","+ Текст"),("arrow","+ Стрелка"),("scale_bar","+ Scale bar")):
+			btn=QPushButton(label)
+			btn.clicked.connect(lambda _c=False,k=kind:self.annotation_create.emit(k))
+			btn_row.addWidget(btn)
+		lay.addLayout(btn_row)
+		self.ann_lay=QVBoxLayout()
+		lay.addLayout(self.ann_lay)
+		lay.addStretch()
+		self._tabs.addTab(w,"Аннотации")
+	def _build_legend_source_tab(self):
+		w=QWidget()
+		lay=QVBoxLayout(w)
+		self._legend_src_list=QListWidget()
+		self._legend_src_list.itemChanged.connect(self._on_legend_source_item_changed)
+		lay.addWidget(self._legend_src_list,1)
+		btn_row=QHBoxLayout()
+		btn_all=QPushButton("Выбрать все")
+		btn_clear=QPushButton("Очистить")
+		btn_all.clicked.connect(lambda:self._legend_source_set_all(True))
+		btn_clear.clicked.connect(lambda:self._legend_source_set_all(False))
+		btn_row.addWidget(btn_all)
+		btn_row.addWidget(btn_clear)
+		btn_row.addStretch()
+		lay.addLayout(btn_row)
+		self._legend_src_hint=QLabel("Отметьте панели целиком или отдельные кривые. ""Новые кривые в выбранных панелях подхватываются автоматически.")
+		self._legend_src_hint.setWordWrap(True)
+		self._legend_src_hint.setStyleSheet("color: #888;")
+		lay.addWidget(self._legend_src_hint)
+		self._legend_tabs.addTab(w,"Источник")
+	def _build_legend_appearance_tab(self):
+		w=QWidget()
+		form=QFormLayout(w)
+		self._legend_font_spin=QSpinBox()
+		self._legend_font_spin.setRange(4,40)
+		self._legend_font_spin.setSuffix(" pt")
+		self._legend_font_spin.valueChanged.connect(self._on_legend_options_changed)
+		form.addRow("Размер шрифта:",self._legend_font_spin)
+		self._legend_frame_cb=QCheckBox("Рамка")
+		self._legend_frame_cb.stateChanged.connect(self._on_legend_options_changed)
+		form.addRow(self._legend_frame_cb)
+		self._legend_hide_sources_cb=QCheckBox("Скрыть встроенные легенды источников")
+		self._legend_hide_sources_cb.stateChanged.connect(self._on_legend_options_changed)
+		form.addRow(self._legend_hide_sources_cb)
+		self._legend_tabs.addTab(w,"Оформление")
+	def set_panel(self,panel_id):
+		self.panel_id=panel_id or ""
+		panel=self.spec.find_panel(self.panel_id)if(self.spec is not None and self.panel_id)else None
+		if panel is None:
+			self._clear_panel_ui()
+			return
+		if panel.kind=="legend":
+			self._stack.setCurrentWidget(self._legend_tabs)
+			self._fill_legend_tabs(panel)
+		else:
+			self._stack.setCurrentWidget(self._tabs)
+			self._fill_plot_tabs(panel)
+	def _fill_plot_tabs(self,panel):
+		self._suppress=True
+		try:
+			self.label_edit.setText(self._panel_label(panel))
+			for key in ("x","y1","y2"):
+				w=self.axis_widgets[key]
+				w["vis"].setChecked(True if key!="y2"else panel.y2_visible)
+				label_text={"x":panel.x_label,"y1":panel.y_label,"y2":panel.y2_label}[key]
+				w["label"].setText(label_text or "")
+				auto_val=True
+				if key=="x"and panel.x_range is not None:
+					auto_val=False
+				elif key=="y1"and panel.y_range is not None:
+					auto_val=False
+				elif key=="y2"and panel.y2_range is not None:
+					auto_val=False
+				w["auto"].setChecked(auto_val)
+				rng={"x":panel.x_range,"y1":panel.y_range,"y2":panel.y2_range}[key]
+				if rng is not None:
+					try:
+						w["min"].setValue(float(rng[0]))
+						w["max"].setValue(float(rng[1]))
+					except Exception:
+						pass
+				log_val={"x":panel.x_log,"y1":panel.y_log,"y2":panel.y2_log}[key]
+				w["log"].setChecked(bool(log_val))
+			for key in ("x","y1","y2"):
+				combo=self.axis_widgets[key]["linked"]
+				combo.blockSignals(True)
+				combo.clear()
+				combo.addItem("—","")
+				for p in self.spec.sorted_panels():
+					if p.id!=self.panel_id:
+						combo.addItem(f"{p.title or p.id}",p.id)
+				linked_value=panel.style_overrides.get(f"axis.{key}.linked","")
+				idx_linked=combo.findData(linked_value)
+				if idx_linked>=0:
+					combo.setCurrentIndex(idx_linked)
+				combo.blockSignals(False)
+			self._update_axis_enabled_state(panel)
+			self._rebuild_curve_sections(panel)
+			mode=panel.style_overrides.get("legend.mode","panel")
+			self.legend_panel_radio.setChecked(mode=="panel")
+			self.legend_fig_radio.setChecked(mode=="figure")
+			self.legend_inline_radio.setChecked(mode=="inline")
+			self.legend_visible_check.setChecked(bool(panel.style_overrides.get("legend.enabled",True)))
+			pos=panel.style_overrides.get("legend.pos","best")
+			idx=self.legend_pos_combo.findData(pos)
+			if idx>=0:
+				self.legend_pos_combo.setCurrentIndex(idx)
+			self.x_spin.setValue(float(panel.x_mm))
+			self.y_spin.setValue(float(panel.y_mm))
+			self.w_spin.setValue(float(panel.w_mm))
+			self.h_spin.setValue(float(panel.h_mm))
+			self._rebuild_annotations(panel)
+		finally:
+			self._suppress=False
+	def _fill_legend_tabs(self,panel):
+		self._suppress=True
+		try:
+			self._legend_src_list.blockSignals(True)
+			self._legend_src_list.clear()
+			all_panels=[p for p in self.spec.sorted_panels()if p.kind!="legend"and p.visible]
+			for src in all_panels:
+				checked=src.id in (panel.source_panels or [])
+				item=QListWidgetItem(src.title or src.id)
+				item.setFlags(item.flags()|Qt.ItemIsUserCheckable)
+				item.setCheckState(Qt.Checked if checked else Qt.Unchecked)
+				item.setData(Qt.UserRole,("panel",src.id))
+				self._legend_src_list.addItem(item)
+			self._legend_src_list.blockSignals(False)
+			self._legend_font_spin.blockSignals(True)
+			self._legend_frame_cb.blockSignals(True)
+			self._legend_hide_sources_cb.blockSignals(True)
+			try:
+				self._legend_font_spin.setValue(int(panel.style_overrides.get("legend.font_size",7)))
+				self._legend_frame_cb.setChecked(bool(panel.style_overrides.get("legend.frameon",False)))
+				self._legend_hide_sources_cb.setChecked(bool(panel.style_overrides.get("legend.hide_sources",True)))
+			finally:
+				self._legend_font_spin.blockSignals(False)
+				self._legend_frame_cb.blockSignals(False)
+				self._legend_hide_sources_cb.blockSignals(False)
+		finally:
+			self._suppress=False
+	def _clear_panel_ui(self):
+		self._suppress=True
+		self._curve_sections=[]
+		try:
+			self.label_edit.clear()
+			self.pin_btn.setChecked(False)
+			for sp in (self.x_spin,self.y_spin,self.w_spin,self.h_spin):
+				sp.setValue(0.0)
+			while self.curves_rows_lay.count():
+				item=self.curves_rows_lay.takeAt(0)
+				w=item.widget()
+				if w is not None:
+					w.deleteLater()
+			while self.ann_lay.count():
+				item=self.ann_lay.takeAt(0)
+				w=item.widget()
+				if w is not None:
+					w.deleteLater()
+			self._legend_src_list.blockSignals(True)
+			self._legend_src_list.clear()
+			self._legend_src_list.blockSignals(False)
+		finally:
+			self._suppress=False
+	def _on_legend_source_item_changed(self,item):
+		if self._suppress:
+			return
+		panel=self.spec.find_panel(self.panel_id)if self.spec is not None else None
+		if panel is None or panel.kind!="legend":
+			return
+		data=item.data(Qt.UserRole)
+		if not data or data[0]!="panel":
+			return
+		pid=data[1]
+		source_panels=list(panel.source_panels or [])
+		source_slots=list(panel.source_slots or [])
+		if item.checkState()==Qt.Checked:
+			if pid not in source_panels:
+				source_panels.append(pid)
+			source_slots=[(p,s) for p,s in source_slots if p!=pid]
+		else:
+			source_panels=[p for p in source_panels if p!=pid]
+			source_slots=[(p,s) for p,s in source_slots if p!=pid]
+		self.legend_source_changed.emit(self.panel_id,source_panels,source_slots)
+		self._fill_legend_tabs(panel)
+	def _legend_source_set_all(self,check):
+		if self._suppress:
+			return
+		panel=self.spec.find_panel(self.panel_id)if self.spec is not None else None
+		if panel is None or panel.kind!="legend":
+			return
+		source_panels=[]
+		if check:
+			for p in self.spec.sorted_panels():
+				if p.kind!="legend"and p.visible:
+					source_panels.append(p.id)
+		self.legend_source_changed.emit(self.panel_id,source_panels,[])
+		self._fill_legend_tabs(panel)
+	def _on_legend_options_changed(self,*_):
+		if self._suppress:
+			return
+		panel=self.spec.find_panel(self.panel_id)if self.spec is not None else None
+		if panel is None or panel.kind!="legend":
+			return
+		opts={"legend.font_size":int(self._legend_font_spin.value()),"legend.frameon":bool(self._legend_frame_cb.isChecked()),"legend.hide_sources":bool(self._legend_hide_sources_cb.isChecked()),}
+		self.legend_options_changed.emit(self.panel_id,opts)
+	def _on_legend_mode_clicked(self,mode):
+		self.legend_panel_radio.setChecked(mode=="panel")
+		self.legend_fig_radio.setChecked(mode=="figure")
+		self.legend_inline_radio.setChecked(mode=="inline")
+		self.legend_mode_changed.emit(mode)
+	def _coord_spin(self):
+		s=QDoubleSpinBox()
+		s.setRange(-1000.0,1000.0)
+		s.setDecimals(1)
+		s.setSingleStep(0.1)
+		s.setSuffix(" мм")
+		s.setFixedWidth(80)
+		return s
+	def _toggle_add_panel(self):
+		if not hasattr(self,"session_controller") or self.session_controller is None:
+			return
+		if self.add_panel_container.isVisible():
+			self.add_panel_container.hide()
+			return
+		while self.add_panel_layout.count():
+			item=self.add_panel_layout.takeAt(0)
+			w=item.widget()
+			if w is not None:
+				w.deleteLater()
+		panel=AddCurveInlinePanel(self.panel_id,self.session_controller,self)
+		panel.curves_added.connect(self._on_curves_added)
+		self.add_panel_layout.addWidget(panel)
+		self.add_panel_container.show()
+		panel.show()
+	def _on_curves_added(self,panel_id,refs):
+		self.curves_added.emit(panel_id,refs)
+		self.add_panel_container.hide()
+	def _build_axis_row(self,key,title):
+		w=QWidget()
+		lay=QVBoxLayout(w)
+		lay.setContentsMargins(0,2,0,2)
+		lay.setSpacing(2)
+		row1=QHBoxLayout()
+		vis=QCheckBox(title)
+		vis.setChecked(key!="y2")
+		linked=QComboBox()
+		linked.addItem("—","")
+		row1.addWidget(vis)
+		row1.addWidget(QLabel("связана с:"))
+		row1.addWidget(linked,1)
+		lay.addLayout(row1)
+		row2=QHBoxLayout()
+		label_edit=QLineEdit()
+		label_edit.setPlaceholderText("подпись")
+		row2.addWidget(label_edit,1)
+		min_spin=QDoubleSpinBox()
+		min_spin.setRange(-1e12,1e12)
+		min_spin.setDecimals(1)
+		max_spin=QDoubleSpinBox()
+		max_spin.setRange(-1e12,1e12)
+		max_spin.setDecimals(1)
+		auto=QCheckBox("auto")
+		auto.setChecked(True)
+		log=QCheckBox("log")
+		row2.addWidget(min_spin)
+		row2.addWidget(QLabel("–"))
+		row2.addWidget(max_spin)
+		row2.addWidget(auto)
+		row2.addWidget(log)
+		lay.addLayout(row2)
+		vis.stateChanged.connect(lambda st,k=key:self.panel_axis_visibility.emit(self.panel_id,k,st!=0))
+		linked.currentIndexChanged.connect(lambda _i,k=key:self._on_axis_linked_changed(k))
+		label_edit.editingFinished.connect(lambda k=key,e=label_edit:self.panel_axis_label.emit(self.panel_id,k,e.text()))
+		min_spin.valueChanged.connect(lambda v,k=key:self.panel_axis_range.emit(self.panel_id,k,float(v),float(self.axis_widgets[k]["max"].value())))
+		max_spin.valueChanged.connect(lambda v,k=key:self.panel_axis_range.emit(self.panel_id,k,float(self.axis_widgets[k]["min"].value()),float(v)))
+		auto.stateChanged.connect(lambda st,k=key:self.panel_axis_auto.emit(self.panel_id,k,st!=0))
+		log.stateChanged.connect(lambda st,k=key:self.panel_axis_log.emit(self.panel_id,k,st!=0))
+		self.axis_widgets[key]={"widget":w,"vis":vis,"linked":linked,"label":label_edit,"min":min_spin,"max":max_spin,"auto":auto,"log":log,}
+		return w
+	def _on_axis_linked_changed(self,key):
+		if self._suppress:
+			return
+		w=self.axis_widgets.get(key)
+		if w is None:
+			return
+		other=w["linked"].currentData() or ""
+		self.panel_axis_linked.emit(self.panel_id,key,other)
+		panel=self.spec.find_panel(self.panel_id)if self.spec is not None else None
+		if panel is not None:
+			self._update_axis_enabled_state(panel)
+	def _update_axis_enabled_state(self,panel):
+		for key in ("x","y1","y2"):
+			w=self.axis_widgets.get(key)
+			if w is None:
+				continue
+			linked=bool(w["linked"].currentData())
+			auto=w["auto"].isChecked()
+			w["min"].setEnabled( not linked and not auto)
+			w["max"].setEnabled( not linked and not auto)
+			w["auto"].setEnabled( not linked)
+			w["log"].setEnabled(True)
+			w["label"].setEnabled(True)
+			w["linked"].setEnabled(True)
+			if key=="y2":
+				enabled=bool(panel.y2_visible)
+				w["vis"].setEnabled(True)
+				if not enabled:
+					w["linked"].setEnabled(False)
+					w["label"].setEnabled(False)
+					w["min"].setEnabled(False)
+					w["max"].setEnabled(False)
+					w["auto"].setEnabled(False)
+					w["log"].setEnabled(False)
+	def _panel_label(self,panel):
+		if panel is None:
+			return "a"
+		custom=panel.style_overrides.get("panel.label")
+		if custom:
+			return str(custom)
+		return self._auto_label(panel.id)
+	def _auto_label(self,panel_id):
+		if self.spec is None:
+			return "a"
+		letters="abcdefghijklmnopqrstuvwxyz"
+		for i,p in enumerate(self.spec.sorted_panels()):
+			if p.id==panel_id:
+				return letters[i]if i<len(letters)else f"a{i}"
+		return "a"
+	def _rebuild_curve_sections(self,panel):
+		expanded_slots=set()
+		for section in self._curve_sections:
+			try:
+				if section.is_expanded():
+					expanded_slots.add(id(section._slot))
+				self._link_states[id(section._slot)]=section._link_marker_state
+			except Exception:
+				pass
+		while self.curves_rows_lay.count():
+			item=self.curves_rows_lay.takeAt(0)
+			w=item.widget()
+			if w is not None:
+				w.deleteLater()
+		self._curve_sections=[]
+		for idx,slot in enumerate(panel.curves):
+			link_initial=self._link_states.get(id(slot),True)
+			section=_CurveEditorSection(idx,slot,panel,link_state=link_initial,on_link_state_changed=self._set_link_state,)
+			section.visible_changed.connect(self.slot_visible_changed.emit)
+			section.axis_changed.connect(self.slot_axis_changed.emit)
+			section.legend_changed.connect(self.slot_legend_changed.emit)
+			section.from_source_toggled.connect(self.slot_from_source_toggled.emit)
+			section.color_changed.connect(self.slot_color_changed.emit)
+			section.line_style_changed.connect(self.slot_line_style_changed.emit)
+			section.line_width_changed.connect(self.slot_width_changed.emit)
+			section.marker_changed.connect(self.slot_marker_changed.emit)
+			section.marker_size_changed.connect(self.slot_marker_size_changed.emit)
+			section.marker_edge_changed.connect(self.slot_marker_edge_changed.emit)
+			section.marker_face_changed.connect(self.slot_marker_face_changed.emit)
+			section.refresh_data_requested.connect(self.slot_refresh_data_requested.emit)
+			section.refresh_style_requested.connect(self.slot_refresh_style_requested.emit)
+			section.artifact_toggled.connect(self.slot_artifact_toggled.emit)
+			section.artifact_show_requested.connect(self.slot_artifact_show_requested.emit)
+			section.pinned_toggled.connect(self.slot_pinned_toggled.emit)
+			section.reset_requested.connect(self.slot_reset_requested.emit)
+			section.delete_requested.connect(self.slot_deleted.emit)
+			self.curves_rows_lay.addWidget(section,0,Qt.AlignTop)
+			self._curve_sections.append(section)
+			if id(slot) in expanded_slots:
+				section.set_expanded(True)
+		self.curves_rows_lay.addStretch()
+	def _rebuild_annotations(self,panel):
+		while self.ann_lay.count():
+			item=self.ann_lay.takeAt(0)
+			w=item.widget()
+			if w is not None:
+				w.deleteLater()
+		if self.spec is None:
+			return
+		for ann in self.spec.presentation_annotations:
+			if ann.panel_id!=panel.id:
+				continue
+			row=QWidget()
+			lay=QHBoxLayout(row)
+			lay.setContentsMargins(2,2,2,2)
+			color=ann.style.get("color","#000000")if ann.style else"#000000"
+			dot=QLabel("●")
+			dot.setStyleSheet(f"color: {color};")
+			lay.addWidget(dot)
+			text=f"{ann.kind}  {(ann.text or '')[:24]}"
+			lbl=QLabel(text)
+			lay.addWidget(lbl,1)
+			props_btn=QPushButton("свойства")
+			props_btn.clicked.connect(lambda _c=False,aid=ann.id:self.annotation_edit.emit(aid))
+			lay.addWidget(props_btn)
+			del_btn=QPushButton("✕")
+			del_btn.setFixedWidth(22)
+			del_btn.clicked.connect(lambda _c=False,aid=ann.id:self.annotation_delete.emit(aid))
+			lay.addWidget(del_btn)
+			self.ann_lay.addWidget(row)
+	def _on_label(self):
+		if self._suppress or not self.panel_id:
+			return
+		text=self.label_edit.text().strip()
+		self.panel_label_changed.emit(self.panel_id,text)
+	def _on_geom(self,*_):
+		if self._suppress or not self.panel_id:
+			return
+		self.panel_geometry_changed.emit(self.panel_id,float(self.x_spin.value()),float(self.y_spin.value()),float(self.w_spin.value()),float(self.h_spin.value()),)
+	def _reset_geom(self):
+		if not self.panel_id:
+			return
+		self.panel_geometry_changed.emit(self.panel_id,30.0,20.0,60.0,45.0)
 
 
 class AddCurveInlinePanel(QWidget):
