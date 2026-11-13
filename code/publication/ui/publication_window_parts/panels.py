@@ -78,13 +78,7 @@ class PublicationWidgetPanelsMixin:
 				slot.data_ref.refresh_policy="live"
 				slot.data_ref.stale_data=False
 		self._schedule_render()
-	def _on_reload(self):
-		self.source_bus.ensure_all_attached()
-		self._schedule_render()
-		self._refresh_tree()
-		self._set_status_state("Сессии перепривязаны")
-	def _on_zoom_toggled(self,checked:bool):
-		self._canvas.set_real_size(bool(checked))
+
 	def _add_panel(self):
 		panel=self.spec.add_panel(x_mm=5.0,y_mm=5.0,w_mm=60.0,h_mm=45.0)
 		self._current_panel_id=panel.id

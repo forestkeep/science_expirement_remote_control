@@ -11,6 +11,8 @@ from matplotlib.figure import Figure
 from ..core.units import mm_to_px
 from ..model.annotations import PresentationAnnotation
 from ..model.panel import PanelSpec
+import math
+from PyQt5.QtWidgets import QGridLayout
 
 logger = logging.getLogger(__name__)
 SNAP_MM = 1.0
@@ -18,6 +20,79 @@ SNAP_MM = 1.0
 
 def _snap(value: float) -> float:
     return round(value / SNAP_MM) * SNAP_MM
+
+class _RulerWidget(QWidget):
+	def __init__(self,orientation,parent=None):
+		super().__init__(parent)
+		self._orientation=orientation
+		self._offset=0
+		self._px_per_mm=1.0
+		self._length_mm=0.0
+		if orientation==Qt.Horizontal:
+			self.setFixedHeight(20)
+		else:
+			self.setFixedWidth(20)
+		self.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
+		self.setAttribute(Qt.WA_OpaquePaintEvent,True)
+	def set_geometry_info(self,length_mm:float,px_per_mm:float)->None:
+		self._length_mm=float(length_mm)
+		self._px_per_mm=float(px_per_mm)if px_per_mm and px_per_mm>0 else 1.0
+		self.update()
+	def set_offset(self,offset:int)->None:
+		if self._offset!=offset:
+			self._offset=int(offset)
+			self.update()
+	def _tick_step_mm(self)->int:
+		if self._px_per_mm<=0:
+			return 10
+		target=80.0
+		best=10
+		best_diff=abs(10*self._px_per_mm-target)
+		for c in (20,50,100):
+			d=abs(c*self._px_per_mm-target)
+			if d<best_diff:
+				best=c
+				best_diff=d
+		return best
+	def paintEvent(self,event):
+		p=QPainter(self)
+		try:
+			p.fillRect(self.rect(),QColor("#f0f0f0"))
+			p.setPen(QColor("#888888"))
+			if self._orientation==Qt.Horizontal:
+				p.drawLine(0,self.height()-1,self.width(),self.height()-1)
+			else:
+				p.drawLine(self.width()-1,0,self.width()-1,self.height())
+			if self._px_per_mm<=0:
+				return
+			step_mm=self._tick_step_mm()
+			step_px=step_mm*self._px_per_mm
+			if step_px<=0:
+				return
+			f=QFont()
+			f.setPointSize(7)
+			p.setFont(f)
+			p.setPen(QColor("#333333"))
+			length=self.width()if self._orientation==Qt.Horizontal else self.height()
+			edge_mm=self._offset/self._px_per_mm
+			first_mm=math.floor(edge_mm/step_mm)*step_mm
+			first_px=first_mm*self._px_per_mm-self._offset
+			mm=first_mm
+			px=first_px
+			while px<=length+step_px:
+				if px>=-step_px:
+					x=int(px)
+					label=str(int(round(mm)))
+					if self._orientation==Qt.Horizontal:
+						p.drawLine(x,self.height()-6,x,self.height())
+						p.drawText(x+2,self.height()-8,label)
+					else:
+						p.drawLine(self.width()-6,x,self.width(),x)
+						p.drawText(1,x-2,label)
+				mm+=step_mm
+				px+=step_px
+		finally:
+			p.end()
 
 
 class _CanvasInner(FigureCanvasQTAgg):
@@ -444,7 +519,7 @@ class _CanvasInner(FigureCanvasQTAgg):
 			nh=max(2.0,_snap(oh+dy))
 			self._apply_geom(panel.id,(ox,oy,ow,nh))
 		self.update();event.accept()
-		
+
 	def mouseReleaseEvent(self,event):
 		was_dragging=bool(self._drag_mode)
 		if was_dragging and self._drag_panel_id and self._drag_mode in ("move","resize_br","resize_r","resize_b"):
@@ -557,6 +632,14 @@ class _CanvasInner(FigureCanvasQTAgg):
 		menu.addSeparator()
 		act_layout=menu.addAction("Разложить по шаблону…")
 		act_layout.triggered.connect(self.apply_layout_requested.emit)
+		menu.addSeparator()
+		act_fit=menu.addAction("Вписать в окно")
+		act_1to1=menu.addAction("1:1 (физический размер)")
+		rulers_text="Скрыть линейки"if self.widget.rulers_visible else"Показать линейки"
+		act_rulers=menu.addAction(rulers_text)
+		act_fit.triggered.connect(self.widget.fit_to_window)
+		act_1to1.triggered.connect(self.widget.set_physical_size)
+		act_rulers.triggered.connect(self.widget.toggle_rulers)
 		menu.exec_(global_pos)
 	def _request_create_legend(self):
 		cb=getattr(self.widget,"request_create_legend",None)
@@ -628,7 +711,8 @@ class PublicationCanvas(QWidget):
 	def __init__(self,parent=None):
 		super().__init__(parent)
 		self.spec=None
-		self._real_size=False
+		self._zoom=1.0
+		self._rulers_visible=True
 		self._widget=_CanvasInner(self)
 		self._center=QWidget()
 		self._center.setStyleSheet("background-color: #808080;")
@@ -642,25 +726,58 @@ class PublicationCanvas(QWidget):
 		self._scroll.viewport().installEventFilter(self)
 		for name in ("panel_geometry_changed","panel_selected","annotation_selected","annotation_geometry_changed","annotation_delete_requested","annotation_properties","selection_cleared","refresh_data_requested","refresh_style_requested","enable_live_requested","add_panel_requested","add_text_requested","add_arrow_requested","add_scale_bar_requested","add_bracket_requested","apply_layout_requested","delete_panel_requested","drag_finished","spec_changed",):
 			getattr(self._widget,name).connect(getattr(self,name))
-		layout=QVBoxLayout(self)
-		layout.setContentsMargins(0,0,0,0)
-		layout.addWidget(self._scroll)
+		self._hruler=_RulerWidget(Qt.Horizontal)
+		self._vruler=_RulerWidget(Qt.Vertical)
+		self._corner=QWidget()
+		self._corner.setFixedSize(20,20)
+		self._corner.setStyleSheet("background-color: #f0f0f0;")
+		grid=QGridLayout(self)
+		grid.setContentsMargins(0,0,0,0)
+		grid.setSpacing(0)
+		grid.addWidget(self._corner,0,0)
+		grid.addWidget(self._hruler,0,1)
+		grid.addWidget(self._vruler,1,0)
+		grid.addWidget(self._scroll,1,1)
+		self._scroll.horizontalScrollBar().valueChanged.connect(self._on_scroll_changed)
+		self._scroll.verticalScrollBar().valueChanged.connect(self._on_scroll_changed)
+	@property
+	def rulers_visible(self)->bool:
+		return self._rulers_visible
 	def set_render_info(self,info:Optional[dict])->None:
 		self._widget.set_render_info(info)
 	def eventFilter(self,obj,event):
-		if obj is self._scroll.viewport() and event.type()==QEvent.Resize and not self._real_size:
-			QTimer.singleShot(0,self._update_fit_geometry)
+		if obj is self._scroll.viewport():
+			if event.type()==QEvent.Resize:
+				QTimer.singleShot(0,self._update_fit_geometry)
+			elif event.type()==QEvent.Wheel:
+				if event.modifiers()&Qt.ControlModifier:
+					delta=event.angleDelta().y()
+					if delta!=0:
+						factor=1.0015**delta
+						self._apply_zoom_at(factor,event.pos())
+						return True
 		return super().eventFilter(obj,event)
-	def _update_fit_geometry(self):
+	def _on_scroll_changed(self,*_):
+		self._update_rulers()
+	def _update_rulers(self)->None:
 		if self.spec is None:
 			return
-		dpi=QApplication.primaryScreen().logicalDotsPerInch()
-		if self._real_size:
-			w_px=mm_to_px(self.spec.width_mm,dpi)
-			h_px=mm_to_px(self.spec.height_mm,dpi)
-			self._widget.setFixedSize(w_px,h_px)
-			self._center.setMinimumSize(w_px,h_px)
-			self._center.setMaximumSize(w_px,h_px)
+		w=self._widget.width()
+		h=self._widget.height()
+		if w<=0 or h<=0:
+			return
+		px_per_mm=w/max(1e-9,self.spec.width_mm)
+		vp=self._scroll.viewport().size()
+		off_x=max(0,(vp.width()-w)//2)
+		off_y=max(0,(vp.height()-h)//2)
+		hscroll=self._scroll.horizontalScrollBar()
+		vscroll=self._scroll.verticalScrollBar()
+		self._hruler.set_geometry_info(self.spec.width_mm,px_per_mm)
+		self._vruler.set_geometry_info(self.spec.height_mm,px_per_mm)
+		self._hruler.set_offset(hscroll.value()-off_x)
+		self._vruler.set_offset(vscroll.value()-off_y)
+	def _update_fit_geometry(self)->None:
+		if self.spec is None:
 			return
 		vp=self._scroll.viewport().size()
 		if vp.width()<=0 or vp.height()<=0:
@@ -673,9 +790,90 @@ class PublicationCanvas(QWidget):
 			w=int(h/max(1e-9,aspect))
 		w=max(1,w)
 		h=max(1,h)
-		self._widget.setFixedSize(w,h)
-		self._center.setMinimumSize(vp)
-		self._center.setMaximumSize(vp)
+		w_px=max(1,int(round(w*self._zoom)))
+		h_px=max(1,int(round(h*self._zoom)))
+		self._widget.setFixedSize(w_px,h_px)
+		cw=max(vp.width(),w_px)
+		ch=max(vp.height(),h_px)
+		self._center.setMinimumSize(cw,ch)
+		self._center.setMaximumSize(cw,ch)
+		self._update_rulers()
+	def _compute_base_px_per_mm(self)->float:
+		if self.spec is None or self.spec.width_mm<=0:
+			return 0.0
+		vp=self._scroll.viewport().size()
+		if vp.width()<=0 or vp.height()<=0:
+			return 0.0
+		aspect=self.spec.height_mm/max(1e-9,self.spec.width_mm)
+		w=vp.width()
+		h=int(w*aspect)
+		if h>vp.height():
+			h=vp.height()
+			w=int(h/max(1e-9,aspect))
+		w=max(1,w)
+		return w/self.spec.width_mm
+	def _cursor_image_pos(self,cursor_vp_pos):
+		w=self._widget.width()
+		h=self._widget.height()
+		vp=self._scroll.viewport().size()
+		hbar=self._scroll.horizontalScrollBar()
+		vbar=self._scroll.verticalScrollBar()
+		if w>vp.width():
+			cx=hbar.value()+cursor_vp_pos.x()
+		else:
+			cx=cursor_vp_pos.x()-(vp.width()-w)/2.0
+		if h>vp.height():
+			cy=vbar.value()+cursor_vp_pos.y()
+		else:
+			cy=cursor_vp_pos.y()-(vp.height()-h)/2.0
+		return cx,cy
+	def _apply_zoom_at(self,factor:float,cursor_vp_pos)->None:
+		if self.spec is None:
+			return
+		old_w=self._widget.width()
+		old_h=self._widget.height()
+		if old_w<=0 or old_h<=0:
+			return
+		cx,cy=self._cursor_image_pos(cursor_vp_pos)
+		fx=cx/old_w
+		fy=cy/old_h
+		new_zoom=max(0.25,min(8.0,self._zoom*factor))
+		if abs(new_zoom-self._zoom)<1e-9:
+			return
+		self._zoom=new_zoom
+		self._update_fit_geometry()
+		new_w=self._widget.width()
+		new_h=self._widget.height()
+		vp=self._scroll.viewport().size()
+		hbar=self._scroll.horizontalScrollBar()
+		vbar=self._scroll.verticalScrollBar()
+		if new_w>vp.width():
+			hbar.setValue(int(fx*new_w-cursor_vp_pos.x()))
+		if new_h>vp.height():
+			vbar.setValue(int(fy*new_h-cursor_vp_pos.y()))
+	def fit_to_window(self)->None:
+		self._zoom=1.0
+		self._update_fit_geometry()
+	def set_physical_size(self)->None:
+		if self.spec is None:
+			return
+		base_px_per_mm=self._compute_base_px_per_mm()
+		if base_px_per_mm<=0:
+			return
+		screen=QApplication.primaryScreen()
+		if screen is None:
+			return
+		physical_dpi=float(screen.physicalDotsPerInch())
+		if physical_dpi<=0:
+			return
+		target=physical_dpi/(base_px_per_mm*25.4/96.0)
+		self._zoom=max(0.25,min(8.0,target))
+		self._update_fit_geometry()
+	def toggle_rulers(self)->None:
+		self._rulers_visible= not self._rulers_visible
+		self._corner.setVisible(self._rulers_visible)
+		self._hruler.setVisible(self._rulers_visible)
+		self._vruler.setVisible(self._rulers_visible)
 	def set_spec(self,spec)->None:
 		self.spec=spec
 		self._widget.set_selected_panels([])
@@ -685,18 +883,9 @@ class PublicationCanvas(QWidget):
 	def set_figure(self,figure)->None:
 		self._widget.set_figure(figure)
 		self._update_fit_geometry()
-	def set_real_size(self,enabled:bool)->None:
-		self._real_size=bool(enabled)
-		self._scroll.setWidgetResizable( not self._real_size)
-		if self._real_size:
-			self._center.setMaximumSize(16777215,16777215)
-		self._update_fit_geometry()
-		self._widget._update_figure_size()
-		self._widget.draw_idle()
 	def resizeEvent(self,event):
 		super().resizeEvent(event)
-		if not self._real_size:
-			QTimer.singleShot(0,self._update_fit_geometry)
+		QTimer.singleShot(0,self._update_fit_geometry)
 	def request_create_legend(self,panel_id:Optional[str])->None:
 		cb=getattr(self,"on_request_create_legend",None)
 		if callable(cb):

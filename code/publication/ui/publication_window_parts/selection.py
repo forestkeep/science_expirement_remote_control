@@ -177,9 +177,8 @@ class PublicationWidgetSelectionMixin:
 	def _on_figure_size_changed(self,w:float,h:float):
 		self.spec.width_mm=float(w)
 		self.spec.height_mm=float(h)
-		if self._zoom_btn.isChecked():
-			self._canvas.set_real_size(True)
 		self._schedule_render()
+		
 	def _on_legend_selected(self,panel_id:str):
 		self._on_panel_selected(panel_id)
 	def _on_legend_source_changed(self,panel_id,source_panels,source_slots):

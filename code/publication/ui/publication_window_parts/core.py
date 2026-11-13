@@ -230,79 +230,48 @@ class PublicationWidgetCoreMixin:
 		self._schedule_render()
 
 	# -------------------------------------------------------------- toolbar
-	def _build_toolbar(self) -> QWidget:
-		bar = QWidget()
-		h = QHBoxLayout(bar)
-		h.setContentsMargins(6, 4, 6, 4)
+	def _build_toolbar(self)->QWidget:
+		bar=QWidget()
+		h=QHBoxLayout(bar)
+		h.setContentsMargins(6,4,6,4)
 		h.setSpacing(6)
-
-		# 1) Журнал
-		self._journal_combo = QComboBox()
+		self._journal_combo=QComboBox()
 		self._journal_combo.setMinimumWidth(170)
 		for pid in list_journal_presets(self.preset_store):
-			p = self.preset_store.load(pid)
-			self._journal_combo.addItem(p.name if p else pid, pid)
+			p=self.preset_store.load(pid)
+			self._journal_combo.addItem(p.name if p else pid,pid)
 		self._journal_combo.currentIndexChanged.connect(self._on_journal_changed)
 		h.addWidget(QLabel("Журнал:"))
 		h.addWidget(self._journal_combo)
-
-		# 2) Стиль
-		self._style_combo = QComboBox()
+		self._style_combo=QComboBox()
 		self._style_combo.setMinimumWidth(140)
 		for sid in list_style_profiles():
-			profile = STYLE_PROFILES.get(sid, {})
-			self._style_combo.addItem(profile.get("name", sid), sid)
+			profile=STYLE_PROFILES.get(sid,{})
+			self._style_combo.addItem(profile.get("name",sid),sid)
 		self._style_combo.currentIndexChanged.connect(self._on_style_changed)
 		h.addWidget(QLabel("Стиль:"))
 		h.addWidget(self._style_combo)
-
-		# 3) Применить ко всем
-		self._apply_all_btn = QPushButton("Применить ко всем")
-		self._apply_all_btn.setToolTip(
-			"Сбросить все overrides к значениям текущих журнала и стиля. "
-			"Исключения — только 📌 (не реализовано)."
-		)
+		self._apply_all_btn=QPushButton("Применить ко всем")
+		self._apply_all_btn.setToolTip("Сбросить все overrides к значениям текущих журнала и стиля. ""Исключения — только 📌 (не реализовано).")
 		self._apply_all_btn.clicked.connect(self._on_apply_to_all)
 		h.addWidget(self._apply_all_btn)
-
-		self._legend_btn = QPushButton("+ Легенда")
+		self._legend_btn=QPushButton("+ Легенда")
 		self._legend_btn.setToolTip("Создать legend-панель")
-		self._legend_btn.clicked.connect(lambda: self._on_request_create_legend(None))
+		self._legend_btn.clicked.connect(lambda:self._on_request_create_legend(None))
 		h.addWidget(self._legend_btn)
 		h.addStretch()
-
-		# 4) + Панель
-		self._add_panel_btn = QPushButton("+ Панель")
+		self._add_panel_btn=QPushButton("+ Панель")
 		self._add_panel_btn.clicked.connect(self._add_panel)
 		h.addWidget(self._add_panel_btn)
-
-		# 5) Раскладка
-		self._layout_btn = QPushButton("Раскладка")
+		self._layout_btn=QPushButton("Раскладка")
 		self._layout_btn.clicked.connect(self._on_apply_layout)
 		h.addWidget(self._layout_btn)
-
-		# 6) Валидировать
-		self._validate_btn = QPushButton("Валидировать")
+		self._validate_btn=QPushButton("Валидировать")
 		self._validate_btn.clicked.connect(self._on_validate)
 		h.addWidget(self._validate_btn)
-
-		# 7) Экспорт
-		self._export_btn = QPushButton("Экспорт")
+		self._export_btn=QPushButton("Экспорт")
 		self._export_btn.clicked.connect(self._on_export)
 		h.addWidget(self._export_btn)
-
-		# 8) Реальный размер (по умолчанию вкл)
-		self._zoom_btn = QPushButton("Реальный размер")
-		self._zoom_btn.setCheckable(True)
-		self._zoom_btn.setChecked(True)
-		self._zoom_btn.toggled.connect(self._on_zoom_toggled)
-		h.addWidget(self._zoom_btn)
-
-		# 9) Перезагрузить сессии
-		self._reload_btn = QPushButton("Перезагрузить сессии")
-		self._reload_btn.clicked.connect(self._on_reload)
-		h.addWidget(self._reload_btn)
-
 		return bar
 
 	# -------------------------------------------------------------- status
@@ -392,25 +361,21 @@ class PublicationWidgetCoreMixin:
 		self._debounce_timer.start()
 
 	def _render_now(self):
-		self._render_generation += 1
-		gen = self._render_generation
-		if gen != self._render_generation:
+		self._render_generation+=1
+		gen=self._render_generation
+		if gen!=self._render_generation:
 			return
-		t0 = time.perf_counter()
+		t0=time.perf_counter()
 		try:
-			figure = self.renderer.create_figure(self.spec)
-			render_info = self.renderer.render(
-				figure, self.spec, self._resolve_data,
-				self.style_stack.resolve, self._resolve_override,
-			) or {"legends": {}}
+			figure=self.renderer.create_figure(self.spec)
+			render_info=self.renderer.render(figure,self.spec,self._resolve_data,self.style_stack.resolve,self._resolve_override) or {"legends":{}}
 			self._canvas.set_figure(figure)
 			self._canvas.set_render_info(render_info)
-			self._canvas.set_real_size(self._zoom_btn.isChecked())
 		except Exception:
 			logger.exception("Publication render failed")
 			self._set_status_state("Ошибка рендера")
 			return
-		self._last_render_ms = (time.perf_counter() - t0) * 1000.0
+		self._last_render_ms=(time.perf_counter()-t0)*1000.0
 		self._render_time_label.setText(f"рендер: {self._last_render_ms:.0f} мс")
 		self._refresh_counters()
 		self._set_status_state("Готово")
