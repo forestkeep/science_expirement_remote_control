@@ -28,117 +28,74 @@ logger = logging.getLogger(__name__)
 @register_writer(kind="journal_preset", formats=("json",))
 @dataclass
 class JournalPreset:
-    KIND: ClassVar[str] = "journal_preset"
-    FORMATS: ClassVar[tuple[str, ...]] = ("json",)
-    SCHEMA_VERSION: ClassVar[int] = 1
-
-    schema_version: int = SCHEMA_VERSION
-    id: str = ""
-    name: str = ""
-    column: dict[str, Any] = field(default_factory=dict)
-    constraints: dict[str, Any] = field(default_factory=dict)
-    defaults: dict[str, Any] = field(default_factory=dict)
-    kind: str = KIND
-
-    def column_width_mm(self) -> float:
-        return float(self.column.get("width_mm", 183.0))
-
-    def column_height_mm(self) -> float:
-        return float(self.column.get("height_mm", 247.0))
-
-    def column_dpi(self) -> int:
-        return int(self.column.get("dpi", 300))
-
-    # ---------- parser ----------
-
-    @classmethod
-    def can_parse(cls, doc: RawDocument) -> bool:
-        if doc.format not in cls.FORMATS:
-            return False
-        data = doc.payload
-        if not isinstance(data, dict):
-            return False
-        if data.get("kind") == cls.KIND:
-            return True
-        # fallback для старых файлов без kind
-        pid = data.get("id")
-        if not isinstance(pid, str) or not pid:
-            return False
-        return (
-            isinstance(data.get("column"), dict)
-            and isinstance(data.get("constraints"), dict)
-        )
-
-    @classmethod
-    def parse(cls, doc: RawDocument) -> "JournalPreset":
-        data = doc.payload
-        assert isinstance(data, dict)
-        version = int(data.get("schema_version", cls.SCHEMA_VERSION))
-        if version > cls.SCHEMA_VERSION:
-            raise UnsupportedVersionError(
-                path=doc.path, got=version, supported=cls.SCHEMA_VERSION
-            )
-        pid = data.get("id")
-        if not isinstance(pid, str) or not pid:
-            raise MissingFieldError(path=doc.path, field="id")
-        return cls(
-            schema_version=version,
-            id=pid,
-            name=str(data.get("name", "")),
-            column=dict(data.get("column") or {}),
-            constraints=dict(data.get("constraints") or {}),
-            defaults=dict(data.get("defaults") or {}),
-            kind=cls.KIND,
-        )
-
-    # ---------- writer ----------
-
-    @classmethod
-    def can_write(cls, obj: Any) -> bool:
-        return isinstance(obj, cls)
-
-    @classmethod
-    def serialize(cls, obj: "JournalPreset") -> RawDocument:
-        payload = {
-            "kind": cls.KIND,
-            "schema_version": int(obj.schema_version),
-            "id": obj.id,
-            "name": obj.name,
-            "column": dict(obj.column),
-            "constraints": dict(obj.constraints),
-            "defaults": dict(obj.defaults),
-        }
-        return RawDocument(
-            format="json", path=None, size=0, payload=payload, meta={}
-        )
-
-    # ---------- backward-compatible helpers ----------
-
-    @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "JournalPreset":
-        """Используется для builtin-пресетов и обратной совместимости."""
-        return cls(
-            schema_version=int(d.get("schema_version", cls.SCHEMA_VERSION)),
-            id=str(d.get("id", "")),
-            name=str(d.get("name", "")),
-            column=dict(d.get("column") or {}),
-            constraints=dict(d.get("constraints") or {}),
-            defaults=dict(d.get("defaults") or {}),
-            kind=cls.KIND,
-        )
-
-    def to_dict(self) -> dict[str, Any]:
-        """Обратная совместимость для мест, читающих to_dict() на модели."""
-        return {
-            "kind": self.kind,
-            "schema_version": int(self.schema_version),
-            "id": self.id,
-            "name": self.name,
-            "column": dict(self.column),
-            "constraints": dict(self.constraints),
-            "defaults": dict(self.defaults),
-        }
-
+	KIND:ClassVar[str]="journal_preset"
+	FORMATS:ClassVar[tuple[str,...]]=("json",)
+	SCHEMA_VERSION:ClassVar[int]=1
+	schema_version:int=SCHEMA_VERSION
+	id:str=""
+	name:str=""
+	column:dict[str,Any]=field(default_factory=dict)
+	constraints:dict[str,Any]=field(default_factory=dict)
+	defaults:dict[str,Any]=field(default_factory=dict)
+	page:dict[str,Any]=field(default_factory=dict)
+	kind:str=KIND
+	def column_width_mm(self)->float:
+		return float(self.column.get("width_mm",183.0))
+	def column_height_mm(self)->float:
+		return float(self.column.get("height_mm",247.0))
+	def column_dpi(self)->int:
+		return int(self.column.get("dpi",300))
+	def page_layout(self)->dict[str,Any]:
+		p=self.page or {}
+		width=float(p.get("width_mm",210.0))
+		height=float(p.get("height_mm",297.0))
+		cm=float((self.constraints or {}).get("margin_mm",0.0) or 0.0)
+		default_margin=cm if cm>=5.0 else 10.0
+		margin=float(p.get("margin_mm",default_margin))
+		col_w=self.column_width_mm()
+		content_w=max(1.0,width-2.0*margin)
+		default_columns=1 if col_w>=content_w*0.95 else 2
+		columns=max(1,int(p.get("columns",default_columns)))
+		column_gap=float(p.get("column_gap_mm",5.0))
+		body_font=float(p.get("body_font_pt",(self.defaults or {}).get("figure.font.size",8.0)))
+		caption_font=float(p.get("caption_font_pt",body_font*0.9))
+		return {"width_mm":width,"height_mm":height,"margin_mm":margin,"columns":columns,"column_gap_mm":column_gap,"body_font_pt":body_font,"caption_font_pt":caption_font,}
+	@classmethod
+	def can_parse(cls,doc:RawDocument)->bool:
+		if doc.format not in cls.FORMATS:
+			return False
+		data=doc.payload
+		if not isinstance(data,dict):
+			return False
+		if data.get("kind")==cls.KIND:
+			return True
+		pid=data.get("id")
+		if not isinstance(pid,str) or not pid:
+			return False
+		return (isinstance(data.get("column"),dict) and isinstance(data.get("constraints"),dict))
+	@classmethod
+	def parse(cls,doc:RawDocument)->"JournalPreset":
+		data=doc.payload
+		assert isinstance(data,dict)
+		version=int(data.get("schema_version",cls.SCHEMA_VERSION))
+		if version>cls.SCHEMA_VERSION:
+			raise UnsupportedVersionError(path=doc.path,got=version,supported=cls.SCHEMA_VERSION)
+		pid=data.get("id")
+		if not isinstance(pid,str) or not pid:
+			raise MissingFieldError(path=doc.path,field="id")
+		return cls(schema_version=version,id=pid,name=str(data.get("name","")),column=dict(data.get("column") or {}),constraints=dict(data.get("constraints") or {}),defaults=dict(data.get("defaults") or {}),page=dict(data.get("page") or {}),kind=cls.KIND,)
+	@classmethod
+	def can_write(cls,obj:Any)->bool:
+		return isinstance(obj,cls)
+	@classmethod
+	def serialize(cls,obj:"JournalPreset")->RawDocument:
+		payload={"kind":cls.KIND,"schema_version":int(obj.schema_version),"id":obj.id,"name":obj.name,"column":dict(obj.column),"constraints":dict(obj.constraints),"defaults":dict(obj.defaults),"page":dict(obj.page),}
+		return RawDocument(format="json",path=None,size=0,payload=payload,meta={})
+	@classmethod
+	def from_dict(cls,d:dict[str,Any])->"JournalPreset":
+		return cls(schema_version=int(d.get("schema_version",cls.SCHEMA_VERSION)),id=str(d.get("id","")),name=str(d.get("name","")),column=dict(d.get("column") or {}),constraints=dict(d.get("constraints") or {}),defaults=dict(d.get("defaults") or {}),page=dict(d.get("page") or {}),kind=cls.KIND,)
+	def to_dict(self)->dict[str,Any]:
+		return {"kind":self.kind,"schema_version":int(self.schema_version),"id":self.id,"name":self.name,"column":dict(self.column),"constraints":dict(self.constraints),"defaults":dict(self.defaults),"page":dict(self.page),}
 
 class JournalPresetStore:
     """Загрузка/сохранение пресетов журналов (по одному файлу на пресет)."""

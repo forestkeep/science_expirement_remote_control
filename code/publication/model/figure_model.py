@@ -85,6 +85,16 @@ class FigureSpec:
 	def can_write(cls, obj: Any) -> bool:
 		return isinstance(obj, cls)
 
+	def content_bbox_mm(self)->tuple[float,float,float,float]:
+		visible=[p for p in self.panels if p.visible]
+		if not visible:
+			return (0.0,0.0,float(self.width_mm),float(self.height_mm))
+		min_x=min(p.x_mm for p in visible)
+		min_y=min(p.y_mm for p in visible)
+		max_x=max(p.x_mm+p.w_mm for p in visible)
+		max_y=max(p.y_mm+p.h_mm for p in visible)
+		return (float(min_x),float(min_y),float(max_x),float(max_y))
+
 	@classmethod
 	def serialize(cls, obj: "FigureSpec") -> RawDocument:
 		payload = obj.to_dict()

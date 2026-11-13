@@ -38,6 +38,8 @@ SPLIT_INSPECTOR_W = 340
 DEBOUNCE_MS = 400
 
 
+
+
 class PublicationWidgetCoreMixin:
 	DEBOUNCE_MS = DEBOUNCE_MS
 
@@ -229,6 +231,28 @@ class PublicationWidgetCoreMixin:
 		self._refresh_counters()
 		self._schedule_render()
 
+	def _update_page_info_label(self)->None:
+		label=getattr(self,"_page_info_label",None)
+		if label is None:
+			return
+		canvas=getattr(self,"_canvas",None)
+		layout=getattr(canvas,"_page_layout",None) if canvas is not None else None
+		if layout is None:
+			label.setText("")
+			return
+		try:
+			min_x,min_y,max_x,max_y=self.spec.content_bbox_mm()
+			fig_w=max_x-min_x
+			fig_h=max_y-min_y
+			page_w=float(layout.get("width_mm",210))
+			page_h=float(layout.get("height_mm",297))
+			margin=float(layout.get("margin_mm",10))
+			content_w=page_w-2.0*margin
+			span="вся ширина"if fig_w>content_w*0.95 else"в колонку"
+			label.setText(f"Fig. {fig_w:.0f}×{fig_h:.0f} мм ({span}) · "f"A{page_w:.0f}×{page_h:.0f}, поля {margin:.0f} мм · "f"текст {layout.get('body_font_pt', 8):.0f} pt")
+		except Exception:
+			label.setText("")
+
 	# -------------------------------------------------------------- toolbar
 	def _build_toolbar(self)->QWidget:
 		bar=QWidget()
@@ -275,52 +299,56 @@ class PublicationWidgetCoreMixin:
 		return bar
 
 	# -------------------------------------------------------------- status
-	def _build_status(self) -> QWidget:
-		w = QWidget()
-		h = QHBoxLayout(w)
-		h.setContentsMargins(6, 2, 6, 2)
+	def _build_status(self)->QWidget:
+		w=QWidget()
+		h=QHBoxLayout(w)
+		h.setContentsMargins(6,2,6,2)
 		h.setSpacing(12)
-
-		self._status_state = QLabel("Готово")
+		self._status_state=QLabel("Готово")
 		self._status_state.setMinimumWidth(140)
 		h.addWidget(self._status_state)
-
-		self._status_counters = QLabel("—")
+		self._status_counters=QLabel("—")
 		h.addWidget(self._status_counters)
-
-		self._validation_btn = QPushButton("валидация: —")
+		self._page_info_label=QLabel("")
+		self._page_info_label.setStyleSheet("color: #888;")
+		h.addWidget(self._page_info_label)
+		self._validation_btn=QPushButton("валидация: —")
 		self._validation_btn.setFlat(True)
-		self._validation_btn.setStyleSheet(
-			"text-align: left; color: #2a82da; text-decoration: underline;"
-		)
+		self._validation_btn.setStyleSheet("text-align: left; color: #2a82da; text-decoration: underline;")
 		self._validation_btn.clicked.connect(self._show_validation_report)
 		h.addWidget(self._validation_btn)
-
-		self._render_time_label = QLabel("рендер: —")
+		self._render_time_label=QLabel("рендер: —")
 		h.addWidget(self._render_time_label)
-
 		h.addStretch()
-
-		self._progress_bar = QProgressBar()
+		self._progress_bar=QProgressBar()
 		self._progress_bar.setMaximumWidth(220)
 		self._progress_bar.setVisible(False)
 		h.addWidget(self._progress_bar)
-
 		return w
 
 	# ==================================================================
 	# Журнал / стиль / «применить ко всему»
 	# ==================================================================
-	def _load_journal(self, journal_id: str):
-		self.preset = load_journal_preset(journal_id, self.preset_store)
-		self.spec.journal_preset_id = self.preset.id
-		# применить размер колонки
+	def _load_journal(self,journal_id:str):
+		self.preset=load_journal_preset(journal_id,self.preset_store)
+		self.spec.journal_preset_id=self.preset.id
 		try:
-			self.spec.width_mm = float(self.preset.column_width_mm())
-			self.spec.height_mm = float(self.preset.column_height_mm())
+			layout=self.preset.page_layout()
+			page_w=float(layout["width_mm"])
+			page_h=float(layout["height_mm"])
+			margin=float(layout["margin_mm"])
+			self.spec.width_mm=max(1.0,page_w-2.0*margin)
+			self.spec.height_mm=max(1.0,page_h-2.0*margin)
 		except Exception:
 			logger.exception("_load_journal: size update failed")
 		self._rebuild_stack()
+		canvas=getattr(self,"_canvas",None)
+		if canvas is not None:
+			try:
+				canvas.set_page_layout(self.preset.page_layout())
+			except Exception:
+				logger.exception("_load_journal: set_page_layout failed")
+		self._update_page_info_label()
 
 	def _load_style(self, style_id: str):
 		self.spec.style_profile_id = style_id
@@ -360,6 +388,55 @@ class PublicationWidgetCoreMixin:
 	def _schedule_render(self, *args):
 		self._debounce_timer.start()
 
+	def _add_phantom_preview(self,figure)->None:
+		layout=getattr(self._canvas,"_page_layout",None)
+		if layout is None:
+			try:
+				layout=self.preset.page_layout() if self.preset is not None else None
+			except Exception:
+				layout=None
+		if layout is None:
+			return
+		try:
+			from matplotlib.lines import Line2D
+		except ImportError:
+			return
+		try:
+			content_w_mm=float(self.spec.width_mm)
+			content_h_mm=float(self.spec.height_mm)
+			if content_w_mm<=0 or content_h_mm<=0:
+				return
+			columns=max(1,int(layout.get("columns",1)))
+			gap_mm=float(layout.get("column_gap_mm",5.0))
+			body_font_pt=float(layout.get("body_font_pt",8.0))
+			if columns>1:
+				col_w_mm=(content_w_mm-gap_mm*(columns-1))/columns
+			else:
+				col_w_mm=content_w_mm
+			guide_color="#b8b8b8"
+			text_color="#dcdcdc"
+			if columns>1:
+				for i in range(1,columns):
+					x_mm=i*(col_w_mm+gap_mm)-gap_mm/2.0
+					x_frac=x_mm/content_w_mm
+					figure.add_artist(Line2D([x_frac,x_frac],[0.0,1.0],color=guide_color,linewidth=0.8,linestyle=(0,(3,4)),transform=figure.transFigure,zorder=-0.9,))
+			body_font_mm=body_font_pt*25.4/72.0
+			line_h_mm=max(1.0,body_font_mm*1.6)
+			y_top_mm=2.0
+			y_bottom_mm=content_h_mm-2.0
+			y=y_top_mm+line_h_mm
+			while y<y_bottom_mm:
+				y_frac=1.0-y/content_h_mm
+				for c in range(columns):
+					x0_mm=c*(col_w_mm+gap_mm)
+					x1_mm=x0_mm+col_w_mm
+					x0_frac=x0_mm/content_w_mm
+					x1_frac=x1_mm/content_w_mm
+					figure.add_artist(Line2D([x0_frac,x1_frac],[y_frac,y_frac],color=text_color,linewidth=1.1,transform=figure.transFigure,zorder=-0.9,))
+				y+=line_h_mm
+		except Exception:
+			logger.exception("phantom preview failed")
+
 	def _render_now(self):
 		self._render_generation+=1
 		gen=self._render_generation
@@ -369,6 +446,7 @@ class PublicationWidgetCoreMixin:
 		try:
 			figure=self.renderer.create_figure(self.spec)
 			render_info=self.renderer.render(figure,self.spec,self._resolve_data,self.style_stack.resolve,self._resolve_override) or {"legends":{}}
+			self._add_phantom_preview(figure)
 			self._canvas.set_figure(figure)
 			self._canvas.set_render_info(render_info)
 		except Exception:
@@ -378,6 +456,7 @@ class PublicationWidgetCoreMixin:
 		self._last_render_ms=(time.perf_counter()-t0)*1000.0
 		self._render_time_label.setText(f"рендер: {self._last_render_ms:.0f} мс")
 		self._refresh_counters()
+		self._update_page_info_label()
 		self._set_status_state("Готово")
 
 	def _resolve_data(self, panel, data_ref):

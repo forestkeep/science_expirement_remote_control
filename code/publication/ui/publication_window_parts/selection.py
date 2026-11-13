@@ -51,8 +51,19 @@ class PublicationWidgetSelectionMixin:
 		p=self.spec.find_panel(panel_id)
 		if p is None:
 			return
-		p.x_mm,p.y_mm,p.w_mm,p.h_mm=x,y,w,h
+		fw=float(self.spec.width_mm)
+		fh=float(self.spec.height_mm)
+		if fw<=0 or fh<=0:
+			return
+		nw=max(2.0,min(float(w),fw))
+		nh=max(2.0,min(float(h),fh))
+		nx=max(0.0,min(float(x),fw-nw))
+		ny=max(0.0,min(float(y),fh-nh))
+		if (nx,ny,nw,nh)==(p.x_mm,p.y_mm,p.w_mm,p.h_mm):
+			return
+		p.x_mm,p.y_mm,p.w_mm,p.h_mm=nx,ny,nw,nh
 		self._schedule_render()
+		
 	def _on_panel_label_changed(self,panel_id:str,text:str):
 		p=self.spec.find_panel(panel_id)
 		if p is None:
@@ -177,8 +188,9 @@ class PublicationWidgetSelectionMixin:
 	def _on_figure_size_changed(self,w:float,h:float):
 		self.spec.width_mm=float(w)
 		self.spec.height_mm=float(h)
+		self._update_page_info_label()
 		self._schedule_render()
-		
+
 	def _on_legend_selected(self,panel_id:str):
 		self._on_panel_selected(panel_id)
 	def _on_legend_source_changed(self,panel_id,source_panels,source_slots):

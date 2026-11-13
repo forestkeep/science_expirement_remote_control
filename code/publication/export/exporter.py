@@ -51,19 +51,25 @@ class Exporter:
     def export_png(self, path: str, dpi: int = 600) -> str:
         return self._export(path, "png", dpi)
 
-    def _export(self, path: str, fmt: str, dpi: int) -> str:
-        fig = self.renderer.create_figure(self.spec)
-        self.renderer.render(
-            fig, self.spec, self.data_resolver,
-            self.stack.resolve, self.overrides_resolver,
-        )
-        self.renderer.save(fig, path, fmt=fmt, dpi=dpi)
-        # освободить память
+    def _export(self,path:str,fmt:str,dpi:int)->str:
+        fig=self.renderer.create_figure(self.spec)
+        self.renderer.render(fig,self.spec,self.data_resolver,self.stack.resolve,self.overrides_resolver,)
+        bbox=self._content_bbox_inches()
+        self.renderer.save(fig,path,fmt=fmt,dpi=dpi,bbox_inches=bbox)
         try:
             fig.clf()
         except Exception:
             pass
         return path
+
+    def _content_bbox_inches(self):
+        from matplotlib.transforms import Bbox
+        min_x,min_y,max_x,max_y=self.spec.content_bbox_mm()
+        fig_h_mm=float(self.spec.height_mm)
+        y0_mm=max(0.0,fig_h_mm-max_y)
+        h_mm=max(1e-3,max_y-min_y)
+        w_mm=max(1e-3,max_x-min_x)
+        return Bbox.from_bounds(min_x/25.4,y0_mm/25.4,w_mm/25.4,h_mm/25.4)
 
     # --------------------------------------------------------- export_package
     def export_package(self, dir_path: str, include_png: bool = False) -> str:

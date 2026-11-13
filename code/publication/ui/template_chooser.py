@@ -88,7 +88,7 @@ class TemplatePreview(QWidget):
 		finally:
 			p.end()
 class TemplateChooserDialog(QDialog):
-	def __init__(self,spec:FigureSpec,default_margin:float=3.0,default_gap:float=2.0,parent=None,last_template_id:Optional[str]=None):
+	def __init__(self,spec:FigureSpec,default_margin:float=3.0,default_gap:float=2.0,parent=None,last_template_id:Optional[str]=None,area_width_mm:Optional[float]=None,area_height_mm:Optional[float]=None):
 		super().__init__(parent)
 		self.setWindowTitle("Раскладка панелей по шаблону")
 		self.setModal(True)
@@ -97,6 +97,8 @@ class TemplateChooserDialog(QDialog):
 		self._selected_template:Optional[LayoutTemplate]=None
 		self._previews:Dict[str,TemplatePreview]={}
 		self._last_template_id=last_template_id
+		self._area_width_mm=area_width_mm
+		self._area_height_mm=area_height_mm
 		self._build_ui(float(default_margin),float(default_gap))
 		if not self.spec.panels:
 			self._radio_replace.setChecked(True)
@@ -181,6 +183,7 @@ class TemplateChooserDialog(QDialog):
 	def _on_template_double_clicked(self,template:LayoutTemplate)->None:
 		self._on_template_selected(template)
 		self._on_accept()
+
 	def _update_preview_counts(self)->None:
 		if self._selected_template is None:
 			self._status.setText("Шаблон не выбран")
@@ -188,7 +191,11 @@ class TemplateChooserDialog(QDialog):
 			return
 		existing,cells,will_lose=preview_counts(self.spec,self._selected_template)
 		reflow=self._radio_reflow.isChecked()
-		lines=[f"Шаблон «{self._selected_template.name}»: {cells} ячеек.",f"В фигуре панелей: {existing}.",]
+		lines=[]
+		if self._area_width_mm is not None and self._area_height_mm is not None:
+			lines.append(f"Область раскладки: {float(self._area_width_mm):.0f}×{float(self._area_height_mm):.0f} мм")
+		lines.append(f"Шаблон «{self._selected_template.name}»: {cells} ячеек.")
+		lines.append(f"В фигуре панелей: {existing}.")
 		if reflow:
 			if existing==0:
 				lines.append("⚠ В фигуре нет панелей — «Переложить» ничего не создаст. ""Переключитесь на «Заменить».")
@@ -200,6 +207,7 @@ class TemplateChooserDialog(QDialog):
 			lines.append(f"Существующие панели будут удалены, создадутся {cells} новых.")
 		self._status.setText("\n".join(lines))
 		self._refresh_ok_enabled()
+
 	def _refresh_ok_enabled(self)->None:
 		ok=self._selected_template is not None
 		if ok and self._radio_reflow.isChecked():
@@ -212,7 +220,8 @@ class TemplateChooserDialog(QDialog):
 			return
 		mode="reflow"if self._radio_reflow.isChecked()else"replace"
 		try:
-			apply_template(self.spec,self._selected_template,margin_mm=float(self.margin_spin.value()),gap_mm=float(self.gap_spin.value()),mode=mode,)
+			from..layouts.apply import apply_template
+			apply_template(self.spec,self._selected_template,margin_mm=float(self.margin_spin.value()),gap_mm=float(self.gap_spin.value()),mode=mode,area_width_mm=self._area_width_mm,max_height_mm=self._area_height_mm,)
 		except ValueError as exc:
 			QMessageBox.warning(self,"Не удалось применить шаблон",str(exc))
 			return

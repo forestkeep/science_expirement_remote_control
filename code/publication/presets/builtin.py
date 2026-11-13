@@ -122,7 +122,11 @@ BUILTIN_JOURNALS = {
         "schema_version": 1,
         "id": "nature_single",
         "name": "Nature single column",
-        "column": {"width_mm": 89.0, "height_mm": 120.0, "dpi": 300},
+        "column": {
+            "width_mm": 89.0,
+            "height_mm": 120.0,
+            "dpi": 300,
+        },
         "constraints": {
             "min_font_pt": 5.0,
             "min_line_pt": 0.25,
@@ -135,12 +139,25 @@ BUILTIN_JOURNALS = {
             "figure.font.size": 7.0,
             "figure.line.width": 0.75,
         },
+        "page": {
+            "width_mm": 210.0,
+            "height_mm": 297.0,
+            "margin_mm": 13.0,
+            "columns": 2,
+            "column_gap_mm": 5.0,
+            "body_font_pt": 8.0,
+            "caption_font_pt": 7.0,
+        },
     },
     "nature_double": {
         "schema_version": 1,
         "id": "nature_double",
         "name": "Nature double column",
-        "column": {"width_mm": 183.0, "height_mm": 247.0, "dpi": 300},
+        "column": {
+            "width_mm": 183.0,
+            "height_mm": 247.0,
+            "dpi": 300,
+        },
         "constraints": {
             "min_font_pt": 5.0,
             "min_line_pt": 0.25,
@@ -153,12 +170,25 @@ BUILTIN_JOURNALS = {
             "figure.font.size": 7.0,
             "figure.line.width": 0.75,
         },
+        "page": {
+            "width_mm": 210.0,
+            "height_mm": 297.0,
+            "margin_mm": 13.0,
+            "columns": 2,
+            "column_gap_mm": 5.0,
+            "body_font_pt": 8.0,
+            "caption_font_pt": 7.0,
+        },
     },
     "science_double": {
         "schema_version": 1,
         "id": "science_double",
         "name": "Science double column",
-        "column": {"width_mm": 183.0, "height_mm": 247.0, "dpi": 300},
+        "column": {
+            "width_mm": 183.0,
+            "height_mm": 247.0,
+            "dpi": 300,
+        },
         "constraints": {
             "min_font_pt": 6.0,
             "min_line_pt": 0.5,
@@ -170,6 +200,15 @@ BUILTIN_JOURNALS = {
             "figure.font.family": "Helvetica",
             "figure.font.size": 8.0,
             "figure.line.width": 1.0,
+        },
+        "page": {
+            "width_mm": 210.0,
+            "height_mm": 297.0,
+            "margin_mm": 13.0,
+            "columns": 2,
+            "column_gap_mm": 5.0,
+            "body_font_pt": 9.0,
+            "caption_font_pt": 8.0,
         },
     },
 }

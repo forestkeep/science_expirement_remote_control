@@ -23,9 +23,9 @@ class RendererAdapter(ABC):
         ...
 
     @abstractmethod
-    def save(self, figure_handle: Any, path: str, fmt: str, dpi: int = 300) -> None:
+    def save(self,figure_handle:Any,path:str,fmt:str,dpi:int=300,bbox_inches=None)->None:
         ...
-
+        
     @abstractmethod
     def get_native_size_px(self, figure_handle: Any, dpi: float) -> tuple:
         ...

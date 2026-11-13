@@ -872,11 +872,7 @@ class MatplotlibRenderer(RendererAdapter):
 			color=color,
 		)
 
-	def save(self, fig: Figure, path: str, fmt: str, dpi: int = 300) -> None:
-		if fig.canvas is None or not hasattr(fig.canvas, "print_figure"):
+	def save(self,fig:Figure,path:str,fmt:str,dpi:int=300,bbox_inches=None)->None:
+		if fig.canvas is None or not hasattr(fig.canvas,"print_figure"):
 			FigureCanvasAgg(fig)
-		fig.savefig(
-			path, format=fmt, dpi=dpi,
-			bbox_inches=None, pad_inches=0.0,
-			facecolor=fig.get_facecolor(),
-		)
+		fig.savefig(path,format=fmt,dpi=dpi,bbox_inches=bbox_inches,pad_inches=0.0,facecolor=fig.get_facecolor(),)

@@ -122,11 +122,14 @@ class PublicationWidgetPanelsMixin:
 		self._refresh_tree()
 		self._refresh_counters()
 		self._schedule_render()
+
 	def _on_apply_layout(self):
 		default_margin=float((self.preset.constraints or {}).get("margin_mm",3.0))
 		default_gap=min(default_margin,2.0)
 		last_template_id=self.spec.metadata.get("last_template_id")
-		dialog=TemplateChooserDialog(self.spec,default_margin=default_margin,default_gap=default_gap,parent=self,last_template_id=last_template_id)
+		area_w=self.preset.column_width_mm()if self.preset is not None else None
+		area_h=self.preset.column_height_mm()if self.preset is not None else None
+		dialog=TemplateChooserDialog(self.spec,default_margin=default_margin,default_gap=default_gap,parent=self,last_template_id=last_template_id,area_width_mm=area_w,area_height_mm=area_h,)
 		if dialog.exec_()!=QDialog.Accepted:
 			return
 		if dialog._selected_template is not None:
@@ -143,6 +146,7 @@ class PublicationWidgetPanelsMixin:
 		self._refresh_counters()
 		self._schedule_render()
 		self._set_status_state(f"Шаблон применён: {len(self.spec.panels)} панелей")
+
 	def _on_validate(self):
 		report=Validator(self.spec,self.preset,self.style_stack,self._resolve_data).validate()
 		self._last_validation=report

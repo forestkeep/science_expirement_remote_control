@@ -12,6 +12,7 @@ from ..core.units import mm_to_px
 from ..model.annotations import PresentationAnnotation
 from ..model.panel import PanelSpec
 import math
+from PyQt5.QtCore import QPointF
 from PyQt5.QtWidgets import QGridLayout
 
 logger = logging.getLogger(__name__)
@@ -142,6 +143,20 @@ class _CanvasInner(FigureCanvasQTAgg):
 		self._undo_stack.append((do_fn,undo_fn))
 		self._redo_stack.clear()
 
+	def _clamp_geom(self,x,y,w,h):
+		spec=self.widget.spec
+		if spec is None:
+			return float(x),float(y),float(w),float(h)
+		fw=float(spec.width_mm)
+		fh=float(spec.height_mm)
+		if fw<=0 or fh<=0:
+			return float(x),float(y),float(w),float(h)
+		w=max(2.0,min(float(w),fw))
+		h=max(2.0,min(float(h),fh))
+		x=max(0.0,min(float(x),fw-w))
+		y=max(0.0,min(float(y),fh-h))
+		return x,y,w,h
+
 	def _hit_legend(self,x_mm:float,y_mm:float,tol_mm:float=2.0):
 		spec=self.widget.spec
 		if spec is None:
@@ -232,6 +247,7 @@ class _CanvasInner(FigureCanvasQTAgg):
 			self.spec_changed.emit()
 		self._push_command(do,undo)
 		self.drag_finished.emit()
+
 	def keyPressEvent(self,event):
 		key=event.key()
 		mods=event.modifiers()
@@ -260,12 +276,12 @@ class _CanvasInner(FigureCanvasQTAgg):
 				panel=self.widget.spec.find_panel(panel_id)
 				if panel is None or panel.locked:
 					continue
-				new_x=max(0.0,_snap(panel.x_mm+dx))
-				new_y=max(0.0,_snap(panel.y_mm+dy))
+				new_x,new_y,_,_=self._clamp_geom(_snap(panel.x_mm+dx),_snap(panel.y_mm+dy),panel.w_mm,panel.h_mm)
 				if(new_x,new_y)!=(panel.x_mm,panel.y_mm):
 					self._apply_geom(panel_id,(new_x,new_y,panel.w_mm,panel.h_mm))
 			self.update();event.accept(); return
 		super().keyPressEvent(event)
+
 	def keyReleaseEvent(self,event):
 		key=event.key()
 		if key in (Qt.Key_Left,Qt.Key_Right,Qt.Key_Up,Qt.Key_Down) and not event.isAutoRepeat():
@@ -315,11 +331,22 @@ class _CanvasInner(FigureCanvasQTAgg):
 		w,h=self.width(),self.height()
 		if w<=0 or h<=0:
 			return
+		spec=getattr(self.widget,"spec",None)
+		if spec is not None and spec.width_mm>0 and spec.height_mm>0:
+			page_scale=w/spec.width_mm
+			fig_dpi=max(1.0,25.4*page_scale)
+			try:
+				self.figure.set_dpi(fig_dpi)
+				self.figure.set_size_inches(spec.width_mm/25.4,spec.height_mm/25.4,forward=False)
+			except Exception:
+				logger.exception("_update_figure_size failed")
+			return
 		dpi=float(self.figure.dpi) or 100.0
 		try:
 			self.figure.set_size_inches(w/dpi,h/dpi,forward=False)
 		except Exception:
 			logger.exception("_update_figure_size failed")
+
 	def resizeEvent(self,event):
 		self._invalidate_cache();super().resizeEvent(event);self._update_figure_size()
 	def showEvent(self,event):
@@ -507,17 +534,17 @@ class _CanvasInner(FigureCanvasQTAgg):
 		dy=_snap(y_mm-self._press_pos[1])
 		ox,oy,ow,oh=self._orig_geom
 		if self._drag_mode=="move":
-			nx=max(0.0,_snap(ox+dx));ny=max(0.0,_snap(oy+dy))
+			nx,ny,_,_=self._clamp_geom(_snap(ox+dx),_snap(oy+dy),ow,oh)
 			self._apply_geom(panel.id,(nx,ny,ow,oh))
 		elif self._drag_mode=="resize_br":
-			nw=max(2.0,_snap(ow+dx));nh=max(2.0,_snap(oh+dy))
-			self._apply_geom(panel.id,(ox,oy,nw,nh))
+			nx,ny,nw,nh=self._clamp_geom(ox,oy,_snap(ow+dx),_snap(oh+dy))
+			self._apply_geom(panel.id,(nx,ny,nw,nh))
 		elif self._drag_mode=="resize_r":
-			nw=max(2.0,_snap(ow+dx))
-			self._apply_geom(panel.id,(ox,oy,nw,oh))
+			nx,ny,nw,_=self._clamp_geom(ox,oy,_snap(ow+dx),oh)
+			self._apply_geom(panel.id,(nx,ny,nw,oh))
 		elif self._drag_mode=="resize_b":
-			nh=max(2.0,_snap(oh+dy))
-			self._apply_geom(panel.id,(ox,oy,ow,nh))
+			nx,ny,_,nh=self._clamp_geom(ox,oy,ow,_snap(oh+dy))
+			self._apply_geom(panel.id,(nx,ny,ow,nh))
 		self.update();event.accept()
 
 	def mouseReleaseEvent(self,event):
@@ -546,6 +573,7 @@ class _CanvasInner(FigureCanvasQTAgg):
 		else:
 			super().paintEvent(event)
 		self._paint_overlay()
+
 	def _paint_overlay(self):
 		spec=self.widget.spec
 		if spec is None:
@@ -560,6 +588,18 @@ class _CanvasInner(FigureCanvasQTAgg):
 				painter.setPen(QColor("#5a5a5a"))
 				f=QFont();f.setPointSize(13);painter.setFont(f)
 				painter.drawText(self.rect(),Qt.AlignCenter,"Холст пуст\n\nПравый клик → «Добавить панель» или «Разложить по шаблону»")
+			if spec.panels:
+				min_x,min_y,max_x,max_y=spec.content_bbox_mm()
+				if max_x>min_x and max_y>min_y:
+					bx=int(min_x/spec.width_mm*w)
+					by=int(min_y/spec.height_mm*h)
+					bw=int((max_x-min_x)/spec.width_mm*w)
+					bh=int((max_y-min_y)/spec.height_mm*h)
+					if bw>0 and bh>0:
+						pen=QPen(QColor("#1f8f4e"),2,Qt.DashLine)
+						painter.setPen(pen)
+						painter.setBrush(Qt.NoBrush)
+						painter.drawRect(bx,by,bw,bh)
 			for panel in spec.sorted_panels():
 				if panel.id not in self._selected_panel_ids:
 					continue
@@ -599,6 +639,7 @@ class _CanvasInner(FigureCanvasQTAgg):
 				painter.drawText(QRectF(x_px,y_px,18,18).toRect(),Qt.AlignCenter,"⟳")
 		finally:
 			painter.end()
+
 	def contextMenuEvent(self,event):
 		pt=self._pos_to_mm(event.pos())
 		if pt is None:
@@ -687,6 +728,34 @@ class _CanvasInner(FigureCanvasQTAgg):
 		menu.exec_(global_pos)
 
 
+class _PagePreview(QWidget):
+	def __init__(self,parent=None):
+		super().__init__(parent)
+		self._page_layout=None
+		self._scale=1.0
+		self.setAutoFillBackground(False)
+	def set_page_layout(self,layout,scale:float)->None:
+		self._page_layout=layout
+		self._scale=float(scale)if scale and scale>0 else 1.0
+		self.update()
+	def paintEvent(self,event):
+		if self._page_layout is None:
+			return
+		p=QPainter(self)
+		try:
+			p.fillRect(self.rect(),QColor("#808080"))
+			layout=self._page_layout
+			scale=self._scale
+			page_rect=QRectF(0.0,0.0,float(self.width()),float(self.height()))
+			p.fillRect(page_rect,QColor("#ffffff"))
+			margin_px=float(layout.get("margin_mm",10.0))*scale
+			if margin_px>0.5:
+				p.setPen(QPen(QColor("#c8c8c8"),1,Qt.DashLine))
+				p.setBrush(Qt.NoBrush)
+				p.drawRect(QRectF(margin_px,margin_px,float(self.width())-2.0*margin_px,float(self.height())-2.0*margin_px))
+		finally:
+			p.end()
+
 
 class PublicationCanvas(QWidget):
 	panel_geometry_changed=pyqtSignal(str,float,float,float,float)
@@ -712,14 +781,14 @@ class PublicationCanvas(QWidget):
 		super().__init__(parent)
 		self.spec=None
 		self._zoom=1.0
+		self._page_layout=None
 		self._rulers_visible=True
 		self._widget=_CanvasInner(self)
+		self._page_preview=_PagePreview()
 		self._center=QWidget()
 		self._center.setStyleSheet("background-color: #808080;")
-		center_lay=QVBoxLayout(self._center)
-		center_lay.setContentsMargins(0,0,0,0)
-		center_lay.setAlignment(Qt.AlignCenter)
-		center_lay.addWidget(self._widget,0,Qt.AlignCenter)
+		self._page_preview.setParent(self._center)
+		self._widget.setParent(self._center)
 		self._scroll=QScrollArea()
 		self._scroll.setWidgetResizable(True)
 		self._scroll.setWidget(self._center)
@@ -740,11 +809,16 @@ class PublicationCanvas(QWidget):
 		grid.addWidget(self._scroll,1,1)
 		self._scroll.horizontalScrollBar().valueChanged.connect(self._on_scroll_changed)
 		self._scroll.verticalScrollBar().valueChanged.connect(self._on_scroll_changed)
+
+
 	@property
 	def rulers_visible(self)->bool:
 		return self._rulers_visible
 	def set_render_info(self,info:Optional[dict])->None:
 		self._widget.set_render_info(info)
+	def set_page_layout(self,layout:Optional[dict])->None:
+		self._page_layout=layout
+		self._update_fit_geometry()
 	def eventFilter(self,obj,event):
 		if obj is self._scroll.viewport():
 			if event.type()==QEvent.Resize:
@@ -759,30 +833,40 @@ class PublicationCanvas(QWidget):
 		return super().eventFilter(obj,event)
 	def _on_scroll_changed(self,*_):
 		self._update_rulers()
+
 	def _update_rulers(self)->None:
-		if self.spec is None:
+		if self._page_layout is None:
 			return
-		w=self._widget.width()
-		h=self._widget.height()
-		if w<=0 or h<=0:
+		layout=self._page_layout
+		page_w_mm=float(layout.get("width_mm",210.0))
+		page_h_mm=float(layout.get("height_mm",297.0))
+		page_px_w=self._page_preview.width()
+		page_px_h=self._page_preview.height()
+		if page_px_w<=0 or page_px_h<=0 or page_w_mm<=0 or page_h_mm<=0:
 			return
-		px_per_mm=w/max(1e-9,self.spec.width_mm)
+		px_per_mm=page_px_w/page_w_mm
 		vp=self._scroll.viewport().size()
-		off_x=max(0,(vp.width()-w)//2)
-		off_y=max(0,(vp.height()-h)//2)
-		hscroll=self._scroll.horizontalScrollBar()
-		vscroll=self._scroll.verticalScrollBar()
-		self._hruler.set_geometry_info(self.spec.width_mm,px_per_mm)
-		self._vruler.set_geometry_info(self.spec.height_mm,px_per_mm)
-		self._hruler.set_offset(hscroll.value()-off_x)
-		self._vruler.set_offset(vscroll.value()-off_y)
+		hbar=self._scroll.horizontalScrollBar()
+		vbar=self._scroll.verticalScrollBar()
+		off_x=-(hbar.value()-self._page_preview.x())
+		off_y=-(vbar.value()-self._page_preview.y())
+		self._hruler.set_geometry_info(page_w_mm,px_per_mm)
+		self._vruler.set_geometry_info(page_h_mm,px_per_mm)
+		self._hruler.set_offset(off_x)
+		self._vruler.set_offset(off_y)
+
 	def _update_fit_geometry(self)->None:
 		if self.spec is None:
+			return
+		layout=self._page_layout or {"width_mm":210.0,"height_mm":297.0,"margin_mm":10.0,"columns":1,"column_gap_mm":5.0,"body_font_pt":8.0,}
+		page_w_mm=float(layout["width_mm"])
+		page_h_mm=float(layout["height_mm"])
+		if page_w_mm<=0 or page_h_mm<=0:
 			return
 		vp=self._scroll.viewport().size()
 		if vp.width()<=0 or vp.height()<=0:
 			return
-		aspect=self.spec.height_mm/max(1e-9,self.spec.width_mm)
+		aspect=page_h_mm/page_w_mm
 		w=vp.width()
 		h=int(w*aspect)
 		if h>vp.height():
@@ -792,29 +876,26 @@ class PublicationCanvas(QWidget):
 		h=max(1,h)
 		w_px=max(1,int(round(w*self._zoom)))
 		h_px=max(1,int(round(h*self._zoom)))
-		self._widget.setFixedSize(w_px,h_px)
+		scale=w_px/page_w_mm
+		margin_mm=float(layout.get("margin_mm",10.0))
+		margin_px=margin_mm*scale
+		content_w_px=max(1.0,w_px-2.0*margin_px)
+		content_h_px=max(1.0,h_px-2.0*margin_px)
 		cw=max(vp.width(),w_px)
 		ch=max(vp.height(),h_px)
+		offset_x=max(0,(cw-w_px)//2)
+		offset_y=max(0,(ch-h_px)//2)
 		self._center.setMinimumSize(cw,ch)
 		self._center.setMaximumSize(cw,ch)
+		self._page_preview.setGeometry(offset_x,offset_y,w_px,h_px)
+		self._page_preview.set_page_layout(layout,scale)
+		self._widget.setGeometry(int(offset_x+margin_px),int(offset_y+margin_px),int(content_w_px),int(content_h_px))
+		self._widget.raise_()
 		self._update_rulers()
-	def _compute_base_px_per_mm(self)->float:
-		if self.spec is None or self.spec.width_mm<=0:
-			return 0.0
-		vp=self._scroll.viewport().size()
-		if vp.width()<=0 or vp.height()<=0:
-			return 0.0
-		aspect=self.spec.height_mm/max(1e-9,self.spec.width_mm)
-		w=vp.width()
-		h=int(w*aspect)
-		if h>vp.height():
-			h=vp.height()
-			w=int(h/max(1e-9,aspect))
-		w=max(1,w)
-		return w/self.spec.width_mm
+
 	def _cursor_image_pos(self,cursor_vp_pos):
-		w=self._widget.width()
-		h=self._widget.height()
+		w=self._page_preview.width()
+		h=self._page_preview.height()
 		vp=self._scroll.viewport().size()
 		hbar=self._scroll.horizontalScrollBar()
 		vbar=self._scroll.verticalScrollBar()
@@ -828,10 +909,10 @@ class PublicationCanvas(QWidget):
 			cy=cursor_vp_pos.y()-(vp.height()-h)/2.0
 		return cx,cy
 	def _apply_zoom_at(self,factor:float,cursor_vp_pos)->None:
-		if self.spec is None:
+		if self.spec is None or self._page_layout is None:
 			return
-		old_w=self._widget.width()
-		old_h=self._widget.height()
+		old_w=self._page_preview.width()
+		old_h=self._page_preview.height()
 		if old_w<=0 or old_h<=0:
 			return
 		cx,cy=self._cursor_image_pos(cursor_vp_pos)
@@ -842,8 +923,8 @@ class PublicationCanvas(QWidget):
 			return
 		self._zoom=new_zoom
 		self._update_fit_geometry()
-		new_w=self._widget.width()
-		new_h=self._widget.height()
+		new_w=self._page_preview.width()
+		new_h=self._page_preview.height()
 		vp=self._scroll.viewport().size()
 		hbar=self._scroll.horizontalScrollBar()
 		vbar=self._scroll.verticalScrollBar()
@@ -855,11 +936,21 @@ class PublicationCanvas(QWidget):
 		self._zoom=1.0
 		self._update_fit_geometry()
 	def set_physical_size(self)->None:
-		if self.spec is None:
+		if self.spec is None or self._page_layout is None:
 			return
-		base_px_per_mm=self._compute_base_px_per_mm()
-		if base_px_per_mm<=0:
+		page_w_mm=float(self._page_layout.get("width_mm",210.0))
+		page_h_mm=float(self._page_layout.get("height_mm",297.0))
+		vp=self._scroll.viewport().size()
+		if vp.width()<=0 or vp.height()<=0 or page_w_mm<=0 or page_h_mm<=0:
 			return
+		aspect=page_h_mm/page_w_mm
+		w=vp.width()
+		h=int(w*aspect)
+		if h>vp.height():
+			h=vp.height()
+			w=int(h/max(1e-9,aspect))
+		w=max(1,w)
+		base_px_per_mm=w/page_w_mm
 		screen=QApplication.primaryScreen()
 		if screen is None:
 			return
