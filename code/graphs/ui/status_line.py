@@ -1,58 +1,38 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QStatusBar, QProgressBar
-from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QStatusBar, QProgressBar
+from datetime import datetime
 
 class StatusBar(QStatusBar):
-    """
-    Улучшенная строка состояния с методами для постоянного/временного текста
-    и прогресс-баром. Постоянный текст автоматически восстанавливается после
-    временных сообщений.
-    """
-
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, show_time: bool = True):
         super().__init__(parent)
-
-        # Прогресс-бар (постоянно справа)
+        self.show_time = bool(show_time)
         self._progress_bar = QProgressBar()
         self._progress_bar.setMaximumWidth(200)
         self._progress_bar.setVisible(False)
         self.addPermanentWidget(self._progress_bar)
 
+    def _with_time(self, text: str) -> str:
+        text = text or ""
+        if not self.show_time or not text:
+            return text
+        return f"[{datetime.now().strftime('%H:%M:%S')}] {text}"
+
     def set_status(self, text: str, timeout: int = 0):
-        """
-        Показать временное сообщение.
-        Если timeout > 0, сообщение исчезнет через указанное число миллисекунд,
-        и восстановится постоянный текст (если был задан).
-        При timeout=0 сообщение остаётся до явной очистки (clear_status).
-        """
+        message = self._with_time(text)
         if timeout > 0:
-            self.showMessage(text, timeout)
+            self.showMessage(message, timeout)
         else:
-            self.showMessage(text)   # остаётся, пока не будет очищено вручную
+            self.showMessage(message)
 
     def clear_status(self):
-        """
-        Убрать текущее временное сообщение и вернуть постоянный текст.
-        Постоянный текст остаётся неизменным.
-        """
         self.clearMessage()
 
     def set_permanent(self, text: str):
-        """
-        Задать постоянный текст (normal message). Он будет показываться,
-        когда нет временных сообщений.
-        """
-        self.showMessage(text)       # без таймаута -> normal message
+        self.showMessage(self._with_time(text))
 
     def clear_permanent(self):
-        """
-        Полностью очистить постоянный текст.
-        Если в данный момент показывается временное сообщение, оно тоже сбросится.
-        """
-        self.showMessage("")         # сбрасывает normal message
+        self.showMessage("")
 
     def show_progress(self, minimum: int = 0, maximum: int = 100):
-        """Показать прогресс-бар и вернуть ссылку на него для обновления."""
         self._progress_bar.setMinimum(minimum)
         self._progress_bar.setMaximum(maximum)
         self._progress_bar.setValue(minimum)
@@ -60,15 +40,12 @@ class StatusBar(QStatusBar):
         return self._progress_bar
 
     def hide_progress(self):
-        """Скрыть прогресс-бар."""
         self._progress_bar.setVisible(False)
 
     def set_progress_value(self, value: int):
-        """Установить текущее значение прогресс-бара."""
         self._progress_bar.setValue(value)
 
     def set_style(self, color: str = "#000", background: str = "#EEE", font_size: int = 12):
-        """Настроить цвета и шрифт строки состояния."""
         self.setStyleSheet(f"""
             QStatusBar {{
                 color: {color};
