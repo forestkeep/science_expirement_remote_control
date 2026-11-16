@@ -157,6 +157,7 @@ AXIS_STYLE_SPEC = Schema(AxisStyle, [
 
 AXIS_SETTINGS_SPEC = Schema(AxisSettings, [
     Attr("label", "str", ""),
+    Attr("is_label_customized", "bool", True),
     Attr("is_style_customized", "bool", False),
     Attr("is_inverted", "bool", False),
     Attr("is_visible", "bool", True),

@@ -62,7 +62,7 @@ def _create_inf_line_no_signal(desc, graph_view):
 
 
 class ProjectToHDF5Adapter:
-    def convert_project(self, core_project) -> "ProjectFile":
+    def convert_project(self, core_project):
         from .models import ProjectFile
         from .migrations import CURRENT_SCHEMA_VERSION
         pf = ProjectFile(
@@ -420,17 +420,13 @@ class HDF5ToProjectAdapter:
                 if d:
                     core_manager.add_measurement_data(d)
 
-    def apply_graph_settings(self, graph_widget: PatchedPlotWidget,
-                             settings: FieldSettings) -> None:
+    def apply_graph_settings(self, graph_widget: PatchedPlotWidget, settings: FieldSettings) -> None:
         if settings is None or settings.graph_field is None:
             return
         gs = settings.graph_field
-
         graph_widget.applied_preset_name = getattr(gs, "applied_preset_name", "—")
-
         graph_widget.setTitle(gs.title or "")
         graph_widget.setCustomBackgroundColor(color=QtGui.QColor(gs.background_color))
-
         bottom = graph_widget.plotItem.getAxis("bottom")
         left = graph_widget.plotItem.getAxis("left")
         grid_color = QtGui.QColor(gs.grid_color)
@@ -440,20 +436,13 @@ class HDF5ToProjectAdapter:
             grid_alpha = 128
         bottom.setPen(grid_color)
         left.setPen(grid_color)
-
         x_on = bool(getattr(gs, "x_grid_enabled", gs.grid_enabled))
         y_on = bool(getattr(gs, "y_grid_enabled", gs.grid_enabled))
         bottom.setGrid(grid_alpha if x_on else False)
         left.setGrid(grid_alpha if y_on else False)
         graph_widget.is_grid_shown = bool(x_on or y_on)
-
-        common = axisStyle(
-            text_font=string_to_qfont(gs.common_axis_style.text_font),
-            tick_font=string_to_qfont(gs.common_axis_style.tick_font),
-            color=string_to_color(gs.common_axis_style.color),
-        )
+        common = axisStyle(text_font=string_to_qfont(gs.common_axis_style.text_font), tick_font=string_to_qfont(gs.common_axis_style.tick_font), color=string_to_color(gs.common_axis_style.color))
         graph_widget.common_style = common
-
         log_x = log_y = False
         for axis_name, axis_settings in gs.axes.items():
             if axis_name == "bottom":
@@ -464,6 +453,7 @@ class HDF5ToProjectAdapter:
             if ctrl is None:
                 continue
             ctrl.settings.label = axis_settings.label or ""
+            ctrl.settings.is_label_customized = bool(getattr(axis_settings, "is_label_customized", True))
             ctrl.settings.is_visible = axis_settings.is_visible
             ctrl.settings.is_inverted = axis_settings.is_inverted
             if axis_settings.is_visible:
@@ -476,23 +466,17 @@ class HDF5ToProjectAdapter:
                 graph_widget.invert_y_axis(axis_settings.is_inverted)
             elif axis_name == "right":
                 graph_widget.invert_y2_axis(axis_settings.is_inverted)
-            custom = axisStyle(
-                text_font=string_to_qfont(axis_settings.custom_style.text_font),
-                tick_font=string_to_qfont(axis_settings.custom_style.tick_font),
-                color=string_to_color(axis_settings.custom_style.color),
-            )
+            custom = axisStyle(text_font=string_to_qfont(axis_settings.custom_style.text_font), tick_font=string_to_qfont(axis_settings.custom_style.tick_font), color=string_to_color(axis_settings.custom_style.color))
             if axis_settings.is_style_customized:
                 ctrl.set_custom_style(custom)
             else:
                 ctrl.set_common_style(common)
             if not axis_settings.auto_range and axis_settings.range:
                 ctrl.setRange(*axis_settings.range)
-
         try:
             graph_widget.plotItem.setLogMode(x=log_x, y=log_y)
         except (AttributeError, ValueError):
             pass
-
         if hasattr(graph_widget, "legend"):
             graph_widget.legend.setVisible(gs.legend_enabled)
             graph_widget.legend2.setVisible(gs.legend_enabled)
@@ -506,10 +490,7 @@ class HDF5ToProjectAdapter:
                 if f is not None:
                     graph_widget.set_legend_font(f)
             if hasattr(graph_widget, "set_legend_symbol_size"):
-                graph_widget.set_legend_symbol_size(
-                    int(getattr(gs, "legend_symbol_size", 12))
-                )
-
+                graph_widget.set_legend_symbol_size(int(getattr(gs, "legend_symbol_size", 12)))
         graph_widget.setAntialiasing(gs.antialiasing)
         if hasattr(graph_widget, "style_changed"):
             try:

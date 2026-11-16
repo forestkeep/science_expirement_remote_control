@@ -23,6 +23,7 @@ class axisSettings:
     is_style_customized: bool
     is_inverted: bool
     is_visible: bool
+    is_label_customized: bool = False
 
 class axisController():
     def __init__(self, axis_object: AxisItem, axis_settings: axisSettings, axis_style: axisStyle):
@@ -44,6 +45,20 @@ class axisController():
         self.common_style = style
         self.settings.is_style_customized = False
         self.__apply_style()
+
+    def set_label(self, label: str, customized: bool = True) -> None:
+        label = label or ""
+        customized = bool(customized)
+        if self.settings.label == label and self.settings.is_label_customized == customized:
+            return
+        self.settings.label = label
+        self.settings.is_label_customized = customized
+        self.axis.setLabel(label)
+
+    def apply_auto_label(self, label: str) -> None:
+        if self.settings.is_label_customized:
+            return
+        self.set_label(label, customized=False)
 
     def update_common_style(self, style: axisStyle ):
         self.common_style = style

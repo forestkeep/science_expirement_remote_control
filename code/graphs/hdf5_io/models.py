@@ -175,9 +175,11 @@ class AxisStyle:
         return cls(f_to_s(text_font), f_to_s(tick_font), c_to_s(color))
 
 
+
 @dataclass
 class AxisSettings:
     label: str = ""
+    is_label_customized: bool = False
     is_style_customized: bool = False
     is_inverted: bool = False
     is_visible: bool = True
