@@ -11,7 +11,8 @@ import copy
 import logging
 
 from PyQt5.QtWidgets import QApplication
-
+import pyqtgraph as pg
+from graphs.core.curve_presenter import LineStyle
 from common.undo.manager import UndoCommand
 
 logger = logging.getLogger(__name__)
@@ -58,23 +59,50 @@ class ResetCurveNameCommand(UndoCommand):
         if self.old_customized:
             self.curve.change_name(self.old_name)
 
+class ChangeCurveStyleElementsCommand(UndoCommand):
+    _COLOR_KEYS = ("color", "symbol_color", "fill_color")
 
-class ChangeCurveStyleCommand(UndoCommand):
-    def __init__(self, curve, new_style):
-        self.curve = curve
-        self.new_style = copy.deepcopy(new_style)
-        self.old_style = copy.deepcopy(curve.saved_style) if curve.saved_style is not None else None
+    def __init__(self, curves, changes: dict):
+        self._entries = []
+        for curve in curves:
+            base = curve.saved_style if curve.saved_style is not None else LineStyle()
+            old_values = {}
+            new_values = {}
+            for key, value in changes.items():
+                resolved = value(base) if callable(value) else value
+                old = getattr(base, key)
+                if self._values_equal(key, old, resolved):
+                    continue
+                old_values[key] = old
+                new_values[key] = resolved
+            if new_values:
+                self._entries.append((curve, old_values, new_values))
+
+    @classmethod
+    def _values_equal(cls, key, a, b) -> bool:
+        if key in cls._COLOR_KEYS:
+            return pg.mkColor(a) == pg.mkColor(b)
+        return a == b
+
+    def has_changes(self) -> bool:
+        return bool(self._entries)
 
     def text(self):
         return _TR("Изменение стиля кривой")
 
+    def _apply(self, use_new: bool) -> None:
+        for curve, old_values, new_values in self._entries:
+            values = new_values if use_new else old_values
+            style = copy.deepcopy(curve.saved_style) if curve.saved_style is not None else LineStyle()
+            for key, value in values.items():
+                setattr(style, key, value)
+            curve.change_style(style)
+
     def redo(self):
-        self.curve.change_style(self.new_style)
+        self._apply(True)
 
     def undo(self):
-        if self.old_style is not None:
-            self.curve.change_style(self.old_style)
-
+        self._apply(False)
 
 class AddNoteCommand(UndoCommand):
     """

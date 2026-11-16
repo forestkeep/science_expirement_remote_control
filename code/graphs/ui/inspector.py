@@ -4,12 +4,21 @@ from PyQt5.QtCore import Qt,QTimer,QMimeData
 from PyQt5.QtGui import QColor,QFont,QDrag,QPainter, QPen
 from PyQt5.QtWidgets import(QWidget,QVBoxLayout,QHBoxLayout,QTabWidget,QLabel,QLineEdit,QComboBox,QCheckBox,QSpinBox,QDoubleSpinBox,QPushButton,QGroupBox,QFormLayout,QTableWidget,QTableWidgetItem,QHeaderView,QStackedWidget,QScrollArea,QApplication,QTextEdit,QFontDialog,QSlider,QAbstractButton,QAbstractSlider,QAbstractSpinBox,QSizePolicy,QToolButton,)
 from common.color_picker import pick_color
+from graphs.core.undo_commands import (
+    RenameCurveCommand,
+    ChangeCurveStyleElementsCommand,
+    ApplyFilterCommand,
+    RemoveFilterCommand,
+    ResetFiltersCommand,
+    EditPointCommand,
+    ReorderFiltersCommand,
+)
 from graphs.helpers.ui import HelperTab
 from graphs.core.curve_data import LineStyle
 from graphs.core.filters_instance_class import FilterCommand
-from graphs.core.undo_commands import(RenameCurveCommand,ChangeCurveStyleCommand,ApplyFilterCommand,RemoveFilterCommand,ResetFiltersCommand,EditPointCommand,ReorderFiltersCommand)
 from graphs.utils.line_styles import PRESETS_LINE
 from graphs.analysis.ui.analysis_tab import AnalysisTab
+import pyqtgraph as pg
 logger=logging.getLogger(__name__)
 def _status(session,message:str,timeout:int=3000)->None:
 	try:
@@ -1059,219 +1068,295 @@ _LINE_STYLE_ENUM = {v: k for k, v in _LINE_STYLE_NAMES.items()}
 
 
 class StyleTab(QWidget):
-	def __init__(self, session, parent=None):
-		super().__init__(parent)
-		self.session = session
-		self.curves = []
-		self._suppress_apply = False
-		self._style_form = None
-		self.setup_ui()
+    _MIXED = object()
+    _MIXED_TEXT = "*"
 
-	def setup_ui(self):
-		layout = QVBoxLayout(self)
-		form = QFormLayout()
-		self._style_form = form
+    def __init__(self, session, parent=None):
+        super().__init__(parent)
+        self.session = session
+        self.curves = []
+        self._suppress_apply = False
+        self._style_form = None
+        self._color_btn_titles = {}
+        self.setup_ui()
+        session.undo_manager.state_changed.connect(self._on_undo_state_changed)
 
-		self.preset_combo = QComboBox()
-		self.preset_combo.addItem("—")
-		self.preset_combo.addItems(PRESETS_LINE.keys())
-		self.preset_combo.currentTextChanged.connect(self.apply_preset)
-		form.addRow("Пресеты:", self.preset_combo)
+    def setup_ui(self):
+        layout = QVBoxLayout(self)
+        form = QFormLayout()
+        self._style_form = form
+        self.preset_combo = QComboBox()
+        self.preset_combo.addItem("—")
+        self.preset_combo.addItems(PRESETS_LINE.keys())
+        self.preset_combo.currentTextChanged.connect(self.apply_preset)
+        form.addRow("Пресеты:", self.preset_combo)
+        self.color_btn = QPushButton("Цвет линии")
+        self.color_btn.clicked.connect(self.choose_color)
+        form.addRow(self.color_btn)
+        self.width_spin = QSpinBox()
+        self.width_spin.setRange(1, 10)
+        self.width_spin.valueChanged.connect(self._on_width_changed)
+        form.addRow("Толщина:", self.width_spin)
+        self.style_combo = QComboBox()
+        self.style_combo.addItems(list(_LINE_STYLE_NAMES.values()))
+        self.style_combo.currentIndexChanged.connect(self._on_line_style_changed)
+        form.addRow("Стиль линии:", self.style_combo)
+        self.symbol_combo = QComboBox()
+        self.symbol_combo.addItems(["None", "o", "s", "t", "t1", "t2", "t3", "d", "+", "x", "p", "h", "star", "|", "_", "arrow_up", "arrow_right", "arrow_down", "arrow_left", "crosshair"])
+        self.symbol_combo.currentIndexChanged.connect(self._on_symbol_changed)
+        form.addRow("Маркер:", self.symbol_combo)
+        self.symbol_size = QSpinBox()
+        self.symbol_size.setRange(1, 20)
+        self.symbol_size.valueChanged.connect(self._on_symbol_size_changed)
+        form.addRow("Размер маркера:", self.symbol_size)
+        self.sync_symbol_color_check = QCheckBox("Цвет маркера как у линии")
+        self.sync_symbol_color_check.setChecked(True)
+        self.sync_symbol_color_check.setToolTip("Если включено, цвет маркера и его заливки совпадает с цветом линии и задаётся одной кнопкой «Цвет линии».")
+        self.sync_symbol_color_check.stateChanged.connect(self._on_sync_toggled)
+        form.addRow(self.sync_symbol_color_check)
+        self.symbol_color_btn = QPushButton("Цвет маркера")
+        self.symbol_color_btn.clicked.connect(self.choose_symbol_color)
+        form.addRow("Цвет маркера:", self.symbol_color_btn)
+        self.fill_color_btn = QPushButton("Цвет заливки")
+        self.fill_color_btn.clicked.connect(self.choose_fill_color)
+        form.addRow("Цвет заливки:", self.fill_color_btn)
+        self.px_mode_check = QCheckBox("Режим пикселей (pxMode)")
+        self.px_mode_check.stateChanged.connect(self._on_px_mode_changed)
+        form.addRow(self.px_mode_check)
+        layout.addLayout(form)
+        layout.addStretch()
+        self._color_btn_titles = {
+            self.color_btn: "Цвет линии",
+            self.symbol_color_btn: "Цвет маркера",
+            self.fill_color_btn: "Цвет заливки",
+        }
+        self._apply_sync_visibility()
 
-		self.color_btn = QPushButton("Цвет линии")
-		self.color_btn.clicked.connect(self.choose_color)
-		form.addRow(self.color_btn)
+    def set_curves(self, curves):
+        self.curves = list(curves)
+        self._refresh()
 
-		self.width_spin = QSpinBox()
-		self.width_spin.setRange(1, 10)
-		self.width_spin.valueChanged.connect(self.apply_style)
-		form.addRow("Толщина:", self.width_spin)
+    def _on_undo_state_changed(self):
+        self._refresh()
 
-		self.style_combo = QComboBox()
-		self.style_combo.addItems(list(_LINE_STYLE_NAMES.values()))
-		self.style_combo.currentIndexChanged.connect(self.apply_style)
-		form.addRow("Стиль линии:", self.style_combo)
+    def _refresh(self):
+        if not self.curves:
+            return
+        self._suppress_apply = True
+        try:
+            self._load_values()
+        finally:
+            self._suppress_apply = False
+        self._apply_sync_visibility()
 
-		self.symbol_combo = QComboBox()
-		self.symbol_combo.addItems([
-			"None", "o", "s", "t", "t1", "t2", "t3", "d", "+", "x",
-			"p", "h", "star", "|", "_", "arrow_up", "arrow_right",
-			"arrow_down", "arrow_left", "crosshair",
-		])
-		self.symbol_combo.currentIndexChanged.connect(self.apply_style)
-		form.addRow("Маркер:", self.symbol_combo)
+    def _load_values(self):
+        self._set_spin_value(self.width_spin, self._common("line_width"))
+        self._set_spin_value(self.symbol_size, self._common("symbol_size"))
+        line_style = self._common("line_style")
+        self._set_combo(self.style_combo, None if line_style is self._MIXED else _LINE_STYLE_NAMES.get(line_style, "Solid"))
+        symbol = self._common("symbol")
+        self._set_combo(self.symbol_combo, None if symbol is self._MIXED else (symbol or "None"))
+        color = self._common("color", self._norm_color)
+        self._set_color_btn(self.color_btn, None if color is self._MIXED else color)
+        symbol_color = self._common("symbol_color", self._norm_color)
+        self._set_color_btn(self.symbol_color_btn, None if symbol_color is self._MIXED else symbol_color)
+        fill_color = self._common("fill_color", self._norm_color)
+        self._set_color_btn(self.fill_color_btn, None if fill_color is self._MIXED else fill_color)
+        self._set_check_state(self.px_mode_check, self._common("px_mode"))
+        synced = [self._curve_synced(c) for c in self.curves]
+        if all(synced):
+            sync = True
+        elif any(synced):
+            sync = self._MIXED
+        else:
+            sync = False
+        self._set_check_state(self.sync_symbol_color_check, sync)
+        self.preset_combo.blockSignals(True)
+        try:
+            self.preset_combo.setCurrentIndex(0)
+        finally:
+            self.preset_combo.blockSignals(False)
 
-		self.symbol_size = QSpinBox()
-		self.symbol_size.setRange(1, 20)
-		self.symbol_size.valueChanged.connect(self.apply_style)
-		form.addRow("Размер маркера:", self.symbol_size)
+    def _common(self, attr, normalize=None):
+        result = self._MIXED
+        for curve in self.curves:
+            style = curve.saved_style if curve.saved_style is not None else LineStyle()
+            value = getattr(style, attr)
+            if normalize is not None:
+                value = normalize(value)
+            if result is self._MIXED:
+                result = value
+            elif value != result:
+                return self._MIXED
+        return result
 
-		self.sync_symbol_color_check = QCheckBox("Цвет маркера как у линии")
-		self.sync_symbol_color_check.setChecked(True)
-		self.sync_symbol_color_check.setToolTip(
-			"Если включено, цвет маркера и его заливки совпадает с цветом линии "
-			"и задаётся одной кнопкой «Цвет линии»."
-		)
-		self.sync_symbol_color_check.stateChanged.connect(self._on_sync_toggled)
-		form.addRow(self.sync_symbol_color_check)
+    def _curve_synced(self, curve) -> bool:
+        style = curve.saved_style if curve.saved_style is not None else LineStyle()
+        color = self._norm_color(style.color)
+        return self._norm_color(style.symbol_color) == color and self._norm_color(style.fill_color) == color
 
-		self.symbol_color_btn = QPushButton("Цвет маркера")
-		self.symbol_color_btn.clicked.connect(self.choose_symbol_color)
-		form.addRow("Цвет маркера:", self.symbol_color_btn)
+    @staticmethod
+    def _norm_color(value) -> str:
+        return pg.mkColor(value).name()
 
-		self.fill_color_btn = QPushButton("Цвет заливки")
-		self.fill_color_btn.clicked.connect(self.choose_fill_color)
-		form.addRow("Цвет заливки:", self.fill_color_btn)
+    def _set_spin_value(self, spin, value):
+        if value is self._MIXED:
+            spin.setMinimum(0)
+            spin.setSpecialValueText(self._MIXED_TEXT)
+            spin.setValue(0)
+        else:
+            spin.setSpecialValueText("")
+            spin.setValue(max(1, int(value)))
+            spin.setMinimum(1)
 
-		self.px_mode_check = QCheckBox("Режим пикселей (pxMode)")
-		self.px_mode_check.stateChanged.connect(self.apply_style)
-		form.addRow(self.px_mode_check)
+    def _set_combo(self, combo, text):
+        combo.blockSignals(True)
+        try:
+            mixed_idx = combo.findText(self._MIXED_TEXT)
+            if text is None:
+                if mixed_idx < 0:
+                    combo.insertItem(0, self._MIXED_TEXT)
+                    mixed_idx = 0
+                combo.setCurrentIndex(mixed_idx)
+            else:
+                if mixed_idx >= 0:
+                    combo.removeItem(mixed_idx)
+                idx = combo.findText(text)
+                if idx >= 0:
+                    combo.setCurrentIndex(idx)
+        finally:
+            combo.blockSignals(False)
 
-		layout.addLayout(form)
-		layout.addStretch()
+    def _set_color_btn(self, btn, color):
+        if color is None:
+            btn.setText(self._MIXED_TEXT)
+            btn.setStyleSheet("")
+        else:
+            btn.setText(self._color_btn_titles[btn])
+            btn.setStyleSheet(f"background-color: {color};")
 
-		self._apply_sync_visibility()
+    def _set_check_state(self, check, value):
+        check.blockSignals(True)
+        try:
+            if value is self._MIXED:
+                check.setTristate(True)
+                check.setCheckState(Qt.PartiallyChecked)
+            else:
+                check.setTristate(False)
+                check.setCheckState(Qt.Checked if value else Qt.Unchecked)
+        finally:
+            check.blockSignals(False)
 
-	# ------------------------------------------------------------------
-	def _apply_sync_visibility(self) -> None:
-		sync = self.sync_symbol_color_check.isChecked()
-		for widget in (self.symbol_color_btn, self.fill_color_btn):
-			widget.setVisible(not sync)
-			label = self._style_form.labelForField(widget)
-			if label is not None:
-				label.setVisible(not sync)
+    def _apply_sync_visibility(self):
+        show = self.sync_symbol_color_check.checkState() != Qt.Checked
+        for widget in (self.symbol_color_btn, self.fill_color_btn):
+            widget.setVisible(show)
+            label = self._style_form.labelForField(widget)
+            if label is not None:
+                label.setVisible(show)
 
-	def _on_sync_toggled(self, state: int) -> None:
-		self._apply_sync_visibility()
-		if self._suppress_apply:
-			return
-		if state != 0:
-			color = self._color_from_btn(self.color_btn)
-			self._set_btn_color(self.symbol_color_btn, color)
-			self._set_btn_color(self.fill_color_btn, color)
-			self.apply_style()
+    def _push_changes(self, changes: dict):
+        if not self.curves or self.session.undo_manager.is_applying:
+            return
+        cmd = ChangeCurveStyleElementsCommand(self.curves, changes)
+        if not cmd.has_changes():
+            return
+        self.session.undo_manager.push(cmd, execute=True)
+        self._refresh()
 
-	# ------------------------------------------------------------------
-	@staticmethod
-	def _color_from_btn(btn, fallback="#ffffff"):
-		css = btn.styleSheet()
-		for token in css.split(";"):
-			token = token.strip()
-			if token.startswith("background-color"):
-				_, _, val = token.partition(":")
-				val = val.strip()
-				if val:
-					return val
-		return fallback
+    def _on_width_changed(self, value):
+        if self._suppress_apply or not self.curves or value < 1:
+            return
+        self._push_changes({"line_width": int(value)})
 
-	def _set_btn_color(self, btn, color: str):
-		btn.setStyleSheet(f"background-color: {color};")
+    def _on_symbol_size_changed(self, value):
+        if self._suppress_apply or not self.curves or value < 1:
+            return
+        self._push_changes({"symbol_size": int(value)})
 
-	def set_curves(self, curves):
-		self.curves = curves
-		if not curves:
-			return
-		self._suppress_apply = True
-		try:
-			curve = curves[0]
-			style = curve.saved_style
-			if style is None:
-				return
-			self.width_spin.setValue(int(style.line_width or 1))
-			self.symbol_size.setValue(int(style.symbol_size or 1))
-			self._set_btn_color(self.color_btn, str(style.color))
-			self._set_btn_color(self.symbol_color_btn, str(style.symbol_color))
-			self._set_btn_color(self.fill_color_btn, str(style.fill_color))
+    def _on_line_style_changed(self, _index):
+        if self._suppress_apply or not self.curves:
+            return
+        text = self.style_combo.currentText()
+        if text == self._MIXED_TEXT:
+            return
+        self._push_changes({"line_style": _LINE_STYLE_ENUM.get(text, Qt.SolidLine)})
 
-			name = _LINE_STYLE_NAMES.get(style.line_style, "Solid")
-			self.style_combo.setCurrentText(name)
+    def _on_symbol_changed(self, _index):
+        if self._suppress_apply or not self.curves:
+            return
+        text = self.symbol_combo.currentText()
+        if text == self._MIXED_TEXT:
+            return
+        self._push_changes({"symbol": None if text == "None" else text})
 
-			sym = style.symbol if style.symbol else "None"
-			idx = self.symbol_combo.findText(sym)
-			if idx >= 0:
-				self.symbol_combo.setCurrentIndex(idx)
+    def _on_px_mode_changed(self, state):
+        if self._suppress_apply or not self.curves or state == Qt.PartiallyChecked:
+            return
+        self._push_changes({"px_mode": state == Qt.Checked})
 
-			self.px_mode_check.setChecked(bool(style.px_mode))
+    def _on_sync_toggled(self, state):
+        self._apply_sync_visibility()
+        if self._suppress_apply or not self.curves or state == Qt.PartiallyChecked:
+            return
+        if state == Qt.Checked:
+            self._push_changes({
+                "symbol_color": lambda style: style.color,
+                "fill_color": lambda style: style.color,
+            })
 
-			sync = (
-				str(style.symbol_color) == str(style.color)
-				and str(style.fill_color) == str(style.color)
-			)
-			self.sync_symbol_color_check.setChecked(bool(sync))
-		finally:
-			self._suppress_apply = False
+    def choose_color(self):
+        current = self._color_from_btn(self.color_btn)
 
-		self._apply_sync_visibility()
+        def on_selected(c: QColor) -> None:
+            name = c.name()
+            changes = {"color": name}
+            if self.sync_symbol_color_check.checkState() == Qt.Checked:
+                changes["symbol_color"] = name
+                changes["fill_color"] = name
+            self._push_changes(changes)
 
-	def _current_style(self) -> LineStyle:
-		style = LineStyle()
-		style.color = self._color_from_btn(self.color_btn)
-		style.line_width = int(self.width_spin.value())
-		style.line_style = _LINE_STYLE_ENUM.get(self.style_combo.currentText(), Qt.SolidLine)
-		sym = self.symbol_combo.currentText()
-		style.symbol = None if sym == "None" else sym
-		style.symbol_size = int(self.symbol_size.value())
-		if self.sync_symbol_color_check.isChecked():
-			style.symbol_color = style.color
-			style.fill_color = style.color
-		else:
-			style.symbol_color = self._color_from_btn(self.symbol_color_btn)
-			style.fill_color = self._color_from_btn(self.fill_color_btn)
-		style.px_mode = bool(self.px_mode_check.isChecked())
-		return style
+        pick_color(self.color_btn, current, on_selected, self)
 
-	def apply_style(self, *_):
-		if self._suppress_apply or not self.curves:
-			return
-		new_style = self._current_style()
-		for curve in self.curves:
-			cmd = ChangeCurveStyleCommand(curve, new_style.copy())
-			self.session.undo_manager.push(cmd, execute=True)
-		_status(self.session, "Стиль кривой изменён", 2000)
+    def choose_symbol_color(self):
+        current = self._color_from_btn(self.symbol_color_btn)
 
-	def apply_preset(self, name):
-		if self._suppress or name == "—":
-			return
-		for preset in getattr(self.graph_view, "preset_styles", []):
-			if preset.get("name") == name:
-				gv_main = self.graph_view
-				def mutate():
-					for gv in self._all_graph_views():
-						try:
-							gv.apply_preset_style(preset)
-							gv.applied_preset_name = name
-						except Exception:
-							logger.exception("apply_preset: %r", gv)
-				gv_main.apply_appearance_change(mutate)
-				self.graph_view.applied_preset_name = name
-				self.update_settings()
-				_status(self.session, f"Пресет применён: {name}", 2500)
-				return
+        def on_selected(c: QColor) -> None:
+            self._push_changes({"symbol_color": c.name()})
 
-	def choose_color(self):
-		current = self._color_from_btn(self.color_btn)
-		def on_selected(c: QColor) -> None:
-			name = c.name()
-			self._set_btn_color(self.color_btn, name)
-			if self.sync_symbol_color_check.isChecked():
-				self._set_btn_color(self.symbol_color_btn, name)
-				self._set_btn_color(self.fill_color_btn, name)
-			self.apply_style()
-		pick_color(self.color_btn, current, on_selected, self)
+        pick_color(self.symbol_color_btn, current, on_selected, self)
 
-	def choose_symbol_color(self):
-		current = self._color_from_btn(self.symbol_color_btn)
-		def on_selected(c: QColor) -> None:
-			self._set_btn_color(self.symbol_color_btn, c.name())
-			self.apply_style()
-		pick_color(self.symbol_color_btn, current, on_selected, self)
+    def choose_fill_color(self):
+        current = self._color_from_btn(self.fill_color_btn)
 
-	def choose_fill_color(self):
-		current = self._color_from_btn(self.fill_color_btn)
-		def on_selected(c: QColor) -> None:
-			self._set_btn_color(self.fill_color_btn, c.name())
-			self.apply_style()
-		pick_color(self.fill_color_btn, current, on_selected, self)
+        def on_selected(c: QColor) -> None:
+            self._push_changes({"fill_color": c.name()})
+
+        pick_color(self.fill_color_btn, current, on_selected, self)
+
+    def apply_preset(self, name):
+        if self._suppress_apply or not self.curves or name == "—":
+            return
+        preset = PRESETS_LINE.get(name)
+        if preset is not None:
+            self._push_changes(dict(preset))
+        self.preset_combo.blockSignals(True)
+        try:
+            self.preset_combo.setCurrentIndex(0)
+        finally:
+            self.preset_combo.blockSignals(False)
+
+    @staticmethod
+    def _color_from_btn(btn, fallback="#ffffff"):
+        css = btn.styleSheet()
+        for token in css.split(";"):
+            token = token.strip()
+            if token.startswith("background-color"):
+                _, _, val = token.partition(":")
+                val = val.strip()
+                if val:
+                    return val
+        return fallback
 # =====================================================================
 # Вкладка "Фильтры"
 # =====================================================================
