@@ -1199,6 +1199,7 @@ class AddCurveInlinePanel(QWidget):
         self.filter_edit.textChanged.connect(self._apply_filter)
         row2.addWidget(self.filter_edit, 1)
         layout.addLayout(row2)
+
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         self.scroll.setMaximumHeight(200)
@@ -1207,15 +1208,84 @@ class AddCurveInlinePanel(QWidget):
         self.list_layout.setContentsMargins(0, 0, 0, 0)
         self.scroll.setWidget(self.list_widget)
         layout.addWidget(self.scroll)
+
+        # Кнопки массового выбора ---
+        select_row = QHBoxLayout()
+        self.select_all_btn = QPushButton("Выбрать все")
+        self.select_all_btn.clicked.connect(self._select_all)
+        self.deselect_all_btn = QPushButton("Снять выделение")
+        self.deselect_all_btn.clicked.connect(self._deselect_all)
+        select_row.addWidget(self.select_all_btn)
+        select_row.addWidget(self.deselect_all_btn)
+        select_row.addStretch()
+        layout.addLayout(select_row)
+
+        # Кнопки действий ---
         btn_row = QHBoxLayout()
         self.add_btn = QPushButton("Добавить выбранные")
         self.add_btn.clicked.connect(self._on_add)
+        
+        # Главная кнопка по вашему запросу
+        self.add_all_btn = QPushButton("Добавить весь график")
+        self.add_all_btn.setToolTip("Добавить все кривые из выбранной сессии без необходимости отмечать их галочками")
+        self.add_all_btn.clicked.connect(self._on_add_all)
+        
         self.cancel_btn = QPushButton("Отмена")
         self.cancel_btn.clicked.connect(self.hide)
+        
         btn_row.addWidget(self.add_btn)
+        btn_row.addWidget(self.add_all_btn)
         btn_row.addWidget(self.cancel_btn)
         layout.addLayout(btn_row)
+
         self.hide()
+
+    def _select_all(self):
+        """Отмечает все видимые (отфильтрованные) кривые."""
+        for i in range(self.list_layout.count()):
+            item = self.list_layout.itemAt(i)
+            w = item.widget()
+            if isinstance(w, QCheckBox) and w.isVisible():
+                w.setChecked(True)
+
+    def _deselect_all(self):
+        """Снимает галочки со всех кривых."""
+        for i in range(self.list_layout.count()):
+            item = self.list_layout.itemAt(i)
+            w = item.widget()
+            if isinstance(w, QCheckBox):
+                w.setChecked(False)
+
+    def _on_add_all(self):
+        """Собирает все кривые из текущей сессии и отправляет их в панель."""
+        from ..model.session_ref import DataRef, DataSnapshot, StyleSnapshot
+        
+        sid = self.session_combo.currentData()
+        if not sid:
+            return
+        sess = self.session_controller.graph_sessions.get(sid)
+        if not sess:
+            return
+        gm = getattr(sess, "graph_main", None)
+        if not gm:
+            return
+        
+        selected = []
+        # Берем все кривые, которые существуют в сессии
+        curves = gm.get_curves()
+        for root_name, curve in curves.items():
+            ref = DataRef(session_id=sid, series_root_name=root_name)
+            ref.data = DataSnapshot.take(curve)
+            ref.style = StyleSnapshot.take(curve, None)
+            ref.refresh_policy = "snapshot"
+            selected.append(ref)
+            
+        if selected:
+            self.curves_added.emit(self.panel_id, selected)
+            self.hide()
+        else:
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.information(self, "Добавить весь график", "В выбранной сессии нет кривых.")
 
     def _disconnect_session(self):
         if self._connected_session is not None:
