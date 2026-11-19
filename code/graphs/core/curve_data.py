@@ -42,133 +42,90 @@ __all__ = ["linearData", "oscData", "hystLoop", "LineStyle", "legendName"]
 # Facade: linearData
 # ====================================================================
 class linearData:
-    """Backwards-compatible curve object composed of store + presenter."""
-
-    def __init__(self, data: relationData, alias_manager,
-                 selection_model: Optional[SelectionModel] = None) -> None:
+    def __init__(self, data: relationData, alias_manager, selection_model: Optional[SelectionModel] = None) -> None:
         self.alias_manager = alias_manager
         self.store = CurveDataStore(data)
         self.presenter = CurvePresenter(self.store, selection_model=selection_model)
-
-        # alias initial
         x_alias = alias_manager.get_alias(data.x_root_name)
         y_alias = alias_manager.get_alias(data.y_root_name)
         self.store.update_aliases(x_alias, y_alias)
-
         alias_manager.aliases_updated.connect(self._alias_changed)
-
-        # tree_item belongs to the facade (needs the facade as curve_data_obj)
         self.presenter.tree_item = CurveTreeItem(curve_data_obj=self)
         self.presenter.tree_item.set_name(self.store.curve_name)
-
-        # now that tree_item exists, hook stats recalculation
         self.store.on_data_changed(self._on_store_changed)
         self.recalc_stats_param()
-
         self._stats_dirty: bool = False
         self._detached: bool = False
 
-    # ------------------------------------------------------------------
-    # Data delegation
-    # ------------------------------------------------------------------
     @property
     def rel_data(self): return self.store.rel_data
-
     @property
     def raw_data_x(self): return self.store.raw_data_x
-
     @property
     def raw_data_y(self): return self.store.raw_data_y
-
     @property
     def filtered_x_data(self): return self.store.filtered_x_data
-
     @filtered_x_data.setter
     def filtered_x_data(self, value): self.store.filtered_x_data = value
-
     @property
     def filtered_y_data(self): return self.store.filtered_y_data
-
     @filtered_y_data.setter
     def filtered_y_data(self, value): self.store.filtered_y_data = value
-
     @property
     def filters_history(self): return self.store.filters_history
-
     @property
     def curve_name(self): return self.store.curve_name
-
     @property
     def legend(self): return self.store.legend
-
     @property
     def is_name_curve_customized(self): return self.store.is_name_curve_customized
-
     @property
     def device(self): return self.store.device
     @device.setter
     def device(self, v): self.store.device = v
-
     @property
     def ch(self): return self.store.ch
     @ch.setter
     def ch(self, v): self.store.ch = v
-
     @property
     def channel(self): return self.store.ch
     @channel.setter
     def channel(self, v): self.store.ch = v
-
     @property
     def number(self): return self.store.number
     @number.setter
     def number(self, v): self.store.number = v
-
-    # ------------------------------------------------------------------
-    # Presentation delegation
-    # ------------------------------------------------------------------
     @property
     def plot_items(self): return self.presenter.plot_items
-
     @property
     def tree_item(self): return self.presenter.tree_item
     @tree_item.setter
     def tree_item(self, v): self.presenter.tree_item = v
-
     @property
     def is_draw(self): return self.presenter.is_draw
     @is_draw.setter
     def is_draw(self, v): self.presenter.is_draw = v
-
     @property
     def is_curve_selected(self): return self.presenter.is_curve_selected
     @is_curve_selected.setter
     def is_curve_selected(self, v): self.presenter.is_curve_selected = v
-
     @property
     def number_axis(self): return self.presenter.number_axis
     @number_axis.setter
     def number_axis(self, v): self.presenter.number_axis = v
-
     @property
     def i_am_click_now(self): return self.presenter.i_am_click_now
     @i_am_click_now.setter
     def i_am_click_now(self, v): self.presenter.i_am_click_now = v
-
     @property
     def saved_style(self): return self.presenter.saved_style
     @saved_style.setter
     def saved_style(self, v): self.presenter.saved_style = v
-
     @property
     def clicked_style(self): return self.presenter.clicked_style
-
     @property
     def higlighted_flag(self): return self.presenter.higlighted_flag
 
-    # ------------------------------------------------------------------
-    # Actions: presentation
-    # ------------------------------------------------------------------
     def add_to_graph(self, graph_field, legend_field, number_axis):
         self.presenter.add_to_graph(graph_field, legend_field, number_axis)
 
@@ -213,9 +170,6 @@ class linearData:
     def attach_selection_model(self, model):
         self.presenter.attach_selection_model(model)
 
-    # ------------------------------------------------------------------
-    # Actions: data
-    # ------------------------------------------------------------------
     def change_name(self, name: str):
         self.store.change_name(name)
         self._notify_analysis_name_changed()
@@ -234,9 +188,7 @@ class linearData:
         try:
             ctrl.on_source_name_changed(self.store.rel_data.root_name)
         except (AttributeError, RuntimeError, KeyError) as exc:
-            logger.warning(
-                "linearData: analysis name change notification failed: %s", exc
-            )
+            logger.warning("linearData: analysis name change notification failed: %s", exc)
 
     def setData(self, data: relationData):
         self.store.set_data(data)
@@ -253,15 +205,12 @@ class linearData:
         self._rebuild_history_block()
 
     def set_filter_enabled(self, fc: FilterCommand, enabled: bool) -> None:
-        """Включить/выключить фильтр без удаления (флаг enabled в FilterCommand)."""
         self.store.set_filter_enabled(fc, enabled)
 
     def update_filter_params(self, fc: FilterCommand, new_params: dict) -> None:
-        """Обновить параметры фильтра «на лету» и пересобрать данные."""
         self.store.update_filter_params(fc, new_params)
 
     def move_filter(self, fc: FilterCommand, new_index: int) -> None:
-        """Переместить фильтр в истории (изменяет порядок применения)."""
         self.store.move_filter(fc, new_index)
         self._rebuild_history_block()
 
@@ -277,16 +226,11 @@ class linearData:
         self.store.stop_session()
         self.recalc_stats_param()
 
-    # ------------------------------------------------------------------
-    # Stats
-    # ------------------------------------------------------------------
     def recalc_stats_param(self):
         if len(self.store.filtered_y_data) == 0:
             return
         y_series = pd.Series(self.store.filtered_y_data)
-        stats = StatisticsCalculator._compute_column_statistics(
-            y_series, list(STATISTICS_DESCRIPTIONS.keys())
-        )
+        stats = StatisticsCalculator._compute_column_statistics(y_series, list(STATISTICS_DESCRIPTIONS.keys()))
         params = {
             "min_x": np.nanmin(self.store.filtered_x_data) if len(self.store.filtered_x_data) else None,
             "max_x": np.nanmax(self.store.filtered_x_data) if len(self.store.filtered_x_data) else None,
@@ -296,13 +240,9 @@ class linearData:
         params.update(stats)
         params["min_y"] = stats["min"]
         params["max_y"] = stats["max"]
-
         if self.tree_item is not None:
             self.tree_item.update_parameters(params)
 
-    # ------------------------------------------------------------------
-    # Internal
-    # ------------------------------------------------------------------
     def _on_store_changed(self) -> None:
         if self._detached:
             return
@@ -318,8 +258,6 @@ class linearData:
             self._stats_dirty = False
 
     def ensure_stats_fresh(self) -> None:
-        """Форсировать пересчёт статистики (и отложенных фильтров), если устарело."""
-        # Сначала досчитать filtered, если пересборка была отложена
         if self.store._rebuild_scheduled:
             self.store._do_rebuild_filtered()
         if self._detached or not self._stats_dirty:
@@ -343,18 +281,17 @@ class linearData:
             logger.debug("linearData.detach: alias disconnect: %s", exc)
         self.presenter.detach()
 
-
-
-    #-----------------------------------------------
-
-    # ------------------------------------------------------------------
-    # Visible window delegation
-    # ------------------------------------------------------------------
     def set_num_points(self, value: int) -> None:
         self.presenter.set_num_points(value)
 
     def show_all_points(self, state: bool) -> None:
         self.presenter.show_all_points(state)
+
+    def set_connect_lines(self, state: bool) -> None:
+        self.presenter.set_connect_lines(state)
+
+    def set_show_markers(self, state: bool) -> None:
+        self.presenter.set_show_markers(state)
 
     def _alias_changed(self, original_name, old_alias, alias):
         new_x = self.store.rel_data.x_current_name
@@ -383,8 +320,7 @@ class linearData:
                 data={f.filter_type: str(f.params)},
                 filter_command=f,
             )
-
-
+            
 # ====================================================================
 # Facade: oscData (used by graphOsc — a different, simpler pattern)
 # ====================================================================

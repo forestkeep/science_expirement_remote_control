@@ -392,9 +392,6 @@ class GraphSession(QWidget):
 
         self.helper_manager = HelperManager(self, parent=self)
 
-
-        # При смене внешнего вида основного графика — обновить все дочерние
-        # (attached-панели и domain-вкладки анализа).
         self.graph_main.graphView.style_changed.connect(self._on_main_style_changed)
 
         if not simple:
@@ -497,6 +494,25 @@ class GraphSession(QWidget):
                 "_on_main_style_changed: %d sub-graph(s) failed: %s",
                 len(failed), ", ".join(failed),
             )
+
+    def update_cursor_position(self,x:float,y:float)->None:
+        try:
+            ctrl=getattr(self,"session_controller",None)
+            sb=getattr(ctrl,"status_bar",None) if ctrl is not None else None
+            if sb is not None:
+                sb.set_cursor_position(float(x),float(y))
+        except Exception:
+            logger.debug("update_cursor_position failed",exc_info=True)
+
+    def clear_cursor_position(self)->None:
+        try:
+            ctrl=getattr(self,"session_controller",None)
+            sb=getattr(ctrl,"status_bar",None) if ctrl is not None else None
+            if sb is not None:
+                sb.clear_cursor_position()
+        except Exception:
+            logger.debug("clear_cursor_position failed",exc_info=True)
+
 
     def show_tooltip(self, message, show_while_not_click=False, timeout=3000):
         if self.notification is None:
@@ -1039,41 +1055,21 @@ class sessionController():
 
         return session_id if is_session_created else False
 
-    def __create_session(self, session_name: str, session_id: str, use_timestamps: bool = False,
-                         is_experiment_running: bool = False, new_data=None, uuid=None) -> bool:
-        new_session_graph = GraphSession(session_id, copy.copy(session_name),
-                                         alias_manager=self.alias_manager,
-                                         ses_uuid=uuid, session_controller=self)
+    def __create_session(self,session_name:str,session_id:str,use_timestamps:bool=False,is_experiment_running:bool=False,new_data=None,uuid=None)->bool:
+        new_session_graph=GraphSession(session_id,copy.copy(session_name),alias_manager=self.alias_manager,ses_uuid=uuid,session_controller=self)
         try:
-            new_session_graph.data_manager.start_new_session(session_id, use_timestamps,
-                                                             is_experiment_running, new_data)
+            new_session_graph.data_manager.start_new_session(session_id,use_timestamps,is_experiment_running,new_data)
             logger.info(f"Session {session_id} {new_session_graph.uuid=} {new_session_graph.session_name=} created")
         except Exception as e:
             logger.warning(f"Failed to start session {session_id} {e}")
             return False
-
-        if is_experiment_running:
-            new_session_graph.inspector.setVisible(False)
-        else:
-            new_session_graph.inspector.setVisible(True)
-
-        # «Отображение точек» показываем только в LIVE-режиме.
-        # В simple_mode (окно сравнения) select_controller отсутствует —
-        # защищаемся через hasattr, хотя __create_session для него и не
-        # вызывается.
-        if hasattr(new_session_graph, "select_controller"):
-            new_session_graph.select_controller.set_live_mode(
-                bool(is_experiment_running)
-            )
-
-        self.graph_sessions[session_id] = new_session_graph
+        new_session_graph.inspector.setVisible(True)
+        if hasattr(new_session_graph,"select_controller"):
+            new_session_graph.select_controller.set_live_mode(bool(is_experiment_running))
+        self.graph_sessions[session_id]=new_session_graph
         self.graphics_win.stack.addWidget(new_session_graph)
-
-        # подключаем сигнал изменения истории — обновит состояние undo/redo-кнопок
         new_session_graph.undo_manager.state_changed.connect(self._update_undo_actions)
-
         self._refresh_empty_state()
-
         return True
 
     def change_session(self, session_id: str):

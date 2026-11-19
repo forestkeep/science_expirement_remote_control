@@ -106,44 +106,31 @@ class LineStyle:
 
 
 class CurvePresenter:
-    """Visual layer: plot items, styles, selection feedback, visible window."""
-
-    def __init__(self, store: CurveDataStore,
-                 selection_model: Optional[SelectionModel] = None) -> None:
+    def __init__(self, store: CurveDataStore, selection_model: Optional[SelectionModel] = None) -> None:
         self.store = store
         self._selection_model: Optional[SelectionModel] = selection_model
-
-        self.plot_items: dict = {}   # viewbox -> {'item', 'legend', 'axis'}
+        self.plot_items: dict = {}
         self.saved_style: Optional[LineStyle] = None
         self.clicked_style = make_selection_style()
-
         self.is_draw = False
         self.number_axis: Optional[int] = None
-        self.tree_item = None                 # set by linearData facade
-
+        self.tree_item = None
         self._last_rendered_version: int = -1
-
         self.i_am_click_now = False
         self.higlighted_flag = False
         self.preselection_style: Optional[LineStyle] = None
-
-        # --- видимое окно точек ---
         self.num_showing_points = 10
         self.is_all_points_showing = True
-
-        # store → refresh plot data
+        self.is_connect_lines = True
+        self.is_show_markers = False
         self.store.on_data_changed(self._on_data_changed)
         self.store.on_meta_changed(self._on_meta_changed)
-
         if self._selection_model is not None:
             self._selection_model.selection_changed.connect(self._on_model_selection_changed)
-
         self._last_legend_name = self.store.legend.current_name
-
         self._refresh_scheduled: bool = False
         self._detached: bool = False
 
-    # -- visible window -------------------------------------------------
     def set_num_points(self, value: int) -> None:
         value = max(1, int(value))
         if value == self.num_showing_points:
@@ -160,13 +147,38 @@ class CurvePresenter:
         self._last_rendered_version = -1
         self._do_refresh()
 
-    def _selection_style(self) -> LineStyle:
-        """Стиль выделения, наследующий dash и символы у saved_style.
+    def set_connect_lines(self, state: bool) -> None:
+        state = bool(state)
+        if state == self.is_connect_lines:
+            return
+        self.is_connect_lines = state
+        self._update_plot_styles()
 
-        Меняются только цвет пера, толщина и цвет символов. Символ, его размер
-        и тип линии остаются исходными, поэтому стоимость кадра при
-        панорамировании не растёт по сравнению с невыделенной кривой.
-        """
+    def set_show_markers(self, state: bool) -> None:
+        state = bool(state)
+        if state == self.is_show_markers:
+            return
+        self.is_show_markers = state
+        self._update_plot_styles()
+
+    def _update_plot_styles(self) -> None:
+        style = self.saved_style or LineStyle()
+        for info in self.plot_items.values():
+            item = info['item']
+            pen = style.to_pen()
+            if not self.is_connect_lines:
+                pen.setStyle(QtCore.Qt.NoPen)
+            item.setPen(pen)
+            
+            if self.is_show_markers:
+                item.setSymbol(style.symbol)
+                item.setSymbolSize(style.symbol_size)
+                item.setSymbolPen(style.to_symbol_pen())
+                item.setSymbolBrush(style.to_brush())
+            else:
+                item.setSymbol(None)
+
+    def _selection_style(self) -> LineStyle:
         base = self.saved_style or LineStyle()
         return LineStyle(
             color=_SELECTION_COLOR,
@@ -200,7 +212,6 @@ class CurvePresenter:
         for info in self.plot_items.values():
             self._apply_legend_name(info, current_name)
 
-
     def _apply_style_to_all(self, style: LineStyle, update_tree: bool = True) -> None:
         for info in self.plot_items.values():
             style.apply_to_curve(info['item'])
@@ -219,16 +230,12 @@ class CurvePresenter:
             return
         self._apply_style_to_all(self._selection_style(), update_tree=True)
 
-
     def attach_selection_model(self, model: Optional[SelectionModel]) -> None:
-        """Подключить модель выделения и сбросить кэш состояния выделения."""
         if self._selection_model is model:
             return
         if self._selection_model is not None:
             try:
-                self._selection_model.selection_changed.disconnect(
-                    self._on_model_selection_changed
-                )
+                self._selection_model.selection_changed.disconnect(self._on_model_selection_changed)
             except (TypeError, RuntimeError):
                 pass
         self._selection_model = model
@@ -244,12 +251,10 @@ class CurvePresenter:
         self.store.off_meta_changed(self._on_meta_changed)
         if self._selection_model is not None:
             try:
-                self._selection_model.selection_changed.disconnect(
-                    self._on_model_selection_changed
-                )
+                self._selection_model.selection_changed.disconnect(self._on_model_selection_changed)
             except (TypeError, RuntimeError):
                 pass
-            self._selection_model = None
+        self._selection_model = None
 
     @property
     def is_curve_selected(self) -> bool:
@@ -269,18 +274,18 @@ class CurvePresenter:
     def _on_model_selection_changed(self, selected_list) -> None:
         self._refresh_selection_style()
 
-
-
-    # -- plots ----------------------------------------------------------
     def create_plot_item(self):
-        """Создать пустой PlotDataItem; данные устанавливаются в refresh()."""
         style = self.saved_style or LineStyle()
+        pen = style.to_pen()
+        if not self.is_connect_lines:
+            pen.setStyle(QtCore.Qt.NoPen)
+        symbol = style.symbol if self.is_show_markers else None
         item = pg.PlotDataItem(
-            pen=style.to_pen(),
+            pen=pen,
             name=self.store.legend.current_name,
-            symbol=style.symbol,
-            symbolPen=style.to_symbol_pen(),
-            symbolBrush=style.to_brush(),
+            symbol=symbol,
+            symbolPen=style.to_symbol_pen() if symbol else None,
+            symbolBrush=style.to_brush() if symbol else None,
         )
         item.setClipToView(True)
         item.setDownsampling(auto=True, method='peak')
@@ -290,19 +295,12 @@ class CurvePresenter:
         return item
 
     def add_to_graph(self, graph_field, legend_field, number_axis) -> None:
-        """Добавить кривую на график, форсируя первичную отрисовку данных
-        и восстановление полос погрешностей (если они есть в store).
-        """
         new_item = self.create_plot_item()
         graph_field.addItem(new_item)
         if legend_field.getLabel(new_item) is None:
             legend_field.addItem(new_item, self.store.legend.current_name)
-
-        self.plot_items[graph_field] = {
-            'item': new_item, 'legend': legend_field, 'axis': number_axis, 'error_bars': []
-        }
+        self.plot_items[graph_field] = {'item': new_item, 'legend': legend_field, 'axis': number_axis, 'error_bars': []}
         self.number_axis = number_axis
-
         self._apply_style_to_all(
             self._selection_style() if self.is_curve_selected else (self.saved_style or LineStyle()),
             update_tree=False,
@@ -310,9 +308,6 @@ class CurvePresenter:
         self.is_draw = True
         self._last_rendered_version = -1
         self._do_refresh()
-
-        # ВАЖНО: восстановить error bars ПОСЛЕ появления plot_items.
-        # Сценарии: загрузка проекта, show_curve (после hide), undo/redo удаления.
         try:
             records = self.store.active_uncertainty_records()
             if records:
@@ -334,11 +329,6 @@ class CurvePresenter:
             self.remove_from_graph(viewbox)
 
     def replace_legend(self, old_legend, new_legend) -> None:
-        """Заменить ссылку на легенду во всех plot_items.
-
-        Вызывается после пересоздания LegendItem в PatchedPlotWidget —
-        иначе presenter будет писать в удалённый QGraphicsItem.
-        """
         if old_legend is None or new_legend is None or old_legend is new_legend:
             return
         for info in self.plot_items.values():
@@ -346,7 +336,6 @@ class CurvePresenter:
                 info["legend"] = new_legend
 
     def delete_curve_from_graph(self) -> None:
-        """Убрать кривую и её error bars с графика без detach()."""
         logger.info(f"delete_curve_from_graph {self.store.curve_name}")
         if not self.is_draw:
             return
@@ -356,37 +345,28 @@ class CurvePresenter:
                 try:
                     graph_field.removeItem(eb)
                 except (AttributeError, RuntimeError) as exc:
-                    logger.debug(
-                        "delete_curve_from_graph: removeItem(eb): %s", exc
-                    )
+                    logger.debug("delete_curve_from_graph: removeItem(eb): %s", exc)
             try:
                 graph_field.removeItem(info['item'])
             except (AttributeError, RuntimeError) as exc:
-                logger.debug(
-                    "delete_curve_from_graph: removeItem(item): %s", exc
-                )
+                logger.debug("delete_curve_from_graph: removeItem(item): %s", exc)
             legend = info.get('legend')
             if legend is not None:
                 try:
                     legend.removeItem(info['item'])
                 except (AttributeError, RuntimeError) as exc:
-                    logger.debug(
-                        "delete_curve_from_graph: legend.removeItem(item): %s",
-                        exc,
-                    )
-                    try:
-                        legend.removeItem(self.store.legend.current_name)
-                    except (AttributeError, RuntimeError) as exc2:
-                        logger.debug(
-                            "delete_curve_from_graph: legend fallback: %s", exc2
-                        )
-                force_legend_layout(legend)
+                    logger.debug("delete_curve_from_graph: legend.removeItem(item): %s", exc)
+                try:
+                    legend.removeItem(self.store.legend.current_name)
+                except (AttributeError, RuntimeError) as exc2:
+                    logger.debug("delete_curve_from_graph: legend fallback: %s", exc2)
+            force_legend_layout(legend)
         self.plot_items.clear()
 
     def refresh(self) -> None:
         version = self.store.data_version
         if version == self._last_rendered_version:
-            return                       # данные не менялись — setData не нужен
+            return
         x = self.store.filtered_x_data
         y = self.store.filtered_y_data
         if not self.is_all_points_showing and len(x) > self.num_showing_points:
@@ -397,11 +377,6 @@ class CurvePresenter:
         self._last_rendered_version = version
 
     def _apply_legend_name(self, info: dict, name: str) -> None:
-        """Привести подпись элемента в легенде к *name*.
-
-        Использует LegendItem.getLabel(item) корректно работает в любом
-        порядке вызовов (change_name / reset_name / set_legend_name).
-        """
         legend = info.get('legend')
         item = info.get('item')
         if legend is None or item is None:
@@ -419,9 +394,6 @@ class CurvePresenter:
         except Exception:
             logger.exception("CurvePresenter: legend rename failed")
 
-    # -- style ----------------------------------------------------------
-
-
     def apply_style_to_all(self, style: LineStyle) -> None:
         self._apply_style_to_all(style)
 
@@ -430,7 +402,6 @@ class CurvePresenter:
         if not self.is_curve_selected:
             self._apply_style_to_all(new_style)
 
-    # -- mouse / highlight ----------------------------------------------
     def on_plot_clicked(self, obj=None) -> None:
         self.i_am_click_now = True
         if self._selection_model is None:
@@ -441,13 +412,10 @@ class CurvePresenter:
             self._selection_model.add(self)
 
     def higlight_curve(self) -> None:
-        """Подсветить кривую без пересборки пути (только перо/символы)."""
         if self.higlighted_flag:
             return
         self.higlighted_flag = True
-        self.preselection_style = (
-            self._selection_style() if self.is_curve_selected else self.saved_style
-        )
+        self.preselection_style = (self._selection_style() if self.is_curve_selected else self.saved_style)
         pen = pg.mkPen(color=(150, 150, 150, 90), width=5)
         brush = pg.mkBrush(150, 150, 150, 90)
         for info in self.plot_items.values():
@@ -457,14 +425,6 @@ class CurvePresenter:
             item.setSymbolBrush(brush)
 
     def unhiglight_curve(self) -> None:
-        """Снять подсветку, пересчитав актуальный стиль по текущему состоянию.
-
-        Стиль вычисляется заново по is_curve_selected / saved_style, а не
-        восстанавливается из preselection_style. Это исключает сценарий,
-        когда во время hover выделение изменилось (или preselection_style
-        был выставлен из clicked_style) и после hover на кривую попадает
-        dash-перо — а с ним и медленное панорамирование.
-        """
         if not self.higlighted_flag:
             return
         self.higlighted_flag = False
@@ -474,35 +434,14 @@ class CurvePresenter:
         elif self.saved_style is not None:
             self._apply_style_to_all(self.saved_style, update_tree=False)
 
-    # -- legend ---------------------------------------------------------
     def set_legend_name(self, name: str) -> None:
-        """Публичный API: задать пользовательское имя и обновить легенду.
-
-        """
         self.store.legend.set_custom(name)
         self._last_legend_name = name
         for info in self.plot_items.values():
             self._apply_legend_name(info, name)
 
-    # -- error bars -----------------------------------------------------
     def set_error_bars(self, records: list) -> None:
-        """Отрисовка полос погрешностей согласно стилю каждой записи.
-
-        Режимы (rec.style["mode"]):
-          - 'bars'   — вертикальные столбики + горизонтальные риски;
-          - 'caps'   — только горизонтальные риски;
-          - 'shaded' — полупрозрачная заливка между y±yerr;
-          - 'line'   — огибающие линии y+yerr и y−yerr.
-
-        Стиль (rec.style):
-          - color: "auto" (цвет кривой) | "#rrggbb";
-          - width: 1..10 px;
-          - alpha: 0..255;
-          - cap_size: 0..40 px.
-        """
         import numpy as np
-
-        # Убрать старые полосы
         for viewbox, info in list(self.plot_items.items()):
             for eb in info.get("error_bars", []) or []:
                 try:
@@ -510,37 +449,31 @@ class CurvePresenter:
                 except Exception:
                     pass
             info["error_bars"] = []
-
         if not records:
             return
-
         x = np.asarray(self.store.filtered_x_data, dtype=float)
         y = np.asarray(self.store.filtered_y_data, dtype=float)
         if x.size == 0 or y.size == 0:
             return
-
         for viewbox, info in self.plot_items.items():
             bars = []
             for rec in records:
                 try:
                     for item in self._build_error_items(viewbox, rec, x, y):
                         viewbox.addItem(item)
-                        bars.append(item)
+                    bars.append(item)
                 except Exception:
                     logger.exception("set_error_bars failed")
             info["error_bars"] = bars
 
     def _build_error_items(self, viewbox, rec, x, y) -> list:
-        """Собрать графические элементы для одной записи погрешности."""
         import numpy as np
         from graphs.analysis.uncertainty import normalize_uncertainty_style
-
         style = normalize_uncertainty_style(getattr(rec, "style", None) or {})
         mode = style["mode"]
         width = int(style["width"])
         alpha = int(style["alpha"])
         cap_size = int(style["cap_size"])
-
         color = style.get("color", "auto")
         if not color or color == "auto":
             color = self.saved_style.color if self.saved_style is not None else "#cccccc"
@@ -549,26 +482,19 @@ class CurvePresenter:
             color_obj.setAlpha(alpha)
         except Exception:
             color_obj = pg.mkColor(200, 200, 200, alpha)
-
-        # ОТДЕЛЬНО: pen и brush из QColor (ScatterPlotItem принимает brush,
-        # а не QPen; иначе pyqtgraph падает в _mkBrush).
         pen = pg.mkPen(color=color_obj, width=width)
         brush = pg.mkBrush(color_obj)
-
         yerr_raw = getattr(rec, "y_err", None)
         if yerr_raw is None:
             return []
         yerr = np.asarray(yerr_raw, dtype=float)
         if yerr.size != y.size:
             return []
-
         items = []
-
         if mode == "line":
             items.append(pg.PlotDataItem(x, y + yerr, pen=pen))
             items.append(pg.PlotDataItem(x, y - yerr, pen=pen))
             return items
-
         if mode == "shaded":
             fill_color = pg.mkColor(color_obj)
             fill_color.setAlpha(max(20, min(140, alpha // 2)))
@@ -577,7 +503,6 @@ class CurvePresenter:
             lower = pg.PlotDataItem(x, y - yerr, pen=pg.mkPen(None))
             fill = pg.FillBetweenItem(upper, lower, brush=fill_brush)
             return [upper, lower, fill]
-
         if mode == "bars":
             xs, ys = [], []
             for xi, yi, ei in zip(x, y, yerr):
@@ -586,23 +511,13 @@ class CurvePresenter:
                 xs.extend([xi, xi, float('nan')])
                 ys.extend([yi - ei, yi + ei, float('nan')])
             if xs:
-                items.append(pg.PlotDataItem(
-                    np.asarray(xs), np.asarray(ys),
-                    pen=pen, connect='finite',
-                ))
+                items.append(pg.PlotDataItem(np.asarray(xs), np.asarray(ys), pen=pen, connect='finite'))
+            if cap_size > 0:
+                size = max(2, cap_size)
+                items.append(pg.ScatterPlotItem(x=x, y=y + yerr, symbol='_', size=size, pen=pen, brush=brush, pxMode=True))
+                items.append(pg.ScatterPlotItem(x=x, y=y - yerr, symbol='_', size=size, pen=pen, brush=brush, pxMode=True))
+            return items
 
-        if cap_size > 0:
-            size = max(2, cap_size)
-            items.append(pg.ScatterPlotItem(
-                x=x, y=y + yerr, symbol='_', size=size,
-                pen=pen, brush=brush, pxMode=True,
-            ))
-            items.append(pg.ScatterPlotItem(
-                x=x, y=y - yerr, symbol='_', size=size,
-                pen=pen, brush=brush, pxMode=True,
-            ))
-
-        return items
 
 _SELECTION_COLOR = (100, 100, 100)
 def make_selection_style() -> LineStyle:

@@ -27,131 +27,130 @@ from graphs.core.dataManager import relationData
 from graphs.ui.toolBarWidget import tool_bar_widget
 from graphs.ui.custom_inf_line import RemovableInfiniteLine
 from graphs.ui.customPlotWidget import PatchedPlotWidget
+from PyQt5.QtCore import Qt,QPoint,QObject
 
 logger = logging.getLogger(__name__)
 
-class graphOsc:
-    def __init__(self, tablet_page, selector_wave, main_class, alias_manager):
-        self.alias_manager = alias_manager
-        self.page = tablet_page
-        self.legend = pg.LegendItem(size=(80, 60), offset=(10, 10))
-        self.is_show_warning = True
-        self.key_to_update_plot = True
-        self.x = []
-        self.y = []
-        self.selector_wave = selector_wave
-        self.dict_param = {}
-
-        self.stack_osc = {}
-
-        self.inf_line_vert = None
-        self.inf_line_hor = None
-
-        self.line_counter = 0
-
-        self.main_class = main_class
-
-        self.used_colors = set()
-        self.colors_class = GColors()
-        self.color_gen = self.colors_class.get_random_color()
-
-        self.y_main_axis_label = ""
-        self.x_axis_label = ""
-
-        self.y_second_axis_label = "V"
-        self.x_axis_label = "dots"
-        self.y_main_axis_label = "V"
-
-        self.key = True  # ключ предназначен для манипулирования данными в виджетах без вызова функций обработчиков, если ключ установлен в False, то обработчик не будет испольняться
-
-        self.vertical_lines = verticals_lines()
-        self.ver_curve_left = None
-        self.ver_curve_right = None
-        self.tooltip = QLabel("X:0,Y:0")
-        self.build_hyst_loop_check = QCheckBox()
-        self.build_hyst_loop_check.stateChanged.connect(
-            lambda: self.hyst_loop_activate()
-        )
-
-        self.loops_stack = [] #здесь хранятся петли, которые были рассчитаны и установлены на график
-
-        self.label = QLabel() 
-        self.label2 = QLabel() 
-
-        self.list_vert_curve = []
+class graphOsc(QObject):
+    def __init__(self,tablet_page,selector_wave,main_class,alias_manager):
+        super().__init__()
+        self.alias_manager=alias_manager
+        self.page=tablet_page
+        self.legend=pg.LegendItem(size=(80,60),offset=(10,10))
+        self.is_show_warning=True
+        self.key_to_update_plot=True
+        self.x=[]
+        self.y=[]
+        self.selector_wave=selector_wave
+        self.dict_param={}
+        self.stack_osc={}
+        self.inf_line_vert=None
+        self.inf_line_hor=None
+        self.line_counter=0
+        self.main_class=main_class
+        self.used_colors=set()
+        self.colors_class=GColors()
+        self.color_gen=self.colors_class.get_random_color()
+        self.y_main_axis_label=""
+        self.x_axis_label=""
+        self.y_second_axis_label="V"
+        self.x_axis_label="dots"
+        self.y_main_axis_label="V"
+        self.key=True
+        self.vertical_lines=verticals_lines()
+        self.ver_curve_left=None
+        self.ver_curve_right=None
+        self.tooltip=QLabel("X:0,Y:0")
+        self.build_hyst_loop_check=QCheckBox()
+        self.build_hyst_loop_check.stateChanged.connect(lambda:self.hyst_loop_activate())
+        self.loops_stack=[]
+        self.label=QLabel()
+        self.label2=QLabel()
+        self.list_vert_curve=[]
         self.initUI()
 
     def initUI(self):
-
-        self.tab1Layout = QVBoxLayout()
-
-        self.graphView = self.setupGraphView()
-
+        self.tab1Layout=QVBoxLayout()
+        self.graphView=self.setupGraphView()
         self.graphView.scene().sigMouseMoved.connect(self.showToolTip_main)
+        self.graphView.scene().sigMouseMoved.connect(self._on_scene_mouse_moved)
         self.graphView.scene().sigMouseClicked.connect(self.click_scene_main_graph)
         self.graphView.scene().setClickRadius(20)
+        self.graphView.viewport().installEventFilter(self)
         self.legend.setParentItem(self.graphView.plotItem)
-
-        self.graphView.setLabel("left", self.y_main_axis_label, color="#ffffff")
-        self.graphView.setLabel("bottom", self.x_axis_label, color="#ffffff")
+        self.graphView.setLabel("left",self.y_main_axis_label,color="#ffffff")
+        self.graphView.setLabel("bottom",self.x_axis_label,color="#ffffff")
         self.graphView.getAxis("left").setGrid(True)
         self.graphView.getAxis("bottom").setGrid(True)
-
-        splitter_graph_fields = QSplitter()
-        splitter_graph_fields.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
+        splitter_graph_fields=QSplitter()
+        splitter_graph_fields.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
         splitter_graph_fields.setOrientation(1)
-
-        self.graphView_loop = self.setupGraphView()
-
+        self.graphView_loop=self.setupGraphView()
         self.graphView_loop.scene().sigMouseMoved.connect(self.showToolTip_loop)
+        self.graphView_loop.scene().sigMouseMoved.connect(self._on_loop_scene_mouse_moved)
         self.graphView_loop.scene().sigMouseClicked.connect(self.click_scene_loop_graph)
-
+        self.graphView_loop.viewport().installEventFilter(self)
         splitter_graph_fields.addWidget(self.graphView)
         splitter_graph_fields.addWidget(self.graphView_loop)
-
-        splitter_graph_fields.setStretchFactor(0, 5)
-        splitter_graph_fields.setStretchFactor(1, 5)  
+        splitter_graph_fields.setStretchFactor(0,5)
+        splitter_graph_fields.setStretchFactor(1,5)
         self.graphView_loop.hide()
-
-        tool_bar_graph = tool_bar_widget()
-
-        graph_bar_lay = QVBoxLayout()
+        tool_bar_graph=tool_bar_widget()
+        graph_bar_lay=QVBoxLayout()
         graph_bar_lay.addWidget(tool_bar_graph)
         graph_bar_lay.addWidget(splitter_graph_fields)
-
-        tool_bar_wid = QWidget()
+        tool_bar_wid=QWidget()
         tool_bar_wid.setLayout(graph_bar_lay)
-
-        splitter_graph_selector = QSplitter()
-        splitter_graph_selector.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        splitter_graph_selector=QSplitter()
+        splitter_graph_selector.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
         splitter_graph_selector.setOrientation(0)
-        splitter_graph_selector.setStretchFactor(0, 5)
-        splitter_graph_selector.setStretchFactor(1, 5)
-
-        self.hyst_loop_layer = self.create_hyst_calc_layer()
+        splitter_graph_selector.setStretchFactor(0,5)
+        splitter_graph_selector.setStretchFactor(1,5)
+        self.hyst_loop_layer=self.create_hyst_calc_layer()
         self.hyst_loop_layer.hide()
-
-        splitter_graph_selector.addWidget( self.selector_wave )
-        splitter_graph_selector.addWidget( tool_bar_wid )
-        splitter_graph_selector.addWidget( self.hyst_loop_layer )
-
+        splitter_graph_selector.addWidget(self.selector_wave)
+        splitter_graph_selector.addWidget(tool_bar_wid)
+        splitter_graph_selector.addWidget(self.hyst_loop_layer)
         self.tab1Layout.addWidget(splitter_graph_selector)
         self.tab1Layout.addWidget(self.build_hyst_loop_check)
-
         self.page.setLayout(self.tab1Layout)
-
-        self.page.subscribe_to_key_press(key = Qt.Key_Delete, callback = self.delete_key_press)
-
-        self.page.subscribe_to_key_press(key = Qt.Key_Escape, callback = self.reset_filters)
-
-        tool_bar_graph.add_tool_button(tooltip = "Вертикальный курсор",is_change_style = False, icon_path = None, callback = self.click_vert_infinite_line)
-        tool_bar_graph.add_tool_button(tooltip = "Горизонтальный курсор",is_change_style = False, icon_path = None, callback = self.click_hor_infinite_line)
-
+        self.page.subscribe_to_key_press(key=Qt.Key_Delete,callback=self.delete_key_press)
+        self.page.subscribe_to_key_press(key=Qt.Key_Escape,callback=self.reset_filters)
+        tool_bar_graph.add_tool_button(tooltip="Вертикальный курсор",is_change_style=False,icon_path=None,callback=self.click_vert_infinite_line)
+        tool_bar_graph.add_tool_button(tooltip="Горизонтальный курсор",is_change_style=False,icon_path=None,callback=self.click_hor_infinite_line)
         self.retranslateUI(self.page)
 
     def click_vert_infinite_line(self, state):
         self.add_inf_line(0)
+
+    def _on_scene_mouse_moved(self,pos):
+        try:
+            view=self.graphView.plotItem.vb
+            p=view.mapSceneToView(pos)
+            self.main_class.update_cursor_position(p.x(),p.y())
+        except Exception:
+            logger.debug("_on_scene_mouse_moved failed",exc_info=True)
+
+    def _on_loop_scene_mouse_moved(self,pos):
+        try:
+            view=self.graphView_loop.plotItem.vb
+            p=view.mapSceneToView(pos)
+            self.main_class.update_cursor_position(p.x(),p.y())
+        except Exception:
+            logger.debug("_on_loop_scene_mouse_moved failed",exc_info=True)
+
+    def eventFilter(self,watched,event):
+        from PyQt5.QtCore import QEvent
+        if event.type()==QEvent.Leave and watched in (
+            self.graphView.viewport(),
+            getattr(self,"graphView_loop",None) and self.graphView_loop.viewport(),
+        ):
+            try:
+                self.main_class.clear_cursor_position()
+            except Exception:
+                logger.debug("eventFilter clear cursor failed",exc_info=True)
+        return super().eventFilter(watched,event) if hasattr(super(),"eventFilter") else False
+
 
     def click_hor_infinite_line(self, state):
         self.add_inf_line(90)

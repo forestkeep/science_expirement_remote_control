@@ -92,25 +92,22 @@ class YAxisGroup(QGroupBox):
         self._container = QWidget()
         self._grid = QGridLayout(self._container)
         self._grid.setContentsMargins(0, 0, 0, 0)
-        # Вертикальный зазор — в ноль; горизонтальный оставляем для читаемости
         self._grid.setVerticalSpacing(0)
         self._grid.setHorizontalSpacing(6)
         for c in range(self._columns):
             self._grid.setColumnStretch(c, 1)
 
-        # Плотный вид чекбоксов: убираем внутренние отступы и margin,
-        # уменьшаем расстояние «квадратик ↔ текст», фиксируем размер индикатора.
-        # Без этого системный стиль даёт ~22–24 px на элемент — вдвое больше нужного.
         self._container.setStyleSheet(
             "QCheckBox { padding: 0px; margin: 0px; spacing: 4px; }"
             "QCheckBox::indicator { width: 14px; height: 14px; }"
         )
         self._scroll.setWidget(self._container)
-        # ИСПРАВЛЕНИЕ: ограничиваем высоту области параметров,
-        # чтобы селектор занимал минимум места. Прокрутка остаётся.
-        self._scroll.setMaximumHeight(80)
-        self._scroll.setMinimumHeight(40)
-        outer.addWidget(self._scroll, 1)
+        
+        # Убираем максимальное ограничение, чтобы область могла растягиваться
+        # Оставляем только минимальную высоту для корректного отображения
+        self._scroll.setMinimumHeight(60)
+        
+        outer.addWidget(self._scroll, 1)  # stretch factor 1 позволяет растягиваться
 
     # ------------------------------------------------------------------
     # Внутренние обработчики
@@ -468,71 +465,56 @@ class paramSelector(QWidget):
 # paramController — публичный API не изменился
 # =====================================================================
 class paramController(QObject):
-    parameters_updated        = pyqtSignal(str, list, list)
-    multiple_checked          = pyqtSignal(bool)
+    parameters_updated = pyqtSignal(str, list, list)
+    multiple_checked = pyqtSignal(bool)
     state_second_axis_changed = pyqtSignal(bool)
-    numPointsChanged          = pyqtSignal(int)
-    showingAllPoints          = pyqtSignal(bool)
+    numPointsChanged = pyqtSignal(int)
+    showingAllPoints = pyqtSignal(bool)
+    connectLinesChanged = pyqtSignal(bool)
+    showMarkersChanged = pyqtSignal(bool)
 
     def __init__(self, paramSelector: "paramSelector", alias_manager) -> None:
         super().__init__()
         self.alias_manager = alias_manager
         self.paramSelector = paramSelector
-
-        # X combo
         paramSelector.x_combo.currentIndexChanged.connect(self._on_x_changed)
-
-        # Y groups
         paramSelector.y1_group.selection_changed.connect(self._on_y1_changed)
         paramSelector.y2_group.selection_changed.connect(self._on_y2_changed)
         paramSelector.y1_group.multiple_changed.connect(self._on_multiple_changed)
         paramSelector.y2_group.multiple_changed.connect(self._on_multiple_changed)
         paramSelector.y1_group.activation_changed.connect(self._on_y1_activation_changed)
         paramSelector.y2_group.activation_changed.connect(self._on_y2_activation_changed)
-
-        # Видимое окно
         num_widget = paramSelector.numPointsselector
         num_widget.numPointsChanged.connect(self._forward_num_points)
         num_widget.showingAllPoints.connect(self._forward_showing_all)
-
+        num_widget.connectLinesChanged.connect(self._forward_connect_lines)
+        num_widget.showMarkersChanged.connect(self._forward_show_markers)
         self.alias_manager.aliases_updated.connect(self._on_alias_changed)
-
-        # Состояние (те же поля, что и раньше)
         self.curent_x_parameter: str | None = None
         self.curent_y_first_parameters: list[str] = []
         self.curent_y_second_parameters: list[str] = []
-
         self.__x_parameters: set[str] = set()
         self.__y_first_parameters: set[str] = set()
         self.__y_second_parameters: set[str] = set()
-
         self._suppress_user_action = False
         self._last_emitted_state = None
-
-        # Стэш выделений неактивных осей: чтобы при повторной активации
-        # вернуть выбор пользователя. Живёт только в памяти — в HDF5
-        # не сохраняется, в parameters_updated не попадает.
         self._stash_y1: list[str] = []
         self._stash_y2: list[str] = []
 
-    # ------------------------------------------------------------------
-    # Трансляторы видимого окна
-    # ------------------------------------------------------------------
     def _forward_num_points(self, value: int) -> None:
         self.numPointsChanged.emit(int(value))
 
     def _forward_showing_all(self, state: bool) -> None:
         self.showingAllPoints.emit(bool(state))
 
-    # ------------------------------------------------------------------
-    # Публичный API (не изменился)
-    # ------------------------------------------------------------------
+    def _forward_connect_lines(self, state: bool) -> None:
+        self.connectLinesChanged.emit(bool(state))
+
+    def _forward_show_markers(self, state: bool) -> None:
+        self.showMarkersChanged.emit(bool(state))
+
     def get_parameters(self):
-        x = (
-            self.alias_manager.get_original_name(self.curent_x_parameter)
-            if self.curent_x_parameter
-            else ""
-        )
+        x = (self.alias_manager.get_original_name(self.curent_x_parameter) if self.curent_x_parameter else "")
         y1 = [self.alias_manager.get_original_name(p) for p in self.curent_y_first_parameters]
         y2 = [self.alias_manager.get_original_name(p) for p in self.curent_y_second_parameters]
         return x, y1, y2
@@ -549,7 +531,6 @@ class paramController(QObject):
         x_alias = self.alias_manager.get_alias(x_param) if x_param else None
         y1 = [self.alias_manager.get_alias(p) for p in y_first_params]
         y2 = [self.alias_manager.get_alias(p) for p in y_second_params]
-
         if x_alias:
             self.curent_x_parameter = x_alias
         for p in y1:
@@ -558,7 +539,6 @@ class paramController(QObject):
         for p in y2:
             if p not in self.curent_y_second_parameters:
                 self.curent_y_second_parameters.append(p)
-
         self._enforce_invariants()
         self._sync_view_from_model()
         if is_signal:
@@ -568,16 +548,10 @@ class paramController(QObject):
         x_alias = self.alias_manager.get_alias(x_param) if x_param else None
         y1 = [self.alias_manager.get_alias(p) for p in y_first_params]
         y2 = [self.alias_manager.get_alias(p) for p in y_second_params]
-
         if x_alias and self.curent_x_parameter == x_alias:
             self.curent_x_parameter = None
-        self.curent_y_first_parameters = [
-            p for p in self.curent_y_first_parameters if p not in y1
-        ]
-        self.curent_y_second_parameters = [
-            p for p in self.curent_y_second_parameters if p not in y2
-        ]
-
+        self.curent_y_first_parameters = [p for p in self.curent_y_first_parameters if p not in y1]
+        self.curent_y_second_parameters = [p for p in self.curent_y_second_parameters if p not in y2]
         self._enforce_invariants()
         self._sync_view_from_model()
         if is_signal:
@@ -597,31 +571,17 @@ class paramController(QObject):
         self._emit_parameters_updated()
 
     def set_live_mode(self, is_live: bool) -> None:
-        """Показать/скрыть секцию видимого окна точек.
-
-        Видимое окно имеет смысл только в LIVE-режиме, когда данные
-        растут и есть выбор «сколько последних точек показать». При
-        переходе в REVIEW секцию скрываем и принудительно включаем
-        режим «все точки» — иначе ранее урезанное окно «съест» часть
-        точек в статичном графике.
-        """
         widget = self.paramSelector.numPointsselector
         if is_live:
             widget.setVisible(True)
             return
-
         widget.setVisible(False)
         if not widget.checkbox.isChecked():
             widget.checkbox.setChecked(True)
 
     def stop_session(self) -> None:
-        # Сохранено как алиас: вызывается адаптером graphSelectAdapter
-        # по сигналу data_manager.stop_current_session.
         self.set_live_mode(False)
 
-    # ------------------------------------------------------------------
-    # Обработчики пользовательских действий
-    # ------------------------------------------------------------------
     def _on_x_changed(self, index: int):
         if self._suppress_user_action:
             return
@@ -633,12 +593,7 @@ class paramController(QObject):
             return
         new = self.paramSelector.y1_group.get_selected()
         self.curent_y_first_parameters = list(new)
-        # Параметр, отмеченный на одной оси, убираем с другой — даже
-        # если по какой-то причине он там был.
-        self.curent_y_second_parameters = [
-            p for p in self.curent_y_second_parameters
-            if p not in self.curent_y_first_parameters
-        ]
+        self.curent_y_second_parameters = [p for p in self.curent_y_second_parameters if p not in self.curent_y_first_parameters]
         self._enforce_invariants()
         self._sync_view_from_model()
         self._emit_parameters_updated()
@@ -648,10 +603,7 @@ class paramController(QObject):
             return
         new = self.paramSelector.y2_group.get_selected()
         self.curent_y_second_parameters = list(new)
-        self.curent_y_first_parameters = [
-            p for p in self.curent_y_first_parameters
-            if p not in self.curent_y_second_parameters
-        ]
+        self.curent_y_first_parameters = [p for p in self.curent_y_first_parameters if p not in self.curent_y_second_parameters]
         self._enforce_invariants()
         self._sync_view_from_model()
         self._emit_parameters_updated()
@@ -664,13 +616,8 @@ class paramController(QObject):
 
     def _on_y1_activation_changed(self, enabled: bool):
         if not enabled:
-            # Деактивация: запоминаем текущий выбор перед очисткой.
-            # _enforce_invariants() ниже сам обнулит curent_y_first.
             self._stash_y1 = list(self.curent_y_first_parameters)
         else:
-            # Реактивация: возвращаем то, что не занято другой осью.
-            # Объединяем со всем, что могло быть установлено программно
-            # (set_selections) до активации — не затираем.
             blocked = set(self.curent_y_second_parameters)
             for p in self._stash_y1:
                 if p not in blocked and p not in self.curent_y_first_parameters:
@@ -702,20 +649,11 @@ class paramController(QObject):
                 s.add(alias)
         if self.curent_x_parameter == old_alias:
             self.curent_x_parameter = alias
-        self.curent_y_first_parameters = [
-            alias if p == old_alias else p for p in self.curent_y_first_parameters
-        ]
-        self.curent_y_second_parameters = [
-            alias if p == old_alias else p for p in self.curent_y_second_parameters
-        ]
+        self.curent_y_first_parameters = [alias if p == old_alias else p for p in self.curent_y_first_parameters]
+        self.curent_y_second_parameters = [alias if p == old_alias else p for p in self.curent_y_second_parameters]
 
-    # ------------------------------------------------------------------
-    # Инварианты и синхронизация с моделью
-    # ------------------------------------------------------------------
     def _enforce_invariants(self):
         changed = False
-
-        # 1. Неактивная ось не держит выделений
         if not self.paramSelector.y1_group.is_active():
             if self.curent_y_first_parameters:
                 self.curent_y_first_parameters = []
@@ -724,18 +662,12 @@ class paramController(QObject):
             if self.curent_y_second_parameters:
                 self.curent_y_second_parameters = []
                 changed = True
-
-        # 2. Кросс-осевое пересечение (страховка)
         y1_set = set(self.curent_y_first_parameters)
         y2_set = set(self.curent_y_second_parameters)
         overlap = y1_set & y2_set
         if overlap:
-            self.curent_y_second_parameters = [
-                p for p in self.curent_y_second_parameters if p not in overlap
-            ]
+            self.curent_y_second_parameters = [p for p in self.curent_y_second_parameters if p not in overlap]
             changed = True
-
-        # 3. Единичный режим
         if not self.paramSelector.y1_group.is_multiple():
             if len(self.curent_y_first_parameters) > 1:
                 self.curent_y_first_parameters = self.curent_y_first_parameters[-1:]
@@ -744,13 +676,10 @@ class paramController(QObject):
             if len(self.curent_y_second_parameters) > 1:
                 self.curent_y_second_parameters = self.curent_y_second_parameters[-1:]
                 changed = True
-
         return changed
 
     def _sync_view_from_model(self):
         ps = self.paramSelector
-
-        # X combo
         ps.x_combo.blockSignals(True)
         try:
             idx = 0
@@ -761,35 +690,19 @@ class paramController(QObject):
             ps.x_combo.setCurrentIndex(idx)
         finally:
             ps.x_combo.blockSignals(False)
-
-        # Кросс-блокировка
         y1_set = set(self.curent_y_first_parameters)
         y2_set = set(self.curent_y_second_parameters)
-        ps.y1_group.set_blocked(
-            y2_set, _TR("Уже выбрано на правой оси")
-        )
-        ps.y2_group.set_blocked(
-            y1_set, _TR("Уже выбрано на левой оси")
-        )
-
-        # Отметки
+        ps.y1_group.set_blocked(y2_set, _TR("Уже выбрано на правой оси"))
+        ps.y2_group.set_blocked(y1_set, _TR("Уже выбрано на левой оси"))
         ps.y1_group.set_selected(self.curent_y_first_parameters, is_signal=False)
         ps.y2_group.set_selected(self.curent_y_second_parameters, is_signal=False)
-
-        # Активация
         if ps.y1_group.is_active() != bool(self.curent_y_first_parameters or True):
-            # Y1 по умолчанию активен — не трогаем UI без нужды
             pass
         if ps.y2_group.is_active() != bool(self.curent_y_second_parameters):
-            # Y2 активируется пользователем явно; состояние сохраняем
             pass
 
     def _emit_parameters_updated(self):
-        state = (
-            self.curent_x_parameter,
-            tuple(self.curent_y_first_parameters),
-            tuple(self.curent_y_second_parameters),
-        )
+        state = (self.curent_x_parameter, tuple(self.curent_y_first_parameters), tuple(self.curent_y_second_parameters))
         if state == self._last_emitted_state:
             return
         self._last_emitted_state = state
@@ -798,7 +711,6 @@ class paramController(QObject):
             list(self.curent_y_first_parameters),
             list(self.curent_y_second_parameters),
         )
-
 
 if __name__ == '__main__':
     import sys

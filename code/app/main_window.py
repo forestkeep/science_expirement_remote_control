@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (
 from functions import open_log_file
 from common.theme import ThemeManager
 from app.sidebar import IconSidebar
+from functions import ExperimentState
 
 logger = logging.getLogger(__name__)
 
@@ -23,29 +24,28 @@ class UnifiedMainWindow(QMainWindow):
     def __init__(self, settings_manager, version, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
-        self.version_app      = version
-
-        self._install_ctrl       = None
-        self._session_ctrl       = None
-        self._installation_page  = None
-        self._graphs_page        = None
-        self._publication_page   = None
+        self.version_app = version
+        self._install_ctrl = None
+        self._session_ctrl = None
+        self._installation_page = None
+        self._graphs_page = None
+        self._publication_page = None
         self._publication_placeholder = None
-
-        self._device_selector   = None
-        self._local_devices     = {}
+        self._device_selector = None
+        self._local_devices = {}
         self._test_commands_win = None
-        self._device_creator    = None
-
+        self._device_creator = None
         self._bootstrapped = False
         self._bootstrap_in_progress = False
 
+        self._exp_poll_timer = None
+        self._exp_last_live = None
+        self._exp_last_paused = None
+
         self.setWindowTitle(f"Experiment Control {version}")
         self.resize(1400, 600)
-
         self._build_ui()
         self._build_menu()
-
         QTimer.singleShot(0, self._deferred_bootstrap)
 
     def _deferred_bootstrap(self):
@@ -54,6 +54,78 @@ class UnifiedMainWindow(QMainWindow):
         self._bootstrap_pages()
         self._bootstrapped = True
         self.set_current_page(self.PAGE_INSTALL)
+        self._start_experiment_polling()
+
+    def _start_experiment_polling(self) -> None:
+        if self._session_ctrl is None:
+            return
+        status_bar = getattr(self._session_ctrl, "status_bar", None)
+        if status_bar is None:
+            return
+        try:
+            status_bar.pause_requested.disconnect(self._on_live_pause_requested)
+        except (TypeError, RuntimeError):
+            pass
+        try:
+            status_bar.stop_requested.disconnect(self._on_live_stop_requested)
+        except (TypeError, RuntimeError):
+            pass
+        status_bar.pause_requested.connect(self._on_live_pause_requested)
+        status_bar.stop_requested.connect(self._on_live_stop_requested)
+
+        if self._exp_poll_timer is None:
+            self._exp_poll_timer = QTimer(self)
+            self._exp_poll_timer.setInterval(500)
+            self._exp_poll_timer.timeout.connect(self._poll_experiment_state)
+        if not self._exp_poll_timer.isActive():
+            self._exp_poll_timer.start()
+
+    def _on_live_pause_requested(self) -> None:
+        if self._install_ctrl is None:
+            return
+        try:
+            if not self._install_ctrl.is_experiment_running():
+                return
+            self._install_ctrl.pause_exp()
+        except Exception:
+            logger.exception("live pause from status bar failed")
+
+    def _on_live_stop_requested(self) -> None:
+        if self._install_ctrl is None:
+            return
+        try:
+            if not self._install_ctrl.is_experiment_running():
+                return
+            self._install_ctrl.action_stop_experiment()
+        except Exception:
+            logger.exception("live stop from status bar failed")
+
+    def _poll_experiment_state(self) -> None:
+        if self._install_ctrl is None or self._session_ctrl is None:
+            return
+        status_bar = getattr(self._session_ctrl, "status_bar", None)
+        if status_bar is None:
+            return
+
+        try:
+            is_live = bool(self._install_ctrl.is_experiment_running())
+        except Exception:
+            logger.exception("poll experiment running failed")
+            return
+
+        is_paused = False
+        if is_live:
+            try:
+                is_paused = self._install_ctrl.current_state == ExperimentState.PAUSED
+            except Exception:
+                logger.exception("poll experiment state failed")
+
+        if is_live == self._exp_last_live and is_paused == self._exp_last_paused:
+            return
+
+        self._exp_last_live = is_live
+        self._exp_last_paused = is_paused
+        status_bar.set_live_mode(is_live, is_paused)
 
     def _ensure_bootstrapped(self):
         if self._bootstrapped or self._bootstrap_in_progress:
