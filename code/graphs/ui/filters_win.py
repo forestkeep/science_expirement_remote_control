@@ -286,83 +286,69 @@ class filtersClass():
         description = f"Прореживание {percent}% ({', '.join(desc_methods)})"
         return current_x, current_y, description
     
-    def normalize_filt(self, x: Union[list, np.ndarray], y: Union[list, np.ndarray], norm_type: str) -> Tuple[np.ndarray, np.ndarray, str]:
-        """
-        Применяет нормировку данных к выбранному диапазону.
-        
-        Доступные типы нормировки:
-        1. 0-1 (Min-Max): приведение к диапазону [0, 1]
-        2. -1-1: приведение к диапазону [-1, 1]
-        3. Z-score: стандартизация (среднее=0, стандартное отклонение=1)
-        4. Robust: устойчивая нормировка на основе медианы и межквартильного размаха
-        
-        Параметры:
-            x: X-координаты данных
-            y: Y-координаты данных
-            
-        Возвращает:
-            Tuple[np.ndarray, np.ndarray, str]: Нормированные x, y и описание
-        """
-        x_array = np.array(x)
-        y_array = np.array(y)
-        
-        if len(y_array) == 0:
-            return x_array.copy(), y_array.copy(), "Нормировка: нет данных"
-        
-        
+    def normalize_filt(self, x, y, norm_type, scope="global", x_min=None, x_max=None, apply_to="all"):
+        x_array = np.array(x, dtype=float)
+        y_array = np.array(y, dtype=float)
+
+        if len(y_array) == 0 or np.all(np.isnan(y_array)):
+            return x_array.copy(), y_array.copy(), "Нормировка: нет валидных данных"
+
+        # Определяем рабочую область для расчёта статистики
+        if scope == "local" and x_min is not None and x_max is not None and x_min < x_max:
+            mask = (x_array >= float(x_min)) & (x_array <= float(x_max))
+            if not np.any(mask):
+                return x_array.copy(), y_array.copy(), "Нормировка: в диапазоне нет точек"
+            y_work = y_array[mask]
+            rng_txt = f" по [{x_min:.4g}…{x_max:.4g}]"
+        else:
+            y_work = y_array
+            rng_txt = ""
+
+        # Считаем параметры по y_work (с защитой от NaN)
         if norm_type == "0-1 (Min-Max)":
-            y_min = np.min(y_array)
-            y_max = np.max(y_array)
-            
+            y_min, y_max = np.nanmin(y_work), np.nanmax(y_work)
             if y_max == y_min:
-                y_norm = np.zeros_like(y_array) if y_min == 0 else np.ones_like(y_array) * 0.5
+                y_norm = np.zeros_like(y_array) if y_min == 0 else np.full_like(y_array, 0.5)
             else:
                 y_norm = (y_array - y_min) / (y_max - y_min)
-            
-            description = f"Нормировка [0,1] (min={y_min:.3f}, max={y_max:.3f})"
-            
+            description = f"Нормировка [0,1]{rng_txt}"
         elif norm_type == "-1-1":
-            y_min = np.min(y_array)
-            y_max = np.max(y_array)
-            
+            y_min, y_max = np.nanmin(y_work), np.nanmax(y_work)
             if y_max == y_min:
                 y_norm = np.zeros_like(y_array)
             else:
                 y_norm = 2 * ((y_array - y_min) / (y_max - y_min)) - 1
-            
-            description = f"Нормировка [-1,1] (min={y_min:.3f}, max={y_max:.3f})"
-            
+            description = f"Нормировка [-1,1]{rng_txt}"
         elif norm_type == "Z-score":
-            y_mean = np.mean(y_array)
-            y_std = np.std(y_array)
-            
+            y_mean, y_std = np.nanmean(y_work), np.nanstd(y_work)
             if y_std == 0:
                 y_norm = np.zeros_like(y_array)
             else:
                 y_norm = (y_array - y_mean) / y_std
-            
-            description = f"Z-score (mean={y_mean:.3f}, std={y_std:.3f})"
-            
+            description = f"Z-score{rng_txt}"
         elif norm_type == "Robust (медиана/IQR)":
-            y_median = np.median(y_array)
-            q75, q25 = np.percentile(y_array, [75, 25])
+            y_median = np.nanmedian(y_work)
+            q75, q25 = np.nanpercentile(y_work, [75, 25])
             iqr = q75 - q25
-            
             if iqr == 0:
-                y_std = np.std(y_array)
-                if y_std == 0:
-                    y_norm = np.zeros_like(y_array)
-                else:
-                    y_norm = (y_array - y_median) / y_std
-                description = f"Robust (медиана={y_median:.3f}, std={y_std:.3f})"
+                y_std = np.nanstd(y_work)
+                y_norm = np.zeros_like(y_array) if y_std == 0 else (y_array - y_median) / y_std
             else:
                 y_norm = (y_array - y_median) / iqr
-                description = f"Robust (медиана={y_median:.3f}, IQR={iqr:.3f})"
+            description = f"Robust{rng_txt}"
         else:
             y_norm = y_array.copy()
             description = f"Нормировка: неизвестный тип '{norm_type}'"
-        
+
+        # apply_to == "range" → вне диапазона NaN (pyqtgraph корректно рвёт линию)
+        if apply_to == "range" and scope == "local" and x_min is not None and x_max is not None:
+            out_mask = (x_array < float(x_min)) | (x_array > float(x_max))
+            y_norm = y_norm.copy().astype(float)
+            y_norm[out_mask] = np.nan
+
         return x_array, y_norm, description
+    
+        
 
     def hampel_filt(self, x, y, window, n_sigmas=3.0):
         """

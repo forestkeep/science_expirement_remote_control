@@ -13,6 +13,7 @@ from graphs.core.undo_commands import (
     EditPointCommand,
     ReorderFiltersCommand,
 )
+import numpy as np
 from graphs.helpers.ui import HelperTab
 from graphs.core.curve_data import LineStyle
 from graphs.core.filters_instance_class import FilterCommand
@@ -50,6 +51,7 @@ class Inspector(QWidget):
         layout.addWidget(self.stack)
         self.selection_model.selection_changed.connect(self._on_selection_changed)
         self._on_selection_changed(self.selection_model.current())
+
     def _on_selection_changed(self,selected):
         facades=[]
         for s in selected:
@@ -58,10 +60,11 @@ class Inspector(QWidget):
                 facades.append(f)
         if facades:
             self.stack.setCurrentWidget(self.curve_inspector)
-            self.curve_inspector.set_curves(facades)
         else:
             self.stack.setCurrentWidget(self.no_selection_tabs)
             self.graph_settings.update_settings()
+        self.curve_inspector.set_curves(facades)
+        
     def _to_facade(self,item):
         if hasattr(item,"change_name"):
             return item
@@ -1377,6 +1380,8 @@ class StyleTab(QWidget):
 # Формат: (key, label, kind, min, max, step, decimals, default)
 # kind: 'int' | 'float'
 # ---------------------------------------------------------------------
+
+
 _FILTER_PARAM_SCHEMA = {
     "median": [
         ("window", "Окно", "int", 1, 999, 2, 0, 3),
@@ -1412,7 +1417,16 @@ _FILTER_PARAM_SCHEMA = {
     "thinning": [
         ("percent", "Процент", "int", 0, 100, 1, 0, 10),
     ],
-    "normalize": [],
+    "normalize": [
+        ("scope", "Область", "combo",
+         [("global", "Вся кривая"), ("local", "Локальный диапазон")],
+         "global"),
+        ("x_min", "X от", "float", -1e9, 1e9, 0.1, 6, 0.0, True),  # True = использовать реальный диапазон
+        ("x_max", "X до", "float", -1e9, 1e9, 0.1, 6, 0.0, True),  # True = использовать реальный диапазон
+        ("apply_to", "Применять к", "combo",
+         [("all", "Ко всей кривой"), ("range", "Только к диапазону")],
+         "all"),
+    ],
 }
 
 _MIME_FILTER_CARD = "application/x-filter-card"
@@ -1614,6 +1628,8 @@ class AppliedFilterWidget(QGroupBox):
         self.session = session
         self._pending_params: dict = {}
         self._param_widgets: list[QWidget] = []
+        self._spin_refs: dict = {}
+        self._range_toggle = None
         self._debounce = QTimer(self)
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(self._DEBOUNCE_MS)
@@ -1623,75 +1639,303 @@ class AppliedFilterWidget(QGroupBox):
         self._apply_enabled_state()
 
     # ------------------------------------------------------------------
-    def _build_ui(self) -> None:
+    def _build_ui(self)->None:
         self.setTitle("")
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(4, 4, 4, 4)
+        outer=QVBoxLayout(self)
+        outer.setContentsMargins(4,4,4,4)
         outer.setSpacing(3)
-
-        header = QHBoxLayout()
-        header.setContentsMargins(0, 0, 0, 0)
-
-        grip = QLabel("⋮⋮")
+        header=QHBoxLayout()
+        header.setContentsMargins(0,0,0,0)
+        grip=QLabel("⋮⋮")
         grip.setStyleSheet("color: #888; font-weight: bold; padding: 0 4px;")
         grip.setCursor(Qt.OpenHandCursor)
-        grip.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Перетащите, чтобы изменить порядок применения фильтров"
-        ))
+        grip.setToolTip(QApplication.translate("GraphWindow","Перетащите, чтобы изменить порядок применения фильтров"))
         header.addWidget(grip)
-
-        self.enable_check = QCheckBox(self._filter_title())
-        self.enable_check.setChecked(bool(getattr(self.fc, "enabled", True)))
-        self.enable_check.setToolTip(QApplication.translate(
-            "GraphWindow",
-            "Снимите галочку, чтобы исключить фильтр из расчёта, не удаляя его."
-        ))
-        # Разрешаем чекбоксу сжиматься, чтобы он не выталкивал кнопку удаления.
-        self.enable_check.setSizePolicy(
-            QSizePolicy.Ignored, QSizePolicy.Preferred
-        )
+        self.enable_check=QCheckBox(self._filter_title())
+        self.enable_check.setChecked(bool(getattr(self.fc,"enabled",True)))
+        self.enable_check.setToolTip(QApplication.translate("GraphWindow","Снимите галочку, чтобы исключить фильтр из расчёта, не удаляя его."))
+        self.enable_check.setSizePolicy(QSizePolicy.Ignored,QSizePolicy.Preferred)
         self.enable_check.setMinimumWidth(0)
         self.enable_check.stateChanged.connect(self._on_enabled_changed)
-        header.addWidget(self.enable_check, 1)
-
-        del_btn = QPushButton("×")
+        header.addWidget(self.enable_check,1)
+        del_btn=QPushButton("×")
         del_btn.setFixedWidth(24)
         del_btn.setMinimumWidth(24)
-        del_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        del_btn.setToolTip(QApplication.translate("GraphWindow", "Удалить фильтр"))
+        del_btn.setSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed)
+        del_btn.setToolTip(QApplication.translate("GraphWindow","Удалить фильтр"))
         del_btn.clicked.connect(self._on_delete)
-        header.addWidget(del_btn, 0, Qt.AlignRight)
-
+        header.addWidget(del_btn,0,Qt.AlignRight)
         outer.addLayout(header)
-
-        for entry in _FILTER_PARAM_SCHEMA.get(self.fc.filter_type, []):
-            key, label, kind, mn, mx, step, dec, default = entry
-            if key == "cutoff" and self.fc.params.get("btype") == "band":
+        x_min_real,x_max_real=-1e9,1e9
+        if self.curve is not None:
+            try:
+                x_data=self.curve.filtered_x_data
+                if x_data is not None and len(x_data)>0:
+                    x_min_real=float(np.nanmin(x_data))
+                    x_max_real=float(np.nanmax(x_data))
+                    if not (np.isfinite(x_min_real) and np.isfinite(x_max_real)):
+                        x_min_real,x_max_real=-1e9,1e9
+                    elif x_max_real<=x_min_real:
+                        x_max_real=x_min_real+1.0
+            except Exception:
+                x_min_real,x_max_real=-1e9,1e9
+        self._combo_refs={}
+        schema_entries=_FILTER_PARAM_SCHEMA.get(self.fc.filter_type,[])
+        for entry in schema_entries:
+            n=len(entry)
+            if n==5:
+                key,label,kind,options,default=entry
+                mn,mx,step,dec=options,None,None,None
+                use_real_range=False
+            elif n==8:
+                key,label,kind,mn,mx,step,dec,default=entry
+                use_real_range=False
+            elif n>=9:
+                key,label,kind,mn,mx,step,dec,default,use_real_range=entry[:9]
+            else:
                 continue
-            current = self.fc.params.get(key, default)
-            row = self._make_slider_row(key, label, kind, mn, mx, step, dec, current)
+            if self.fc.filter_type == "normalize" and key in ("x_min", "x_max", "scope"):
+                continue
+            if key=="cutoff"and self.fc.params.get("btype")=="band":
+                continue
+            if use_real_range and self.curve is not None and kind in ("float","int"):
+                mn,mx=x_min_real,x_max_real
+            current=self.fc.params.get(key,default)
+            if use_real_range and self.curve is not None and kind in ("float","int"):
+                try:
+                    cur_f=float(current)
+                    if not (x_min_real<=cur_f<=x_max_real):
+                        current=x_min_real if"min"in key else x_max_real
+                    self.fc.params[key]=current
+                except(TypeError,ValueError):
+                    current=x_min_real if"min"in key else x_max_real
+                    self.fc.params[key]=current
+            row=self._make_slider_row(key,label,kind,mn,mx,step,dec,current)
             self._param_widgets.append(row)
             outer.addWidget(row)
+        if self.fc.filter_type=="normalize":
+            toggle_row=QWidget()
+            tl=QHBoxLayout(toggle_row)
+            tl.setContentsMargins(0,0,0,0)
+            tl.setSpacing(4)
+            tl.addStretch()
+            self._range_toggle=QToolButton()
+            self._range_toggle.setText("📐 Выбрать на графике")
+            self._range_toggle.setCheckable(True)
+            self._range_toggle.setToolTip("Показать полосу выбора диапазона на графике.")
+            self._range_toggle.toggled.connect(self._on_range_toggle)
+            tl.addWidget(self._range_toggle)
+            outer.addWidget(toggle_row)
+            self._apply_normalize_enabled_state()
+
+
+    def _on_range_toggle(self,checked):
+        if self.fc.filter_type!="normalize":
+            return
+        editor=getattr(self.session,"filter_range_editor",None)
+        if editor is None:
+            if checked and self._range_toggle is not None:
+                self._range_toggle.setChecked(False)
+            return
+        
+        try:
+            filters_tab = self.session.inspector.curve_inspector.filters_tab
+            if hasattr(filters_tab, 'norm_range_toggle') and filters_tab.norm_range_toggle.isChecked():
+                filters_tab.norm_range_toggle.blockSignals(True)
+                filters_tab.norm_range_toggle.setChecked(False)
+                filters_tab.norm_range_toggle.blockSignals(False)
+        except Exception:
+            pass
+
+        if checked:
+            x_min = float(self.fc.params.get("x_min", 0.0))
+            x_max = float(self.fc.params.get("x_max", 1.0))
+            if x_max <= x_min:
+                x = self.curve.filtered_x_data
+                if x is not None and len(x) > 0:
+                    x_min, x_max = float(np.nanmin(x)), float(np.nanmax(x))
+            
+            fc = self.fc
+            curve = self.curve
+            def on_change(a, b):
+                pass
+                
+            def on_commit(a, b):
+                curve.update_filter_params(fc, {"x_min": float(a), "x_max": float(b)})
+                
+            editor.open_editor(curve, x_min, x_max, on_change=on_change, on_commit=on_commit)
+        else:
+            editor.close_editor()
+
+    def _make_slider_row(self, key, label, kind, mn, mx, step, dec, value) -> QWidget:
+        w = QWidget()
+        h = QHBoxLayout(w)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(4)
+        h.addWidget(QLabel(label))
+
+        INT32_MAX = 2147483647
+        INT32_MIN = -2147483648
+
+        if kind == "combo":
+            combo = QComboBox()
+            for item_value, item_label in mn:
+                combo.addItem(item_label, item_value)
+            idx = combo.findData(value)
+            if idx >= 0:
+                combo.setCurrentIndex(idx)
+            combo.currentIndexChanged.connect(
+                lambda _i, c=combo, k=key: self._on_combo_changed(k, c.currentData()))
+            h.addWidget(combo, 1)
+            if not hasattr(self, "_combo_refs") or self._combo_refs is None:
+                self._combo_refs = {}
+            self._combo_refs[key] = combo
+
+        elif kind == "int":
+            safe_mn = max(int(mn), INT32_MIN)
+            safe_mx = min(int(mx), INT32_MAX)
+            slider = QSlider(Qt.Horizontal)
+            slider.setRange(safe_mn, safe_mx)
+            slider.setSingleStep(max(1, int(step)))
+            slider.setValue(max(safe_mn, min(safe_mx, int(value))))
+            spin = QSpinBox()
+            spin.setRange(int(mn), int(mx))
+            spin.setSingleStep(max(1, int(step)))
+            spin.setValue(int(value))
+            slider.valueChanged.connect(spin.setValue)
+            spin.valueChanged.connect(slider.setValue)
+            spin.valueChanged.connect(lambda v, k=key: self._schedule_update(k, int(v)))
+            h.addWidget(slider, 1)
+            h.addWidget(spin)
+            # Сохраняем ссылку на spin
+            if not hasattr(self, "_spin_refs") or self._spin_refs is None:
+                self._spin_refs = {}
+            self._spin_refs[key] = spin
+
+        else:  # float
+            scale = 1000 if (dec is not None and dec >= 3) else 100
+            scaled_mn = mn * scale
+            scaled_mx = mx * scale
+            safe_scaled_mn = max(int(scaled_mn), INT32_MIN)
+            safe_scaled_mx = min(int(scaled_mx), INT32_MAX)
+
+            slider = QSlider(Qt.Horizontal)
+            slider.setRange(safe_scaled_mn, safe_scaled_mx)
+            slider.setSingleStep(max(1, int(step * scale)))
+            scaled_value = max(safe_scaled_mn, min(safe_scaled_mx, int(value * scale)))
+            slider.setValue(scaled_value)
+
+            spin = QDoubleSpinBox()
+            spin.setRange(float(mn), float(mx))
+            spin.setDecimals(int(dec))
+            spin.setSingleStep(float(step))
+            spin.setValue(float(value))
+
+            slider.valueChanged.connect(lambda v, s=scale: spin.setValue(v / s))
+            spin.valueChanged.connect(lambda v, s=scale: slider.setValue(
+                max(safe_scaled_mn, min(safe_scaled_mx, int(v * s)))))
+            spin.valueChanged.connect(lambda v, k=key: self._schedule_update(k, float(v)))
+            h.addWidget(slider, 1)
+            h.addWidget(spin)
+            # Сохраняем ссылку на spin
+            if not hasattr(self, "_spin_refs") or self._spin_refs is None:
+                self._spin_refs = {}
+            self._spin_refs[key] = spin
+
+        return w
+
+
+    def _on_combo_changed(self, key: str, value):
+        self._schedule_update(key, value)
+        if self.fc.filter_type == "normalize" and key == "scope":
+            if value != "local":
+                editor = getattr(self.session, "filter_range_editor", None)
+                if editor is not None and editor._curve is self.curve:
+                    editor.close_editor()
+                if self._range_toggle is not None:
+                    self._range_toggle.blockSignals(True)
+                    self._range_toggle.setChecked(False)
+                    self._range_toggle.blockSignals(False)
+            self._apply_normalize_enabled_state()
+
+
+    def _make_scope_row(self) -> QWidget:
+        w = QWidget()
+        h = QHBoxLayout(w)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(4)
+        h.addWidget(QLabel("Область:"))
+        combo = QComboBox()
+        combo.addItem("Вся кривая", "global")
+        combo.addItem("Локальный диапазон", "local")
+        current_scope = self.fc.params.get("scope", "global")
+        idx = combo.findData(current_scope)
+        if idx >= 0:
+            combo.setCurrentIndex(idx)
+        combo.currentIndexChanged.connect(
+            lambda _i, c=combo: self._on_scope_changed(c.currentData()))
+        self._scope_combo = combo
+        h.addWidget(combo, 1)
+        return w
+
+
+    def _make_apply_to_row(self) -> QWidget:
+        w = QWidget()
+        h = QHBoxLayout(w)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(4)
+        h.addWidget(QLabel("Применять к:"))
+        combo = QComboBox()
+        combo.addItem("Ко всей кривой", "all")
+        combo.addItem("Только к диапазону", "range")
+        current_apply = self.fc.params.get("apply_to", "all")
+        idx = combo.findData(current_apply)
+        if idx >= 0:
+            combo.setCurrentIndex(idx)
+        combo.currentIndexChanged.connect(
+            lambda _i, c=combo: self._schedule_update("apply_to", c.currentData()))
+        self._apply_to_combo = combo
+        h.addWidget(combo, 1)
+        return w
+
+
+    def _on_scope_changed(self, scope_value: str) -> None:
+        self._schedule_update("scope", scope_value)
+        self._apply_normalize_enabled_state()
+
+
+    def _apply_normalize_enabled_state(self) -> None:
+        if self.fc.filter_type != "normalize":
+            return
+        is_local = False
+        combo = self._combo_refs.get("scope")
+        if combo is not None:
+            is_local = (combo.currentData() == "local")
+        else:
+            is_local = (self.fc.params.get("scope", "global") == "local")
+
+        # Блокируем spin'ы x_min, x_max и apply_to
+        for key in ("x_min", "x_max", "apply_to"):
+            widget = self._spin_refs.get(key)
+            if widget is not None:
+                widget.setEnabled(is_local)
+
+        # Блокируем кнопку 📐
+        if self._range_toggle is not None:
+            self._range_toggle.setEnabled(is_local)
+            if not is_local:
+                self._range_toggle.blockSignals(True)
+                self._range_toggle.setChecked(False)
+                self._range_toggle.blockSignals(False)
 
     # ------------------------------------------------------------------
     def _apply_enabled_state(self) -> None:
-        """Привести вид карточки в соответствие с флагом enabled фильтра.
-
-        Когда фильтр выключен:
-          * все контролы параметров становятся недоступны (значения не
-            меняются мышью/клавиатурой);
-          * подпись фильтра приглушается, чтобы карточка читалась как
-            «неактивная»;
-          * отложенные изменения сбрасываются и дебаунс останавливается —
-            менять параметры выключенного фильтра нельзя даже отложенно.
-        """
         enabled = bool(getattr(self.fc, "enabled", True))
         for w in self._param_widgets:
             w.setEnabled(enabled)
-
+        if self._range_toggle is not None:
+            self._range_toggle.setEnabled(enabled)
         self.enable_check.setStyleSheet("" if enabled else "color: #888;")
-
         if not enabled:
             self._debounce.stop()
             self._pending_params.clear()
@@ -1712,56 +1956,19 @@ class AppliedFilterWidget(QGroupBox):
             "gaussian_smooth": "Гауссово сглаживание",
         }
         base = names.get(self.fc.filter_type, self.fc.filter_type)
-        summary = ", ".join(f"{k}={v}" for k, v in (self.fc.params or {}).items())
+        if self.fc.filter_type == "normalize":
+            scope = self.fc.params.get("scope", "global")
+            if scope == "local":
+                x_min = self.fc.params.get("x_min")
+                x_max = self.fc.params.get("x_max")
+                apply_to = self.fc.params.get("apply_to", "all")
+                tail = f"[{x_min:.4g}…{x_max:.4g}]"
+                if apply_to == "range":
+                    tail += " (только в окне)"
+                return f"{base} {tail}"
+        summary = ", ".join(f"{k}={v}" for k, v in (self.fc.params or {}).items()
+                            if self.fc.filter_type != "normalize" or k in ("norm_type",))
         return f"{base} ({summary})" if summary else base
-
-    # ------------------------------------------------------------------
-    def _make_slider_row(self, key, label, kind, mn, mx, step, dec, value) -> QWidget:
-        w = QWidget()
-        h = QHBoxLayout(w)
-        h.setContentsMargins(0, 0, 0, 0)
-        h.setSpacing(4)
-
-        h.addWidget(QLabel(label))
-
-        if kind == "int":
-            slider = QSlider(Qt.Horizontal)
-            slider.setRange(int(mn), int(mx))
-            slider.setSingleStep(max(1, int(step)))
-            slider.setValue(int(value))
-
-            spin = QSpinBox()
-            spin.setRange(int(mn), int(mx))
-            spin.setSingleStep(max(1, int(step)))
-            spin.setValue(int(value))
-
-            slider.valueChanged.connect(spin.setValue)
-            spin.valueChanged.connect(slider.setValue)
-            spin.valueChanged.connect(lambda v, k=key: self._schedule_update(k, int(v)))
-
-            h.addWidget(slider, 1)
-            h.addWidget(spin)
-        else:
-            scale = 1000 if dec >= 3 else 100
-            slider = QSlider(Qt.Horizontal)
-            slider.setRange(int(mn * scale), int(mx * scale))
-            slider.setSingleStep(max(1, int(step * scale)))
-            slider.setValue(int(value * scale))
-
-            spin = QDoubleSpinBox()
-            spin.setRange(float(mn), float(mx))
-            spin.setDecimals(int(dec))
-            spin.setSingleStep(float(step))
-            spin.setValue(float(value))
-
-            slider.valueChanged.connect(lambda v, s=scale: spin.setValue(v / s))
-            spin.valueChanged.connect(lambda v, s=scale: slider.setValue(int(v * s)))
-            spin.valueChanged.connect(lambda v, k=key: self._schedule_update(k, float(v)))
-
-            h.addWidget(slider, 1)
-            h.addWidget(spin)
-
-        return w
 
     # ------------------------------------------------------------------
     def _schedule_update(self, key: str, value) -> None:
@@ -1790,6 +1997,10 @@ class AppliedFilterWidget(QGroupBox):
     def _on_delete(self) -> None:
         self._debounce.stop()
         self._pending_params.clear()
+        if self.fc.filter_type == "normalize":
+            editor = getattr(self.session, "filter_range_editor", None)
+            if editor is not None and editor._curve is self.curve:
+                editor.close_editor()
         self.deleted.emit(self.fc)
 
     # ------------------------------------------------------------------
@@ -2008,13 +2219,87 @@ class FiltersTab(QWidget):
         f.addRow(self.thinning_last)
         return w
 
+
     def _build_normalize_panel(self):
-        w = QWidget()
-        f = QFormLayout(w)
-        self.norm_type = QComboBox()
-        self.norm_type.addItems(["0-1 (Min-Max)", "-1-1", "Z-score", "Robust (медиана/IQR)"])
-        f.addRow("Тип:", self.norm_type)
+        w=QWidget()
+        f=QFormLayout(w)
+        self.norm_type=QComboBox()
+        self.norm_type.addItems(["0-1 (Min-Max)","-1-1","Z-score","Robust (медиана/IQR)"])
+        f.addRow("Тип:",self.norm_type)
+        
+        range_row=QWidget()
+        rl=QHBoxLayout(range_row)
+        rl.setContentsMargins(0,0,0,0)
+        rl.setSpacing(4)
+        self.norm_x_min=QDoubleSpinBox()
+        self.norm_x_min.setRange(-1e9,1e9)
+        self.norm_x_min.setDecimals(6)
+        self.norm_x_min.setSingleStep(0.1)
+        self.norm_x_min.setPrefix("от ")
+        self.norm_x_max=QDoubleSpinBox()
+        self.norm_x_max.setRange(-1e9,1e9)
+        self.norm_x_max.setDecimals(6)
+        self.norm_x_max.setSingleStep(0.1)
+        self.norm_x_max.setPrefix("до ")
+        rl.addWidget(self.norm_x_min,1)
+        rl.addWidget(self.norm_x_max,1)
+        self.norm_range_toggle=QToolButton()
+        self.norm_range_toggle.setText("📐")
+        self.norm_range_toggle.setCheckable(True)
+        self.norm_range_toggle.setToolTip("Показать/скрыть полосу выбора диапазона на графике")
+        self.norm_range_toggle.toggled.connect(self._on_norm_range_toggle)
+        rl.addWidget(self.norm_range_toggle)
+        f.addRow("Диапазон X:",range_row)
+        
+        self.norm_apply_to=QComboBox()
+        self.norm_apply_to.addItem("Ко всей кривой","all")
+        self.norm_apply_to.addItem("Только к диапазону","range")
+        f.addRow("Применять к:",self.norm_apply_to)
+        
         return w
+
+    def _on_norm_range_toggle(self,checked):
+        if not self.curves or len(self.curves)!=1:
+            if self.norm_range_toggle.isChecked():
+                self.norm_range_toggle.setChecked(False)
+            return
+        curve=self.curves[0]
+        editor=getattr(self.session,"filter_range_editor",None)
+        if editor is None:
+            if self.norm_range_toggle.isChecked():
+                self.norm_range_toggle.setChecked(False)
+            return
+        if checked:
+            for i in range(self.filters_layout.count()):
+                item = self.filters_layout.itemAt(i)
+                if item and item.widget() and isinstance(item.widget(), AppliedFilterWidget):
+                    w = item.widget()
+                    if w.curve == curve and hasattr(w, '_range_toggle') and w._range_toggle is not None:
+                        w._range_toggle.blockSignals(True)
+                        w._range_toggle.setChecked(False)
+                        w._range_toggle.blockSignals(False)
+            
+            x_min=float(self.norm_x_min.value())
+            x_max=float(self.norm_x_max.value())
+            if x_max<=x_min:
+                x=curve.filtered_x_data
+                if x is not None and len(x)>0:
+                    x_min,x_max=float(np.nanmin(x)),float(np.nanmax(x))
+                    self.norm_x_min.setValue(x_min)
+                    self.norm_x_max.setValue(x_max)
+            norm_x_min=self.norm_x_min
+            norm_x_max=self.norm_x_max
+            def on_change(a,b):
+                norm_x_min.blockSignals(True)
+                norm_x_max.blockSignals(True)
+                norm_x_min.setValue(float(a))
+                norm_x_max.setValue(float(b))
+                norm_x_min.blockSignals(False)
+                norm_x_max.blockSignals(False)
+            editor.open_editor(curve,x_min,x_max,on_change=on_change)
+        else:
+            editor.close_editor()
+
 
     def _build_hampel_panel(self):
         w = QWidget()
@@ -2115,66 +2400,42 @@ class FiltersTab(QWidget):
 
     # ------------------------------------------------------------------
     def _build_filter_command(self):
-        idx = self.filter_type_combo.currentIndex()
-        if idx == 0:
-            return FilterCommand("median", {"window": int(self.median_window.value())},
-                                 self.session.filter_class)
-        if idx == 1:
-            return FilterCommand("average", {"window": int(self.average_window.value())},
-                                 self.session.filter_class)
-        if idx == 2:
-            return FilterCommand("exp_mean", {"alpha": float(self.exp_alpha.value())},
-                                 self.session.filter_class)
-        if idx == 3:
-            params = {
-                "percent": int(self.thinning_percent.value()),
-                "uniform": bool(self.thinning_uniform.isChecked()),
-                "max": bool(self.thinning_max.isChecked()),
-                "min": bool(self.thinning_min.isChecked()),
-                "first": bool(self.thinning_first.isChecked()),
-                "last": bool(self.thinning_last.isChecked()),
+        idx=self.filter_type_combo.currentIndex()
+        if idx==0:
+            return FilterCommand("median",{"window":int(self.median_window.value())},self.session.filter_class)
+        if idx==1:
+            return FilterCommand("average",{"window":int(self.average_window.value())},self.session.filter_class)
+        if idx==2:
+            return FilterCommand("exp_mean",{"alpha":float(self.exp_alpha.value())},self.session.filter_class)
+        if idx==3:
+            params={"percent":int(self.thinning_percent.value()),"uniform":bool(self.thinning_uniform.isChecked()),"max":bool(self.thinning_max.isChecked()),"min":bool(self.thinning_min.isChecked()),"first":bool(self.thinning_first.isChecked()),"last":bool(self.thinning_last.isChecked()),}
+            return FilterCommand("thinning",params,self.session.filter_class)
+        if idx==4:
+            params={
+                "norm_type":self.norm_type.currentText(),
+                "scope":"local",
+                "x_min":float(self.norm_x_min.value()),
+                "x_max":float(self.norm_x_max.value()),
+                "apply_to":self.norm_apply_to.currentData(),
             }
-            return FilterCommand("thinning", params, self.session.filter_class)
-        if idx == 4:
-            return FilterCommand("normalize", {"norm_type": self.norm_type.currentText()},
-                                 self.session.filter_class)
-        if idx == 5:
-            return FilterCommand("hampel", {
-                "window": int(self.hampel_window.value()),
-                "n_sigmas": float(self.hampel_sigmas.value()),
-            }, self.session.filter_class)
-        if idx == 6:
-            return FilterCommand("savitzky_golay", {
-                "window": int(self.savgol_window.value()),
-                "polyorder": int(self.savgol_polyorder.value()),
-            }, self.session.filter_class)
-        if idx == 7:
-            return FilterCommand("detrend", {
-                "detrend_type": self.detrend_type.currentText(),
-                "polyorder": int(self.detrend_polyorder.value()),
-            }, self.session.filter_class)
-        if idx == 8:
-            btype = self.butter_type.currentText()
-            if btype == "band":
-                cutoff = (float(self.butter_cutoff_low.value()),
-                          float(self.butter_cutoff_high.value()))
+            return FilterCommand("normalize",params,self.session.filter_class)
+        if idx==5:
+            return FilterCommand("hampel",{"window":int(self.hampel_window.value()),"n_sigmas":float(self.hampel_sigmas.value()),},self.session.filter_class)
+        if idx==6:
+            return FilterCommand("savitzky_golay",{"window":int(self.savgol_window.value()),"polyorder":int(self.savgol_polyorder.value()),},self.session.filter_class)
+        if idx==7:
+            return FilterCommand("detrend",{"detrend_type":self.detrend_type.currentText(),"polyorder":int(self.detrend_polyorder.value()),},self.session.filter_class)
+        if idx==8:
+            btype=self.butter_type.currentText()
+            if btype=="band":
+                cutoff=(float(self.butter_cutoff_low.value()),float(self.butter_cutoff_high.value()))
             else:
-                cutoff = float(self.butter_cutoff_low.value())
-            return FilterCommand("butterworth", {
-                "cutoff": cutoff,
-                "btype": btype,
-                "order": int(self.butter_order.value()),
-            }, self.session.filter_class)
-        if idx == 9:
-            return FilterCommand("notch", {
-                "freq": float(self.notch_freq.value()),
-                "q": float(self.notch_q.value()),
-            }, self.session.filter_class)
-        if idx == 10:
-            return FilterCommand("gaussian_smooth", {
-                "window": int(self.gaussian_window.value()),
-                "sigma": None,
-            }, self.session.filter_class)
+                cutoff=float(self.butter_cutoff_low.value())
+            return FilterCommand("butterworth",{"cutoff":cutoff,"btype":btype,"order":int(self.butter_order.value()),},self.session.filter_class)
+        if idx==9:
+            return FilterCommand("notch",{"freq":float(self.notch_freq.value()),"q":float(self.notch_q.value()),},self.session.filter_class)
+        if idx==10:
+            return FilterCommand("gaussian_smooth",{"window":int(self.gaussian_window.value()),"sigma":None,},self.session.filter_class)
         return None
 
     def _on_type_changed(self, idx):
@@ -2187,6 +2448,13 @@ class FiltersTab(QWidget):
     # ------------------------------------------------------------------
     def set_curves(self, curves):
         self.curves = curves
+        editor = getattr(self.session, "filter_range_editor", None)
+        if editor is not None and editor._curve not in curves:
+            editor.close_editor()
+            if hasattr(self, "norm_range_toggle") and self.norm_range_toggle is not None:
+                self.norm_range_toggle.blockSignals(True)
+                self.norm_range_toggle.setChecked(False)
+                self.norm_range_toggle.blockSignals(False)
         self.update_filters_list()
 
     def update_filters_list(self):
@@ -2247,6 +2515,10 @@ class FiltersTab(QWidget):
         )
 
     def _on_filter_deleted(self, fc):
+        if fc.filter_type == "normalize":
+            editor = getattr(self.session, "filter_range_editor", None)
+            if editor is not None: editor.close_editor()
+
         if len(self.curves) != 1:
             return
         curve = self.curves[0]
@@ -2259,13 +2531,19 @@ class FiltersTab(QWidget):
     def apply_filter(self):
         if not self.curves:
             return
-        fc = self._build_filter_command()
+        fc=self._build_filter_command()
         if fc is None:
             return
-        cmd = ApplyFilterCommand(list(self.curves), fc)
-        self.session.undo_manager.push(cmd, execute=True)
+        cmd=ApplyFilterCommand(list(self.curves),fc)
+        self.session.undo_manager.push(cmd,execute=True)
         self.update_filters_list()
-        _status(self.session, f"Фильтр применён: {fc.filter_type}", 2500)
+        _status(self.session,f"Фильтр применён: {fc.filter_type}",2500)
+        
+        if hasattr(self, 'norm_range_toggle') and self.norm_range_toggle.isChecked():
+            self.norm_range_toggle.setChecked(False)
+            editor=getattr(self.session,"filter_range_editor",None)
+            if editor is not None:
+                editor.close_editor()
 
     def reset_all_filters(self):
         if not self.curves:

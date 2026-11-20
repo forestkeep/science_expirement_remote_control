@@ -26,7 +26,14 @@ class FilterCommand:
                 self.params['min'], self.params['first'], self.params['last']
             )
         elif self.filter_type == 'normalize':
-            return self._filters_instance.normalize_filt(x, y, self.params['norm_type'])
+            return self._filters_instance.normalize_filt(
+                x, y,
+                self.params['norm_type'],
+                scope=self.params.get('scope', 'global'),
+                x_min=self.params.get('x_min'),
+                x_max=self.params.get('x_max'),
+                apply_to=self.params.get('apply_to', 'all'),
+            )
         elif self.filter_type == 'hampel':
             return self._filters_instance.hampel_filt(
                 x, y, self.params['window'], self.params['n_sigmas']

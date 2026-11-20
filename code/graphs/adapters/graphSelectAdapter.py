@@ -16,17 +16,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 class graphSelectAdapter:
-    def __init__(self, graph, selector, data_manager, tree_class, type_data, main_class):
-        self.graph = graph
-        self.selector = selector
-        self.data_manager = data_manager
-        self.tree_class = tree_class
-        self.type_data = type_data
-        self.main_class = main_class
+    def __init__(self,graph,selector,data_manager,tree_class,type_data,main_class):
+        self.graph=graph
+        self.selector=selector
+        self.data_manager=data_manager
+        self.tree_class=tree_class
+        self.type_data=type_data
+        self.main_class=main_class
         self.selector.parameters_updated.connect(self.parameters_choised)
         self.selector.state_second_axis_changed.connect(self.state_second_axis_changed)
         self.selector.numPointsChanged.connect(self._on_num_points_changed)
         self.selector.showingAllPoints.connect(self._on_showing_all_points)
+        self.selector.connectLinesChanged.connect(self._on_connect_lines_changed)
+        self.selector.showMarkersChanged.connect(self._on_show_markers_changed)
         self.data_manager.list_parameters_updated.connect(self.update_params)
         self.data_manager.val_parameters_added.connect(self.data_updated)
         self.data_manager.stop_current_session.connect(self.stop_session)
@@ -34,7 +36,7 @@ class graphSelectAdapter:
         self.tree_class.curve_shown.connect(self.show_curve)
         self.tree_class.curve_hide.connect(self.hide_curve)
         self.tree_class.curve_created.connect(self.curve_created)
-        alias_manager = getattr(main_class, "alias_manager", None)
+        alias_manager=getattr(main_class,"alias_manager",None)
         if alias_manager is not None:
             alias_manager.aliases_updated.connect(self._on_aliases_updated)
 
@@ -44,6 +46,13 @@ class graphSelectAdapter:
             self.selector.curent_y_first_parameters,
             self.selector.curent_y_second_parameters,
         )
+
+
+    def _on_connect_lines_changed(self,state:bool)->None:
+        self.graph.set_connect_lines(bool(state))
+
+    def _on_show_markers_changed(self,state:bool)->None:
+        self.graph.set_show_markers(bool(state))
 
     def _on_aliases_updated(self, original_name, old_alias, alias) -> None:
         self._update_axis_labels()
@@ -97,11 +106,13 @@ class graphSelectAdapter:
         После остановки принудительно включаем показ всех точек: в REVIEW
         видимое окно не нужно, данные уже не растут.
         """
+
         self._refresh_all_curves_data()
         self.graph.stop_session()
         self.selector.stop_session()
-        # Гарантированный сброс видимого окна независимо от UI-сигналов.
         self.graph.show_all_points(True)
+        self.graph.set_connect_lines(True)
+        self.graph.set_show_markers(True)
 
     def _refresh_all_curves_data(self):
         """Обновляет raw/filtered данные всех кривых текущей сессии.

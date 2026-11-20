@@ -18,6 +18,7 @@ import uuid
 
 # --- Сторонние библиотеки ---
 import numpy as np
+import pyqtgraph as pg
 from PyQt5.QtCore import QPoint, QRect, Qt, QTimer, pyqtSignal
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtGui import QGuiApplication, QIcon
@@ -56,6 +57,7 @@ from graphs.core.undo_commands import (
     ChangeDescriptionCommand,
     RenameSessionCommand,
 )
+from PyQt5 import QtCore, QtWidgets
 from common.undo.manager import SessionUndoManager
 from graphs.hdf5_io.adapters import HDF5ToProjectAdapter
 from graphs.hdf5_io.facade import HDF5Facade
@@ -227,6 +229,114 @@ class GraphWindow(QMainWindow):
         event.accept()
 
 
+class FilterRangeEditor:
+    """Менеджер полосы выбора диапазона для фильтра нормировки.
+    Одновременно активен только один редактор. Работает через колбэки,
+    не зависит от конкретного виджета-источника."""
+
+    def __init__(self, session):
+        self.session = session
+        self._region = None
+        self._label_min = None
+        self._label_max = None
+        self._curve = None
+        self._on_change = None   # callback(x_min, x_max) — синхронное обновление UI
+        self._on_commit = None   # callback(x_min, x_max) — применение к фильтру
+        self._debounce = QTimer()
+        self._debounce.setSingleShot(True)
+        self._debounce.setInterval(150)
+        self._debounce.timeout.connect(self._commit)
+        self._suppress = False
+
+    def open_editor(self, curve, x_min, x_max, on_change=None, on_commit=None):
+        self.close_editor()
+        self._curve = curve
+        self._on_change = on_change
+        self._on_commit = on_commit
+        graph_view = self._resolve_view(curve)
+        if graph_view is None:
+            return
+        color = "#66ccff"
+        brush = pg.mkBrush(102, 204, 255, 60)
+        pen = pg.mkPen(color=color, width=1, style=QtCore.Qt.DashLine)
+        self._region = pg.LinearRegionItem(
+            values=(float(x_min), float(x_max)),
+            brush=brush, pen=pen, movable=True, orientation="vertical",
+        )
+        self._region.setZValue(50)
+        graph_view.addItem(self._region)
+        self._label_min = pg.TextItem("", color=color, anchor=(1, 1))
+        self._label_max = pg.TextItem("", color=color, anchor=(0, 1))
+        self._label_min.setZValue(51)
+        self._label_max.setZValue(51)
+        graph_view.addItem(self._label_min)
+        graph_view.addItem(self._label_max)
+        self._region.sigRegionChanged.connect(self._on_region_changed)
+        self._on_region_changed()
+
+    def close_editor(self):
+        self._debounce.stop()
+        gv = self._current_view()
+        for item in (self._region, self._label_min, self._label_max):
+            if item is not None and gv is not None:
+                try:
+                    gv.removeItem(item)
+                except Exception:
+                    pass
+        self._region = self._label_min = self._label_max = None
+        self._curve = None
+        self._on_change = None
+        self._on_commit = None
+
+    def set_range(self, x_min, x_max):
+        if self._region is None:
+            return
+        self._suppress = True
+        try:
+            self._region.setRegion((float(x_min), float(x_max)))
+        finally:
+            self._suppress = False
+        self._on_region_changed()
+        self._commit()
+
+    def _on_region_changed(self):
+        if self._region is None or self._suppress:
+            return
+        a, b = self._region.getRegion()
+        if self._label_min is not None:
+            self._label_min.setText(f"x={a:.4g}")
+            self._label_min.setPos(a, 0)
+        if self._label_max is not None:
+            self._label_max.setText(f"x={b:.4g}")
+            self._label_max.setPos(b, 0)
+        if self._on_change is not None:
+            try:
+                self._on_change(float(a), float(b))
+            except Exception:
+                pass
+        self._debounce.start()
+
+    def _commit(self):
+        if self._region is None or self._curve is None:
+            return
+        a, b = self._region.getRegion()
+        if self._on_commit is not None:
+            try:
+                self._on_commit(float(a), float(b))
+            except Exception:
+                pass
+
+    def _resolve_view(self, curve):
+        gm = self.session.graph_main
+        if curve.number_axis == 2 and getattr(gm.graphView, "second_graphView", None) is not None:
+            return gm.graphView.second_graphView
+        return gm.graphView
+
+    def _current_view(self):
+        if self._curve is None:
+            return None
+        return self._resolve_view(self._curve)
+
 class GraphSession(QWidget):
     graph_win_close_signal = pyqtSignal(int)
 
@@ -391,6 +501,7 @@ class GraphSession(QWidget):
         )
 
         self.helper_manager = HelperManager(self, parent=self)
+        self.filter_range_editor = FilterRangeEditor(self)
 
         self.graph_main.graphView.style_changed.connect(self._on_main_style_changed)
 
